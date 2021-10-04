@@ -1,0 +1,6 @@
+data/
+.vscode/
+last-session.json
+node_modules/
+dist/
+coverage/
