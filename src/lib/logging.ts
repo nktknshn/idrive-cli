@@ -45,7 +45,7 @@ const httplogger = winston.createLogger({
     level: 'debug',
     transports: [
         new winston.transports.File({
-            filename: 'http-log.json',
+            filename: 'data/http-log.json',
 
             // tailable: true
             // format: ''
