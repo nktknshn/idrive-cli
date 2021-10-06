@@ -1,7 +1,12 @@
-import * as Cache from '../src/icloud/drive/cache'
-import { DriveItemFolderDetails } from '../src/icloud/drive/driveResponseType'
+import { pipe } from 'fp-ts/lib/function'
+import * as F from '../src/icloud/drive/cache/cachef'
 
-const rootDetails: DriveItemFolderDetails = {
+import { DriveDetails } from '../src/icloud/drive/types'
+import { logger } from '../src/lib/logging'
+// import { DriveItemFolderDetails } from '../src/icloud/drive/driveResponseType'
+import * as E from 'fp-ts/lib/Either'
+
+const rootDetails: DriveDetails = {
     "dateCreated": new Date("2021-07-26T19:34:15Z"),
     "drivewsid": "FOLDER::com.apple.CloudDocs::root",
     "docwsid": "root",
@@ -1010,7 +1015,7 @@ const rootDetails: DriveItemFolderDetails = {
     "status": "OK"
 }
 
-const testDetails: DriveItemFolderDetails = {
+const testDetails: DriveDetails = {
     "dateCreated": new Date("2021-09-11T19:46:45Z"),
     "drivewsid": "FOLDER::com.apple.CloudDocs::EFDC48C5-5917-4A68-B11A-057F63EFD4C8",
     "docwsid": "EFDC48C5-5917-4A68-B11A-057F63EFD4C8",
@@ -1065,12 +1070,14 @@ const testDetails: DriveItemFolderDetails = {
 
 describe('drive-cache', () => {
     it('1', () => {
-        const cache = Cache.cache()
+        const cache = F.cachef()
 
-        console.log(
-            Cache.put(
-                Cache.put(cache, rootDetails),
-                testDetails
+        logger.info(
+            pipe(
+                cache,
+                F.putDetails(rootDetails),
+                E.chain(F.putDetails(testDetails)),
+                E.chain(F.putDetails({...rootDetails, etag: 'new1'})),
             )
         )
     })

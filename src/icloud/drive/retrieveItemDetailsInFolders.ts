@@ -1,7 +1,7 @@
 import { AccountLoginResponseBody } from "../authorization/accoutLoginResponseType"
 import { ICloudSessionState } from "../session/session"
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
-import { DriveItemFolderDetails } from "./driveResponseType"
+import { DriveDetailsFolder } from "./types"
 import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
 import assert from "assert"
@@ -39,7 +39,7 @@ interface RetrieveOpts {
 
 export interface DriveItemDetailsResponse {
     httpResponse: HttpResponse;
-    details: DriveItemFolderDetails[];
+    details: DriveDetailsFolder[];
 }
 
 function getResponse(
@@ -49,7 +49,7 @@ function getResponse(
     if (httpResponse.status == 200 && E.isRight(json)) {
         return E.right({
             httpResponse,
-            details: json.right as DriveItemFolderDetails[]
+            details: json.right as DriveDetailsFolder[]
         })
     }
     else if (httpResponse.status == 421) {

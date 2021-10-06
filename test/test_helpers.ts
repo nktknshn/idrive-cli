@@ -1,22 +1,45 @@
 import assert from "assert"
-import { parsePath } from "../src/icloud/drive/helpers"
+import { normalizePath, parsePath } from "../src/icloud/drive/helpers"
+
 
 describe('helpers', () => {
     it('parsePath', () => {
         assert.deepStrictEqual(
-            parsePath('/'), []
+            parsePath('/'), ['/']
         )
         assert.deepStrictEqual(
-            parsePath('/dir1'), ['dir1']
+            normalizePath('/'), '/'
+        )
+
+        assert.deepStrictEqual(
+            parsePath('/dir1'), ['/', 'dir1']
+        )
+        assert.equal(
+            normalizePath('/dir1'), '/dir1'
+        )
+
+        assert.deepStrictEqual(
+            parsePath('dir1'), ['/', 'dir1']
         )
         assert.deepStrictEqual(
-            parsePath('dir1'), ['dir1']
+            normalizePath('dir1'), '/dir1'
+        )
+
+
+        assert.deepStrictEqual(
+            parsePath('dir1/dir2/'), ['/', 'dir1', 'dir2']
         )
         assert.deepStrictEqual(
-            parsePath('dir1/dir2/'), ['dir1', 'dir2']
+            normalizePath('dir1/dir2/'), '/dir1/dir2'
+        )
+
+
+        assert.deepStrictEqual(
+            parsePath('/dir1/dir2//'), ['/', 'dir1', 'dir2']
         )
         assert.deepStrictEqual(
-            parsePath('/dir1/dir2//'), ['dir1', 'dir2']
+            normalizePath('/dir1/dir2//'), '/dir1/dir2'
         )
+
     })
 })

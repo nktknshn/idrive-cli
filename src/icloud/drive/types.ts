@@ -1,8 +1,14 @@
 export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 
-export type DriverFolderItem = ItemFile | ItemFolder | ItemAppLibrary
+export type WithId = { drivewsid: string }
+export type DriveDetails = DriveDetailsFolder | DriveDetailsRoot | DriveDetailsAppLibrary
+export type DriveChildrenItem = DriveChildrenItemFile | DriveChildrenItemFolder | DriveChildrenItemAppLibrary
 
-export interface DriveItemFolderRoot {
+export const isRootDetails = (details: DriveDetails): details is DriveDetailsRoot => {
+    return details.name === "" && details.drivewsid === rootDrivewsid
+}
+
+export interface DriveDetailsRoot {
     dateCreated: Date;
     drivewsid: typeof rootDrivewsid;
     docwsid: string;
@@ -15,14 +21,14 @@ export interface DriveItemFolderRoot {
     shareCount: number;
     shareAliasCount: number;
     directChildrenCount: number;
-    items: (ItemFile | ItemFolder | ItemAppLibrary)[];
+    items: DriveChildrenItem[];
     numberOfItems: number;
     status: string;
 }
 
 export type Hierarchy = (HierarchyItem | HierarchyItemRoot)[]
 
-export interface DriveItemFolderDetails {
+export interface DriveDetailsFolder {
     dateCreated: Date;
     drivewsid: string;
     docwsid: string;
@@ -35,11 +41,49 @@ export interface DriveItemFolderDetails {
     shareCount: number;
     shareAliasCount: number;
     directChildrenCount: number;
-    items: (ItemFile | ItemFolder | ItemAppLibrary)[];
+    items: DriveChildrenItem[];
     numberOfItems: number;
     status: string;
-    parentId?: string;
+    parentId: string;
     hierarchy?: Hierarchy
+    isChainedToParent?: boolean;
+}
+
+export interface DriveDetailsAppLibrary {
+    dateCreated: Date;
+    drivewsid: string;
+    docwsid: string;
+    zone: string;
+    name: string;
+    etag: string;
+    type: 'APP_LIBRARY';
+    assetQuota: number;
+    fileCount: number;
+    shareCount: number;
+    shareAliasCount: number;
+    directChildrenCount: number;
+    items: DriveChildrenItem[];
+    numberOfItems: number;
+    status: string;
+    parentId: string;
+    hierarchy?: Hierarchy
+    isChainedToParent?: boolean;
+}
+
+export interface DriveChildrenItemFolder {
+    dateCreated: Date;
+    drivewsid: string;
+    docwsid: string;
+    zone: string;
+    name: string;
+    parentId: string;
+    etag: string;
+    type: 'FOLDER';
+    assetQuota: number;
+    fileCount: number;
+    shareCount: number;
+    shareAliasCount: number;
+    directChildrenCount: number;
     isChainedToParent?: boolean;
 }
 
@@ -59,7 +103,7 @@ export interface PartialItem {
     etag: string;
 }
 
-export interface ItemFile {
+export interface DriveChildrenItemFile {
     dateCreated: Date;
     drivewsid: string;
     docwsid: string;
@@ -74,24 +118,7 @@ export interface ItemFile {
     type: 'FILE';
 }
 
-export interface ItemFolder {
-    dateCreated: Date;
-    drivewsid: string;
-    docwsid: string;
-    zone: string;
-    name: string;
-    parentId: string;
-    etag: string;
-    type: 'FOLDER';
-    assetQuota: number;
-    fileCount: number;
-    shareCount: number;
-    shareAliasCount: number;
-    directChildrenCount: number;
-    isChainedToParent?: boolean;
-}
-
-export interface ItemAppLibrary {
+export interface DriveChildrenItemAppLibrary {
     dateCreated: Date;
     drivewsid: string;
     docwsid: string;
@@ -100,11 +127,6 @@ export interface ItemAppLibrary {
     parentId: string;
     etag: string;
     type: 'APP_LIBRARY';
-    // assetQuota:          number;
-    // fileCount:           number;
-    // shareCount:          number;
-    // shareAliasCount:     number;
-    // directChildrenCount: number;
     maxDepth: string;
     icons: Icon[];
     supportedExtensions: string[];

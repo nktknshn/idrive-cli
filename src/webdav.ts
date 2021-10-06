@@ -11,18 +11,19 @@ import { fetchClient } from './lib/fetch-client'
 import { logger } from './lib/logging'
 import { error } from './lib/errors';
 import { ICloudSessionState } from './icloud/session/session';
-import { getUnixPath } from './icloud/drive/getUnixPath'
 import { parsePath } from './icloud/drive/helpers';
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as E from 'fp-ts/lib/Either'
 import * as O from 'fp-ts/lib/Option'
-import { ICloudDriveCache, ICloudDriveCacheItemType } from './icloud/drive/cache';
-import * as Cache from './icloud/drive/cache';
+import { ICloudDriveCache, ICloudDriveCacheEntity } from './icloud/drive/cache/cachef';
+import * as C from './icloud/drive/cache/cachef';
 import Path from 'path'
+import { DriveChildrenItemFile } from './icloud/drive/types';
+import { Readable } from 'stream';
 
 interface SerializedFileSystem {
-    session: ICloudSessionValidated,
+    drive: C.Drive,
     props: v2.IPropertyManager
 }
 
@@ -37,7 +38,7 @@ class ICloudFileSystemSerializer implements v2.FileSystemSerializer {
     ) {
         callback(undefined,
             {
-                session: fs.session,
+                drive: fs.drive,
                 props: fs.props
             });
     }
@@ -46,7 +47,7 @@ class ICloudFileSystemSerializer implements v2.FileSystemSerializer {
         serializedData: SerializedFileSystem,
         callback: v2.ReturnCallback<ICloudFileSystem>
     ) {
-        const fs = new ICloudFileSystem(serializedData.session)
+        const fs = new ICloudFileSystem(serializedData.drive)
         fs.props = new v2.LocalPropertyManager(serializedData.props);
         callback(undefined, fs)
     }
@@ -62,16 +63,26 @@ class ICloudApi {
     }
 }
 
-const getDavType = (t: ICloudDriveCacheItemType) => t === 'FILE' ? v2.ResourceType.File : v2.ResourceType.Directory
+const ensureDate = (input: Date | string) => {
+    if (typeof input === 'string') {
+        return new Date(input)
+    }
+
+    return input
+}
+
+const getDavType = (t: ICloudDriveCacheEntity['type']) => t === 'FILE' ? v2.ResourceType.File : v2.ResourceType.Directory
 
 class ICloudFileSystem extends v2.FileSystem {
     props: v2.IPropertyManager;
     locks: v2.ILockManager;
-    session: ICloudSessionValidated
-    cache: ICloudDriveCache
+    drive: C.Drive
+    // session: ICloudSessionValidated
+    // cache: C.Cache
 
     constructor(
-        session: ICloudSessionValidated
+        // session: ICloudSessionValidated
+        drive: C.Drive
     ) {
         super(
             new ICloudFileSystemSerializer()
@@ -80,8 +91,9 @@ class ICloudFileSystem extends v2.FileSystem {
 
         this.props = new v2.LocalPropertyManager();
         this.locks = new v2.LocalLockManager();
-        this.session = session
-        this.cache = Cache.cache()
+        this.drive = drive
+        // this.session = session
+        // this.cache = C.Cache.create()
     }
 
     _propertyManager(path: v2.Path, info: v2.PropertyManagerInfo, callback: v2.ReturnCallback<v2.IPropertyManager>): void {
@@ -95,13 +107,15 @@ class ICloudFileSystem extends v2.FileSystem {
     _creationDate(path: v2.Path, info: v2.CreationDateInfo, callback: v2.ReturnCallback<number>) {
         logger.info(`_creationDate(${path})`)
 
-        const item = this.cache.byPath[path.toString()]
-
-        if (!item) {
-            return callback(error('missing item'),undefined)
-        }
-
-        callback(undefined, Cache.getItem(item)?.dateCreated.getTime() ?? 0 / 1000)
+        pipe(
+            this.drive.getItem(path.toString()),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                detals => async () => {
+                    callback(undefined, ensureDate(detals.dateCreated).getTime())
+                }
+            )
+        )()
     }
 
     _type(
@@ -110,80 +124,69 @@ class ICloudFileSystem extends v2.FileSystem {
         callback: v2.ReturnCallback<v2.ResourceType>
     ): void {
         logger.info(`_type(${path})`)
-
-        if (path.isRoot()) {
-            return callback(undefined, v2.ResourceType.Directory);
-        }
-
-        const type = this.cache.byPath[path.toString()]?.type
-
-        if (type) {
-            callback(undefined, getDavType(type));
-        }
-        else {
-            logger.error(`missing ${path.toString()}`)
-            console.log(this.cache);
-            // getUnixPath(this.session, parsePath(Path.parse(path.toString()).dir))
-
-            pipe(
-                getUnixPath(this.cache, this.session, parsePath(Path.parse(path.toString()).dir)),
-                T.map(E.fold(
-                    (e) => {
-                        logger.error(`_readDir(${e.name})`)
-                        callback(e)
-                    },
-                    response => {
-                        logger.info(`_readDir: ${response.details}`)
-
-                        this.cache = Cache.put(this.cache, response.details)
-
-                        console.log(this.cache);
-
-                        callback(undefined, this.cache.byPath[path.toString()]?.type === 'FILE' ? v2.ResourceType.File : v2.ResourceType.Directory)
-                    }
-                ))
-            )()
-
-            callback(error(`missing ${path.toString()}`), undefined);
-        }
+        pipe(
+            this.drive.getItem(path.toString()),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                detals => async () => { callback(undefined, getDavType(detals.type)) }
+            )
+        )()
     }
 
     _readDir(
         path: v2.Path, ctx: v2.ReadDirInfo, callback: v2.ReturnCallback<string[] | v2.Path[]>
     ) {
         logger.info(`_readDir(${path.toString()})`)
-
-        const cached = Cache.getByPath(this.cache, path.toString())
-
-        if (O.isSome(cached) && 'details' in cached.value) {
-            return callback(undefined, cached.value.details?.items.map(_ => _.name) ?? ['ERROR_FILE'])
-        }
-
         pipe(
-            getUnixPath(this.cache, this.session, parsePath(path.toString())),
-            T.map(E.fold(
-                (e) => {
-                    logger.error(`_readDir(${e.message})`)
-                    callback(e)
-                },
-                response => {
-                    logger.info(`_readDir: ${response.details}`)
-
-                    this.cache = Cache.put(this.cache, response.details)
-
-                    console.log(this.cache);
-
-                    callback(undefined, response.details.items.map(_ => _.name))
-                }
-            ))
+            this.drive.getFolder(path.toString()),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                detals => async () => { callback(undefined, detals.items.map(_ => _.name)) }
+            )
         )()
-
     }
 
-    private setSession(
-        session: ICloudSessionValidated
+    _size(
+        path: v2.Path, ctx: v2.SizeInfo, callback: v2.ReturnCallback<number>
     ) {
-        this.session = session
+        logger.info(`_size(${path.toString()})`)
+        pipe(
+            this.drive.getItem(path.toString()),
+            TE.filterOrElse((_): _ is DriveChildrenItemFile => _.type === 'FILE', () => error(`item is not file`)),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                detals => async () => { callback(undefined, detals.size) }
+            )
+        )()
+    }
+
+    _etag(
+        path: v2.Path, ctx: v2.ETagInfo, callback: v2.ReturnCallback<string>
+    ) {
+        logger.info(`_etag(${path.toString()})`)
+        pipe(
+            this.drive.getItem(path.toString()),
+            TE.filterOrElse((_): _ is DriveChildrenItemFile => _.type === 'FILE', () => error(`item is not file`)),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                detals => async () => { callback(undefined, detals.etag) }
+            )
+        )()
+    }
+
+    _openReadStream(
+        path: v2.Path, ctx: v2.OpenReadStreamInfo, callback: v2.ReturnCallback<Readable>
+    ) {
+        logger.info(`_openReadStream(${path.toString()})`)
+        pipe(
+            this.drive.getDownloadUrl(path.toString()),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                url => async () => {
+                    callback(undefined, detals)
+                }
+            )
+        )()
     }
 }
 
@@ -197,7 +200,14 @@ const run = (
         TE.Do,
         TE.bind('session', () => tryReadSessionFile(sessionFile)),
         TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
-        TE.map(({ session, accountData }) => new ICloudFileSystem({ session, accountData })),
+        TE.bind('api', validatedSession => TE.of(new C.DriveApi(validatedSession))),
+        TE.bindW('drive', ({ api }) => pipe(
+            C.Cache.tryReadFromFile('data/cli-drive-cache.json'),
+            TE.map(C.Cache.create),
+            TE.orElseW(e => TE.of(C.Cache.create())),
+            TE.chain(cache => TE.of(new C.Drive(api, cache)))
+        )),
+        TE.map(({ drive }) => new ICloudFileSystem(drive)),
         TE.chainW(fs => TE.tryCatch(
             () => server.setFileSystemAsync('/', fs),
             e => error(`Error mounting fs: ${e}`)
