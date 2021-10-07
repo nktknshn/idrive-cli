@@ -1,5 +1,4 @@
 import * as t from 'io-ts'
-import * as fetcher from 'fetcher-ts'
 import { isSome, Option, Some } from 'fp-ts/lib/Option'
 import * as O from 'fp-ts/lib/Option'
 // import { Cookie } from './types';

@@ -1,18 +1,17 @@
-import { AccountLoginResponseBody } from "../authorization/accoutLoginResponseType"
-import { ICloudSessionState } from "../session/session"
-import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
-import { DriveDetailsFolder } from "./types"
 import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
 import assert from "assert"
-import { basicHeaders, getSessionCookiesHeaders } from "../session/session-http-headers"
-import { createHttpResponseReducer } from "../../lib/createHttpResponseReducer"
-import { reduceHttpResponseToSession } from "../session/session-http"
-import { ErrorReadingResponseBody, InvalidJsonInResponse } from "../../lib/json"
-import { pipe } from "fp-ts/lib/function"
-import { FetchError } from "../../lib/fetch-client"
-import { UnexpectedResponse } from "../authorization/securitycode"
-import { buildRecord } from "../../lib/util"
+import { pipe } from 'fp-ts/lib/function'
+import { DriveDetailsFolder } from '../types'
+import { createHttpResponseReducer } from '../../../lib/createHttpResponseReducer'
+import { HttpResponse, FetchClientEither, HttpRequest, FetchError } from '../../../lib/fetch-client'
+import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../../lib/json'
+import { buildRecord } from '../../../lib/util'
+import { AccountLoginResponseBody } from '../../authorization/accoutLoginResponseType'
+import { UnexpectedResponse } from '../../authorization/securitycode'
+import { ICloudSessionState } from '../../session/session'
+import { reduceHttpResponseToSession } from '../../session/session-http'
+import { basicHeaders, getSessionCookiesHeaders } from '../../session/session-http-headers'
 
 // https://p46-drivews.icloud.com/retrieveItemDetails
 
@@ -58,8 +57,6 @@ function getResponse(
 
     return E.left(new UnexpectedResponse(httpResponse, json))
 }
-
-// const buildRecord = R.fromFoldable({ concat: (_, y: string) => y }, A.Foldable)
 
 function createHttpRequest(props: RetrieveOpts): HttpRequest {
     assert(props.validatedSession.accountData.webservices.drivews.url)

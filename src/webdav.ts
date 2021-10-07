@@ -3,9 +3,8 @@ import { ICloudSessionValidated } from './icloud/authorization/authorize';
 import { Command } from 'commander'
 // import assert, { AssertionError } from 'assert'
 import { identity, pipe } from 'fp-ts/lib/function'
-import { defaultSessionFile } from './config'
+import { defaultCacheFile, defaultPort, defaultSessionFile } from './config'
 import { readAccountData } from './icloud/authorization/validate'
-import { InvalidGlobalSessionResponse, retrieveItemDetailsInFolders } from './icloud/drive/retrieveItemDetailsInFolders'
 import { tryReadSessionFile } from './icloud/session/session-file'
 import { fetchClient } from './lib/fetch-client'
 import { logger } from './lib/logging'
@@ -16,14 +15,17 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as E from 'fp-ts/lib/Either'
 import * as O from 'fp-ts/lib/Option'
-import { ICloudDriveCache, ICloudDriveCacheEntity } from './icloud/drive/cache/cachef';
+import { ICloudDriveCache, ICloudDriveCacheEntity } from "./icloud/drive/cache/types";
 import * as C from './icloud/drive/cache/cachef';
+import * as D from "./icloud/drive/cache/Drive";
+import * as DriveApi from "./icloud/drive/cache/DriveApi";
 import Path from 'path'
 import { DriveChildrenItemFile } from './icloud/drive/types';
 import { Readable } from 'stream';
+import { getUrlStream } from './icloud/drive/requests/download';
 
 interface SerializedFileSystem {
-    drive: C.Drive,
+    drive: D.Drive,
     props: v2.IPropertyManager
 }
 
@@ -76,13 +78,13 @@ const getDavType = (t: ICloudDriveCacheEntity['type']) => t === 'FILE' ? v2.Reso
 class ICloudFileSystem extends v2.FileSystem {
     props: v2.IPropertyManager;
     locks: v2.ILockManager;
-    drive: C.Drive
+    drive: D.Drive
     // session: ICloudSessionValidated
     // cache: C.Cache
 
     constructor(
         // session: ICloudSessionValidated
-        drive: C.Drive
+        drive: D.Drive
     ) {
         super(
             new ICloudFileSystemSerializer()
@@ -113,6 +115,24 @@ class ICloudFileSystem extends v2.FileSystem {
                 e => async () => { callback(error(`Error: ${e.message}`), undefined) },
                 detals => async () => {
                     callback(undefined, ensureDate(detals.dateCreated).getTime())
+                }
+            )
+        )()
+    }
+
+    _lastModifiedDate(path: v2.Path, info: v2.LastModifiedDateInfo, callback: v2.ReturnCallback<number>) {
+        logger.info(`_creationDate(${path})`)
+
+        pipe(
+            this.drive.getItem(path.toString()),
+            TE.fold(
+                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
+                detals => async () => {
+                    callback(undefined, ensureDate(
+                        detals.type === 'FILE'
+                            ? detals.dateModified
+                            : detals.dateCreated).getTime()
+                    )
                 }
             )
         )()
@@ -166,7 +186,7 @@ class ICloudFileSystem extends v2.FileSystem {
         logger.info(`_etag(${path.toString()})`)
         pipe(
             this.drive.getItem(path.toString()),
-            TE.filterOrElse((_): _ is DriveChildrenItemFile => _.type === 'FILE', () => error(`item is not file`)),
+            // TE.filterOrElse((_): _ is DriveChildrenItemFile => _.type === 'FILE', () => error(`item is not file`)),
             TE.fold(
                 e => async () => { callback(error(`Error: ${e.message}`), undefined) },
                 detals => async () => { callback(undefined, detals.etag) }
@@ -179,19 +199,53 @@ class ICloudFileSystem extends v2.FileSystem {
     ) {
         logger.info(`_openReadStream(${path.toString()})`)
         pipe(
-            this.drive.getDownloadUrl(path.toString()),
+            this.drive.getDownloadStream(path.toString()),
             TE.fold(
-                e => async () => { callback(error(`Error: ${e.message}`), undefined) },
-                url => async () => {
-                    callback(undefined, detals)
+                e => async () => {
+                    callback(error(`Error: ${e.message}`), undefined)
+                },
+                (data) => async () => {
+                    callback(undefined, data as Readable)
                 }
             )
         )()
     }
+
+    _create(
+        path: v2.Path, ctx: v2.CreateInfo, callback: v2.SimpleCallback
+    ) {
+        logger.info(`_create(${path.toString()})`)
+
+        if(!ctx.type.isDirectory) {
+            return callback(error(`File creation is not supported`))
+        }
+
+        pipe(
+            this.drive.createFolder(path.toString()),
+            TE.fold(
+                e => async () => {
+                    callback(error(`Error: ${e.message}`))
+                },
+                (data) => async () => {
+                    callback()
+                }
+            )
+        )()
+    }
+
+    _delete(
+        path: v2.Path, ctx: v2.DeleteInfo, callback: v2.SimpleCallback
+    ) {
+
+    }
 }
 
 const run = (
-    { sessionFile = defaultSessionFile } = {}
+    {
+        sessionFile = defaultSessionFile,
+        cacheFile = defaultCacheFile,
+        port = defaultPort
+    } = {}
 ) => {
 
     const server = new v2.WebDAVServer({});
@@ -200,20 +254,20 @@ const run = (
         TE.Do,
         TE.bind('session', () => tryReadSessionFile(sessionFile)),
         TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
-        TE.bind('api', validatedSession => TE.of(new C.DriveApi(validatedSession))),
+        TE.bind('api', validatedSession => TE.of(new DriveApi.DriveApi(validatedSession))),
         TE.bindW('drive', ({ api }) => pipe(
-            C.Cache.tryReadFromFile('data/cli-drive-cache.json'),
+            C.Cache.tryReadFromFile(cacheFile),
             TE.map(C.Cache.create),
             TE.orElseW(e => TE.of(C.Cache.create())),
-            TE.chain(cache => TE.of(new C.Drive(api, cache)))
+            TE.chain(cache => TE.of(new D.Drive(api, cache)))
         )),
-        TE.map(({ drive }) => new ICloudFileSystem(drive)),
-        TE.chainW(fs => TE.tryCatch(
+        TE.bind('fs', ({ drive }) => TE.of(new ICloudFileSystem(drive))),
+        TE.chainW(({ fs }) => TE.tryCatch(
             () => server.setFileSystemAsync('/', fs),
             e => error(`Error mounting fs: ${e}`)
         )),
         TE.filterOrElse(identity, () => error('setFileSystemAsync returned false')),
-        TE.chain(() => TE.fromTask(() => server.startAsync(8899)))
+        TE.chain(() => TE.fromTask(() => server.startAsync(port)))
     )
 }
 

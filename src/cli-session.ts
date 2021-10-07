@@ -1,5 +1,4 @@
 import * as t from 'io-ts'
-import { Fetcher } from 'fetcher-ts'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as E from 'fp-ts/lib/Either'

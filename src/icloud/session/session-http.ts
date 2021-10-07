@@ -1,24 +1,43 @@
 import { applyCookieToCookies, parseSetCookie } from "../../lib/cookie";
 import { getAccountCountry, getAuthAttributes, getScnt, getSessionId, getSessionToken, getSetCookie } from "../../lib/http-headers";
-import { separateEithers } from "../../lib/util";
+import { buildRecord, separateEithers } from "../../lib/util";
 import { ICloudSessionState } from "./session";
 import * as O from "fp-ts/lib/Option";
 import * as A from "fp-ts/lib/Array";
 
 import { flow, Lazy, pipe } from "fp-ts/lib/function";
 import { ICloudBasicResponse } from "../types";
-import { HttpResponse } from "../../lib/fetch-client";
+import { HttpRequest, HttpResponse } from "../../lib/fetch-client";
 import { logger } from "../../lib/logging";
+import { Method } from "axios";
+import { basicHeaders, getSessionCookiesHeaders } from "./session-http-headers";
 
 const fallback = <A>(onNone: Lazy<O.Option<A>>): (v: O.Option<A>) => O.Option<A> =>
     O.fold(onNone, O.some)
+
+export const getBasicRequest = (
+    method: Method,
+    url: string,
+    data: unknown = undefined
+): (session: ICloudSessionState) => HttpRequest => {
+    return session => ({
+        url,
+        method,
+        headers: buildRecord([
+            ...basicHeaders,
+            ...getSessionCookiesHeaders(
+                session
+            )]),
+        data
+    })
+}
 
 export function getBasicResponse(httpResponse: HttpResponse): ICloudBasicResponse {
 
     // console.log(
     //     Array.from(httpResponse.headers.())
     // );
-    
+
     const [errors, setCookies] =
         pipe(
             getSetCookie(httpResponse.headers),

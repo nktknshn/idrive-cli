@@ -1,26 +1,38 @@
-import { fetchClient, FetchClientEither, HttpRequest, HttpResponse } from "../../lib/fetch-client"
-import { buildRecord, isObjectWithOwnProperty } from "../../lib/util"
-import { AccountLoginResponseBody } from "../authorization/accoutLoginResponseType"
-import { ICloudSessionState } from "../session/session"
+import { fetchClient, FetchClientEither, HttpRequest, HttpResponse } from "../../../lib/fetch-client"
+import { buildRecord, isObjectWithOwnProperty } from "../../../lib/util"
+import { AccountLoginResponseBody } from "../../authorization/accoutLoginResponseType"
+import { ICloudSessionState } from "../../session/session"
 import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { error } from "../../lib/errors"
-import { InvalidGlobalSessionResponse } from "./retrieveItemDetailsInFolders"
+import { error } from "../../../lib/errors"
 import assert from "assert"
-import { basicHeaders, getSessionCookiesHeaders } from "../session/session-http-headers"
-import { createHttpResponseReducer } from "../../lib/createHttpResponseReducer"
-import { reduceHttpResponseToSession } from "../session/session-http"
+import { basicHeaders, getSessionCookiesHeaders } from "../../session/session-http-headers"
+import { createHttpResponseReducer } from "../../../lib/createHttpResponseReducer"
+import { reduceHttpResponseToSession } from "../../session/session-http"
 import { pipe } from "fp-ts/lib/function"
 import { Readable } from "stream"
+import { logger } from "../../../lib/logging"
+import { InvalidGlobalSessionResponse } from "./retrieveItemDetailsInFolders"
 
-interface RetrieveOpts {
+type RetrieveOpts = {
     validatedSession: {
         session: ICloudSessionState,
         accountData: AccountLoginResponseBody
     },
     documentId: string,
+    zone: string,
     client: FetchClientEither,
 }
+
+// interface RetrieveOpts {
+//     validatedSession: {
+//         session: ICloudSessionState,
+//         accountData: AccountLoginResponseBody
+//     },
+//     documentId: string,
+//     zone: string,
+//     client: FetchClientEither,
+// }
 
 export interface DriveDownloadResponse {
     httpResponse: HttpResponse;
@@ -82,12 +94,12 @@ function getResponse(
 }
 
 function createHttpRequest({
-    documentId, validatedSession: { accountData, session }
+    zone, documentId, validatedSession: { accountData, session }
 }: RetrieveOpts) {
     assert(accountData.webservices.docws.url)
 
     return new HttpRequest(
-        `${accountData.webservices.docws.url}/ws/com.apple.CloudDocs/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
+        `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
         {
             method: 'GET',
             headers: buildRecord([
@@ -119,7 +131,7 @@ export function download(
 }
 
 
-export function getUrlArrayBuffer({
+export function getUrlStream({
     client, url
 }: { client: FetchClientEither, url: string }) {
     return pipe(
@@ -127,22 +139,27 @@ export function getUrlArrayBuffer({
             method: 'GET',
             url,
             headers: {},
-            data: undefined
+            data: undefined,
+            responseType: 'stream'
         }),
         TE.map(_ => {
-            return _.data
+            return _.data as Readable
         })
     )
 }
 
-async function main( ) {
-    pipe(
-        getUrlArrayBuffer({
-            client: fetchClient,
-            url: 'https://sourceforge.net/p/workrave/mailman/attachment/4E2372E1.90801%40gmail.com/2/'
-        }),
-        
-    )
-}
+// async function main( ) {
+//     const res = await pipe(
+//         getUrlArrayBuffer({
+//             client: fetchClient,
+//             url: 'https://sourceforge.net/p/workrave/mailman/attachment/4E2372E1.90801%40gmail.com/2/'
+//         }),
 
-main()
+//     )()
+
+//     logger.info(
+//         res
+//     )
+// }
+
+// main()
