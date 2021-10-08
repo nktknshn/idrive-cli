@@ -16,7 +16,7 @@ import { reduceHttpResponseToSession } from '../session/session-http'
 import { log } from 'fp-ts/lib/Console'
 import { buildRecord, isObjectWithOwnProperty } from '../../lib/util'
 import { AccountLoginResponseBody } from './accoutLoginResponseType'
-import { FileReadingError } from '../../lib/errors'
+import { error, FileReadingError } from '../../lib/errors'
 import * as fs from 'fs/promises'
 import { TypeDecodingError, tryReadJsonFile, BufferDecodingError } from '../../lib/files'
 
@@ -27,14 +27,12 @@ type ValidateResponse = ValidateResponse200 | ValidateResponse421
 // | ValidateResponseOther
 
 interface ValidateResponse200 {
-    httpResponse: HttpResponse
     readonly tag: 'ValidateResponse200'
     success: true
     unsafeBody: AccountLoginResponseBody
 }
 
 interface ValidateResponse421 {
-    httpResponse: HttpResponse
     readonly tag: 'ValidateResponse421'
     success: false
     error: string | number
@@ -59,14 +57,16 @@ function createRequest(
 function getResponse(
     httpResponse: HttpResponse,
     json: E.Either<ErrorReadingResponseBody | InvalidJsonInResponse, unknown>
-): E.Either<string, ValidateResponse> {
+): E.Either<Error, { httpResponse: HttpResponse, body: ValidateResponse200 | ValidateResponse421 }> {
 
     if (httpResponse.status == 200 && E.isRight(json)) {
         return E.right({
-            tag: 'ValidateResponse200',
-            success: true,
+            body: {
+                tag: 'ValidateResponse200' as const,
+                success: true as const,
+                unsafeBody: json.right as AccountLoginResponseBody
+            },
             httpResponse,
-            unsafeBody: json.right as AccountLoginResponseBody
         })
     }
     else if (httpResponse.status == 421) {
@@ -75,17 +75,21 @@ function getResponse(
             t.partial({
                 error: t.union([t.string, t.number])
             }).decode,
-            E.map((json): ValidateResponse421 => ({
-                tag: 'ValidateResponse421',
-                success: false,
+            E.map((json) => ({
+                body: {
+                    tag: 'ValidateResponse421' as const,
+                    success: false as const,
+                    error: json.error ?? 'missing error message'
+                },
                 httpResponse,
-                error: json.error ?? 'missing error message'
             })),
-            E.mapLeft(e => `error reading JSON: ${e}`)
+            E.mapLeft(e => error(`error reading JSON: ${e}`))
         )
     }
     else {
-        return E.left(`unexpected response: ${httpResponse.status} ${JSON.stringify(json)}`)
+        return E.left(error(
+            `unexpected response: ${httpResponse.status} ${JSON.stringify(json)}`
+        ))
     }
 }
 
@@ -103,10 +107,10 @@ export function validateSession({ client, session }: {
         client,
         TE.chainW(applyResponse(session)),
         TE.map(({ session, response }) => {
-            if (response.tag === 'ValidateResponse200') {
+            if (response.body.tag === 'ValidateResponse200') {
                 return {
                     session,
-                    accountData: response.unsafeBody
+                    accountData: response.body.unsafeBody
                 }
                 // return [session, response.unsafeBody] as const
             }

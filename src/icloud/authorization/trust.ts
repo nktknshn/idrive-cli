@@ -12,8 +12,7 @@ import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-cl
 import { getSessionHeaders } from '../session/session-http-headers'
 import { reduceHttpResponseToSession } from '../session/session-http'
 import { getTrustToken } from '../../lib/http-headers'
-import { UnexpectedResponse } from './securitycode'
-import { error } from '../../lib/errors'
+import { error, UnexpectedResponse } from '../../lib/errors'
 import { FetchError } from '../../lib/fetch-client'
 import { logger } from '../../lib/logging'
 import { buildRecord } from '../../lib/util'
@@ -57,14 +56,13 @@ function createRequest(
 export function getResponse(
     httpResponse: HttpResponse,
     json: E.Either<unknown, unknown>
-): E.Either<Error | UnexpectedResponse, TrustResponse204> {
+) {
     if (httpResponse.status == 204) {
         return pipe(
             getTrustToken(httpResponse.headers),
             O.map(trustToken => ({
-                tag: 'TrustResponse204' as const,
                 httpResponse,
-                trustToken
+                body: { trustToken, tag: 'TrustResponse204' as const }
             })),
             E.fromOption(() => error("Missing trust token"))
         )
@@ -81,15 +79,15 @@ const applyHttpResponseToSession = createHttpResponseReducer(
             session,
             response.httpResponse
         ),
-        { trustToken: O.some(response.trustToken) }
+        { trustToken: O.some(response.body.trustToken) }
     )
 
 )
 
 export function requestTrustDevice(
     props: RequestProps
-): TE.TaskEither<FetchError | Error | UnexpectedResponse | ErrorReadingResponseBody | InvalidJsonInResponse, { session: ICloudSessionState; response: TrustResponse204 }> {
-    
+) {
+
     logger.debug('requestTrustDevice')
 
     return pipe(

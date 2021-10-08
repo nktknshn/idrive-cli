@@ -2,7 +2,7 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { createHttpResponseReducer, JsonEither } from '../../lib/createHttpResponseReducer'
+import { basicGetResponse, createHttpResponseReducer, JsonEither } from '../../lib/createHttpResponseReducer'
 import { FetchError, HttpRequest, HttpResponse } from '../../lib/fetch-client'
 import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../lib/json'
 import { logger } from '../../lib/logging'
@@ -12,8 +12,8 @@ import { basicHeaders } from '../session/session-http-headers'
 import { FetchClientEither } from '../../lib/fetch-client'
 import { AccountLoginResponseBody } from './accoutLoginResponseType'
 import { ICloudSessionValidated } from './authorize'
-import { UnexpectedResponse } from './securitycode'
-import { buildRecord } from '../../lib/util'
+import { buildRecord, isObjectWithOwnProperty } from '../../lib/util'
+import { UnexpectedResponse } from '../../lib/errors'
 
 type AccountLoginRequestProps = {
     client: FetchClientEither,
@@ -64,10 +64,7 @@ function createRequest(
 export function getResponse(
     httpResponse: HttpResponse,
     json: JsonEither
-): E.Either<
-    AccountLoginResponse421 | UnexpectedResponse | ErrorReadingResponseBody | InvalidJsonInResponse,
-    AccountLoginResponse200
-> {
+): E.Either<Error, AccountLoginResponse200> {
     if (httpResponse.status == 200) {
         return pipe(
             json,
@@ -90,7 +87,7 @@ export function getResponse(
 }
 
 const applyResponse = createHttpResponseReducer(
-    getResponse,
+    basicGetResponse((json): json is AccountLoginResponseBody => isObjectWithOwnProperty(json, 'appsOrder')),
     (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
 )
 
@@ -108,7 +105,7 @@ export function requestAccoutLogin(
         TE.chainW(applyResponse(session)),
         TE.map(({ session, response }) => ({
             session,
-            accountData: response.unsafeBody
+            accountData: response.body
         }))
     )
 }

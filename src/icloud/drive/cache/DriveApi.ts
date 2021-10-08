@@ -1,16 +1,34 @@
 import * as A from 'fp-ts/lib/Array';
+import * as O from 'fp-ts/lib/Option';
 import { logger } from "../../../lib/logging";
 import { pipe } from "fp-ts/lib/function";
 import { authorizeSession, ICloudSessionValidated } from "../../authorization/authorize";
 import { fetchClient, FetchClientEither } from "../../../lib/fetch-client";
 import * as TE from 'fp-ts/lib/TaskEither';
 import { input } from "../../../lib/input";
-import { error } from "../../../lib/errors";
+import { error, InvalidGlobalSessionResponse } from "../../../lib/errors";
 import { download } from "../requests/download";
-import { InvalidGlobalSessionResponse, retrieveItemDetailsInFolders } from '../requests/retrieveItemDetailsInFolders';
+import { retrieveItemDetailsInFolders } from '../requests/retrieveItemDetailsInFolders';
 import { createFolders } from '../requests/createFolders';
 import { moveItemsToTrash } from '../requests/moveItemsToTrash';
+import * as fs from 'fs/promises'
+import mime from 'mime-types'
+import Path from 'path'
+import { singleFileUpload, updateDocuments, upload } from '../requests/upload';
 
+const getContentType = (extension: string): string => {
+    if (extension === '') {
+        return ''
+    }
+
+    const t = mime.contentType(extension)
+
+    if (t === false) {
+        return ''
+    }
+
+    return t
+}
 
 export class DriveApi {
     constructor(
@@ -29,14 +47,16 @@ export class DriveApi {
         );
     };
 
-    private query = <E extends Error, A>(te: () => TE.TaskEither<E, A>): TE.TaskEither<Error, A> => {
+    private retryingQuery = <E extends Error, A>(
+        te: () => TE.TaskEither<E, A>
+    ): TE.TaskEither<Error, A> => {
         return pipe(
             te(),
             TE.orElseW(e => {
                 return InvalidGlobalSessionResponse.is(e)
                     ? pipe(
                         this.onInvalidSession(),
-                        TE.chainW(() => this.query(te))
+                        TE.chainW(() => this.retryingQuery(te))
                     )
                     : TE.left(e);
             })
@@ -53,12 +73,85 @@ export class DriveApi {
 
     public getSession = () => this.session;
 
+    public upload = (
+        sourceFilePath: string,
+        targetId: string
+    ) => {
+        const parsedSource = Path.parse(sourceFilePath)
+
+        return pipe(
+            TE.Do,
+            TE.bind('fstats', () => TE.tryCatch(
+                () => fs.stat(sourceFilePath),
+                (e) => error(`error getting file info: ${JSON.stringify(e)}`))),
+            TE.bind('uploadResult', ({ fstats }) =>
+                pipe(
+                    () => upload(this.client, this.session, {
+                        contentType: getContentType(parsedSource.ext),
+                        filename: parsedSource.base,
+                        size: fstats.size,
+                        type: 'FILE' as const
+                    }),
+                    this.retryingQuery,
+                    TE.filterOrElse(
+                        _ => _.response.body.length > 0,
+                        () => error(`empty response`)
+                    ),
+                )
+            ),
+            TE.bind('singleFileUploadResult',
+                ({ uploadResult: { session, response } }) =>
+                    this.retryingQuery(() =>
+                        singleFileUpload(
+                            this.client,
+                            { session, accountData: this.session.accountData },
+                            {
+                                filePath: sourceFilePath,
+                                url: response.body[0].url
+                            }))),
+            TE.bind('updateDocumentsResult', ({
+                uploadResult, singleFileUploadResult: { response, session }
+            }) => pipe(
+                () => updateDocuments(
+                    this.client,
+                    { session, accountData: this.session.accountData },
+                    {
+                        request: {
+                            allow_conflict: true,
+                            command: 'add_file',
+                            document_id: uploadResult.response.body[0].document_id,
+                            path: {
+                                starting_document_id: targetId,
+                                path: parsedSource.base
+                            },
+                            btime: new Date().getTime(),
+                            mtime: new Date().getTime(),
+                            file_flags: {
+                                is_executable: false,
+                                is_hidden: false,
+                                is_writable: true
+                            },
+                            data: {
+                                receipt: response.body.singleFile.receipt,
+                                reference_signature: response.body.singleFile.referenceChecksum,
+                                signature: response.body.singleFile.fileChecksum,
+                                wrapping_key: response.body.singleFile.wrappingKey,
+                                size: response.body.singleFile.size,
+                            }
+                        }
+                    }
+                ),
+                this.retryingQuery
+            ))
+        )
+    }
+
     public retrieveItemDetailsInFolders = (drivewsids: string[]) => {
 
         logger.info(`retrieveItemDetailsInFolders(${drivewsids})`);
 
         return pipe(
-            this.query(() => retrieveItemDetailsInFolders({
+            this.retryingQuery(() => retrieveItemDetailsInFolders({
                 client: this.client,
                 partialData: false,
                 includeHierarchy: false,
@@ -69,7 +162,7 @@ export class DriveApi {
                 accountData: this.session.accountData,
                 session
             })),
-            TE.map(_ => _.response.details)
+            TE.map(_ => _.response.body)
         );
     };
 
@@ -83,7 +176,7 @@ export class DriveApi {
 
     public download = (documentId: string, zone: string): TE.TaskEither<Error, string> => {
         return pipe(
-            this.query(
+            this.retryingQuery(
                 () => download({
                     client: this.client,
                     validatedSession: this.session,
@@ -103,7 +196,7 @@ export class DriveApi {
         folderNames: string[]
     ) => {
         return pipe(
-            this.query(
+            this.retryingQuery(
                 () => createFolders({
                     client: this.client,
                     validatedSession: this.session,
@@ -114,23 +207,23 @@ export class DriveApi {
                 accountData: this.session.accountData,
                 session
             })),
-            TE.map(_ => _.response.response)
+            TE.map(_ => _.response.body)
         );
     }
 
-    public moveItemsToTrash = (drivewsids: string[]) => {
+    public moveItemsToTrash = (items: { drivewsid: string, etag: string }[]) => {
         return pipe(
-            this.query(
+            this.retryingQuery(
                 () => moveItemsToTrash({
                     client: this.client,
                     validatedSession: this.session,
-                    drivewsids
+                    items
                 })),
             TE.chainFirstW(({ session }) => this.setSession({
                 accountData: this.session.accountData,
                 session
             })),
-            TE.map(_ => _.response.response)
+            TE.map(_ => _.response.body)
         );
     }
 }

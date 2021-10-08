@@ -1,18 +1,14 @@
-import { fetchClient, FetchClientEither, HttpRequest, HttpResponse } from "../../../lib/fetch-client"
+import assert from "assert"
+import { pipe } from "fp-ts/lib/function"
+import * as TE from 'fp-ts/lib/TaskEither'
+import { Readable } from "stream"
+import { basicGetResponse, createHttpResponseReducer } from "../../../lib/createHttpResponseReducer"
+import { FetchClientEither, HttpRequest, HttpResponse } from "../../../lib/fetch-client"
 import { buildRecord, isObjectWithOwnProperty } from "../../../lib/util"
 import { AccountLoginResponseBody } from "../../authorization/accoutLoginResponseType"
 import { ICloudSessionState } from "../../session/session"
-import * as E from 'fp-ts/lib/Either'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { error } from "../../../lib/errors"
-import assert from "assert"
-import { basicHeaders, getSessionCookiesHeaders } from "../../session/session-http-headers"
-import { createHttpResponseReducer } from "../../../lib/createHttpResponseReducer"
 import { reduceHttpResponseToSession } from "../../session/session-http"
-import { pipe } from "fp-ts/lib/function"
-import { Readable } from "stream"
-import { logger } from "../../../lib/logging"
-import { InvalidGlobalSessionResponse } from "./retrieveItemDetailsInFolders"
+import { basicHeaders, getSessionCookiesHeaders } from "../../session/session-http-headers"
 
 type RetrieveOpts = {
     validatedSession: {
@@ -65,7 +61,7 @@ interface ResponseBodySafe {
 
 const validateBody = (json: unknown): json is ResponseBodySafe =>
     isObjectWithOwnProperty(json, "data_token") && isObjectWithOwnProperty(json.data_token, "url")
-
+/* 
 function getResponse(
     httpResponse: HttpResponse,
     json: E.Either<Error, unknown>
@@ -91,7 +87,7 @@ function getResponse(
     }
 
     return E.left(error(`Wrong response: ${httpResponse.status} json body: ${json}`))
-}
+} */
 
 function createHttpRequest({
     zone, documentId, validatedSession: { accountData, session }
@@ -111,7 +107,7 @@ function createHttpRequest({
 }
 
 const applyHttpResponseToSession = createHttpResponseReducer(
-    getResponse,
+    basicGetResponse(validateBody),
     (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
 )
 

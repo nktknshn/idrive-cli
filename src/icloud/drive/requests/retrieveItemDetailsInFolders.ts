@@ -1,29 +1,17 @@
-import * as E from 'fp-ts/lib/Either'
-import * as TE from 'fp-ts/lib/TaskEither'
 import assert from "assert"
 import { pipe } from 'fp-ts/lib/function'
-import { DriveDetailsFolder } from '../types'
-import { createHttpResponseReducer } from '../../../lib/createHttpResponseReducer'
-import { HttpResponse, FetchClientEither, HttpRequest, FetchError } from '../../../lib/fetch-client'
-import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../../lib/json'
+import * as TE from 'fp-ts/lib/TaskEither'
+import { basicGetResponse, createHttpResponseReducer } from '../../../lib/createHttpResponseReducer'
+import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/fetch-client'
 import { buildRecord } from '../../../lib/util'
 import { AccountLoginResponseBody } from '../../authorization/accoutLoginResponseType'
-import { UnexpectedResponse } from '../../authorization/securitycode'
 import { ICloudSessionState } from '../../session/session'
 import { reduceHttpResponseToSession } from '../../session/session-http'
 import { basicHeaders, getSessionCookiesHeaders } from '../../session/session-http-headers'
+import { DriveDetailsFolder } from '../types'
 
 // https://p46-drivews.icloud.com/retrieveItemDetails
 
-export class InvalidGlobalSessionResponse extends Error {
-    readonly tag = 'InvalidGlobalSessionResponse'
-
-    constructor(public readonly httpResponse: HttpResponse) { super() }
-
-    public static is(a: unknown): a is InvalidGlobalSessionResponse {
-        return a instanceof InvalidGlobalSessionResponse
-    }
-}
 
 interface RetrieveOpts {
     client: FetchClientEither,
@@ -38,9 +26,11 @@ interface RetrieveOpts {
 
 export interface DriveItemDetailsResponse {
     httpResponse: HttpResponse;
-    details: DriveDetailsFolder[];
+    body: DriveDetailsFolder[];
 }
 
+const validateJson = (json: unknown): json is DriveDetailsFolder[] => Array.isArray(json)
+/* 
 function getResponse(
     httpResponse: HttpResponse,
     json: E.Either<unknown, unknown>
@@ -48,7 +38,7 @@ function getResponse(
     if (httpResponse.status == 200 && E.isRight(json)) {
         return E.right({
             httpResponse,
-            details: json.right as DriveDetailsFolder[]
+            response: json.right
         })
     }
     else if (httpResponse.status == 421) {
@@ -57,7 +47,7 @@ function getResponse(
 
     return E.left(new UnexpectedResponse(httpResponse, json))
 }
-
+ */
 function createHttpRequest(props: RetrieveOpts): HttpRequest {
     assert(props.validatedSession.accountData.webservices.drivews.url)
     return {
@@ -79,15 +69,13 @@ function createHttpRequest(props: RetrieveOpts): HttpRequest {
 }
 
 const applyHttpResponseToSession = createHttpResponseReducer(
-    getResponse,
+    basicGetResponse(validateJson),
     (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
 )
 
 export function retrieveItemDetailsInFolders(
     props: RetrieveOpts
-): TE.TaskEither<
-    UnexpectedResponse | FetchError | InvalidGlobalSessionResponse | ErrorReadingResponseBody | InvalidJsonInResponse,
-    // readonly [ICloudSessionState, DriveItemDetailsResponse]
+): TE.TaskEither<Error,
     { session: ICloudSessionState, response: DriveItemDetailsResponse }
 > {
     return pipe(

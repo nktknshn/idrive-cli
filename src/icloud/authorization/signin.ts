@@ -14,9 +14,10 @@ import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-cl
 import { getSessionHeaders } from '../session/session-http-headers'
 import { reduceHttpResponseToSession } from '../session/session-http'
 import { FetchError } from '../../lib/fetch-client'
-import { UnexpectedResponse } from './securitycode'
 import { logger } from '../../lib/logging'
 import { buildRecord } from '../../lib/util'
+import { getHeader } from '../../lib/cookie'
+import { UnexpectedResponse } from '../../lib/errors'
 // import { Eq } from 'fp-ts/lib/string'
 
 interface RequestSignInProps {
@@ -51,17 +52,10 @@ interface SignInResponseOther {
     httpResponse: HttpResponse
 }
 
-const getHeader = (header: string) => (headers: HttpResponse['headers']) =>
-    pipe(
-        headers,
-        R.toArray,
-        A.findFirst(([k, v]) => k.toLowerCase() == header.toLowerCase()),
-        O.map(_ => _[1])
-    )
-    // O.fromNullable(
-        // headers.get(header)
-        // R.lookup(header)(headers)
-    // )
+// O.fromNullable(
+// headers.get(header)
+// R.lookup(header)(headers)
+// )
 
 export const hsa2Required = (response: SignInResponse): response is SignInResponse409 & { hsa2Required: true } =>
     response.tag === 'SignInResponse409' && response.authType == 'hsa2'
@@ -69,7 +63,7 @@ export const hsa2Required = (response: SignInResponse): response is SignInRespon
 function getResponse(
     httpResponse: HttpResponse,
     json: E.Either<ErrorReadingResponseBody | InvalidJsonInResponse, unknown>
-): E.Either<Error | UnexpectedResponse | ErrorReadingResponseBody | InvalidJsonInResponse, SignInResponse> {
+): E.Either<Error | UnexpectedResponse | ErrorReadingResponseBody | InvalidJsonInResponse, { httpResponse: HttpResponse, body: SignInResponse }> {
     if (httpResponse.status == 409) {
         if (E.isLeft(json)) {
             return json
@@ -90,17 +84,23 @@ function getResponse(
             )
 
         return E.right({
-            authType: responseBody.authType,
-            twoSVTrustEligible,
             httpResponse,
-            hsa2Required: responseBody.authType == 'hsa2',
-            tag: 'SignInResponse409',
+            body: {
+                authType: responseBody.authType,
+                twoSVTrustEligible,
+                httpResponse,
+                hsa2Required: responseBody.authType == 'hsa2',
+                tag: 'SignInResponse409',
+            }
         })
     }
     else if (httpResponse.status == 200) {
         return E.right({
-            tag: 'SignInResponse200',
-            httpResponse
+            httpResponse,
+            body: {
+                tag: 'SignInResponse200',
+                httpResponse
+            }
         })
     }
 
@@ -135,7 +135,7 @@ export function requestSignIn(
     props: RequestSignInProps
 ): TE.TaskEither<
     Error | UnexpectedResponse | FetchError | ErrorReadingResponseBody | InvalidJsonInResponse,
-    readonly [ICloudSessionState, SignInResponse]
+    { session: ICloudSessionState; response: { httpResponse: HttpResponse; body: SignInResponse; }; }
 > {
     logger.debug('requestSignIn')
 
@@ -143,6 +143,6 @@ export function requestSignIn(
         createRequest(props),
         props.client,
         TE.chainW(applyHttpResponseToSession(props.session)),
-        TE.map(({ session, response }) => [session, response] as const)
+        // TE.map(({ session, response }) => [session, response] as const)
     )
 }

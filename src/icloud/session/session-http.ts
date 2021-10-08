@@ -12,6 +12,30 @@ import { logger } from "../../lib/logging";
 import { Method } from "axios";
 import { basicHeaders, getSessionCookiesHeaders } from "./session-http-headers";
 
+import Path from 'path'
+import FormData from 'form-data'
+import { TextDecoder } from 'util'
+import * as fs from 'fs/promises'
+/* 
+describe('FormData', () => {
+    it('w', () => {
+        const form = new FormData()
+
+        form.append('files', fs.readFileSync('/etc/passwd'), { filename: 'abcdef.txt' })
+
+        console.log(
+            form.getHeaders()
+        );
+
+        console.log(
+            new TextDecoder().decode(
+                form.getBuffer()
+            )
+        );
+
+    })
+}) */
+
 const fallback = <A>(onNone: Lazy<O.Option<A>>): (v: O.Option<A>) => O.Option<A> =>
     O.fold(onNone, O.some)
 
@@ -29,6 +53,23 @@ export const getBasicRequest = (
                 session
             )]),
         data
+    })
+}
+
+export const uploadFileRequest = (
+    url: string,
+    filename: string,
+    fileBuffer: Buffer
+): HttpRequest => {
+    const formData = new FormData();
+    // formData.append('name', 'files')
+    formData.append('files', fileBuffer, { filename })
+
+    return ({
+        url,
+        method: 'POST',
+        headers: formData.getHeaders(),
+        data: formData.getBuffer()
     })
 }
 

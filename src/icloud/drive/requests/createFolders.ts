@@ -6,10 +6,9 @@ import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { createHttpResponseReducer } from "../../../lib/createHttpResponseReducer";
 import { DriveChildrenItemFolder, DriveDetailsFolder } from "../types";
-import { InvalidGlobalSessionResponse } from "./retrieveItemDetailsInFolders";
-import { UnexpectedResponse } from "../../authorization/securitycode";
 import { isObjectWithOwnProperty } from "../../../lib/util";
 import { InvalidJsonInResponse } from "../../../lib/json";
+import { InvalidGlobalSessionResponse, UnexpectedResponse } from "../../../lib/errors";
 
 interface Response {
     destinationDrivewsId: string,
@@ -20,14 +19,14 @@ const validateResponseJson = (json: unknown): json is Response =>
     isObjectWithOwnProperty(json, 'folders') && isObjectWithOwnProperty(json, 'destinationDrivewsId')
 
 const applyHttpResponseToSession = createHttpResponseReducer(
-    (httpResponse, json): E.Either<Error, { httpResponse: HttpResponse, response: Response }> => {
+    (httpResponse, json): E.Either<Error, { httpResponse: HttpResponse, body: Response }> => {
         if (
             httpResponse.status == 200 && E.isRight(json)
         ) {
             if (validateResponseJson(json.right)) {
                 return E.right({
                     httpResponse,
-                    response: json.right
+                    body: json.right
                 })
             }
             else {

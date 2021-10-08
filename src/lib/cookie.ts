@@ -1,10 +1,13 @@
 import * as O from 'fp-ts/lib/Option'
 import * as E from 'fp-ts/lib/Either'
 import * as A from 'fp-ts/lib/Array'
+import * as R from 'fp-ts/lib/Record'
+// import * as A from 'fp-ts/lib/Array'
 
 import { Cookie } from '../icloud/types'
 import { flow, pipe } from 'fp-ts/lib/function'
 import { SessionCookies } from '../icloud/session/session'
+import { HttpResponse } from './fetch-client'
 
 type CookieAttribute =
     | { attributeKind: 'Domain', value: string }
@@ -134,3 +137,12 @@ export function splitPair(sep: string, keyVal: string): O.Option<readonly [strin
         O.map(([_, ...vs]) => [vs[0], vs[1]] as const)
     )
 }
+
+
+export const getHeader = (header: string) => (headers: HttpResponse['headers']) =>
+    pipe(
+        headers,
+        R.toArray,
+        A.findFirst(([k, v]) => k.toLowerCase() == header.toLowerCase()),
+        O.map(_ => _[1])
+    )

@@ -45,6 +45,28 @@ const mkdir = (
     return cliAction(({ drive }) => drive.createFolder(path), { sessionFile, cacheFile })
 }
 
+const rm = (
+    path: string,
+    {
+        sessionFile = defaultSessionFile,
+        cacheFile = defaultCacheFile,
+    } = {}): TE.TaskEither<Error, unknown> => {
+
+    return cliAction(({ drive }) => drive.removeItemByPath(path), { sessionFile, cacheFile })
+}
+
+
+const upload = (
+    sourcePath: string,
+    targetPath: string,
+    {
+        sessionFile = defaultSessionFile,
+        cacheFile = defaultCacheFile,
+    } = {}): TE.TaskEither<Error, unknown> => {
+
+    return cliAction(({ drive }) => drive.upload(sourcePath, targetPath), { sessionFile, cacheFile })
+}
+
 async function main() {
 
     logger.debug('Drive')
@@ -69,6 +91,28 @@ async function main() {
             assert(path)
             logger.info(
                 await mkdir(path)()
+            )
+        })
+
+    program
+        .command('rm [path]')
+        .description('rm')
+        .action(async (path?: string) => {
+            assert(path)
+            logger.info(
+                await rm(path)()
+            )
+        })
+
+    program
+        .command('upload <sourcePath> <targetPath>')
+        .description('rm')
+        .action(async (sourcePath: string, targetPath: string) => {
+            assert(sourcePath)
+            assert(targetPath)
+
+            logger.info(
+                await upload(sourcePath, targetPath)()
             )
         })
 

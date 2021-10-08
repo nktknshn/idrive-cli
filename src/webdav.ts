@@ -21,7 +21,7 @@ import * as D from "./icloud/drive/cache/Drive";
 import * as DriveApi from "./icloud/drive/cache/DriveApi";
 import Path from 'path'
 import { DriveChildrenItemFile } from './icloud/drive/types';
-import { Readable } from 'stream';
+import { Readable, Writable } from 'stream';
 import { getUrlStream } from './icloud/drive/requests/download';
 
 interface SerializedFileSystem {
@@ -211,17 +211,46 @@ class ICloudFileSystem extends v2.FileSystem {
         )()
     }
 
+    _openWriteStream(
+        path: v2.Path, ctx: v2.OpenWriteStreamInfo, callback: v2.ReturnCallback<Writable>
+    ) {
+        logger.info(`_openWriteStream(${path.toString()})`)
+
+        
+    }
+
     _create(
         path: v2.Path, ctx: v2.CreateInfo, callback: v2.SimpleCallback
     ) {
         logger.info(`_create(${path.toString()})`)
 
-        if(!ctx.type.isDirectory) {
-            return callback(error(`File creation is not supported`))
+        if(ctx.type.isFile) {
+            return callback()
+            // return callback(error(`File creation is not supported`))
         }
+        else {
+            pipe(
+                this.drive.createFolder(path.toString()),
+                TE.fold(
+                    e => async () => {
+                        callback(error(`Error: ${e.message}`))
+                    },
+                    (data) => async () => {
+                        callback()
+                    }
+                )
+            )()
+        }
+    }
+
+    _delete(
+        path: v2.Path, ctx: v2.DeleteInfo, callback: v2.SimpleCallback
+    ) {
+        logger.info(`_delete(${path.toString()})`)
+
 
         pipe(
-            this.drive.createFolder(path.toString()),
+            this.drive.removeItemByPath(path.toString()),
             TE.fold(
                 e => async () => {
                     callback(error(`Error: ${e.message}`))
@@ -231,12 +260,6 @@ class ICloudFileSystem extends v2.FileSystem {
                 }
             )
         )()
-    }
-
-    _delete(
-        path: v2.Path, ctx: v2.DeleteInfo, callback: v2.SimpleCallback
-    ) {
-
     }
 }
 

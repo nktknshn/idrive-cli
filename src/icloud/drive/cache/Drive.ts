@@ -2,7 +2,7 @@ import { DriveChildrenItem, DriveChildrenItemFile, rootDrivewsid, isRootDetails,
 import * as O from 'fp-ts/lib/Option';
 import * as A from 'fp-ts/lib/Array';
 import { logger } from "../../../lib/logging";
-import { flow, pipe } from "fp-ts/lib/function";
+import { constVoid, flow, pipe } from "fp-ts/lib/function";
 import * as TE from 'fp-ts/lib/TaskEither';
 import * as E from 'fp-ts/lib/Either';
 import { error } from "../../../lib/errors";
@@ -52,7 +52,7 @@ export class Drive {
         );
     };
 
-    private fetchItemIdByFunc = <T>(
+    private fetchItemByFunc = <T>(
         f: (v: T) => (item: DriveChildrenItem) => boolean
     ) => (
         parentId: TE.TaskEither<Error, string>,
@@ -91,11 +91,12 @@ export class Drive {
     public getItem = (path: string) => {
         const [_, ...parsedPath] = parsePath(path);
         logger.info(parsedPath);
+
         return pipe(
             parsedPath,
             A.reduce(TE.of(rootDrivewsid),
                 flow(
-                    this.fetchItemIdByFunc(itemName => item => item.name === itemName),
+                    this.fetchItemByFunc(itemName => item => item.name === itemName),
                     TE.map(({ item }) => item.drivewsid)
                 )),
             TE.chain(flow(this.cache.getById, TE.fromOption(() => error(`missing in cache`)))),
@@ -107,11 +108,12 @@ export class Drive {
     public getFolder = (path: string): TE.TaskEither<Error, DriveDetails> => {
         const [_, ...parsedPath] = parsePath(path);
         logger.info(parsedPath);
+
         return pipe(
             parsedPath,
             A.reduce(TE.of(rootDrivewsid),
                 flow(
-                    this.fetchItemIdByFunc(itemName => item => item.name === itemName),
+                    this.fetchItemByFunc(itemName => item => item.name === itemName),
                     TE.filterOrElse(({ item }) => isFolderLikeType(item.type),
                         ({ item }) => error(`${item.drivewsid} is not a folder`)),
                     TE.map(({ item }) => item.drivewsid)
@@ -170,9 +172,37 @@ export class Drive {
         )
     }
 
-    public removeItems = (drivewsids: string[]) => {
-        pipe(
-            this.api.moveItemsToTrash(drivewsids)
+    public removeItemByPath = (path: string) => {
+        return pipe(
+            TE.Do,
+            TE.bind('item', () =>
+                pipe(
+                    this.cache.getByPath(path),
+                    TE.fromOption(() => error(`missing path ${path} in cache`))),
+            ),
+            TE.chainFirstW(({ item }) =>
+                this.api.moveItemsToTrash([{ drivewsid: item.content.drivewsid, etag: item.content.etag }])),
+            TE.chainFirstW(_ =>
+                this.cacheSet(this.cache.removeByPath(path))),
+            TE.chainW(({ item }) =>
+                item.type !== 'ROOT'
+                    ? pipe(
+                        this.updateCachedEntityById(item.content.parentId),
+                        TE.chain(_ => TE.of(constVoid())))
+                    : TE.of(constVoid())
+            ),
+        )
+    }
+
+    public upload = (
+        sourceFilePath: string,
+        targetPath: string
+    ) => {
+        return pipe(
+            TE.Do,
+            TE.bind('parent', () => this.getFolder(targetPath)),
+            TE.bind('result', ({ parent }) => this.api.upload(sourceFilePath, parent.docwsid)),
+            TE.chain(_ => this.updateCachedEntityById(_.parent.drivewsid))
         )
     }
 

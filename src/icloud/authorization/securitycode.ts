@@ -1,17 +1,14 @@
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
-import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { createHttpResponseReducer } from '../../lib/createHttpResponseReducer'
-import { FetchError, HttpRequest, HttpResponse } from '../../lib/fetch-client'
-import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../lib/json'
+import { UnexpectedResponse } from '../../lib/errors'
+import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
 import { logger } from '../../lib/logging'
-import { buildRecord, isObjectWithOwnProperty } from '../../lib/util'
+import { buildRecord } from '../../lib/util'
 import { ICloudSessionState } from '../session/session'
 import { reduceHttpResponseToSession } from '../session/session-http'
-import { basicHeaders, getSessionHeaders } from '../session/session-http-headers'
-import { FetchClientEither } from '../../lib/fetch-client'
-import { AccountLoginResponseBody } from './accoutLoginResponseType'
+import { getSessionHeaders } from '../session/session-http-headers'
 
 interface SecurityCodeRequestProps {
     session: ICloudSessionState
@@ -24,7 +21,7 @@ type SecurityCodeResponseReducable = SecurityCodeResponse204
 
 export interface SecurityCodeResponse204 {
     readonly tag: 'SecurityCodeResponse204'
-    httpResponse: HttpResponse
+    // httpResponse: HttpResponse
 }
 
 // export interface SecurityCodeResponseOther {
@@ -32,31 +29,6 @@ export interface SecurityCodeResponse204 {
 //     statusCode: number
 //     httpResponse: Response
 // }
-
-export class UnexpectedResponse extends Error {
-    readonly tag = 'UnexpectedResponse'
-    constructor(
-        public readonly httpResponse: HttpResponse,
-        public readonly json: E.Either<unknown, unknown>,
-    ) { 
-        super ()
-    }
-    
-    static is(error: unknown): error is UnexpectedResponse {
-        return isObjectWithOwnProperty(error, 'tag') && error.tag === 'UnexpectedResponse'
-    }
-
-    static create(
-        httpResponse: HttpResponse,
-        json: E.Either<unknown, unknown>
-    ) {
-        return new UnexpectedResponse(httpResponse, json)
-    }
-
-    [Symbol.toString()]() {
-        return `UnexpectedResponse(${this.httpResponse.status}, ${JSON.stringify(this.json)})`
-    }
-}
 
 export function createSecurityCodeRequest(
     { session, code }: SecurityCodeRequestProps
@@ -77,36 +49,47 @@ export function createSecurityCodeRequest(
     )
 }
 
-export function httpResponseToResponse(
-    httpResponse: HttpResponse,
-    json: E.Either<unknown, unknown>
-): E.Either<UnexpectedResponse, SecurityCodeResponse> {
-    if (httpResponse.status == 204) {
-        return E.right({
-            tag: 'SecurityCodeResponse204',
-            httpResponse
-        })
-    }
-    else {
-        return E.left(new UnexpectedResponse(httpResponse, json))
-    }
-}
+// export function httpResponseToResponse(
+//     httpResponse: HttpResponse,
+//     json: E.Either<unknown, unknown>
+// ): E.Either<UnexpectedResponse, SecurityCodeResponse> {
+//     if (httpResponse.status == 204) {
+//         return E.right({
+//             response: { tag: 'SecurityCodeResponse204' },
+//             httpResponse
+//         })
+//     }
+//     else {
+//         return E.left(new UnexpectedResponse(httpResponse, json))
+//     }
+// }
 
 export function requestSecurityCode(
     props: SecurityCodeRequestProps
 ): TE.TaskEither<
-    FetchError | UnexpectedResponse | ErrorReadingResponseBody | InvalidJsonInResponse,
-    { session: ICloudSessionState; response: SecurityCodeResponse }
+    Error,
+    { session: ICloudSessionState; response: { httpResponse: HttpResponse, body: SecurityCodeResponse204} }
 > {
     logger.debug(`requestSecurityCode: ${props.code}`)
 
     return pipe(
-        props.client(createSecurityCodeRequest(props)),
+        createSecurityCodeRequest(props),
+        props.client,
         TE.chainW(applyResponse(props.session))
     )
 }
 
 const applyResponse = createHttpResponseReducer(
-    httpResponseToResponse,
+    (httpResponse, json) => {
+        if (httpResponse.status == 204) {
+            return E.right({
+                body: { tag: 'SecurityCodeResponse204' as const },
+                httpResponse
+            })
+        }
+        else {
+            return E.left(new UnexpectedResponse(httpResponse, json))
+        }
+    },
     (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
 )
