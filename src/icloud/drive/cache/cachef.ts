@@ -10,7 +10,7 @@ import { fst } from "fp-ts/lib/Tuple";
 import * as m from 'monocle-ts'
 import { ICloudSessionState } from "../../session/session";
 import * as TE from 'fp-ts/lib/TaskEither';
-import { normalizePath } from "../helpers";
+import { displayItem, normalizePath } from "../helpers";
 import { tryReadJsonFile, TypeDecodingError } from "../../../lib/files";
 import { saveJson } from "../../session/session-file";
 import { ICloudDriveCache, ICloudDriveCacheEntity, CacheEntityFolder, CacheEntityAppLibrary, CacheEntityFolderRoot, CacheEntityFolderDetails, CacheEntityAppLibraryDetails, CacheEntityFile, CacheEntityFolderItem, CacheEntityAppLibraryItem, MissingParentError } from "./types";
@@ -29,7 +29,7 @@ export const cachef = (): ICloudDriveCache => ({
     root: O.none
 })
 
-export const getCachedPathForId = (drivewsid: string) => (cache: ICloudDriveCache): O.Option<string> => {
+const getCachedPathForId = (drivewsid: string) => (cache: ICloudDriveCache): O.Option<string> => {
 
     if (drivewsid === rootDrivewsid) {
         return pipe(cache.root, O.map(constant('/')))
@@ -62,7 +62,7 @@ const cacheEntityFromItem = (item: DriveChildrenItem): ICloudDriveCacheEntity =>
             : new CacheEntityAppLibraryItem(item)
 }
 
-export const getById = (drivewsid: string) => (cache: ICloudDriveCache): O.Option<ICloudDriveCacheEntity> => {
+const getById = (drivewsid: string) => (cache: ICloudDriveCache): O.Option<ICloudDriveCacheEntity> => {
     return pipe(
         cache.byDrivewsid,
         R.lookup(drivewsid)
@@ -99,7 +99,7 @@ const putRoot = (details: DriveDetailsRoot): ((s: ICloudDriveCache) => E.Either<
     )
 }
 
-export const putDetails = (details: DriveDetails): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+const putDetails = (details: DriveDetails): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
 
     if (isRootDetails(details)) {
         return cache => {
@@ -139,7 +139,7 @@ export const putDetails = (details: DriveDetails): ((cache: ICloudDriveCache) =>
     )
 }
 
-export const putItem = (item: DriveChildrenItem): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+const putItem = (item: DriveChildrenItem): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
     return cache => pipe(
         cache,
         getCachedPathForId(item.parentId),
@@ -149,7 +149,7 @@ export const putItem = (item: DriveChildrenItem): ((cache: ICloudDriveCache) => 
             pipe(
                 cache,
                 lens.byPath.modify(
-                    R.upsertAt(Path.join(parentPath, item.name), cacheEntityFromItem(item))),
+                    R.upsertAt(Path.join(parentPath, displayItem(item)), cacheEntityFromItem(item))),
                 lens.byDrivewsid.modify(
                     R.upsertAt(item.drivewsid, cacheEntityFromItem(item)))
             )

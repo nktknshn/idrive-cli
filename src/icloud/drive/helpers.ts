@@ -1,5 +1,6 @@
 import Path from 'path'
 import * as O from 'fp-ts/lib/Option'
+import { DriveChildrenItem } from './types'
 
 export function parsePath(
     path: string
@@ -24,3 +25,8 @@ export const splitParent = (path: string) => {
 
     return name === "" ? O.none : O.some([parent, name] as const)
 }
+
+
+export const displayItem = (item: DriveChildrenItem) => item.type === 'FILE'
+    ? `${item.name}${item.extension ? `.${item.extension}` : ''}`
+    : item.name

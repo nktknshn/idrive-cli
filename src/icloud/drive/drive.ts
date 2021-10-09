@@ -1,17 +1,17 @@
-import { DriveChildrenItem, DriveChildrenItemFile, rootDrivewsid, isRootDetails, DriveDetailsRoot, DriveDetails, DriveChildrenItemFolder } from "../types";
+import { DriveChildrenItem, DriveChildrenItemFile, rootDrivewsid, isRootDetails, DriveDetailsRoot, DriveDetails, DriveChildrenItemFolder } from "./types";
 import * as O from 'fp-ts/lib/Option';
 import * as A from 'fp-ts/lib/Array';
-import { logger } from "../../../lib/logging";
+import { logger } from "../../lib/logging";
 import { constVoid, flow, pipe } from "fp-ts/lib/function";
 import * as TE from 'fp-ts/lib/TaskEither';
 import * as E from 'fp-ts/lib/Either';
-import { error } from "../../../lib/errors";
-import { parsePath, splitParent } from "../helpers";
-import { getUrlStream } from "../requests/download";
+import { error } from "../../lib/errors";
+import { displayItem, parsePath, splitParent } from "./helpers";
+import { getUrlStream } from "./requests/download";
 import { Readable } from "stream";
-import { DriveApi } from "./DriveApi";
-import { Cache, isFolderLikeCacheEntity, isFolderLikeType } from "./cachef";
-import { ICloudDriveCacheEntity } from "./types";
+import { DriveApi } from "./drive-api";
+import { Cache, isFolderLikeCacheEntity, isFolderLikeType } from "./cache/cachef";
+import { ICloudDriveCacheEntity } from "./cache/types";
 
 
 export class Drive {
@@ -71,23 +71,6 @@ export class Drive {
         ))
     );
 
-    public getDownloadUrl = (path: string) => {
-        return pipe(
-            this.getItem(path),
-            TE.filterOrElse(
-                (item): item is DriveChildrenItemFile => item.type === 'FILE',
-                () => error(`item is not file`)),
-            TE.chain(item => this.api.download(item.docwsid, item.zone))
-        );
-    };
-
-    public getDownloadStream = (path: string): TE.TaskEither<Error, Readable> => {
-        return pipe(
-            this.getDownloadUrl(path),
-            TE.chainW(url => getUrlStream({ client: this.api.client, url }))
-        );
-    };
-
     public getItem = (path: string) => {
         const [_, ...parsedPath] = parsePath(path);
         logger.info(parsedPath);
@@ -96,7 +79,7 @@ export class Drive {
             parsedPath,
             A.reduce(TE.of(rootDrivewsid),
                 flow(
-                    this.fetchItemByFunc(itemName => item => item.name === itemName),
+                    this.fetchItemByFunc(itemName => item => displayItem(item) === itemName),
                     TE.map(({ item }) => item.drivewsid)
                 )),
             TE.chain(flow(this.cache.getById, TE.fromOption(() => error(`missing in cache`)))),
@@ -113,7 +96,7 @@ export class Drive {
             parsedPath,
             A.reduce(TE.of(rootDrivewsid),
                 flow(
-                    this.fetchItemByFunc(itemName => item => item.name === itemName),
+                    this.fetchItemByFunc(itemName => item => displayItem(item) === itemName),
                     TE.filterOrElse(({ item }) => isFolderLikeType(item.type),
                         ({ item }) => error(`${item.drivewsid} is not a folder`)),
                     TE.map(({ item }) => item.drivewsid)
@@ -205,6 +188,23 @@ export class Drive {
             TE.chain(_ => this.updateCachedEntityById(_.parent.drivewsid))
         )
     }
+
+    public getDownloadUrl = (path: string) => {
+        return pipe(
+            this.getItem(path),
+            TE.filterOrElse(
+                (item): item is DriveChildrenItemFile => item.type === 'FILE',
+                () => error(`item is not file`)),
+            TE.chain(item => this.api.download(item.docwsid, item.zone))
+        );
+    };
+
+    public getDownloadStream = (path: string): TE.TaskEither<Error, Readable> => {
+        return pipe(
+            this.getDownloadUrl(path),
+            TE.chainW(url => getUrlStream({ client: this.api.client, url }))
+        );
+    };
 
     private cachePutDetailsM = (detailss: DriveDetails[]): TE.TaskEither<Error, void> => {
         return pipe(

@@ -1,8 +1,12 @@
 import assert from 'assert'
 import { Command } from 'commander'
+import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { TextDecoder } from 'util'
 import { cliAction } from './cli/cliAction'
 import { defaultCacheFile, defaultSessionFile } from './config'
+import { displayItem } from './icloud/drive/helpers'
+import { consumeStream } from './icloud/drive/requests/download'
 import { DriveDetails } from './icloud/drive/types'
 import { logger } from './lib/logging'
 
@@ -30,9 +34,17 @@ const listUnixPath = ({
     sessionFile = defaultSessionFile,
     cacheFile = defaultCacheFile,
     path = '/',
-} = {}): TE.TaskEither<Error, DriveDetails> => {
-
-    return cliAction(({ drive }) => drive.getFolder(path), { sessionFile, cacheFile })
+    raw = false
+} = {}): TE.TaskEither<Error, unknown> => {
+    return cliAction(({ drive }) => pipe(
+        drive.getFolder(path),
+        TE.map(result => raw
+            ? result
+            : ({
+                folder: result.name,
+                items: result.items.map(displayItem)
+            }))),
+        { sessionFile, cacheFile })
 }
 
 const mkdir = (
@@ -43,6 +55,20 @@ const mkdir = (
     } = {}): TE.TaskEither<Error, unknown> => {
 
     return cliAction(({ drive }) => drive.createFolder(path), { sessionFile, cacheFile })
+}
+
+const cat = (
+    path: string,
+    {
+        sessionFile = defaultSessionFile,
+        cacheFile = defaultCacheFile,
+    } = {}): TE.TaskEither<Error, unknown> => {
+
+    return cliAction(({ drive }) => pipe(
+        drive.getDownloadStream(path),
+        TE.chain(consumeStream),
+        // TE.map(_ => new TextDecoder().decode(_))
+    ), { sessionFile, cacheFile })
 }
 
 const rm = (
@@ -101,6 +127,16 @@ async function main() {
             assert(path)
             logger.info(
                 await rm(path)()
+            )
+        })
+
+    program
+        .command('cat <path>')
+        .description('cat')
+        .action(async (path: string) => {
+            assert(path)
+            logger.info(
+                await cat(path)()
             )
         })
 

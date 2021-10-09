@@ -6,8 +6,8 @@ import { readAccountData } from '../icloud/authorization/validate';
 import { saveSession, tryReadSessionFile } from '../icloud/session/session-file';
 import * as C from '../icloud/drive/cache/cachef';
 import * as InconsistentCache from "../icloud/drive/cache/types";
-import * as Drive from "../icloud/drive/cache/Drive";
-import * as DriveApi from "../icloud/drive/cache/DriveApi";
+import * as Drive from "../icloud/drive/drive";
+import * as DriveApi from "../icloud/drive/drive-api";
 
 export const cliAction = <T>(
     f: (deps: {

@@ -116,6 +116,7 @@ export interface DriveChildrenItemFile {
     etag: string;
     shortGUID: string;
     type: 'FILE';
+    extension?: string
 }
 
 export interface DriveChildrenItemAppLibrary {

@@ -144,6 +144,18 @@ export function getUrlStream({
     )
 }
 
+export function consumeStream(readable: Readable) {
+    // readable.setEncoding('utf8');
+    return TE.fromTask<string, Error>(async () => {
+        let data = '';
+        for await (const chunk of readable) {
+            data += chunk;
+        }
+        return data
+    })
+}
+
+
 // async function main( ) {
 //     const res = await pipe(
 //         getUrlArrayBuffer({

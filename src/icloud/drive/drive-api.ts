@@ -1,20 +1,20 @@
 import * as A from 'fp-ts/lib/Array';
 import * as O from 'fp-ts/lib/Option';
-import { logger } from "../../../lib/logging";
+import { logger } from "../../lib/logging";
 import { pipe } from "fp-ts/lib/function";
-import { authorizeSession, ICloudSessionValidated } from "../../authorization/authorize";
-import { fetchClient, FetchClientEither } from "../../../lib/fetch-client";
+import { authorizeSession, ICloudSessionValidated } from "../authorization/authorize";
+import { fetchClient, FetchClientEither } from "../../lib/fetch-client";
 import * as TE from 'fp-ts/lib/TaskEither';
-import { input } from "../../../lib/input";
-import { error, InvalidGlobalSessionResponse } from "../../../lib/errors";
-import { download } from "../requests/download";
-import { retrieveItemDetailsInFolders } from '../requests/retrieveItemDetailsInFolders';
-import { createFolders } from '../requests/createFolders';
-import { moveItemsToTrash } from '../requests/moveItemsToTrash';
+import { input } from "../../lib/input";
+import { error, InvalidGlobalSessionResponse } from "../../lib/errors";
+import { download } from "./requests/download";
+import { retrieveItemDetailsInFolders } from './requests/retrieveItemDetailsInFolders';
+import { createFolders } from './requests/createFolders';
+import { moveItemsToTrash } from './requests/moveItemsToTrash';
 import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import Path from 'path'
-import { singleFileUpload, updateDocuments, upload } from '../requests/upload';
+import { singleFileUpload, updateDocuments, upload } from './requests/upload';
 
 const getContentType = (extension: string): string => {
     if (extension === '') {

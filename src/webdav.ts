@@ -10,17 +10,17 @@ import { fetchClient } from './lib/fetch-client'
 import { logger } from './lib/logging'
 import { error } from './lib/errors';
 import { ICloudSessionState } from './icloud/session/session';
-import { parsePath } from './icloud/drive/helpers';
+import { displayItem, parsePath } from './icloud/drive/helpers';
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as E from 'fp-ts/lib/Either'
 import * as O from 'fp-ts/lib/Option'
 import { ICloudDriveCache, ICloudDriveCacheEntity } from "./icloud/drive/cache/types";
 import * as C from './icloud/drive/cache/cachef';
-import * as D from "./icloud/drive/cache/Drive";
-import * as DriveApi from "./icloud/drive/cache/DriveApi";
+import * as D from "./icloud/drive/drive";
+import * as DriveApi from "./icloud/drive/drive-api";
 import Path from 'path'
-import { DriveChildrenItemFile } from './icloud/drive/types';
+import { DriveChildrenItem, DriveChildrenItemFile } from './icloud/drive/types';
 import { Readable, Writable } from 'stream';
 import { getUrlStream } from './icloud/drive/requests/download';
 
@@ -74,6 +74,7 @@ const ensureDate = (input: Date | string) => {
 }
 
 const getDavType = (t: ICloudDriveCacheEntity['type']) => t === 'FILE' ? v2.ResourceType.File : v2.ResourceType.Directory
+
 
 class ICloudFileSystem extends v2.FileSystem {
     props: v2.IPropertyManager;
@@ -161,7 +162,11 @@ class ICloudFileSystem extends v2.FileSystem {
             this.drive.getFolder(path.toString()),
             TE.fold(
                 e => async () => { callback(error(`Error: ${e.message}`), undefined) },
-                detals => async () => { callback(undefined, detals.items.map(_ => _.name)) }
+                detals => async () => {
+                    callback(undefined,
+                        detals.items.map(displayItem)
+                    )
+                }
             )
         )()
     }
@@ -216,7 +221,7 @@ class ICloudFileSystem extends v2.FileSystem {
     ) {
         logger.info(`_openWriteStream(${path.toString()})`)
 
-        
+
     }
 
     _create(
@@ -224,7 +229,7 @@ class ICloudFileSystem extends v2.FileSystem {
     ) {
         logger.info(`_create(${path.toString()})`)
 
-        if(ctx.type.isFile) {
+        if (ctx.type.isFile) {
             return callback()
             // return callback(error(`File creation is not supported`))
         }
