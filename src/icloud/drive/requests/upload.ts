@@ -103,7 +103,7 @@ export function upload(
         getBasicRequest(
             'POST',
             `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${token}&clientBuildNumber=2118Project41&clientMasteringNumber=2118B32&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e`,
-            { filename, content_type: contentType, size, type }
+            { data: { filename, content_type: contentType, size, type } }
         ),
         client,
         TE.chainW(applyUploadResponse(session)),

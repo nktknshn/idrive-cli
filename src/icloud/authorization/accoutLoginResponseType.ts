@@ -34,8 +34,7 @@ export interface Apps {
     contacts:      EmptyObject;
 }
 
-export interface EmptyObject {
-}
+export type EmptyObject = Record<string, never>
 
 export interface Find {
     canLaunchWithOneFactor: boolean;

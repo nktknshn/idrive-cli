@@ -10,7 +10,7 @@ import { logger } from '../../lib/logging'
 import { createHttpResponseReducer, ResponseWithSession } from '../../lib/response-reducer'
 import { ICloudSessionState } from '../session/session'
 import { getBasicRequest } from '../session/session-http'
-import { ICloudSessionValidated } from './authorize'
+import { headers } from '../session/session-http-headers'
 
 type SignInResponse = SignInResponse409 | SignInResponse200
 
@@ -48,7 +48,7 @@ function getResponse(
             return json
         }
 
-        let responseBody: SignInResponse409Body = json.right as SignInResponse409Body
+        const responseBody: SignInResponse409Body = json.right as SignInResponse409Body
 
         if (typeof responseBody.authType !== 'string') {
             return E.left(new Error('SignInResponse409Body: missing authType'))
@@ -106,11 +106,17 @@ export function requestSignIn(
             'POST',
             'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
             {
-                accountName,
-                password,
-                trustTokens,
-                rememberMe: true,
-            }
+                headers: [
+                    headers.basicHeaders,
+                    headers.authorizationHeaders
+                ],
+                data: {
+                    accountName,
+                    password,
+                    trustTokens,
+                    rememberMe: true,
+                },
+            },
         ),
         client,
         TE.chainW(applyHttpResponseToSession(session)),

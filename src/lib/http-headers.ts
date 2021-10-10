@@ -4,7 +4,7 @@ import * as A from "fp-ts/lib/Array";
 import { HttpHeaders } from "./fetch-client";
 
 export const headersToArray = (headers: HttpHeaders) => {
-    let hs: (readonly [string, string | string[]])[] = []
+    const hs: (readonly [string, string | string[]])[] = []
     // .forEach((value, key) => hs.push([key, value] as const))
     Object.entries(headers).forEach(([key, value]) => hs.push([key, value] as const))
 

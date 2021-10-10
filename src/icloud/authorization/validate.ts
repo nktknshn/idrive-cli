@@ -1,24 +1,19 @@
-import * as t from 'io-ts'
-import { Option } from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as E from 'fp-ts/lib/Either'
+import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-
-import { fetchClient, HttpRequest, HttpResponse } from '../../lib/fetch-client'
-
-import { ICloudSessionState, ICloudSessionWithSessionToken } from '../session/session'
-import { flow, pipe } from 'fp-ts/lib/function'
-import { createHttpResponseReducer } from '../../lib/response-reducer'
-import { ErrorReadingResponseBody, InvalidJsonInResponse, JsonParsingError } from '../../lib/json'
-import { FetchClientEither } from '../../lib/fetch-client'
-import { getSessionHeaders } from '../session/session-http-headers'
-import { reduceHttpResponseToSession } from '../session/session-http'
-import { log } from 'fp-ts/lib/Console'
-import { buildRecord, isObjectWithOwnProperty } from '../../lib/util'
-import { AccountLoginResponseBody } from './accoutLoginResponseType'
-import { error, FileReadingError } from '../../lib/errors'
+import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
-import { TypeDecodingError, tryReadJsonFile, BufferDecodingError } from '../../lib/files'
+import * as t from 'io-ts'
+import { error, FileReadingError } from '../../lib/errors'
+import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
+import { BufferDecodingError, tryReadJsonFile, TypeDecodingError } from '../../lib/files'
+import { ErrorReadingResponseBody, InvalidJsonInResponse, JsonParsingError } from '../../lib/json'
+import { createHttpResponseReducer } from '../../lib/response-reducer'
+import { buildRecord, isObjectWithOwnProperty } from '../../lib/util'
+import { ICloudSessionState, ICloudSessionWithSessionToken } from '../session/session'
+import { getBasicRequest, reduceHttpResponseToSession } from '../session/session-http'
+import { getAuthorizationHeaders } from '../session/session-http-headers'
+import { AccountLoginResponseBody } from './accoutLoginResponseType'
 
 type RequestProps = {
     session: ICloudSessionState
@@ -46,7 +41,7 @@ function createRequest(
         {
             method: 'POST',
             headers: buildRecord(
-                getSessionHeaders(
+                getAuthorizationHeaders(
                     session
                 )
             )
@@ -103,7 +98,8 @@ export function validateSession({ client, session }: {
     session: ICloudSessionWithSessionToken
 }) {
     return pipe(
-        createRequest({ session }),
+        session,
+        getBasicRequest('POST', 'https://setup.icloud.com/setup/ws/1/validate?clientBuildNumber=2116Project44&clientMasteringNumber=2116B28&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e'),
         client,
         TE.chainW(applyResponse(session)),
         TE.map(({ session, response }) => {
@@ -112,7 +108,6 @@ export function validateSession({ client, session }: {
                     session,
                     accountData: response.body.unsafeBody
                 }
-                // return [session, response.unsafeBody] as const
             }
 
             return undefined
@@ -121,7 +116,7 @@ export function validateSession({ client, session }: {
     )
 }
 
-const validateAccountLoginResponseBody = (json: unknown): json is AccountLoginResponseBody => isObjectWithOwnProperty(json, 'dsInfo')
+const validateResponseJson = (json: unknown): json is AccountLoginResponseBody => isObjectWithOwnProperty(json, 'dsInfo')
 
 export type AccountLoginResponseBodyUnsafe = Partial<AccountLoginResponseBody>
 
@@ -144,7 +139,7 @@ export function readAccountData(
         tryReadJsonFile(accountDataFilePath),
         TE.chainW(
             json => {
-                if (validateAccountLoginResponseBody(json)) {
+                if (validateResponseJson(json)) {
                     return TE.right(json)
                 }
                 return TE.left(TypeDecodingError.create([], 'wrong AccountLoginResponseBody'))

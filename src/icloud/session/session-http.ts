@@ -1,57 +1,35 @@
+import { Method } from "axios";
+import FormData from 'form-data';
+import * as A from "fp-ts/lib/Array";
+import { Lazy, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 import { applyCookieToCookies, parseSetCookie } from "../../lib/cookie";
+import { HttpRequest, HttpResponse } from "../../lib/fetch-client";
 import { getAccountCountry, getAuthAttributes, getScnt, getSessionId, getSessionToken, getSetCookie } from "../../lib/http-headers";
 import { buildRecord, separateEithers } from "../../lib/util";
-import { ICloudSessionState } from "./session";
-import * as O from "fp-ts/lib/Option";
-import * as A from "fp-ts/lib/Array";
-
-import { flow, Lazy, pipe } from "fp-ts/lib/function";
 import { ICloudBasicResponse } from "../types";
-import { HttpRequest, HttpResponse } from "../../lib/fetch-client";
-import { logger } from "../../lib/logging";
-import { Method } from "axios";
-import { basicHeaders, getSessionCookiesHeaders } from "./session-http-headers";
+import { ICloudSessionState } from "./session";
+import { Header, headers } from "./session-http-headers";
 
-import Path from 'path'
-import FormData from 'form-data'
-import { TextDecoder } from 'util'
-import * as fs from 'fs/promises'
-/* 
-describe('FormData', () => {
-    it('w', () => {
-        const form = new FormData()
-
-        form.append('files', fs.readFileSync('/etc/passwd'), { filename: 'abcdef.txt' })
-
-        console.log(
-            form.getHeaders()
-        );
-
-        console.log(
-            new TextDecoder().decode(
-                form.getBuffer()
-            )
-        );
-
-    })
-}) */
 
 const fallback = <A>(onNone: Lazy<O.Option<A>>): (v: O.Option<A>) => O.Option<A> =>
     O.fold(onNone, O.some)
 
+const defaultHeaders: ((session: ICloudSessionState) => Header[])[] =
+    [headers.basicHeaders, headers.sessionCookiesHeaders]
+
 export const getBasicRequest = (
     method: Method,
     url: string,
-    data: unknown = undefined
+    { data = undefined, headers = defaultHeaders }: {
+        data?: unknown
+        headers?: ((session: ICloudSessionState) => Header[])[]
+    } = {}
 ): (session: ICloudSessionState) => HttpRequest => {
     return session => ({
         url,
         method,
-        headers: buildRecord([
-            ...basicHeaders,
-            ...getSessionCookiesHeaders(
-                session
-            )]),
+        headers: buildRecord(pipe(headers, A.map(f => f(session)), A.flatten)),
         data
     })
 }

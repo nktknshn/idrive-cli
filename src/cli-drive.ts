@@ -2,32 +2,11 @@ import assert from 'assert'
 import { Command } from 'commander'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { TextDecoder } from 'util'
 import { cliAction } from './cli/cliAction'
 import { defaultCacheFile, defaultSessionFile } from './config'
 import { displayItem } from './icloud/drive/helpers'
 import { consumeStream } from './icloud/drive/requests/download'
-import { DriveDetails } from './icloud/drive/types'
 import { logger } from './lib/logging'
-
-
-// const list = ({
-//     sessionFile = defaultSessionFile,
-//     drivewsids = ['FOLDER::com.apple.CloudDocs::root'],
-// } = {}) => {
-//     return pipe(
-//         TE.Do,
-//         TE.bind('session', () => tryReadSessionFile(sessionFile)),
-//         TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
-//         TE.chainW(validatedSession => retrieveItemDetailsInFolders({
-//             validatedSession, client: fetchClient, drivewsids,
-//             includeHierarchy: false,
-//             partialData: true
-//         })),
-//         TE.mapLeft(e => InvalidGlobalSessionResponse.is(e) ? 'invalid session' : e),
-//         TE.map(_ => _.response.details[0])
-//     )
-// }
 
 
 const listUnixPath = ({

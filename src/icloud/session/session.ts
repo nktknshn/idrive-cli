@@ -44,7 +44,9 @@ export const signInCredentials = t.type({
     password: t.string,
 })
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ICloudSessionState extends t.TypeOf<typeof sessionScheme> { }
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ICloudSignInCredentials extends t.TypeOf<typeof signInCredentials> { }
 
 export const session = (

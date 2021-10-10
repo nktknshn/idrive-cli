@@ -61,29 +61,21 @@ export class FetchError extends Error {
 
 export const fetchClient: FetchClientEither = (config) => TE.tryCatch(
     async () => {
-        httplogger.debug(config.url)
-        httplogger.debug(config.data)
+        httplogger.debug({
+            url: config.url,
+            headers: config.headers,
+            data: config.data
+        })
         
         const res = await _client(config)
 
-        httplogger.debug(res.status)
-        httplogger.debug(res.data)
+        httplogger.debug({
+            status: res.status,
+            headers: res.headers,
+            data: res.data
+        })
         
         return res
-        // if (input instanceof Request) {
-        //     const { clone, show } = await showRequest(input)
-        //     input = clone
-        //     // logger.debug(input.url)
-        //     // logger.debug(headersToArray(input.headers).join(', '))
-        //     httplogger.debug(show)
-        // }
-
-        // const res = await fetch(input, init)
-
-        // httplogger.debug(res.status)
-        // httplogger.debug(await res.json())
-
-        // return res
     },
     error => {
         httplogger.debug('error')

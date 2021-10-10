@@ -15,11 +15,10 @@ import { tryReadJsonFile, TypeDecodingError } from "../../../lib/files";
 import { saveJson } from "../../session/session-file";
 import { ICloudDriveCache, ICloudDriveCacheEntity, CacheEntityFolder, CacheEntityAppLibrary, CacheEntityFolderRoot, CacheEntityFolderDetails, CacheEntityAppLibraryDetails, CacheEntityFile, CacheEntityFolderItem, CacheEntityAppLibraryItem, MissingParentError } from "./types";
 
-namespace lens {
-    export const root = m.Lens.fromProp<ICloudDriveCache>()('root')
-    export const byPath = m.Lens.fromProp<ICloudDriveCache>()('byPath')
-    export const byDrivewsid = m.Lens.fromProp<ICloudDriveCache>()('byDrivewsid')
-
+class lens {
+    public static root = m.Lens.fromProp<ICloudDriveCache>()('root')
+    public static byPath = m.Lens.fromProp<ICloudDriveCache>()('byPath')
+    public static byDrivewsid = m.Lens.fromProp<ICloudDriveCache>()('byDrivewsid')
     // export const update = byPath.compose(byDrivewsid)
 }
 
