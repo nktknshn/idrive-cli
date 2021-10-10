@@ -1,7 +1,7 @@
 import { pipe } from "fp-ts/lib/function";
 import * as TE from 'fp-ts/lib/TaskEither';
 import { FetchClientEither } from "../../../lib/fetch-client";
-import { validateJsonAndApply } from "../../../lib/response-reducer";
+import { ResponseWithSession, validateJsonAndApply } from "../../../lib/response-reducer";
 import { isObjectWithOwnProperty } from "../../../lib/util";
 import { ICloudSessionValidated } from "../../authorization/authorize";
 import { getBasicRequest } from "../../session/session-http";
@@ -17,7 +17,8 @@ export function moveItemsToTrash(
         items: { drivewsid: string, etag: string }[],
         trash?: boolean
     }
-) {
+): TE.TaskEither<Error, ResponseWithSession<Response>> {
+    
     const validateResponseJson = (json: unknown): json is Response =>
         isObjectWithOwnProperty(json, 'items')
 

@@ -31,11 +31,6 @@ interface SignInResponse200 {
     httpResponse: HttpResponse
 }
 
-interface SignInResponseOther {
-    readonly tag: 'SignInResponseOther'
-    httpResponse: HttpResponse
-}
-
 export const hsa2Required = (response: SignInResponse): response is SignInResponse409 & { hsa2Required: true } =>
     response.tag === 'SignInResponse409' && response.authType == 'hsa2'
 

@@ -3,6 +3,7 @@ import { identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import { not } from 'fp-ts/lib/Predicate'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as T from 'fp-ts/lib/Task'
 import * as fs from 'fs/promises'
 import { defaultSessionFile } from './config'
 import { authorizeSession } from './icloud/authorization/authorize'
@@ -14,12 +15,12 @@ import { fetchClient } from './lib/fetch-client'
 import { input } from './lib/input'
 import { logger } from './lib/logging'
 
-export const fileExists = (file: string) => pipe(
+export const fileExists = (file: string): T.Task<boolean> => pipe(
     TE.tryCatch(
         () => fs.stat(file),
-        e => 'error getting stats'
+        e => error(`error getting stats: ${e}`)
     ),
-    TE.match(() => false, _ => true)
+    TE.match(() => false, () => true)
 )
 
 const init = (credentials: ICloudSignInCredentials, sessionFile = defaultSessionFile) => {
@@ -46,7 +47,7 @@ const cat = function (
 const validate = (sessionFile = defaultSessionFile) => {
     return pipe(
         tryReadSessionFile(sessionFile),
-        TE.filterOrElseW(hasSessionToken, _ => `session missing token`),
+        TE.filterOrElseW(hasSessionToken, () => `session missing token`),
         TE.chainW(session => validateSession({ session, client: fetchClient })),
         TE.matchW(
             error => { logger.error(`error validating session: ${error}`) },
