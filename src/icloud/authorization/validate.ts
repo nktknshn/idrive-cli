@@ -8,7 +8,7 @@ import { fetchClient, HttpRequest, HttpResponse } from '../../lib/fetch-client'
 
 import { ICloudSessionState, ICloudSessionWithSessionToken } from '../session/session'
 import { flow, pipe } from 'fp-ts/lib/function'
-import { createHttpResponseReducer } from '../../lib/createHttpResponseReducer'
+import { createHttpResponseReducer } from '../../lib/response-reducer'
 import { ErrorReadingResponseBody, InvalidJsonInResponse, JsonParsingError } from '../../lib/json'
 import { FetchClientEither } from '../../lib/fetch-client'
 import { getSessionHeaders } from '../session/session-http-headers'

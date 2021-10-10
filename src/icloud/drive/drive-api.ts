@@ -105,10 +105,8 @@ export class DriveApi {
                         singleFileUpload(
                             this.client,
                             { session, accountData: this.session.accountData },
-                            {
-                                filePath: sourceFilePath,
-                                url: response.body[0].url
-                            }))),
+                            { filePath: sourceFilePath, url: response.body[0].url }
+                        ))),
             TE.bind('updateDocumentsResult', ({
                 uploadResult, singleFileUploadResult: { response, session }
             }) => pipe(
@@ -118,6 +116,7 @@ export class DriveApi {
                     {
                         request: {
                             allow_conflict: true,
+                            // overwright: true,
                             command: 'add_file',
                             document_id: uploadResult.response.body[0].document_id,
                             path: {
@@ -151,13 +150,14 @@ export class DriveApi {
         logger.info(`retrieveItemDetailsInFolders(${drivewsids})`);
 
         return pipe(
-            this.retryingQuery(() => retrieveItemDetailsInFolders({
-                client: this.client,
-                partialData: false,
-                includeHierarchy: false,
-                validatedSession: this.session,
-                drivewsids
-            })),
+            this.retryingQuery(() => retrieveItemDetailsInFolders(
+                this.client,
+                this.session,
+                {
+                    partialData: false,
+                    includeHierarchy: false,
+                    drivewsids
+                })),
             TE.chainFirstW(({ session }) => this.setSession({
                 accountData: this.session.accountData,
                 session
@@ -177,12 +177,7 @@ export class DriveApi {
     public download = (documentId: string, zone: string): TE.TaskEither<Error, string> => {
         return pipe(
             this.retryingQuery(
-                () => download({
-                    client: this.client,
-                    validatedSession: this.session,
-                    documentId,
-                    zone
-                })),
+                () => download(this.client, this.session, { documentId, zone })),
             TE.chainFirstW(({ session }) => this.setSession({
                 accountData: this.session.accountData,
                 session
@@ -197,12 +192,12 @@ export class DriveApi {
     ) => {
         return pipe(
             this.retryingQuery(
-                () => createFolders({
-                    client: this.client,
-                    validatedSession: this.session,
-                    destinationDrivewsId: parentId,
-                    names: folderNames
-                })),
+                () => createFolders(
+                    this.client, this.session,
+                    {
+                        destinationDrivewsId: parentId,
+                        names: folderNames
+                    })),
             TE.chainFirstW(({ session }) => this.setSession({
                 accountData: this.session.accountData,
                 session
@@ -213,12 +208,7 @@ export class DriveApi {
 
     public moveItemsToTrash = (items: { drivewsid: string, etag: string }[]) => {
         return pipe(
-            this.retryingQuery(
-                () => moveItemsToTrash({
-                    client: this.client,
-                    validatedSession: this.session,
-                    items
-                })),
+            this.retryingQuery(() => moveItemsToTrash(this.client, this.session, { items })),
             TE.chainFirstW(({ session }) => this.setSession({
                 accountData: this.session.accountData,
                 session

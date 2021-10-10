@@ -108,7 +108,6 @@ const putDetails = (details: DriveDetails): ((cache: ICloudDriveCache) => E.Eith
                     return E.of(cache)
                 }
             }
-
             return putRoot(details)(cache)
         }
     }

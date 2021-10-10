@@ -1,6 +1,6 @@
 import * as E from 'fp-ts/lib/Either';
 import * as TE from 'fp-ts/lib/TaskEither';
-import { pipe } from 'fp-ts/lib/function';
+import { flow, pipe } from 'fp-ts/lib/function';
 import { ICloudSessionState } from '../icloud/session/session';
 import { ErrorReadingResponseBody, InvalidJsonInResponse, tryJsonFromResponse } from './json';
 import { HttpResponse } from './fetch-client';
@@ -26,11 +26,20 @@ export type GetResponse<E, R> = (
   json: JsonEither
 ) => E.Either<E, R>
 
+export type ResponseWithSession<R> = {
+  session: ICloudSessionState
+  response: {
+    httpResponse: HttpResponse;
+    body: R;
+  }
+}
+
 export function createHttpResponseReducer<E, R>(
   getResponse: GetResponse<E, { httpResponse: HttpResponse, body: R }>,
   applyToSession: (sess: ICloudSessionState, resp: { httpResponse: HttpResponse, body: R }) => ICloudSessionState = (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
 ) {
-  return (session: ICloudSessionState) => (resp: HttpResponse) => {
+  return (session: ICloudSessionState) => (resp: HttpResponse)
+    : TE.TaskEither<ErrorReadingResponseBody | InvalidJsonInResponse | E, ResponseWithSession<R>> => {
     return pipe(
       tryJsonFromResponse(resp),
       taskEitherChainEitherW(json => getResponse(resp, json)),
@@ -70,3 +79,9 @@ export const basicGetResponse = <R>(
 
     return E.left(new UnexpectedResponse(httpResponse, json))
   }
+
+
+export const validateJsonAndApply = flow(
+  basicGetResponse,
+  createHttpResponseReducer
+)

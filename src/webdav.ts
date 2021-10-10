@@ -253,7 +253,6 @@ class ICloudFileSystem extends v2.FileSystem {
     ) {
         logger.info(`_delete(${path.toString()})`)
 
-
         pipe(
             this.drive.removeItemByPath(path.toString()),
             TE.fold(

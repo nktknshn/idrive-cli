@@ -164,7 +164,9 @@ export class Drive {
                     TE.fromOption(() => error(`missing path ${path} in cache`))),
             ),
             TE.chainFirstW(({ item }) =>
-                this.api.moveItemsToTrash([{ drivewsid: item.content.drivewsid, etag: item.content.etag }])),
+                this.api.moveItemsToTrash([{
+                    drivewsid: item.content.drivewsid, etag: item.content.etag
+                }])),
             TE.chainFirstW(_ =>
                 this.cacheSet(this.cache.removeByPath(path))),
             TE.chainW(({ item }) =>

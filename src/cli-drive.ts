@@ -104,27 +104,23 @@ async function main() {
         .description('list')
         .action(async (path?: string) => {
             logger.info(
-                await listUnixPath({
-                    path
-                })()
+                await listUnixPath({ path })()
             )
         })
 
     program
-        .command('mkdir [path]')
+        .command('mkdir <path>')
         .description('mkdir')
-        .action(async (path?: string) => {
-            assert(path)
+        .action(async (path: string) => {
             logger.info(
                 await mkdir(path)()
             )
         })
 
     program
-        .command('rm [path]')
+        .command('rm <path>')
         .description('rm')
-        .action(async (path?: string) => {
-            assert(path)
+        .action(async (path: string) => {
             logger.info(
                 await rm(path)()
             )
@@ -134,7 +130,6 @@ async function main() {
         .command('cat <path>')
         .description('cat')
         .action(async (path: string) => {
-            assert(path)
             logger.info(
                 await cat(path)()
             )

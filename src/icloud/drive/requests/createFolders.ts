@@ -4,7 +4,7 @@ import { ICloudSessionValidated } from "../../authorization/authorize";
 import { getBasicRequest, reduceHttpResponseToSession } from "../../session/session-http";
 import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { createHttpResponseReducer } from "../../../lib/createHttpResponseReducer";
+import { createHttpResponseReducer } from "../../../lib/response-reducer";
 import { DriveChildrenItemFolder, DriveDetailsFolder } from "../types";
 import { isObjectWithOwnProperty } from "../../../lib/util";
 import { InvalidJsonInResponse } from "../../../lib/json";
@@ -46,9 +46,10 @@ const applyHttpResponseToSession = createHttpResponseReducer(
 )
 
 export function createFolders(
-    { client, validatedSession: { session, accountData }, names, destinationDrivewsId }: {
-        client: FetchClientEither,
-        validatedSession: ICloudSessionValidated,
+    client: FetchClientEither,
+    { accountData, session }: ICloudSessionValidated,
+    { names, destinationDrivewsId }: {
+
         destinationDrivewsId: string,
         names: string[]
     }

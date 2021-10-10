@@ -8,7 +8,7 @@ import { logger } from "../../lib/logging";
 import { pipe } from "fp-ts/lib/function";
 import { hsa2Required, requestSignIn } from "./signin";
 import { error, UnexpectedResponse } from "../../lib/errors";
-import { requestSecurityCode,  } from "./securitycode";
+import { requestSecurityCode, } from "./securitycode";
 import { requestTrustDevice } from "./trust";
 import { AccountLoginResponse200, AccountLoginResponse421, requestAccoutLogin } from "./accoutLogin";
 import { FetchError } from "../../lib/fetch-client";
@@ -44,8 +44,7 @@ export function authorizeSession({
     logger.debug('authorizeSession')
 
     return pipe(
-        requestSignIn({
-            client, session,
+        requestSignIn(client, session, {
             accountName: session.username,
             password: session.password,
             trustTokens: arrayFromOption(session.trustToken)
@@ -58,7 +57,7 @@ export function authorizeSession({
             ? pipe(
                 getCode,
                 TE.chainW(code => requestSecurityCode({ client, session, code })),
-                TE.chainW(({ session }) => requestTrustDevice({ client, session })),
+                TE.chainW(({ session }) => requestTrustDevice(client, session)),
                 TE.map(_ => _.session))
             : TE.of(session)
         ),

@@ -7,14 +7,15 @@ import { pipe } from "fp-ts/lib/function"
 import { httplogger, logger } from "./logging"
 import { AxiosRequestConfig, AxiosResponse, Method, ResponseType } from 'axios'
 import axios from 'axios'
+import { Predicate } from 'fp-ts/lib/Predicate'
 
 
-export interface HttpRequest extends AxiosRequestConfig { 
+export interface HttpRequest extends AxiosRequestConfig {
     data: unknown
     headers: HttpHeaders
 }
 
-export interface HttpResponse extends AxiosResponse { 
+export interface HttpResponse extends AxiosResponse {
     data: unknown
     headers: HttpHeaders
 }
@@ -32,7 +33,7 @@ export type FetchClientEither = (config: HttpRequest) => TE.TaskEither<FetchErro
 
 export class HttpRequest implements HttpRequest {
     constructor(
-        public readonly url: string, 
+        public readonly url: string,
         props: {
             method: Method,
             headers: HttpHeaders,
@@ -58,38 +59,16 @@ export class FetchError extends Error {
     }
 }
 
-// const showRequest = async (req: http.RequestOptions) => {
-//     const body = pipe(
-//         req.body,
-//         E.fromNullable(E.throwError('missing body missing')),
-//         TE.fromEither,
-//         TE.chainW(
-//             body => reduceStream(
-//                 body, (acc, cur) => Uint8Array.from(
-//                     [...Array.from(acc.values()), ...Array.from(cur.values())]
-//                 ), new Uint8Array()
-//             )
-//         ),
-//         TE.chainW(TE.fromEitherK(tryDecodeBuffer))
-//     )
-
-//     return {
-//         clone: req.clone(),
-//         show: {
-//             url: req.url,
-//             headers: headersToArray(req.headers),
-//             body: await pipe(body, TE.foldW((err) => T.of(`error: ${JSON.stringify(err)}`), value => T.of(value)))()
-//         }
-//     }
-// }
-
 export const fetchClient: FetchClientEither = (config) => TE.tryCatch(
     async () => {
         httplogger.debug(config.url)
         httplogger.debug(config.data)
+        
         const res = await _client(config)
 
+        httplogger.debug(res.status)
         httplogger.debug(res.data)
+        
         return res
         // if (input instanceof Request) {
         //     const { clone, show } = await showRequest(input)
@@ -108,10 +87,16 @@ export const fetchClient: FetchClientEither = (config) => TE.tryCatch(
     },
     error => {
         httplogger.debug('error')
-        httplogger.debug(config)
+        // httplogger.debug(config)
         return new FetchError(`Error fetching: ${String(error)}`)
     })
 
+
+export const expectResponse = (
+    predicate: Predicate<HttpResponse>,
+    error: (response: HttpResponse) => Error
+): (te: TE.TaskEither<Error, HttpResponse>) =>
+        TE.TaskEither<Error, HttpResponse> => TE.chainW(TE.fromPredicate(predicate, error))
 
 // const mockedFetch = (responses: TE.TaskEither<FetchError, HttpResponse>[]): FetchClientEither => {
 //     responses = [...responses]

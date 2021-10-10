@@ -1,32 +1,16 @@
-import * as t from 'io-ts'
-import { Option } from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as E from 'fp-ts/lib/Either'
+import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import * as R from 'fp-ts/lib/Record'
-import * as A from 'fp-ts/lib/Array'
-
-import { ICloudSessionState } from '../session/session'
-import { flow, pipe } from 'fp-ts/lib/function'
-import { createHttpResponseReducer } from '../../lib/createHttpResponseReducer'
-import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../lib/json'
-import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
-import { getSessionHeaders } from '../session/session-http-headers'
-import { reduceHttpResponseToSession } from '../session/session-http'
-import { FetchError } from '../../lib/fetch-client'
-import { logger } from '../../lib/logging'
-import { buildRecord } from '../../lib/util'
+import * as TE from 'fp-ts/lib/TaskEither'
 import { getHeader } from '../../lib/cookie'
 import { UnexpectedResponse } from '../../lib/errors'
-// import { Eq } from 'fp-ts/lib/string'
-
-interface RequestSignInProps {
-    client: FetchClientEither,
-    session: ICloudSessionState
-    accountName: string
-    password: string
-    trustTokens: string[]
-}
+import { FetchClientEither, HttpResponse } from '../../lib/fetch-client'
+import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../lib/json'
+import { logger } from '../../lib/logging'
+import { createHttpResponseReducer, ResponseWithSession } from '../../lib/response-reducer'
+import { ICloudSessionState } from '../session/session'
+import { getBasicRequest } from '../session/session-http'
+import { ICloudSessionValidated } from './authorize'
 
 type SignInResponse = SignInResponse409 | SignInResponse200
 
@@ -51,11 +35,6 @@ interface SignInResponseOther {
     readonly tag: 'SignInResponseOther'
     httpResponse: HttpResponse
 }
-
-// O.fromNullable(
-// headers.get(header)
-// R.lookup(header)(headers)
-// )
 
 export const hsa2Required = (response: SignInResponse): response is SignInResponse409 & { hsa2Required: true } =>
     response.tag === 'SignInResponse409' && response.authType == 'hsa2'
@@ -107,42 +86,33 @@ function getResponse(
     return E.left(new UnexpectedResponse(httpResponse, json))
 }
 
-function createRequest(
-    { session, accountName, password, trustTokens = [] }: RequestSignInProps
-) {
-    return new HttpRequest(
-        'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
-        {
-            method: 'POST',
-            headers: buildRecord(getSessionHeaders(
-                session
-            )),
-            body: JSON.stringify({
+
+export function requestSignIn(
+    client: FetchClientEither,
+    session: ICloudSessionState,
+    { accountName, password, trustTokens }: {
+        accountName: string
+        password: string
+        trustTokens: string[]
+    }
+): TE.TaskEither<Error, ResponseWithSession<SignInResponse>> {
+    logger.debug('requestSignIn')
+
+    const applyHttpResponseToSession = createHttpResponseReducer(getResponse)
+
+    return pipe(
+        session,
+        getBasicRequest(
+            'POST',
+            'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
+            {
                 accountName,
                 password,
                 trustTokens,
                 rememberMe: true,
-            }),
-        })
-}
-
-const applyHttpResponseToSession = createHttpResponseReducer(
-    getResponse,
-    (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
-)
-
-export function requestSignIn(
-    props: RequestSignInProps
-): TE.TaskEither<
-    Error | UnexpectedResponse | FetchError | ErrorReadingResponseBody | InvalidJsonInResponse,
-    { session: ICloudSessionState; response: { httpResponse: HttpResponse; body: SignInResponse; }; }
-> {
-    logger.debug('requestSignIn')
-
-    return pipe(
-        createRequest(props),
-        props.client,
-        TE.chainW(applyHttpResponseToSession(props.session)),
-        // TE.map(({ session, response }) => [session, response] as const)
+            }
+        ),
+        client,
+        TE.chainW(applyHttpResponseToSession(session)),
     )
 }

@@ -6,16 +6,17 @@ import * as O from 'fp-ts/lib/Option'
 
 import { ICloudSessionState } from '../session/session'
 import { flow, pipe } from 'fp-ts/lib/function'
-import { createHttpResponseReducer } from '../../lib/createHttpResponseReducer'
+import { createHttpResponseReducer } from '../../lib/response-reducer'
 import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../lib/json'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
 import { getSessionHeaders } from '../session/session-http-headers'
-import { reduceHttpResponseToSession } from '../session/session-http'
+import { getBasicRequest, reduceHttpResponseToSession } from '../session/session-http'
 import { getTrustToken } from '../../lib/http-headers'
 import { error, UnexpectedResponse } from '../../lib/errors'
 import { FetchError } from '../../lib/fetch-client'
 import { logger } from '../../lib/logging'
 import { buildRecord } from '../../lib/util'
+import { ICloudSessionValidated } from './authorize'
 
 type TrustResponse =
     | TrustResponse204
@@ -31,27 +32,6 @@ export interface TrustResponse204 {
 //     readonly tag: 'TrustResponseOther'
 //     httpResponse: Response
 // }
-
-type RequestProps = {
-    session: ICloudSessionState
-    client: FetchClientEither,
-}
-
-function createRequest(
-    { session }: RequestProps
-): HttpRequest {
-    return new HttpRequest(
-        'https://idmsa.apple.com/appleauth/auth/2sv/trust',
-        {
-            method: 'GET',
-            headers: buildRecord(
-                getSessionHeaders(
-                    session
-                )
-            )
-        }
-    )
-}
 
 export function getResponse(
     httpResponse: HttpResponse,
@@ -85,15 +65,16 @@ const applyHttpResponseToSession = createHttpResponseReducer(
 )
 
 export function requestTrustDevice(
-    props: RequestProps
+    client: FetchClientEither,
+    session: ICloudSessionState,
 ) {
 
     logger.debug('requestTrustDevice')
 
     return pipe(
-        createRequest(props),
-        props.client,
-        TE.chainW(applyHttpResponseToSession(props.session)),
-        // TE.map(({ session, response }) => [session, response] as const)
+        session,
+        getBasicRequest('GET', 'https://idmsa.apple.com/appleauth/auth/2sv/trust'),
+        client,
+        TE.chainW(applyHttpResponseToSession(session)),
     )
 }

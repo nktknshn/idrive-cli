@@ -4,7 +4,7 @@ import * as R from 'fp-ts/lib/Record';
 import * as TE from 'fp-ts/lib/TaskEither';
 import * as fs from 'fs/promises';
 import Path from 'path';
-import { basicGetResponse, createHttpResponseReducer } from "../../../lib/createHttpResponseReducer";
+import { basicGetResponse, createHttpResponseReducer, ResponseWithSession, validateJsonAndApply } from "../../../lib/response-reducer";
 import { error } from "../../../lib/errors";
 import { FetchClientEither, HttpResponse } from "../../../lib/fetch-client";
 import { hasOwnProperty, isObjectWithOwnProperty } from "../../../lib/util";
@@ -68,7 +68,8 @@ type UpdateDocumentsRequest = {
         signature: string,
         wrapping_key: string,
         size: number,
-    }
+    },
+    [other: string]: unknown
 }
 
 export function upload(
@@ -83,18 +84,19 @@ export function upload(
     }
 ) {
 
-    const applyUploadResponse = createHttpResponseReducer(
-        basicGetResponse((json: unknown): json is UploadResponse =>
+    const applyUploadResponse = validateJsonAndApply(
+        (json: unknown): json is UploadResponse =>
             Array.isArray(json) && (!json.length || isObjectWithOwnProperty(json[0], 'url'))
-        )
     )
 
-    const token = pipe(
-        session.cookies,
-        R.lookup('X-APPLE-WEBAUTH-TOKEN'),
-        O.map(_ => _.value),
-        O.fold(() => "", identity)
-    )
+    // const token = pipe(
+    //     session.cookies,
+    //     R.lookup('X-APPLE-WEBAUTH-TOKEN'),
+    //     O.map(_ => _.value),
+    //     O.fold(() => "", identity)
+    // )
+
+    const token = session.cookies['X-APPLE-WEBAUTH-TOKEN'] ?? ''
 
     return pipe(
         session,
@@ -115,15 +117,14 @@ export function singleFileUpload(
         filePath: string,
         url: string
     }
-): TE.TaskEither<Error, { session: ICloudSessionState; response: { httpResponse: HttpResponse; body: SingleFileResponse; }; }> {
+): TE.TaskEither<Error, ResponseWithSession<SingleFileResponse>> {
 
     const filename = Path.parse(filePath).base
 
-    const applySingleFileResponse = createHttpResponseReducer(
-        basicGetResponse((json: unknown): json is SingleFileResponse =>
+    const applySingleFileResponse =
+        validateJsonAndApply((json: unknown): json is SingleFileResponse =>
             isObjectWithOwnProperty(json, 'singleFile')
         )
-    )
 
     return pipe(
         TE.tryCatch(() => fs.readFile(filePath), (e) => error(`error opening file ${String(e)}`)),
@@ -140,19 +141,16 @@ export function updateDocuments(
         zone?: string,
         request: UpdateDocumentsRequest
     }
-): TE.TaskEither<Error, {
-    session: ICloudSessionState;
-    response: { httpResponse: HttpResponse; body: UpdateDocumentsResponse; };
-}> {
-    const applyToSession = createHttpResponseReducer(
-        basicGetResponse((json: unknown): json is UpdateDocumentsResponse =>
-            isObjectWithOwnProperty(json, 'status') &&
-            isObjectWithOwnProperty(json.status, 'status_code')
-            && json.status.status_code === 0 &&
-            hasOwnProperty(json, 'results')
-            && Array.isArray(json.results) && json.results.length > 0
+): TE.TaskEither<Error, ResponseWithSession<UpdateDocumentsResponse>> {
+    const applyToSession =
+        validateJsonAndApply(
+            (json: unknown): json is UpdateDocumentsResponse =>
+                isObjectWithOwnProperty(json, 'status') &&
+                isObjectWithOwnProperty(json.status, 'status_code')
+                && json.status.status_code === 0 &&
+                hasOwnProperty(json, 'results')
+                && Array.isArray(json.results) && json.results.length > 0
         )
-    )
 
     return pipe(
         session,
