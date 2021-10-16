@@ -1,80 +1,61 @@
-import * as t from 'io-ts'
-import { Option } from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as E from 'fp-ts/lib/Either'
+import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-
-import { ICloudSessionState } from '../session/session'
-import { flow, pipe } from 'fp-ts/lib/function'
-import { createHttpResponseReducer } from '../../lib/response-reducer'
-import { ErrorReadingResponseBody, InvalidJsonInResponse } from '../../lib/json'
-import { FetchClientEither, HttpRequest, HttpResponse } from '../../lib/fetch-client'
-import { getAuthorizationHeaders } from '../session/session-http-headers'
-import { getBasicRequest, reduceHttpResponseToSession } from '../session/session-http'
-import { getTrustToken } from '../../lib/http-headers'
+import * as TE from 'fp-ts/lib/TaskEither'
 import { error, UnexpectedResponse } from '../../lib/errors'
-import { FetchError } from '../../lib/fetch-client'
+import { FetchClientEither, HttpResponse } from '../../lib/fetch-client'
+import { getTrustToken } from '../../lib/http-headers'
 import { logger } from '../../lib/logging'
-import { buildRecord } from '../../lib/util'
-import { ICloudSessionValidated } from './authorize'
-
-type TrustResponse =
-    | TrustResponse204
-// | TrustResponseOther
+import { applyCookies, createHttpResponseReducer1, ResponseWithSession } from '../../lib/response-reducer'
+import { ICloudSession, SessionLens } from '../session/session'
+import { applyAuthorizationResponse, buildRequest } from '../session/session-http'
+import { headers } from '../session/session-http-headers'
+import { authorizationHeaders } from './headers'
 
 export interface TrustResponse204 {
-    readonly tag: 'TrustResponse204'
-    httpResponse: HttpResponse
-    trustToken: string
+  trustToken: string
 }
-
-// interface TrustResponseOther {
-//     readonly tag: 'TrustResponseOther'
-//     httpResponse: Response
-// }
 
 export function getResponse(
-    httpResponse: HttpResponse,
-    json: E.Either<unknown, unknown>
-) {
-    if (httpResponse.status == 204) {
-        return pipe(
-            getTrustToken(httpResponse.headers),
-            O.map(trustToken => ({
-                httpResponse,
-                body: { trustToken, tag: 'TrustResponse204' as const }
-            })),
-            E.fromOption(() => error("Missing trust token"))
-        )
-    }
+  httpResponse: HttpResponse,
+  json: E.Either<Error, unknown>,
+): E.Either<Error, TrustResponse204> {
+  if (httpResponse.status == 204) {
+    return pipe(
+      O.Do,
+      O.bind('trustToken', () => getTrustToken(httpResponse)),
+      E.fromOption(() => error('Missing trust token')),
+    )
+  }
 
-    return E.left(UnexpectedResponse.create(httpResponse, json))
+  return E.left(UnexpectedResponse.create(httpResponse, json))
 }
 
-
-const applyHttpResponseToSession = createHttpResponseReducer(
-    getResponse,
-    (session, response) => Object.assign(
-        reduceHttpResponseToSession(
-            session,
-            response.httpResponse
-        ),
-        { trustToken: O.some(response.body.trustToken) }
-    )
-
-)
-
 export function requestTrustDevice(
-    client: FetchClientEither,
-    session: ICloudSessionState,
-) {
+  client: FetchClientEither,
+  session: ICloudSession,
+): TE.TaskEither<Error, ResponseWithSession<unknown>> {
+  logger.debug('requestTrustDevice')
 
-    logger.debug('requestTrustDevice')
-
-    return pipe(
+  const applyHttpResponseToSession = createHttpResponseReducer1(
+    getResponse,
+    (session, httpResponse, response) =>
+      pipe(
         session,
-        getBasicRequest('GET', 'https://idmsa.apple.com/appleauth/auth/2sv/trust'),
-        client,
-        TE.chainW(applyHttpResponseToSession(session)),
-    )
+        applyCookies(httpResponse),
+        applyAuthorizationResponse(httpResponse),
+        SessionLens.trustToken.set(O.some(response.trustToken)),
+      ),
+  )
+
+  return pipe(
+    session,
+    buildRequest(
+      'GET',
+      'https://idmsa.apple.com/appleauth/auth/2sv/trust',
+      { headers: [headers.default, authorizationHeaders] },
+    ),
+    client,
+    applyHttpResponseToSession(session),
+  )
 }

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "incremental": true,
+  "includes": ["**/*.{ts,tsx,js,jsx,json}"],
+  "excludes": ["**/node_modules", "**/*-lock.json", "**/data"],
+  "plugins": ["https://plugins.dprint.dev/typescript-0.57.0.wasm"],
+  "indentWidth": 2,
+  "useTabs": false,
+  "typescript": {
+    "quoteStyle": "alwaysSingle",
+    "semiColons": "asi",
+    "ifStatement.nextControlFlowPosition": "nextLine"
+  }
+}

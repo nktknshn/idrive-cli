@@ -1,132 +1,138 @@
-import assert from 'assert'
-import { Command } from 'commander'
+import { boolean } from 'fp-ts'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { cliAction } from './cli/cliAction'
+import { hideBin } from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+import { cliAction } from './cli/cli-action'
+import { Env } from './cli/types'
 import { defaultCacheFile, defaultSessionFile } from './config'
-import { displayItem } from './icloud/drive/helpers'
 import { consumeStream } from './icloud/drive/requests/download'
-import { logger } from './lib/logging'
+import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
+import { listUnixPath } from './cli/actions/ls'
 
-const listUnixPath = ({
-    sessionFile = defaultSessionFile,
-    cacheFile = defaultCacheFile,
-    path = '/',
-    raw = false
-} = {}): TE.TaskEither<Error, unknown> => {
-    return cliAction(({ drive }) => pipe(
-        drive.getFolder(path),
-        TE.map(result => raw
-            ? result
-            : ({
-                folder: result.name,
-                items: result.items.map(displayItem)
-            }))),
-        { sessionFile, cacheFile })
-}
-
-const mkdir = (
-    path: string,
-    {
-        sessionFile = defaultSessionFile,
-        cacheFile = defaultCacheFile,
-    } = {}): TE.TaskEither<Error, unknown> => {
-
-    return cliAction(({ drive }) => drive.createFolder(path), { sessionFile, cacheFile })
-}
-
-const cat = (
-    path: string,
-    {
-        sessionFile = defaultSessionFile,
-        cacheFile = defaultCacheFile,
-    } = {}): TE.TaskEither<Error, unknown> => {
-
-    return cliAction(({ drive }) => pipe(
-        drive.getDownloadStream(path),
-        TE.chain(consumeStream),
-        // TE.map(_ => new TextDecoder().decode(_))
-    ), { sessionFile, cacheFile })
-}
-
-const rm = (
-    path: string,
-    {
-        sessionFile = defaultSessionFile,
-        cacheFile = defaultCacheFile,
-    } = {}): TE.TaskEither<Error, unknown> => {
-
-    return cliAction(({ drive }) => drive.removeItemByPath(path), { sessionFile, cacheFile })
-}
-
-
-const upload = (
-    sourcePath: string,
-    targetPath: string,
-    {
-        sessionFile = defaultSessionFile,
-        cacheFile = defaultCacheFile,
-    } = {}): TE.TaskEither<Error, unknown> => {
-
-    return cliAction(({ drive }) => drive.upload(sourcePath, targetPath), { sessionFile, cacheFile })
+function parseArgs() {
+  return yargs(hideBin(process.argv))
+    // .parserConfiguration({})
+    .options({
+      sessionFile: { alias: ['s', 'session'], default: defaultSessionFile },
+      cacheFile: { alias: ['c', 'cache'], default: defaultCacheFile },
+      noCache: { alias: 'n', default: false, type: 'boolean' },
+      raw: { alias: 'r', default: false, type: 'boolean' },
+      debug: { alias: 'd', default: false, type: 'boolean' },
+    })
+    .command('ls [path]', 'list files in a folder', _ =>
+      _
+        .positional('path', { type: 'string', default: '/' })
+        .options({
+          fullPath: { alias: ['f'], default: false, type: 'boolean' },
+          recursive: { alias: ['R'], default: false, type: 'boolean' },
+        }) // .options({ short: { alias: ['h'], default: false, type: 'boolean' } })
+    )
+    .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
+    .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
+    .help()
 }
 
 async function main() {
+  const { argv, showHelp } = parseArgs()
 
-    logger.debug('Drive')
+  logger.add(
+    argv.debug
+      ? loggingLevels.debug
+      : loggingLevels.info,
+  )
 
-    const program = new Command();
+  cacheLogger.add(
+    loggingLevels.debug,
+  )
 
-    program
-        .command('ls [path]')
-        .description('list')
-        .action(async (path?: string) => {
-            logger.info(
-                await listUnixPath({ path })()
-            )
-        })
+  logger.debug(argv)
 
-    program
-        .command('mkdir <path>')
-        .description('mkdir')
-        .action(async (path: string) => {
-            logger.info(
-                await mkdir(path)()
-            )
-        })
+  const [command] = argv._
 
-    program
-        .command('rm <path>')
-        .description('rm')
-        .action(async (path: string) => {
-            logger.info(
-                await rm(path)()
-            )
-        })
-
-    program
-        .command('cat <path>')
-        .description('cat')
-        .action(async (path: string) => {
-            logger.info(
-                await cat(path)()
-            )
-        })
-
-    program
-        .command('upload <sourcePath> <targetPath>')
-        .description('rm')
-        .action(async (sourcePath: string, targetPath: string) => {
-            assert(sourcePath)
-            assert(targetPath)
-
-            logger.info(
-                await upload(sourcePath, targetPath)()
-            )
-        })
-
-    await program.parseAsync()
+  switch (command) {
+    case 'ls':
+      await pipe(
+        listUnixPath(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
+    case 'mkdir':
+      logger.info(await mkdir(argv)())
+      break
+    case 'cat':
+      await pipe(
+        cat(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
+    case 'rm':
+      logger.info(await rm(argv)())
+      break
+    default:
+      command && printer.error(`invalid command ${command}`)
+      showHelp()
+      break
+  }
 }
+
+const mkdir = (
+  { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
+): TE.TaskEither<Error, unknown> => {
+  return cliAction(
+    { sessionFile, cacheFile, noCache },
+    ({ drive }) => drive.createFolder(path),
+  )
+}
+
+const cat = (
+  { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
+): TE.TaskEither<Error, unknown> => {
+  return cliAction(
+    { sessionFile, cacheFile, noCache },
+    ({ drive }) =>
+      pipe(
+        drive.getDownloadStream(path),
+        TE.chain(consumeStream),
+        // TE.map(_ => new TextDecoder().decode(_))
+      ),
+  )
+}
+
+const rm = (
+  { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
+): TE.TaskEither<Error, unknown> => {
+  return cliAction(
+    { sessionFile, cacheFile, noCache },
+    ({ drive }) => drive.removeItemByPath(path),
+  )
+}
+
+/* const upload = (
+  sourcePath: string,
+  targetPath: string,
+  { sessionFile = defaultSessionFile, cacheFile = defaultCacheFile } = {},
+): TE.TaskEither<Error, unknown> => {
+  return cliAction(
+    { sessionFile, cacheFile, noCache },
+    ({ drive }) => drive.upload(sourcePath, targetPath),
+  )
+} */
+
+/*
+  program
+    .command('upload <sourcePath> <targetPath>')
+    .description('rm')
+    .action(async (sourcePath: string, targetPath: string) => {
+      assert(sourcePath)
+      assert(targetPath)
+
+      logger.info(await upload(sourcePath, targetPath)())
+    })
+
+  await program.parseAsync()
+} */
+// const byAge: Ord<User> = contramap((user: User) => user.age)(ordNumber)
 
 main()

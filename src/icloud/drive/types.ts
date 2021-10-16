@@ -1,141 +1,183 @@
 export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 
-export type WithId = { drivewsid: string }
-export type DriveDetails = DriveDetailsFolder | DriveDetailsRoot | DriveDetailsAppLibrary
-export type DriveChildrenItem = DriveChildrenItemFile | DriveChildrenItemFolder | DriveChildrenItemAppLibrary
+// type RecursiveTree = TreeNode
 
-export const isRootDetails = (details: DriveDetails): details is DriveDetailsRoot => {
-    return details.name === "" && details.drivewsid === rootDrivewsid
-}
+// export interface TreeFile {
+
+// }
+
+// export interface TreeFolder {
+//   folder: DriveDetails
+//   children: (TreeFolder | TreeFile)[]
+// }
+
+export type WithId = { drivewsid: string }
+
+export type DriveDetails =
+  | DriveDetailsFolder
+  | DriveDetailsRoot
+  | DriveDetailsAppLibrary
+
+export type DriveChildrenItem =
+  | DriveChildrenItemFile
+  | DriveChildrenItemFolder
+  | DriveChildrenItemAppLibrary
+
+export const isRootDetails = (details: DriveDetails): details is DriveDetailsRoot =>
+  details.name === '' && details.drivewsid === rootDrivewsid
+
+export type DriveFolderLike =
+  | DriveDetailsFolder
+  | DriveDetailsAppLibrary
+  | DriveDetailsRoot
+  | DriveChildrenItemFolder
+  | DriveChildrenItemAppLibrary
+
+export const isFolderLike = (
+  entity: DriveDetails | DriveChildrenItem,
+): entity is DriveFolderLike => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
+
+export const isFolderDetails = (
+  entity: DriveDetails | DriveChildrenItem,
+): entity is
+  | DriveDetailsFolder
+  | DriveDetailsAppLibrary
+  | DriveDetailsRoot => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
+
+export const isFile = (
+  entity: DriveDetails | DriveChildrenItem,
+): entity is DriveChildrenItemFile => entity.type === 'FILE'
 
 export interface DriveDetailsRoot {
-    dateCreated: Date;
-    drivewsid: typeof rootDrivewsid;
-    docwsid: string;
-    zone: string;
-    name: "";
-    etag: string;
-    type: 'FOLDER';
-    assetQuota: number;
-    fileCount: number;
-    shareCount: number;
-    shareAliasCount: number;
-    directChildrenCount: number;
-    items: DriveChildrenItem[];
-    numberOfItems: number;
-    status: string;
+  dateCreated: string
+  drivewsid: typeof rootDrivewsid
+  docwsid: string
+  zone: string
+  name: ''
+  etag: string
+  type: 'FOLDER'
+  assetQuota: number
+  fileCount: number
+  shareCount: number
+  shareAliasCount: number
+  directChildrenCount: number
+  items: DriveChildrenItem[]
+  numberOfItems: number
+  status: string
 }
 
 export type Hierarchy = (HierarchyItem | HierarchyItemRoot)[]
 
 export interface DriveDetailsFolder {
-    dateCreated: Date;
-    drivewsid: string;
-    docwsid: string;
-    zone: string;
-    name: string;
-    etag: string;
-    type: 'FOLDER';
-    assetQuota: number;
-    fileCount: number;
-    shareCount: number;
-    shareAliasCount: number;
-    directChildrenCount: number;
-    items: DriveChildrenItem[];
-    numberOfItems: number;
-    status: string;
-    parentId: string;
-    hierarchy?: Hierarchy
-    isChainedToParent?: boolean;
+  dateCreated: string
+  drivewsid: string
+  docwsid: string
+  zone: string
+  name: string
+  etag: string
+  type: 'FOLDER'
+  assetQuota: number
+  fileCount: number
+  shareCount: number
+  shareAliasCount: number
+  directChildrenCount: number
+  items: DriveChildrenItem[]
+  numberOfItems: number
+  status: string
+  parentId: string
+  hierarchy?: Hierarchy
+  isChainedToParent?: boolean
+  extension?: string
 }
 
 export interface DriveDetailsAppLibrary {
-    dateCreated: Date;
-    drivewsid: string;
-    docwsid: string;
-    zone: string;
-    name: string;
-    etag: string;
-    type: 'APP_LIBRARY';
-    assetQuota: number;
-    fileCount: number;
-    shareCount: number;
-    shareAliasCount: number;
-    directChildrenCount: number;
-    items: DriveChildrenItem[];
-    numberOfItems: number;
-    status: string;
-    parentId: string;
-    hierarchy?: Hierarchy
-    isChainedToParent?: boolean;
+  dateCreated: string
+  drivewsid: string
+  docwsid: string
+  zone: string
+  name: string
+  etag: string
+  type: 'APP_LIBRARY'
+  assetQuota: number
+  fileCount: number
+  shareCount: number
+  shareAliasCount: number
+  directChildrenCount: number
+  items: DriveChildrenItem[]
+  numberOfItems: number
+  status: string
+  parentId: string
+  hierarchy?: Hierarchy
+  isChainedToParent?: boolean
 }
 
 export interface DriveChildrenItemFolder {
-    dateCreated: Date;
-    drivewsid: string;
-    docwsid: string;
-    zone: string;
-    name: string;
-    parentId: string;
-    etag: string;
-    type: 'FOLDER';
-    assetQuota: number;
-    fileCount: number;
-    shareCount: number;
-    shareAliasCount: number;
-    directChildrenCount: number;
-    isChainedToParent?: boolean;
+  dateCreated: string
+  drivewsid: string
+  docwsid: string
+  zone: string
+  name: string
+  parentId: string
+  etag: string
+  type: 'FOLDER'
+  assetQuota: number
+  fileCount: number
+  shareCount: number
+  shareAliasCount: number
+  directChildrenCount: number
+  isChainedToParent?: boolean
+  extension?: string
 }
 
 export interface HierarchyItemRoot {
-    drivewsid: typeof rootDrivewsid;
+  drivewsid: typeof rootDrivewsid
 }
 
 export interface HierarchyItem {
-    drivewsid: string;
-    name: string;
-    etag: string;
+  drivewsid: string
+  name: string
+  etag: string
 }
 
 export interface PartialItem {
-    drivewsid: string;
-    docwsid: string;
-    etag: string;
+  drivewsid: string
+  docwsid: string
+  etag: string
 }
 
 export interface DriveChildrenItemFile {
-    dateCreated: Date;
-    drivewsid: string;
-    docwsid: string;
-    zone: string;
-    name: string;
-    parentId: string;
-    dateModified: Date;
-    dateChanged: Date;
-    size: number;
-    etag: string;
-    shortGUID: string;
-    type: 'FILE';
-    extension?: string
+  dateCreated: string
+  drivewsid: string
+  docwsid: string
+  zone: string
+  name: string
+  parentId: string
+  dateModified: string
+  dateChanged: string
+  size: number
+  etag: string
+  shortGUID: string
+  type: 'FILE'
+  extension?: string
 }
 
 export interface DriveChildrenItemAppLibrary {
-    dateCreated: Date;
-    drivewsid: string;
-    docwsid: string;
-    zone: string;
-    name: string;
-    parentId: string;
-    etag: string;
-    type: 'APP_LIBRARY';
-    maxDepth: string;
-    icons: Icon[];
-    supportedExtensions: string[];
-    supportedTypes: string[];
+  dateCreated: string
+  drivewsid: string
+  docwsid: string
+  zone: string
+  name: string
+  parentId: string
+  etag: string
+  type: 'APP_LIBRARY'
+  maxDepth: string
+  icons: Icon[]
+  supportedExtensions: string[]
+  supportedTypes: string[]
 }
 
 export interface Icon {
-    url: string;
-    type: string;
-    size: number;
+  url: string
+  type: string
+  size: number
 }

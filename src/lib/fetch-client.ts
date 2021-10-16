@@ -1,104 +1,110 @@
-import { Option } from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
-import * as T from 'fp-ts/lib/Task'
-import * as E from 'fp-ts/lib/Either'
-import * as O from 'fp-ts/lib/Option'
-import { pipe } from "fp-ts/lib/function"
-import { httplogger, logger } from "./logging"
 import { AxiosRequestConfig, AxiosResponse, Method, ResponseType } from 'axios'
 import axios from 'axios'
+import FormData from 'form-data'
+import * as E from 'fp-ts/lib/Either'
+import { pipe } from 'fp-ts/lib/function'
+import { Option } from 'fp-ts/lib/Option'
+import * as O from 'fp-ts/lib/Option'
 import { Predicate } from 'fp-ts/lib/Predicate'
-
+import * as T from 'fp-ts/lib/Task'
+import * as TE from 'fp-ts/lib/TaskEither'
+import { httplogger, logger } from './logging'
 
 export interface HttpRequest extends AxiosRequestConfig {
-    data: unknown
-    headers: HttpHeaders
+  data: unknown
+  headers: HttpHeaders
 }
 
 export interface HttpResponse extends AxiosResponse {
-    data: unknown
-    headers: HttpHeaders
+  data: unknown
+  headers: HttpHeaders
 }
 
 export type HttpHeaders = Record<string, string | string[]>
 
-const _client = (config: HttpRequest) => axios.request({
+const _client = (config: HttpRequest) =>
+  axios.request({
     ...config,
-    validateStatus: code => code < 500
-})
+    validateStatus: (code) => code < 500,
+  })
 
 export type FetchClient = typeof _client
-export type FetchClientEither = (config: HttpRequest) => TE.TaskEither<FetchError, HttpResponse>
-
+export type FetchClientEither = (
+  config: HttpRequest,
+) => TE.TaskEither<FetchError, HttpResponse>
 
 export class HttpRequest implements HttpRequest {
-    constructor(
-        public readonly url: string,
-        props: {
-            method: Method,
-            headers: HttpHeaders,
-            body?: unknown
-        }
-    ) {
-        this.method = props.method
-        this.headers = props.headers
-        this.data = props.body
-    }
+  constructor(
+    public readonly url: string,
+    props: {
+      method: Method
+      headers: HttpHeaders
+      body?: unknown
+    },
+  ) {
+    this.method = props.method
+    this.headers = props.headers
+    this.data = props.body
+  }
 }
 
 export class FetchError extends Error {
+  readonly tag = 'FetchError'
 
-    readonly tag = 'FetchError'
+  public static is(a: unknown): a is FetchError {
+    return a instanceof FetchError
+  }
 
-    public static is(a: unknown): a is FetchError {
-        return a instanceof FetchError
-    }
-
-    public static create(message: string) {
-        return new FetchError(message)
-    }
+  public static create(message: string): FetchError {
+    return new FetchError(message)
+  }
 }
 
-export const fetchClient: FetchClientEither = (config) => TE.tryCatch(
+export const fetchClient: FetchClientEither = (config) =>
+  TE.tryCatch(
     async () => {
-        httplogger.debug({
-            url: config.url,
-            headers: config.headers,
-            data: config.data
-        })
-        
-        const res = await _client(config)
+      httplogger.debug({
+        url: config.url,
+        headers: config.headers,
+        data: config.data,
+      })
 
-        httplogger.debug({
-            status: res.status,
-            headers: res.headers,
-            data: res.data
-        })
-        
-        return res
+      const res = await _client(config)
+
+      httplogger.debug({
+        status: res.status,
+        headers: res.headers,
+        data: res.data,
+      })
+
+      return res
     },
-    error => {
-        httplogger.debug('error')
-        // httplogger.debug(config)
-        return new FetchError(`Error fetching: ${String(error)}`)
-    })
-
+    (error) => {
+      httplogger.debug('error')
+      return new FetchError(`Error fetching: ${String(error)}`)
+    },
+  )
 
 export const expectResponse = (
-    predicate: Predicate<HttpResponse>,
-    error: (response: HttpResponse) => Error
-): (te: TE.TaskEither<Error, HttpResponse>) =>
-        TE.TaskEither<Error, HttpResponse> => TE.chainW(TE.fromPredicate(predicate, error))
+  predicate: Predicate<HttpResponse>,
+  error: (response: HttpResponse) => Error,
+): ((
+  te: TE.TaskEither<Error, HttpResponse>,
+) => TE.TaskEither<Error, HttpResponse>) => TE.chainW(TE.fromPredicate(predicate, error))
 
-// const mockedFetch = (responses: TE.TaskEither<FetchError, HttpResponse>[]): FetchClientEither => {
-//     responses = [...responses]
+export const uploadFileRequest = (
+  url: string,
+  filename: string,
+  fileBuffer: Buffer,
+): HttpRequest => {
+  const formData = new FormData()
+  // formData.append('name', 'files')
+  formData.append('files', fileBuffer, { filename })
 
-//     return (config) => {
-//         return pipe(
-//             responses.shift(),
-//             E.fromNullable(FetchError.create('out of responses')),
-//             TE.fromEither,
-//             TE.flatten
-//         )
-//     }
-// }
+  return {
+    url,
+    method: 'POST',
+    headers: formData.getHeaders(),
+    data: formData.getBuffer(),
+  }
+}

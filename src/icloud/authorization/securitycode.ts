@@ -4,46 +4,44 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { UnexpectedResponse } from '../../lib/errors'
 import { FetchClientEither } from '../../lib/fetch-client'
 import { logger } from '../../lib/logging'
-import { createHttpResponseReducer, ResponseWithSession } from '../../lib/response-reducer'
-import { ICloudSessionState } from '../session/session'
-import { getBasicRequest, reduceHttpResponseToSession } from '../session/session-http'
-
-interface SecurityCodeRequestProps {
-    session: ICloudSessionState
-    code: string
-    client: FetchClientEither,
-}
-
-export interface SecurityCodeResponse204 {
-    readonly tag: 'SecurityCodeResponse204'
-}
+import { applyCookies, createHttpResponseReducer1, ResponseWithSession } from '../../lib/response-reducer'
+import { EmptyObject } from '../../lib/types'
+import { ICloudSession } from '../session/session'
+import { applyAuthorizationResponse, buildRequest } from '../session/session-http'
+import { headers } from '../session/session-http-headers'
+import { authorizationHeaders } from './headers'
 
 export function requestSecurityCode(
-    { session, code, client }: SecurityCodeRequestProps
-): TE.TaskEither<Error, ResponseWithSession<SecurityCodeResponse204>> {
-    logger.debug(`requestSecurityCode: ${code}`)
+  client: FetchClientEither,
+  session: ICloudSession,
+  { code }: { code: string },
+): TE.TaskEither<Error, ResponseWithSession<EmptyObject>> {
+  logger.debug(`requestSecurityCode: ${code}`)
 
-    const applyResponse = createHttpResponseReducer(
-        (httpResponse, json) => {
-            if (httpResponse.status == 204) {
-                return E.right({
-                    body: { tag: 'SecurityCodeResponse204' as const },
-                    httpResponse
-                })
-            }
-            else {
-                return E.left(new UnexpectedResponse(httpResponse, json))
-            }
-        },
-        (sess, resp) => reduceHttpResponseToSession(sess, resp.httpResponse)
-    )
-
-    return pipe(
+  const applyResponse = createHttpResponseReducer1(
+    (httpResponse, json) =>
+      httpResponse.status == 204
+        ? E.right({})
+        : E.left(UnexpectedResponse.create(httpResponse, json)),
+    (session, httpResponse) =>
+      pipe(
         session,
-        getBasicRequest('POST', 'https://idmsa.apple.com/appleauth/auth/verify/trusteddevice/securitycode', {
-            data: { securityCode: { code } }
-        }),
-        client,
-        TE.chainW(applyResponse(session))
-    )
+        applyAuthorizationResponse(httpResponse),
+        applyCookies(httpResponse),
+      ),
+  )
+
+  return pipe(
+    session,
+    buildRequest(
+      'POST',
+      'https://idmsa.apple.com/appleauth/auth/verify/trusteddevice/securitycode',
+      {
+        data: { securityCode: { code } },
+        headers: [headers.default, authorizationHeaders],
+      },
+    ),
+    client,
+    applyResponse(session),
+  )
 }
