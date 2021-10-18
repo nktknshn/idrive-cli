@@ -1,6 +1,18 @@
+import { pipe } from 'fp-ts/function'
+import * as A from 'fp-ts/lib/Array'
+
 export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 
-// type RecursiveTree = TreeNode
+export type RecursiveFolder =
+  | {
+    readonly details: DriveDetails
+    readonly deep: true
+    readonly children: RecursiveFolder[]
+  }
+  | {
+    readonly details: DriveDetails
+    readonly deep: false
+  }
 
 // export interface TreeFile {
 
@@ -14,8 +26,8 @@ export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 export type WithId = { drivewsid: string }
 
 export type DriveDetails =
-  | DriveDetailsFolder
   | DriveDetailsRoot
+  | DriveDetailsFolder
   | DriveDetailsAppLibrary
 
 export type DriveChildrenItem =
@@ -25,6 +37,10 @@ export type DriveChildrenItem =
 
 export const isRootDetails = (details: DriveDetails): details is DriveDetailsRoot =>
   details.name === '' && details.drivewsid === rootDrivewsid
+
+export const isNotRootDetails = (details: DriveDetails): details is
+  | DriveDetailsFolder
+  | DriveDetailsAppLibrary => !isRootDetails(details)
 
 export type DriveFolderLike =
   | DriveDetailsFolder
@@ -37,12 +53,35 @@ export const isFolderLike = (
   entity: DriveDetails | DriveChildrenItem,
 ): entity is DriveFolderLike => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
 
+export const partitionFoldersFiles = (
+  items: DriveChildrenItem[],
+): {
+  readonly left: (DriveChildrenItemFolder | DriveChildrenItemAppLibrary)[]
+  readonly right: DriveChildrenItemFile[]
+} =>
+  pipe(items, A.partition(isFileItem), ({ left, right }) => ({
+    left: left as (DriveChildrenItemFolder | DriveChildrenItemAppLibrary)[],
+    right,
+  }))
+
 export const isFolderDetails = (
   entity: DriveDetails | DriveChildrenItem,
 ): entity is
   | DriveDetailsFolder
   | DriveDetailsAppLibrary
   | DriveDetailsRoot => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
+
+export const isFileItem = (
+  entity: DriveChildrenItem,
+): entity is DriveChildrenItemFile => entity.type === 'FILE'
+
+export const isFolderItem = (
+  entity: DriveChildrenItem,
+): entity is FolderItem => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
+
+export type FolderItem =
+  | DriveChildrenItemFolder
+  | DriveChildrenItemAppLibrary
 
 export const isFile = (
   entity: DriveDetails | DriveChildrenItem,

@@ -2,6 +2,7 @@ import { Format, TransformableInfo, TransformFunction } from 'logform'
 import * as winston from 'winston'
 import { hasOwnProperty, isObjectWithOwnProperty } from './util'
 const { combine, timestamp, label, prettyPrint, json } = winston.format
+import { identity } from 'fp-ts/function'
 import { IO } from 'fp-ts/lib/IO'
 // const jsonError = winston.format((info, opts) => {
 
@@ -23,6 +24,8 @@ const printer = {
       console.error({
         // name: value.name,
         error: value.message,
+        name: value.name,
+        stack: value.stack,
       })
     },
 }
@@ -35,6 +38,10 @@ export const loggingLevels = {
   debug: new winston.transports.Console({
     stderrLevels: ['debug'],
     level: 'debug',
+  }),
+  infoToStderr: new winston.transports.Console({
+    stderrLevels: ['info'],
+    level: 'info',
   }),
 }
 
@@ -68,9 +75,20 @@ const logger = winston.createLogger({
     }),
     prettyPrint({
       colorize: true,
+      depth: 4,
+    }),
+  ),
+})
+
+export const stderrLogger = winston.createLogger({
+  level: 'info',
+  format: combine(
+    prettyPrint({
+      colorize: true,
       depth: 3,
     }),
   ),
+  transports: [loggingLevels.infoToStderr],
 })
 
 export const cacheLogger = winston.createLogger({
@@ -100,6 +118,12 @@ const httplogger = winston.createLogger({
 export const logReturn = <T>(logFunc: (value: T) => void) =>
   (value: T): T => {
     logFunc(value)
+    return value
+  }
+
+export const logReturnAs = <T>(key: string, f = identity, _logger = logger.debug) =>
+  (value: T): T => {
+    _logger({ [key]: f(value) })
     return value
   }
 

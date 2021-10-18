@@ -1,6 +1,7 @@
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
+import { range } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -14,6 +15,7 @@ import {
   isFolderDetails,
   isFolderLike,
   isRootDetails,
+  RecursiveFolder,
 } from '../../icloud/drive/types'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
@@ -164,12 +166,47 @@ const showDetailsInfo = (
     )
 
 // const showArray
+const nSymbols = (n: number, s: string) => range(0, n).map(_ => s).join('')
+
+const showColumn = ({ prefix = '' }) =>
+  (...strings: string[]) =>
+    pipe(
+      strings,
+      A.map(s => string.Monoid.concat(prefix, s)),
+      _ => _.join('\n'),
+    )
+
+const showRow = (delimeter = ' ') =>
+  (...strings: string[]) =>
+    pipe(
+      strings,
+      _ => _.join(delimeter),
+    )
+
+const newLine = '\n'
+
+const showRecursive = (
+  folder: RecursiveFolder,
+  ident = 0,
+): string => {
+  return showColumn({
+    prefix: nSymbols(ident, ' '),
+  })(
+    fileName(folder.details),
+    // newLine,
+    ...pipe(
+      folder.deep ? folder.children : [],
+      A.map(_ => showRecursive(_, ident + 1)),
+    ),
+  )
+}
 
 export const listUnixPath = (
-  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive }: Env & {
+  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive, depth }: Env & {
     recursive: boolean
     path: string
     fullPath: boolean
+    depth: number
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
   if (recursive) {
@@ -177,21 +214,8 @@ export const listUnixPath = (
       { sessionFile, cacheFile, noCache },
       ({ drive }) =>
         pipe(
-          drive.getFolderRecursive(path, { depth: 0 }),
-          TE.map(({ parent, children }) =>
-            [
-              '- ' + fileName(parent),
-              ...pipe(
-                children,
-                A.map(_ =>
-                  ['\t- ' + fileName(_), isFolderDetails(_) ? _.items.map(showFilename).join('\n') : showFilename(_)]
-                    .join(
-                      '\n',
-                    )
-                ),
-              ),
-            ].join('\n')
-          ),
+          drive.getFolderRecursiveByPath2(path, { depth }),
+          TE.map(v => raw ? JSON.stringify(v) : showRecursive(v)),
           // TE.map(_ => JSON.stringify(_)),
           // TE.map(raw ? showRaw : showDetails({ path, fullPath })),
         ),

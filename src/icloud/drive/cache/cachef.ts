@@ -10,7 +10,7 @@ import Path from 'path'
 import { error, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
-import { cacheLogger, logReturn } from '../../../lib/logging'
+import { cacheLogger, logger, logReturn } from '../../../lib/logging'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
 import { fileName, normalizePath } from '../helpers'
 import {
@@ -53,6 +53,10 @@ const getCachedPathForId = (drivewsid: string) =>
     if (drivewsid === rootDrivewsid) {
       return pipe(cache.root, O.map(constant('/')))
     }
+
+    // logger.debug({
+    //   byPath: cache.byPath['/Obsidian/copy1/.obsidian'],
+    // })
 
     return pipe(
       R.toArray(cache.byPath),
@@ -156,11 +160,11 @@ const putDetails = (
           getCachedPathForId(details.parentId)(cache),
           E.fromOption(() =>
             MissingParentError.create(
-              `missing parent ${details.parentId} in cache`,
+              `Error putting ${details.drivewsid} (${details.name}) missing parent ${details.parentId} in cache`,
             )
           ),
         )),
-      E.bind('detailsPath', ({ parentPath }) => E.of(Path.join(parentPath, details.name))),
+      E.bind('detailsPath', ({ parentPath }) => E.of(Path.join(parentPath, fileName(details)))),
       E.bind('entity', () => E.of(cacheEntityFromDetails(details))),
       E.bind('updated', ({ entity }) =>
         E.of(
@@ -238,6 +242,8 @@ export class Cache {
   constructor(cache: ICloudDriveCache = cachef()) {
     this.cache = cache
   }
+
+  public copy = (): Cache => Cache.create(this.cache)
 
   putDetails = (details: DriveDetails): E.Either<Error, Cache> => {
     return pipe(this.cache, putDetails(details), E.map(Cache.create))

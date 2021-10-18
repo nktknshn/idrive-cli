@@ -31,6 +31,16 @@ const getContentType = (extension: string): string => {
 }
 
 export class DriveApi {
+  private _apiCalls = 0
+
+  private incApiCalls = (n = 1) => {
+    this._apiCalls += n
+  }
+
+  get apiCalls(): number {
+    return this._apiCalls
+  }
+
   constructor(
     private session: ICloudSessionValidated,
     public client: FetchClientEither = fetchClient,
@@ -50,6 +60,8 @@ export class DriveApi {
   private retryingQuery = <E extends Error, A>(
     te: () => TE.TaskEither<E, A>,
   ): TE.TaskEither<Error, A> => {
+    this.incApiCalls()
+
     return pipe(
       te(),
       TE.orElseW((e) => {
@@ -148,7 +160,7 @@ export class DriveApi {
   }
 
   public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, DriveDetails[]> => {
-    logger.debug(`retrieveItemDetailsInFolders(${drivewsids})`)
+    logger.debug(`retrieveItemDetailsInFolders`, { drivewsids })
 
     return pipe(
       this.retryingQuery(() =>

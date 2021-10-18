@@ -27,6 +27,7 @@ function parseArgs() {
         .options({
           fullPath: { alias: ['f'], default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
+          depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
         }) // .options({ short: { alias: ['h'], default: false, type: 'boolean' } })
     )
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
@@ -44,10 +45,10 @@ async function main() {
   )
 
   cacheLogger.add(
-    loggingLevels.debug,
+    loggingLevels.info,
   )
 
-  logger.debug(argv)
+  // logger.debug(argv)
 
   const [command] = argv._
 

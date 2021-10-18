@@ -94,8 +94,11 @@ export class MissingResponseBody extends Error {
 }
 
 export class JsonParsingError extends Error {
-  constructor(public readonly input: string, public readonly error: unknown) {
-    super()
+  constructor(
+    public readonly input: string,
+    public readonly error: unknown,
+  ) {
+    super(`JsonParsingError: ${error}`)
   }
 
   readonly tag = 'JsonParsingError'
