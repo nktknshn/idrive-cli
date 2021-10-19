@@ -1,12 +1,10 @@
 import * as A from 'fp-ts/lib/Array'
 import * as B from 'fp-ts/lib/boolean'
-import * as E from 'fp-ts/lib/Either'
-import { apply, flow, hole, pipe } from 'fp-ts/lib/function'
+import { apply, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { get } from 'spectacles-ts'
-import { logger, logReturn, logReturnAs } from '../../lib/logging'
+import { logger } from '../../lib/logging'
 import { Drive } from './drive'
 import { DriveDetails, FolderItem, isFolderItem, isNotRootDetails, RecursiveFolder } from './types'
 
@@ -15,19 +13,68 @@ export function getFolderRecursive(
   path: string,
   depth: number,
 ): TE.TaskEither<Error, RecursiveFolder> {
-  /*   const subFolders = pipe(
-    parent,
-    TE.map(_ => _.items),
-    TE.map(A.filter(isFolderItem)),
-  )
- */
   return pipe(
     TE.Do,
     TE.bind('parent', () => drive.getFolderByPath(path)),
     TE.bind('children', ({ parent }) => getFolders(drive, [parent.drivewsid], depth)),
     TE.map(_ => _.children[0]),
-    // TE.map(({ children, parent }) => deepFolder(parent, children)),
   )
+}
+
+function getFolders(
+  drive: Drive,
+  drivewsids: string[],
+  depth: number,
+): TE.TaskEither<Error, RecursiveFolder[]> {
+  const M = A.getMonoid<FolderItem>()
+
+  logger.debug(`getFolders ${drivewsids} ${depth}`)
+
+  const res = pipe(
+    TE.Do,
+    TE.bind('folders', () => drive.getFoldersByIds(drivewsids)),
+    TE.bindW('foldersItems', ({ folders }) =>
+      pipe(
+        folders,
+        A.map(folder => pipe(folder.items, A.filter(isFolderItem))),
+        A.reduce(M.empty, M.concat),
+        TE.of,
+      )),
+    TE.bindW('g', ({ foldersItems }) =>
+      pipe(
+        {
+          doGoDeeper: depth > 0 && foldersItems.length > 0,
+          emptySubfolders: foldersItems.length == 0 && depth > 0,
+          depthExceed: foldersItems.length > 0 && depth == 0,
+        },
+        TE.of,
+      )),
+    // TE.map(
+    //   logReturn(({ folders, foldersItems, doGoDeeper }) =>
+    //     logger.debug({
+    //       doGoDeeper,
+    //       foldersItems,
+    //     })
+    //   ),
+    // ),
+    TE.chain(({ folders, foldersItems, g: { depthExceed, doGoDeeper, emptySubfolders } }) =>
+      pipe(
+        doGoDeeper
+          ? pipe(
+            getFolders(drive, foldersItems.map(_ => _.drivewsid), depth - 1),
+            // FIXME
+            TE.map(groupBy(_ => isNotRootDetails(_.details) ? _.details.parentId : 'ERROR')),
+            TE.map(g => zipWithChildren(folders, g)),
+            TE.map(A.map(([p, c]) => deepFolder(p, c))),
+          )
+          : depthExceed
+          ? TE.of(pipe(folders, A.map(shallowFolder)))
+          : TE.of(pipe(folders, A.map(f => deepFolder(f, [])))),
+      )
+    ),
+  )
+
+  return res
 }
 
 const shallowFolder = (details: DriveDetails): RecursiveFolder => ({
@@ -59,76 +106,19 @@ const groupBy = <T>(f: (item: T) => string): (items: T[]) => Record<string, T[]>
   }
 
 const zipWithChildren = (
-  parents: DriveDetails[],
-  childrenRec: Record<string, RecursiveFolder[]>,
+  folders: DriveDetails[],
+  itemByParentId: Record<string, RecursiveFolder[]>,
 ): (readonly [DriveDetails, RecursiveFolder[]])[] =>
   pipe(
-    parents,
-    A.map(parent =>
+    folders,
+    A.map(folder =>
       [
-        parent,
+        folder,
         pipe(
-          childrenRec,
-          // logReturnAs('childrenRec'),
-          R.lookup(parent.drivewsid),
-          O.getOrElse((): RecursiveFolder[] => []),
+          itemByParentId,
+          R.lookup(folder.drivewsid),
+          O.getOrElseW(() => []),
         ),
       ] as const
     ),
   )
-
-function getFolders(
-  drive: Drive,
-  drivewsids: string[],
-  depth: number,
-): TE.TaskEither<Error, RecursiveFolder[]> {
-  const M = A.getMonoid<FolderItem>()
-
-  logger.debug(`getFolders ${drivewsids} ${depth}`)
-
-  const res = pipe(
-    TE.Do,
-    TE.bind('folders', () => drive.getFoldersByIds(drivewsids)),
-    TE.bindW('foldersItems', ({ folders }) =>
-      pipe(
-        folders,
-        A.map(folder => pipe(folder.items, A.filter(isFolderItem))),
-        A.reduce(M.empty, M.concat),
-        TE.of,
-      )),
-    TE.bindW('doGoDeeper', ({ foldersItems }) =>
-      pipe(
-        foldersItems.length,
-        count => depth > 0 && count > 0,
-        TE.of,
-      )),
-    // TE.map(
-    //   logReturn(({ folders, foldersItems, doGoDeeper }) =>
-    //     logger.debug({
-    //       doGoDeeper,
-    //       foldersItems,
-    //     })
-    //   ),
-    // ),
-    TE.chain(({ folders, foldersItems, doGoDeeper }) =>
-      pipe(
-        doGoDeeper,
-        B.match(
-          () => TE.of(pipe(folders, A.map(shallowFolder))),
-          () =>
-            pipe(
-              getFolders(drive, foldersItems.map(_ => _.drivewsid), depth - 1),
-              // TE.map(logReturnAs('subs')),
-              // FIXME
-              TE.map(groupBy(_ => isNotRootDetails(_.details) ? _.details.parentId : 'ERROR')),
-              // TE.map(logReturnAs('group')),
-              TE.map(g => zipWithChildren(folders, g)),
-              TE.map(A.map(([p, c]) => deepFolder(p, c))),
-            ),
-        ),
-      )
-    ),
-  )
-
-  return res
-}

@@ -1,7 +1,8 @@
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
+import { range } from 'fp-ts/lib/Array'
+import * as B from 'fp-ts/lib/boolean'
 import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
-import { range } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -12,11 +13,13 @@ import {
   DriveChildrenItem,
   DriveChildrenItemFile,
   DriveDetails,
+  isFileItem,
   isFolderDetails,
   isFolderLike,
   isRootDetails,
   RecursiveFolder,
 } from '../../icloud/drive/types'
+import { logger, logReturn, logReturnAs } from '../../lib/logging'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
 
@@ -33,6 +36,8 @@ const joinWithPath = (path: string) =>
 const showFilename = (item: DriveChildrenItem | DriveDetails) =>
   item.type === 'FILE'
     ? fileName(item)
+    : isFolderDetails(item) && isRootDetails(item)
+    ? '/'
     : `${fileName(item)}/`
 
 const formatDate = (date: Date | string) =>
@@ -166,7 +171,15 @@ const showDetailsInfo = (
     )
 
 // const showArray
-const nSymbols = (n: number, s: string) => range(0, n).map(_ => s).join('')
+const nSymbols = (n: number, s: string) => {
+  const res = []
+
+  for (let i = 0; i < n; i++) {
+    res.push(s)
+  }
+
+  return res.join('')
+}
 
 const showColumn = ({ prefix = '' }) =>
   (...strings: string[]) =>
@@ -185,20 +198,39 @@ const showRow = (delimeter = ' ') =>
 
 const newLine = '\n'
 
-const showRecursive = (
-  folder: RecursiveFolder,
-  ident = 0,
-): string => {
-  return showColumn({
-    prefix: nSymbols(ident, ' '),
-  })(
-    fileName(folder.details),
-    // newLine,
-    ...pipe(
-      folder.deep ? folder.children : [],
-      A.map(_ => showRecursive(_, ident + 1)),
-    ),
-  )
+const showRecursive = ({ ident = 0 }) =>
+  (folder: RecursiveFolder): string => {
+    const folderName = showFilename(folder.details)
+
+    const fileNames = pipe(
+      folder.details.items,
+      A.filter(isFileItem),
+      A.map(showFilename),
+    )
+
+    const identStr = nSymbols(ident, '  ')
+
+    const subFolders = folder.deep
+      ? pipe(
+        folder.children,
+        A.map(showRecursive({ ident: ident + 1 })),
+        a => A.getSemigroup<string>().concat(a, fileNames.map(_ => identStr + '  ' + _)),
+        A.prepend(identStr + folderName),
+      )
+      : [identStr + folderName + ' ...']
+
+    return [
+      // ...[identStr + folderName],
+      ...subFolders,
+    ].join('\n')
+  }
+
+const showRecursive2 = (folder: RecursiveFolder) => {
+  let result = ''
+
+  result += folder.details.name
+
+  return result
 }
 
 export const listUnixPath = (
@@ -215,7 +247,7 @@ export const listUnixPath = (
       ({ drive }) =>
         pipe(
           drive.getFolderRecursiveByPath2(path, { depth }),
-          TE.map(v => raw ? JSON.stringify(v) : showRecursive(v)),
+          TE.map(v => raw ? JSON.stringify(v) : showRecursive({})(v)),
           // TE.map(_ => JSON.stringify(_)),
           // TE.map(raw ? showRaw : showDetails({ path, fullPath })),
         ),
