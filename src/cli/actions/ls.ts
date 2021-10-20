@@ -1,6 +1,5 @@
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
-import { range } from 'fp-ts/lib/Array'
 import * as B from 'fp-ts/lib/boolean'
 import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
@@ -198,6 +197,8 @@ const showRow = (delimeter = ' ') =>
 
 const newLine = '\n'
 
+const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
+
 const showRecursive = ({ ident = 0 }) =>
   (folder: RecursiveFolder): string => {
     const folderName = showFilename(folder.details)
@@ -210,19 +211,16 @@ const showRecursive = ({ ident = 0 }) =>
 
     const identStr = nSymbols(ident, '  ')
 
-    const subFolders = folder.deep
+    const rows = folder.deep
       ? pipe(
         folder.children,
         A.map(showRecursive({ ident: ident + 1 })),
-        a => A.getSemigroup<string>().concat(a, fileNames.map(_ => identStr + '  ' + _)),
+        a => [...a, ...prependStrings(identStr + '  ')(fileNames)],
         A.prepend(identStr + folderName),
       )
       : [identStr + folderName + ' ...']
 
-    return [
-      // ...[identStr + folderName],
-      ...subFolders,
-    ].join('\n')
+    return rows.join('\n')
   }
 
 const showRecursive2 = (folder: RecursiveFolder) => {
@@ -246,7 +244,7 @@ export const listUnixPath = (
       { sessionFile, cacheFile, noCache },
       ({ drive }) =>
         pipe(
-          drive.getFolderRecursiveByPath2(path, { depth }),
+          drive.getFolderRecursiveByPath(path, { depth }),
           TE.map(v => raw ? JSON.stringify(v) : showRecursive({})(v)),
           // TE.map(_ => JSON.stringify(_)),
           // TE.map(raw ? showRaw : showDetails({ path, fullPath })),

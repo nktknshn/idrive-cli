@@ -4,6 +4,7 @@ import { apply, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { error } from '../../lib/errors'
 import { logger } from '../../lib/logging'
 import { Drive } from './drive'
 import { DriveDetails, FolderItem, isFolderItem, isNotRootDetails, RecursiveFolder } from './types'
@@ -17,7 +18,12 @@ export function getFolderRecursive(
     TE.Do,
     TE.bind('parent', () => drive.getFolderByPath(path)),
     TE.bind('children', ({ parent }) => getFolders(drive, [parent.drivewsid], depth)),
-    TE.map(_ => _.children[0]),
+    TE.chain(_ =>
+      pipe(
+        A.lookup(0, _.children),
+        TE.fromOption(() => error(`something wrong...`)),
+      )
+    ),
   )
 }
 

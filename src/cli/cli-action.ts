@@ -11,8 +11,8 @@ import { logger, logReturn, stderrLogger } from '../lib/logging'
 import { EnvFiles } from './types'
 
 export function cliAction<Args, T>(
-  { sessionFile, cacheFile, noCache }: EnvFiles & { noCache: boolean },
-  f: (deps: { drive: Drive.Drive; cache: C.Cache }) => TE.TaskEither<Error, T>,
+  { sessionFile, cacheFile, noCache, dontSaveCache = false }: EnvFiles & { noCache: boolean; dontSaveCache?: boolean },
+  f: (deps: { drive: Drive.Drive; cache: C.Cache; api: DriveApi.DriveApi }) => TE.TaskEither<Error, T>,
 ): TE.TaskEither<Error, T> {
   return pipe(
     TE.Do,
@@ -30,12 +30,12 @@ export function cliAction<Args, T>(
     TE.bind('result', ({ drive, api, cache }) =>
       TE.bracket(
         TE.of({ drive, api }),
-        () => f({ drive, cache }),
+        () => f({ drive, cache, api }),
         ({ drive, api }, e) =>
           pipe(
             saveSession(sessionFile)(api.getSession().session),
             TE.chain(() =>
-              (E.isLeft(e) && InconsistentCache.is(e.left)) || noCache
+              (E.isLeft(e) && InconsistentCache.is(e.left)) || noCache || dontSaveCache
                 ? TE.of(constVoid())
                 : C.Cache.trySaveFile(drive.cacheGet(), cacheFile)
             ),

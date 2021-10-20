@@ -10,6 +10,7 @@ import { consumeStream } from './icloud/drive/requests/download'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
 import { listUnixPath } from './cli/actions/ls'
+import { update } from './cli/actions/update'
 
 function parseArgs() {
   return yargs(hideBin(process.argv))
@@ -28,8 +29,15 @@ function parseArgs() {
           fullPath: { alias: ['f'], default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
-        }) // .options({ short: { alias: ['h'], default: false, type: 'boolean' } })
-    )
+        }))
+    .command('update [path]', 'update cache', _ =>
+      _
+        .positional('path', { type: 'string', default: '/' })
+        .options({
+          fullPath: { alias: ['f'], default: false, type: 'boolean' },
+          recursive: { alias: ['R'], default: false, type: 'boolean' },
+          depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
+        }))
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .help()
@@ -70,6 +78,12 @@ async function main() {
       break
     case 'rm':
       logger.info(await rm(argv)())
+      break
+    case 'update':
+      await pipe(
+        update(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
       break
     default:
       command && printer.error(`invalid command ${command}`)

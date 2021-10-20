@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/function'
 import * as A from 'fp-ts/lib/Array'
+import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
 
 export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 
@@ -35,10 +36,10 @@ export type DriveChildrenItem =
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
 
-export const isRootDetails = (details: DriveDetails): details is DriveDetailsRoot =>
+export const isRootDetails = (details: DriveDetails | DriveChildrenItem): details is DriveDetailsRoot =>
   details.name === '' && details.drivewsid === rootDrivewsid
 
-export const isNotRootDetails = (details: DriveDetails): details is
+export const isNotRootDetails = (details: DriveDetails | DriveChildrenItem): details is
   | DriveDetailsFolder
   | DriveDetailsAppLibrary => !isRootDetails(details)
 
@@ -69,7 +70,7 @@ export const isFolderDetails = (
 ): entity is
   | DriveDetailsFolder
   | DriveDetailsAppLibrary
-  | DriveDetailsRoot => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
+  | DriveDetailsRoot => isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items')
 
 export const isFileItem = (
   entity: DriveChildrenItem,

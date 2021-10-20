@@ -1,7 +1,8 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constVoid, flow, hole, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, hole, Lazy, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
+import { Predicate } from 'fp-ts/lib/Predicate'
 import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
@@ -33,6 +34,14 @@ import {
   rootDrivewsid,
 } from './types'
 
+const predicate = <B>(pred: boolean, onFalse: Lazy<B>, onTrue: Lazy<B>) => {
+  if (pred) {
+    return onTrue()
+  }
+
+  return onFalse()
+}
+
 export class Drive {
   private cache: Cache
   private api: DriveApi
@@ -42,9 +51,15 @@ export class Drive {
     this.api = api
   }
 
-  public getRoot = (): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> => {
+  public static create(api: DriveApi, cache: Cache = Cache.create()): Drive {
+    return new Drive(api, cache)
+  }
+
+  public getRoot = (
+    cache = this.cache,
+  ): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> => {
     return pipe(
-      this.cachingRetrieveItemDetailsInFolder(rootDrivewsid),
+      this.cachingRetrieveItemDetailsInFolder(rootDrivewsid, cache),
       TE.filterOrElseW(isRootDetails, () => error(`invalid root details`)),
     )
   }
@@ -75,106 +90,38 @@ export class Drive {
     )
   }
 
-  private cachingRetrieveItemDetailsInFolder = (drivewsid: string) => {
+  private cachingRetrieveItemDetailsInFolder = (
+    drivewsid: string,
+    cache = this.cache,
+  ) => {
     return pipe(
-      this.cachingRetrieveItemDetailsInFolders([drivewsid], this.cache),
+      this.cachingRetrieveItemDetailsInFolders([drivewsid], cache),
       TE.map(ds => ds[0]),
-      // TE.map(A.lookup(0))
-      // this.cache.getById(drivewsid),
-      // O.fold(
-      //   () => this.api.retrieveItemDetailsInFolder(drivewsid),
-      //   flow(
-      //     TE.of,
-      //     TE.filterOrElse(isFolderLikeCacheEntity, () => error(`${drivewsid} is not a folder`)),
-      //     TE.chain((_) =>
-      //       _.hasDetails
-      //         ? TE.of(_.content)
-      //         : this.api.retrieveItemDetailsInFolder(drivewsid)
-      //     ),
-      //   ),
-      // ),
-      // TE.chainFirst(this.cachePutDetails),
     )
   }
-  /*
-  private fetchItemByFunc = <T>(f: (v: T) => (item: DriveChildrenItem) => boolean) =>
-    (
-      parentId: TE.TaskEither<Error, string>,
-      value: T,
-    ): TE.TaskEither<Error, { item: DriveChildrenItem; parent: DriveDetails }> =>
-      pipe(
-        TE.Do,
-        TE.bind('parentId', () => parentId),
-        TE.bind('parent', ({ parentId }) => this.cachingRetrieveItemDetailsInFolder(parentId)),
-        TE.bind('item', ({ parent, parentId }) =>
-          pipe(
-            parent.items,
-            A.findFirst(f(value)),
-            TE.fromOption(() =>
-              error(
-                `item "${value}" was not found in "${parent.name}" (${parentId})`,
-              )
-            ),
-          )),
-      )
- */
+
   public getByPath = (
     path: string,
+    cache = this.cache,
   ): TE.TaskEither<Error, DriveDetails | DriveChildrenItemFile> => {
     return pipe(
       this.getItemByPath(path),
       TE.chain(item =>
         isFolderLike(item)
-          ? this.cachingRetrieveItemDetailsInFolder(item.drivewsid)
+          ? this.cachingRetrieveItemDetailsInFolder(item.drivewsid, cache)
           : TE.of<Error, DriveDetails | DriveChildrenItemFile>(item)
       ),
     )
   }
 
-  // public getFolderRecursive = (drivewsids: string[], depth: number) => {
-  //   pipe(
-  //     TE.Do,
-  //     TE.bind('parent', () => this.getFolderByPath(path)),
-  //     TE.bind('children', ({ parent }) =>)
-  //     )
-
-  // }
-  public getFolderRecursiveByPath2 = (
+  public getFolderRecursiveByPath = (
     path: string,
     { depth }: { depth: number },
   ): TE.TaskEither<Error, RecursiveFolder> => getFolderRecursive(this, path, depth)
 
-  /*   public getFolderRecursiveByPath = (
-    path: string,
-    { depth }: { depth: number },
-  ): TE.TaskEither<Error, RecursiveFolder> =>
-    pipe(
-      TE.Do,
-      TE.bind('parent', () => this.getFolderByPath(path)),
-      TE.bind('children', ({ parent }) =>
-        pipe(
-          pipe(
-            parent.items,
-            A.filter(isFolderItem),
-            subFolders =>
-              this.cachingRetrieveItemDetailsInFolders(
-                pipe(subFolders, A.map(_ => _.drivewsid)),
-              ),
-          ),
-          TE.map(
-            A.map(shallo),
-          ),
-        )),
-      TE.map(({ children, folder }) => ({
-        children,
-        folder,
-        hasChildren: true as const,
-      })),
-      // depth > 0 ?
-    )
- */
   public getItemByPath = (
     path: string,
+    cache = this.cache,
   ): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> => {
     const [, ...parsedPath] = parsePath(path)
 
@@ -202,7 +149,7 @@ export class Drive {
               // 'result',
               ({ item }): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> => isFile(item)
                 ? TE.of(item)
-                : this.cachingRetrieveItemDetailsInFolder(item.drivewsid),
+                : this.cachingRetrieveItemDetailsInFolder(item.drivewsid, cache),
             ),
             // TE.map(_ => _.result),
           ),
@@ -214,8 +161,6 @@ export class Drive {
     return pipe(
       this.getByPath(path),
       TE.filterOrElse(isFolderDetails, () => error(`is not folder`)),
-      // TE.chain(_ => this.cachingRetrieveItemDetailsInFolder(_.drivewsid)),
-      // TE.chainFirstW(this.cachePutDetails),
     )
   }
 
@@ -225,29 +170,11 @@ export class Drive {
     )
   }
 
-  // public getFolderByPath = (path: string): TE.TaskEither<Error, DriveDetails> => {
-  //   const [, ...parsedPath] = parsePath(path)
-  //   // logger.info(parsedPath)
-
-  //   return pipe(
-  //     parsedPath,
-  //     A.reduce(
-  //       TE.of(rootDrivewsid),
-  //       flow(
-  //         this.fetchItemByFunc(
-  //           (itemName) => (item) => fileName(item) === itemName,
-  //         ),
-  //         TE.filterOrElse(
-  //           ({ item }) => isFolderLikeType(item.type),
-  //           ({ item }) => error(`${item.name} (${item.drivewsid}) is not a folder`),
-  //         ),
-  //         TE.map(({ item }) => item.drivewsid),
-  //       ),
-  //     ),
-  //     TE.chain(this.cachedRetrieveItemDetailsInFolder),
-  //     TE.chainFirstW(this.cachePutDetails),
-  //   )
-  // }
+  public getPathsForIds = (drivewsids: string[]): TE.TaskEither<Error, DriveDetails[]> => {
+    return pipe(
+      this.cachingRetrieveItemDetailsInFolders(drivewsids),
+    )
+  }
 
   public updateCachedEntityByPath = (
     path: string,
