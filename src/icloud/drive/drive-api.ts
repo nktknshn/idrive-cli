@@ -9,12 +9,13 @@ import { fetchClient, FetchClientEither } from '../../lib/fetch-client'
 import { input } from '../../lib/input'
 import { logger } from '../../lib/logging'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
+import { download } from './requests'
+import { retrieveHierarchy } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
-import { download } from './requests/download'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
 import { retrieveItemDetailsInFolders } from './requests/retrieveItemDetailsInFolders'
 import { singleFileUpload, updateDocuments, upload } from './requests/upload'
-import { DriveDetails, DriveDetailsFolder } from './types'
+import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy, rootDrivewsid } from './types'
 
 const getContentType = (extension: string): string => {
   if (extension === '') {
@@ -180,11 +181,34 @@ export class DriveApi {
     )
   }
 
+  public retrieveHierarchy = (drivewsids: string[]): TE.TaskEither<Error, DriveDetailsPartialWithHierarchy[]> => {
+    logger.debug(`retrieveHierarchy`, { drivewsids })
+
+    return pipe(
+      this.retryingQuery(() => retrieveHierarchy(this.client, this.session, { drivewsids })),
+      TE.chainFirstW(({ session }) =>
+        this.setSession({
+          accountData: this.session.accountData,
+          session,
+        })
+      ),
+      TE.map((_) => _.response.body),
+    )
+  }
+
   public retrieveItemDetailsInFolder = (drivewsid: string): TE.TaskEither<Error, DriveDetails> => {
     return pipe(
       this.retrieveItemDetailsInFolders([drivewsid]),
       TE.map(A.lookup(0)),
       TE.chain(TE.fromOption(() => error(`folder ${drivewsid} was not found`))),
+    )
+  }
+
+  public getRoot = (): TE.TaskEither<Error, DriveDetails> => {
+    return pipe(
+      this.retrieveItemDetailsInFolders([rootDrivewsid]),
+      TE.map(A.lookup(0)),
+      TE.chain(TE.fromOption(() => error(`error getting root`))),
     )
   }
 

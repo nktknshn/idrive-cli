@@ -134,6 +134,7 @@ const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
       ['drivewsid', result.drivewsid],
       ['docwsid', result.docwsid],
       ['etag', result.etag],
+      ['extension', result.extension],
       ['parentId', isRootDetails(result) ? '' : result.parentId],
       ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
       ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
@@ -232,10 +233,11 @@ const showRecursive2 = (folder: RecursiveFolder) => {
 }
 
 export const listUnixPath = (
-  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive, depth }: Env & {
+  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive, depth, listInfo }: Env & {
     recursive: boolean
     path: string
     fullPath: boolean
+    listInfo: boolean
     depth: number
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
@@ -252,7 +254,7 @@ export const listUnixPath = (
     )
   }
 
-  const opts = { showDocwsid: false, showDrivewsid: false }
+  const opts = { showDocwsid: listInfo, showDrivewsid: listInfo }
 
   return cliAction(
     { sessionFile, cacheFile, noCache },

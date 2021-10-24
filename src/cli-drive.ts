@@ -27,6 +27,7 @@ function parseArgs() {
         .positional('path', { type: 'string', default: '/' })
         .options({
           fullPath: { alias: ['f'], default: false, type: 'boolean' },
+          listInfo: { alias: ['l'], default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
         }))

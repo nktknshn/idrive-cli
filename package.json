@@ -7,12 +7,14 @@
     "session": "./node_modules/.bin/node dist/cli-session.js",
     "drive": "./node_modules/.bin/node dist/cli-drive.js",
     "cache": "./node_modules/.bin/node dist/cli-cache.js",
+    "api": "./node_modules/.bin/node dist/cli-api.js",
     "test": "./node_modules/.bin/jest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.4",
+    "cmd-ts": "^0.7.0",
     "commander": "^8.2.0",
     "form-data": "^3.0.1",
     "fp-ts": "^2.11.3",
@@ -42,6 +44,7 @@
     "prettier": "^2.4.1",
     "ts-jest": "^27.0.5",
     "ts-loader": "^9.2.6",
+    "ts-toolbelt": "^9.6.0",
     "yarn": "^1.22.15"
   }
 }

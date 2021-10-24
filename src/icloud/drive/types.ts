@@ -15,16 +15,7 @@ export type RecursiveFolder =
     readonly deep: false
   }
 
-// export interface TreeFile {
-
-// }
-
-// export interface TreeFolder {
-//   folder: DriveDetails
-//   children: (TreeFolder | TreeFile)[]
-// }
-
-export type WithId = { drivewsid: string }
+// export type WithId = { drivewsid: string }
 
 export type DriveDetails =
   | DriveDetailsRoot
@@ -35,6 +26,12 @@ export type DriveChildrenItem =
   | DriveChildrenItemFile
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
+
+export type DriveObject = {
+  name: string
+  extension?: string
+  drivewsid: string
+}
 
 export const isRootDetails = (details: DriveDetails | DriveChildrenItem): details is DriveDetailsRoot =>
   details.name === '' && details.drivewsid === rootDrivewsid
@@ -103,10 +100,10 @@ export interface DriveDetailsRoot {
   directChildrenCount: number
   items: DriveChildrenItem[]
   numberOfItems: number
+  hierarchy?: Hierarchy
   status: string
+  extension?: string
 }
-
-export type Hierarchy = (HierarchyItem | HierarchyItemRoot)[]
 
 export interface DriveDetailsFolder {
   dateCreated: string
@@ -149,6 +146,7 @@ export interface DriveDetailsAppLibrary {
   parentId: string
   hierarchy?: Hierarchy
   isChainedToParent?: boolean
+  extension?: string
 }
 
 export interface DriveChildrenItemFolder {
@@ -167,22 +165,6 @@ export interface DriveChildrenItemFolder {
   directChildrenCount: number
   isChainedToParent?: boolean
   extension?: string
-}
-
-export interface HierarchyItemRoot {
-  drivewsid: typeof rootDrivewsid
-}
-
-export interface HierarchyItem {
-  drivewsid: string
-  name: string
-  etag: string
-}
-
-export interface PartialItem {
-  drivewsid: string
-  docwsid: string
-  etag: string
 }
 
 export interface DriveChildrenItemFile {
@@ -214,6 +196,7 @@ export interface DriveChildrenItemAppLibrary {
   icons: Icon[]
   supportedExtensions: string[]
   supportedTypes: string[]
+  extension?: string
 }
 
 export interface Icon {
@@ -221,3 +204,45 @@ export interface Icon {
   type: string
   size: number
 }
+
+export type DriveDetailsPartialWithHierarchy =
+  | DriveDetailsRootPartialWithHierarchy
+  | DriveDetailsFolderPartialWithHierarchy
+  | DriveDetailsAppLibraryPartialWithHierarchy
+
+export interface DriveDetailsRootPartialWithHierarchy extends Omit<DriveDetailsRoot, 'items'> {
+  hierarchy: Hierarchy
+  items: HierarchyItem[]
+}
+
+export interface DriveDetailsFolderPartialWithHierarchy extends Omit<DriveDetailsFolder, 'items'> {
+  hierarchy: Hierarchy
+  items: HierarchyItem[]
+}
+
+export interface DriveDetailsAppLibraryPartialWithHierarchy extends Omit<DriveDetailsAppLibrary, 'items'> {
+  hierarchy: Hierarchy
+  items: HierarchyItem[]
+}
+
+export type Hierarchy = (HierarchyItem | HierarchyItemRoot)[]
+
+export const isHierarchyItemRoot = (item: HierarchyItem | HierarchyItemRoot): item is HierarchyItemRoot =>
+  item.drivewsid === rootDrivewsid
+
+export interface HierarchyItemRoot {
+  drivewsid: typeof rootDrivewsid
+}
+
+export interface HierarchyItem {
+  drivewsid: string
+  name: string
+  etag: string
+  extension?: string
+}
+
+// export interface PartialItem {
+//   drivewsid: string
+//   docwsid: string
+//   etag: string
+// }

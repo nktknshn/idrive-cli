@@ -122,6 +122,11 @@ export const expectJson = flow(
   createHttpResponseReducer1,
 )
 
+export type ResponseParser<R> = (
+  session: ICloudSession,
+) => <E1>(
+  ma: TE.TaskEither<E1, HttpResponse>,
+) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
 // export const expectResponse = <UnexpectedResponse, R>(
 //   f: (httpResponse: HttpResponse, json: JsonEither) => O.Option<R>,
 // ) =>

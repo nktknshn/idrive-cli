@@ -65,6 +65,10 @@ const getCachedPathForId = (drivewsid: string) =>
     )
   }
 
+export const isRootCacheEntity = (
+  entity: ICloudDriveCacheEntity,
+): entity is CacheEntityFolderRoot => entity.type === 'ROOT'
+
 export const isFolderLikeCacheEntity = (
   entity: ICloudDriveCacheEntity,
 ): entity is CacheEntityFolder | CacheEntityAppLibrary => isFolderLikeType(entity.type)
@@ -263,6 +267,16 @@ export class Cache {
     return pipe(this.cache, putItem(item), E.map(Cache.create))
   }
 
+  getRoot = (): O.Option<E.Either<Error, CacheEntityFolderRoot>> => {
+    return pipe(
+      this.cache.byDrivewsid,
+      R.lookup(rootDrivewsid),
+      O.map(
+        flow(E.fromPredicate(isRootCacheEntity, () => error('invalid root cache entity'))),
+      ),
+    )
+  }
+
   getById = (drivewsid: string): O.Option<ICloudDriveCacheEntity> => {
     return pipe(
       pipe(this.cache.byDrivewsid, R.lookup(drivewsid)),
@@ -272,6 +286,13 @@ export class Cache {
           _ => cacheLogger.debug(`cache hit for ${drivewsid} hasDetails: ${_.hasDetails}`),
         ),
       ),
+    )
+  }
+
+  getByIdE = (drivewsid: string): E.Either<Error, ICloudDriveCacheEntity> => {
+    return pipe(
+      this.getById(drivewsid),
+      E.fromOption(() => error(`missing ${drivewsid} in cache`)),
     )
   }
 
@@ -287,8 +308,19 @@ export class Cache {
     return pipe(
       this.getById(drivewsid),
       O.map(
-        flow(E.fromPredicate(isFolderLikeCacheEntity, () => error(`${drivewsid} is not a folder`))),
+        flow(
+          E.fromPredicate(isFolderLikeCacheEntity, () => error(`${drivewsid} is not a folder`)),
+        ),
       ),
+    )
+  }
+
+  getFolderByIdE = (drivewsid: string) => {
+    return pipe(
+      this.getByIdE(drivewsid),
+      E.chain(flow(
+        E.fromPredicate(isFolderLikeCacheEntity, () => error(`${drivewsid} is not a folder`)),
+      )),
     )
   }
 
@@ -329,6 +361,13 @@ export class Cache {
 
   getCachedPathForId = (drivewsid: string): O.Option<string> => {
     return getCachedPathForId(drivewsid)(this.cache)
+  }
+
+  getCachedPathForIdE = (drivewsid: string): E.Either<Error, string> => {
+    return pipe(
+      getCachedPathForId(drivewsid)(this.cache),
+      E.fromOption(() => error(`missing ${drivewsid} in cache`)),
+    )
   }
 
   findByPathGlob = (path: string): [string, ICloudDriveCacheEntity][] => {

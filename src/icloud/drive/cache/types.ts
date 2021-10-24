@@ -18,6 +18,7 @@ export type CacheEntityFolder =
   | CacheEntityFolderRoot
   | CacheEntityFolderDetails
   | CacheEntityFolderItem
+  | CacheEntityAppLibrary
 
 export type CacheEntityAppLibrary =
   | CacheEntityAppLibraryItem
@@ -25,7 +26,6 @@ export type CacheEntityAppLibrary =
 
 export type ICloudDriveCacheEntity =
   | CacheEntityFolder
-  | CacheEntityAppLibrary
   | CacheEntityFile
 
 export type ICloudDriveCacheEntityType = ICloudDriveCacheEntity['type']

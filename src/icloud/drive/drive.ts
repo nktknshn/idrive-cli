@@ -10,8 +10,8 @@ import { get } from 'spectacles-ts'
 import { Readable } from 'stream'
 import { error } from '../../lib/errors'
 import { cacheLogger, logReturn, logReturnAs } from '../../lib/logging'
-import { Cache, isFolderLikeCacheEntity, isFolderLikeType } from './cache/cachef'
-import { ICloudDriveCacheEntity } from './cache/types'
+import { Cache, isFolderLikeCacheEntity, isFolderLikeType, isRootCacheEntity } from './cache/cachef'
+import { CacheEntityAppLibrary, CacheEntityFolder, ICloudDriveCacheEntity } from './cache/types'
 import { DriveApi } from './drive-api'
 import { fileName, parsePath, splitParent } from './helpers'
 import { getFolderRecursive } from './recursive'
@@ -33,6 +33,7 @@ import {
   RecursiveFolder,
   rootDrivewsid,
 } from './types'
+import { WasFolderChanged } from './update'
 
 const predicate = <B>(pred: boolean, onFalse: Lazy<B>, onTrue: Lazy<B>) => {
   if (pred) {
@@ -176,6 +177,50 @@ export class Drive {
     )
   }
 
+  public wasAnythingChangedInFolder = (
+    drivewsid: string,
+    wasChangedF: (cached: CacheEntityFolder | CacheEntityAppLibrary, actual: DriveDetails) => WasFolderChanged,
+  ): TE.TaskEither<Error, WasFolderChanged> => {
+    return pipe(
+      TE.Do,
+      TE.bind('cached', () =>
+        pipe(
+          this.cache.getById(drivewsid),
+          TE.fromOption(() => error(`missing ${drivewsid} in cache`)),
+          TE.filterOrElse(isFolderLikeCacheEntity, () => error(`is not folder`)),
+          // TE.chain(TE.fromEither),
+        )),
+      TE.bind('actual', () =>
+        pipe(
+          this.api.retrieveItemDetailsInFolder(drivewsid),
+          // TE.fromOption(() => error(`missing root in cache`)),
+        )),
+      TE.map(({ cached, actual }) => wasChangedF(cached, actual)),
+    )
+  }
+
+  public wasAnythingChangedInFolderHierarchy = (
+    drivewsid: string,
+    wasChangedF: (cached: CacheEntityFolder | CacheEntityAppLibrary, actual: DriveDetails) => WasFolderChanged,
+  ): TE.TaskEither<Error, WasFolderChanged> => {
+    return pipe(
+      TE.Do,
+      TE.bind('cached', () =>
+        pipe(
+          this.cache.getById(drivewsid),
+          TE.fromOption(() => error(`missing ${drivewsid} in cache`)),
+          TE.filterOrElse(isFolderLikeCacheEntity, () => error(`is not folder`)),
+          // TE.chain(TE.fromEither),
+        )),
+      TE.bind('actual', () =>
+        pipe(
+          this.api.retrieveItemDetailsInFolder(drivewsid),
+          // TE.fromOption(() => error(`missing root in cache`)),
+        )),
+      TE.map(({ cached, actual }) => wasChangedF(cached, actual)),
+    )
+  }
+
   public updateCachedEntityByPath = (
     path: string,
   ): TE.TaskEither<Error, DriveDetails> => {
@@ -244,16 +289,11 @@ export class Drive {
           TE.fromOption(() => error(`missing path ${path} in cache`)),
         )),
       TE.chainFirst(({ item }) =>
-        this.api.moveItemsToTrash([
-          {
-            drivewsid: item.content.drivewsid,
-            etag: item.content.etag,
-          },
-        ])
+        this.api.moveItemsToTrash([{ drivewsid: item.content.drivewsid, etag: item.content.etag }])
       ),
       TE.chainFirstW(() => this.cacheSet(this.cache.removeByPath(path))),
       TE.chainW(({ item }) =>
-        item.type !== 'ROOT'
+        !isRootCacheEntity(item)
           ? pipe(
             this.updateCachedEntityById(item.content.parentId),
             TE.chain(() => TE.of(constVoid())),
