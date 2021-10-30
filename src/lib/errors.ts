@@ -7,7 +7,7 @@ export class InvalidGlobalSessionResponse extends Error {
   readonly tag = 'InvalidGlobalSessionResponse'
 
   constructor(public readonly httpResponse: HttpResponse) {
-    super()
+    super('InvalidGlobalSessionResponse')
   }
 
   public static is(a: unknown): a is InvalidGlobalSessionResponse {
@@ -21,7 +21,7 @@ export class UnexpectedResponse extends Error {
     public readonly httpResponse: HttpResponse,
     public readonly json: E.Either<unknown, unknown>,
   ) {
-    super()
+    super('UnexpectedResponse')
   }
 
   static is(error: unknown): error is UnexpectedResponse {
@@ -42,7 +42,7 @@ export class UnexpectedResponse extends Error {
 export class FileReadingError extends Error {
   readonly tag = 'FileReadingError'
 
-  constructor(public readonly error: unknown, message?: string) {
+  constructor(public readonly error: unknown, message = 'FileReadingError') {
     super(message)
   }
 
@@ -55,7 +55,7 @@ export class FileReadingError extends Error {
   }
 }
 
-class SomeError extends Error {
+export class SomeError extends Error {
   constructor(message?: string) {
     super(message)
   }
@@ -70,12 +70,16 @@ export class InvalidJsonInResponse extends Error {
     public readonly httpResponse: HttpResponse,
     public readonly input: string,
   ) {
-    super()
+    super('InvalidJsonInResponse')
   }
   readonly tag = 'InvalidJsonInResponse'
 
   public static is(a: unknown): a is InvalidJsonInResponse {
     return a instanceof InvalidJsonInResponse
+  }
+
+  static create(httpResponse: HttpResponse, input: string): InvalidJsonInResponse {
+    return new InvalidJsonInResponse(httpResponse, input)
   }
 }
 
@@ -84,7 +88,7 @@ export class MissingResponseBody extends Error {
     public readonly httpResponse: HttpResponse,
     public readonly error: unknown,
   ) {
-    super()
+    super('MissingResponseBody')
   }
   readonly tag = 'ErrorReadingResponseBody'
 
@@ -111,7 +115,7 @@ export class JsonParsingError extends Error {
 export class TypeDecodingError extends Error {
   readonly tag = 'TypeDecodingError'
 
-  constructor(public readonly errors: t.Errors, message?: string) {
+  constructor(public readonly errors: t.Errors, message = 'TypeDecodingError') {
     super(message)
   }
 
@@ -128,7 +132,7 @@ export class TypeDecodingError extends Error {
 export class BufferDecodingError extends Error {
   readonly tag = 'BufferDecodingError'
 
-  constructor(public readonly error: unknown, message?: string) {
+  constructor(public readonly error: unknown, message = 'BufferDecodingError') {
     super(message)
   }
 
@@ -142,3 +146,4 @@ export class BufferDecodingError extends Error {
 }
 
 export const error = (message: string): SomeError => new SomeError(message)
+export const ensureError = (e: unknown): SomeError => e instanceof Error ? e : error(`${e}`)

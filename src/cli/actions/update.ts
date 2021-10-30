@@ -1,41 +1,31 @@
-import { string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as O from 'fp-ts/lib/Option'
+import { snd } from 'fp-ts/lib/ReadonlyTuple'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import path from 'path'
-import { isDeepStrictEqual } from 'util'
-import {
-  Cache,
-  isDetailsCacheEntity,
-  isFolderLikeCacheEntity,
-  isRootCacheEntity,
-} from '../../icloud/drive/cache/cachef'
-import { CacheEntityAppLibrary, CacheEntityFolder } from '../../icloud/drive/cache/types'
-import { Drive } from '../../icloud/drive/drive'
-import { fileName, hierarchyToPath } from '../../icloud/drive/helpers'
-import {
-  DriveDetails,
-  DriveDetailsPartialWithHierarchy,
-  Hierarchy,
-  HierarchyItem,
-  isFolderDetails,
-  isHierarchyItemRoot,
-  isNotRootDetails,
-  isRootDetails,
-  rootDrivewsid,
-} from '../../icloud/drive/types'
-import { WasFolderChanged } from '../../icloud/drive/update'
+import { fst } from 'fp-ts/lib/Tuple'
+import { Cache, isFolderLikeCacheEntity } from '../../icloud/drive/cache/cachef'
+import { DriveApi } from '../../icloud/drive/drive-api'
+import * as DF from '../../icloud/drive/drivef'
+import { hierarchyToPath } from '../../icloud/drive/helpers'
+import { DriveDetails, rootDrivewsid } from '../../icloud/drive/types'
 import { error } from '../../lib/errors'
+import { logger } from '../../lib/logging'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
+import {
+  compareDetails,
+  compareDriveDetailsPartialWithHierarchy,
+  getCachedDetailsPartialWithHierarchyById,
+} from './helpers'
+
 type Output = string
 type ErrorOutput = Error
 
 type Change = 'ParentChanged'
-
+/*
 const wasChanged = (
   cached: CacheEntityFolder,
   freshDetails: DriveDetails,
@@ -51,131 +41,149 @@ const wasChanged = (
     newItems: [],
     removedItems: [],
   }
-}
-
+} */
+/*
 const wasAnythingChangedInFolderHierarchy = (
   cachedHierarchy: DriveDetailsPartialWithHierarchy,
   actualHierarchy: DriveDetailsPartialWithHierarchy,
 ) => {
   return {}
 }
-
-const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
-  return {
-    same: isDeepStrictEqual(cached, actual),
-    path: hierarchyToPath(cached) !== hierarchyToPath(actual),
-    pathByIds: !pipe(
-      A.getEq(string.Eq).equals(
-        cached.map(_ => _.drivewsid),
-        actual.map(_ => _.drivewsid),
-      ),
-    ),
-  }
-}
-
-const compareItems = (cached: HierarchyItem[], actual: HierarchyItem[]) => {
-  return {
-    same: isDeepStrictEqual(cached, actual),
-    missing: pipe(
-      A.difference(string.Eq)(
-        cached.map(_ => _.drivewsid),
-        actual.map(_ => _.drivewsid),
-      ),
-    ),
-    new: pipe(
-      A.difference(string.Eq)(
-        actual.map(_ => _.drivewsid),
-        cached.map(_ => _.drivewsid),
-      ),
-    ),
-    etag: pipe(
-      actual,
-    ),
-  }
-}
-
-const getCachedHierarchyByIdRecursive = (
-  cache: Cache,
-  drivewsid: string,
-): E.Either<Error, Hierarchy> => {
-  return pipe(
-    E.Do,
-    E.bind('item', () => cache.getFolderByIdE(drivewsid)),
-    E.bind('path', () => cache.getCachedPathForIdE(drivewsid)),
-    E.bind('result', ({ item }) =>
-      isRootCacheEntity(item)
-        ? E.of<Error, Hierarchy>([{ drivewsid: rootDrivewsid }])
-        : pipe(
-          getCachedHierarchyByIdRecursive(cache, item.content.parentId),
-          E.map((
-            h,
-          ): Hierarchy => [...h, {
-            drivewsid: item.content.drivewsid,
-            name: item.content.name,
-            etag: item.content.etag,
-          }]),
-        )),
-    E.map(_ => _.result),
-    // E.map(_ => {
-    //   return pipe(
-    //     _.result,
-    //     A.dropRight(1),
-    //   )
-    // }),
-  )
-}
-
+ */
+/*
 const getCachedHierarchyById = (
   cache: Cache,
   drivewsid: string,
 ) => {
   return pipe(
-    getCachedHierarchyByIdRecursive(cache, drivewsid),
+    cache.getCachedHierarchyByIdRecursive(drivewsid),
     E.map(A.dropRight(1)),
   )
 }
+ */
 
-const getCachedDetailsPartialWithHierarchyById = (
+// function updateCacheItemRecursive(
+//   actualItem: FolderLikeItem,
+//   cache: Cache,
+//   api: DriveApi,
+// ) {
+//   return pipe(
+//     cache.getById(actualItem.drivewsid),
+//     O.fold(
+//       () => cache.putItem(actualItem),
+//       details =>
+//         !details.hasDetails
+//           ? cache.putItem(actualItem)
+//           : pipe(
+//             api.retrieveItemDetailsInFolder(actualItem.drivewsid),
+//             TE.chain(updateCacheDetailsRecursive),
+//           ),
+//     ),
+//   )
+// }
+/*
+function updateCacheDetailsRecursive(
+  actualDetails: DriveDetails,
   cache: Cache,
-  drivewsid: string,
-): E.Either<Error, DriveDetailsPartialWithHierarchy> => {
+  api: DriveApi,
+): TE.TaskEither<Error, Cache> {
   return pipe(
-    E.Do,
-    E.bind('details', () =>
-      pipe(
-        cache.getFolderByIdE(drivewsid),
-        E.filterOrElse(isDetailsCacheEntity, () => error(`missing details`)),
-      )),
-    E.bind('hierarchy', () =>
-      pipe(
-        getCachedHierarchyByIdRecursive(cache, drivewsid),
-        E.map(A.dropRight(1)),
-      )),
-    E.bind('items', ({ details }) =>
-      E.of(details.content.items.map(item => ({
-        drivewsid: item.drivewsid,
-        name: item.name,
-        etag: item.etag,
-      })))),
-    E.map(({ details, items, hierarchy }): DriveDetailsPartialWithHierarchy => ({
-      ...details.content,
-      items,
-      hierarchy,
-    })),
+    cache.getById(actualDetails.drivewsid),
+    O.fold(
+      () => TE.fromEither(cache.putDetails(actualDetails)),
+      details =>
+        !details.hasDetails
+          ? TE.fromEither(cache.putDetails(actualDetails))
+          : pipe(
+            compareDetails(details.content, actualDetails),
+            ({ added, missing, updated }) =>
+              pipe(
+                missing.items.map(_ => _.drivewsid),
+                cache.removeByIds,
+                TE.of,
+                TE.chain(cache => TE.of(cache)),
+              ),
+          ),
+    ),
   )
-}
+} */
 
-const compareDriveDetailsPartialWithHierarchy = (
-  cached: DriveDetailsPartialWithHierarchy,
-  actual: DriveDetailsPartialWithHierarchy,
-) => {
-  return {
-    etag: cached.etag !== actual.etag,
-    name: cached.name !== actual.name,
-    // parentId: cached.parentId !== actual.parentId,
-    hierarchy: compareHierarchies(cached.hierarchy, actual.hierarchy),
-    items: compareItems(cached.items, actual.items),
-  }
+// export function updateFoldersDetailsRecursively(
+//   drivewsids: string[],
+//   cache: Cache,
+//   api: DriveApi,
+// ): TE.TaskEither<Error, DriveDetails[]> {
+//   logger.debug({ updateFoldersDetailsRecursively: { drivewsids } })
+
+//   return pipe(
+//     cache.getByIds(drivewsids),
+//     A.filterMap(O.chain(v => v.hasDetails ? O.some(v) : O.none)),
+//     details =>
+//       pipe(
+//         TE.Do,
+//         TE.bind('actualDetails', () =>
+//           pipe(
+//             details.map(_ => _.content.drivewsid),
+//             api.retrieveItemDetailsInFoldersHierarchy,
+//           )),
+//         TE.bind('cache', ({ actualDetails }) =>
+//           pipe(
+//             A.zip(details, actualDetails),
+//             A.map(([a, b]) => compareDetails(a.content, b)),
+//             flow(
+//               A.map(_ => _.updated.folders),
+//               A.flatten,
+//               A.map(snd),
+//             ),
+//             A.map(_ => _.drivewsid),
+//             drivewsids =>
+//               drivewsids.length > 0
+//                 ? pipe(
+//                   updateFoldersDetailsRecursively(drivewsids, cache, api),
+//                   TE.map(A.concat(actualDetails)),
+//                 )
+//                 : TE.of(actualDetails),
+//           )),
+//         TE.chain(({ cache, actualDetails }) => TE.of(cache)),
+//       ),
+//   )
+// }
+
+export const checkForUpdates = ({
+  sessionFile,
+  cacheFile,
+  path,
+}: Env & {
+  path: string
+}) => {
+  return cliAction(
+    { sessionFile, cacheFile, noCache: false, dontSaveCache: true },
+    ({ cache, api }) =>
+      pipe(
+        cache.getFolderByPathE(path),
+        SRTE.fromEither,
+        SRTE.chain(_ => DF.updateFoldersDetailsRecursively([_.content.drivewsid])),
+        f => f(cache)(api),
+        TE.chainFirst(([items, cache]) => Cache.trySaveFile(cache, cacheFile)),
+        TE.map(fst),
+      ),
+    // pipe(
+    //   TE.Do,
+    //   TE.bind('result', () =>
+    //     pipe(
+    //       updateFoldersDetailsRecursively([rootDrivewsid], cache, api),
+    //       TE.chain(updatedDetails =>
+    //         pipe(
+    //           updatedDetails,
+    //           cache.putDetailss,
+    //           TE.fromEither,
+    //           TE.chain(Cache.trySaveFileF('data/updated-cache.json')),
+    //           // A.map(_ => cache.getCachedPathForId(_.drivewsid)),
+    //         )
+    //       ),
+    //     )),
+    // ),
+  )
 }
 
 export const update = (
@@ -225,7 +233,10 @@ export const update = (
             TE.bind('changes', ({
               cachedHierarchy,
               hierarchy,
-            }) => TE.of(compareDriveDetailsPartialWithHierarchy(cachedHierarchy, hierarchy[0]))),
+            }) =>
+              TE.of(
+                compareDriveDetailsPartialWithHierarchy(cachedHierarchy, hierarchy[0]),
+              )),
             // TE.map(details => wasChanged(cached, details)),
           )
           // const etag = cached.content.etag

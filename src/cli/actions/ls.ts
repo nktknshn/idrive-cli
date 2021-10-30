@@ -1,12 +1,14 @@
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import * as B from 'fp-ts/lib/boolean'
-import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
+import { constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import Path from 'path'
-import { isFolderLikeType } from '../../icloud/drive/cache/cachef'
+import { Cache, isFolderLikeType } from '../../icloud/drive/cache/cachef'
+import * as DF from '../../icloud/drive/drivef'
 import { fileName } from '../../icloud/drive/helpers'
 import {
   DriveChildrenItem,
@@ -17,6 +19,7 @@ import {
   isFolderLike,
   isRootDetails,
   RecursiveFolder,
+  rootDrivewsid,
 } from '../../icloud/drive/types'
 import { logger, logReturn, logReturnAs } from '../../lib/logging'
 import { cliAction } from '../cli-action'
@@ -136,8 +139,9 @@ const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
       ['etag', result.etag],
       ['extension', result.extension],
       ['parentId', isRootDetails(result) ? '' : result.parentId],
-      ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
-      ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
+      [],
+      // ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
+      // ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
     ]
       .map(_ => _.join(':\t'))
       .join('\n')
@@ -233,35 +237,49 @@ const showRecursive2 = (folder: RecursiveFolder) => {
 }
 
 export const listUnixPath = (
-  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive, depth, listInfo }: Env & {
+  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive, depth, listInfo, update }: Env & {
     recursive: boolean
     path: string
     fullPath: boolean
     listInfo: boolean
+    update: boolean
     depth: number
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
   if (recursive) {
     return cliAction(
       { sessionFile, cacheFile, noCache },
-      ({ drive }) =>
+      ({ cache, api }) =>
         pipe(
-          drive.getFolderRecursiveByPath(path, { depth }),
-          TE.map(v => raw ? JSON.stringify(v) : showRecursive({})(v)),
+          // drive.getFolderRecursiveByPath(path, { depth }),
+          DF.getFolderRecursive(path, depth)(cache)(api),
+          TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
           // TE.map(_ => JSON.stringify(_)),
           // TE.map(raw ? showRaw : showDetails({ path, fullPath })),
         ),
     )
   }
 
-  const opts = { showDocwsid: listInfo, showDrivewsid: listInfo }
+  const opts = { showDocwsid: false, showDrivewsid: listInfo }
 
   return cliAction(
-    { sessionFile, cacheFile, noCache },
-    ({ drive }) =>
+    { sessionFile, cacheFile, noCache, dontSaveCache: true },
+    ({ cache, api }) =>
       pipe(
-        drive.getByPath(path),
-        TE.map(item =>
+        update
+          ? pipe(
+            cache.getFolderByPath(path),
+            SRTE.fromEither,
+            SRTE.chain(entity => DF.updateFoldersDetails([entity.content.drivewsid])),
+            SRTE.chain(() => DF.updateFoldersDetailsRecursively([rootDrivewsid])),
+          )
+          : SRTE.of(constVoid()),
+        v => SRTE.chainW(() => DF.getFileOrDetailsByPath(path))(v),
+        f => f(cache)(api),
+        noCache
+          ? TE.chainFirst(() => TE.of(constVoid()))
+          : TE.chainFirst(([item, cache]) => Cache.trySaveFile(cache, cacheFile)),
+        TE.map(([item, cache]) =>
           isFolderLike(item)
             ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
             : showFileInfo({ ...opts })(item)

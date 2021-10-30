@@ -1,6 +1,7 @@
 export { createFolders } from './createFolders'
 export { download } from './download'
 export { moveItemsToTrash } from './moveItemsToTrash'
+export { retrieveItemDetails } from './retrieveItemDetails'
 export { retrieveHierarchy } from './retrieveItemDetailsInFolders'
 export { retrieveItemDetailsInFolders } from './retrieveItemDetailsInFolders'
 export { upload } from './upload'

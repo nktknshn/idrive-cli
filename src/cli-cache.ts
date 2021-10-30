@@ -1,9 +1,11 @@
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
+import * as J from 'fp-ts/lib/Json'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { defaultCacheFile } from './config'
 import * as C from './icloud/drive/cache/cachef'
+import { ensureError } from './lib/errors'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
 function parseArgs() {
@@ -57,10 +59,12 @@ async function main() {
         TE.map(({ cache }) =>
           pipe(
             isDrivewsid(argv.path)
-              ? cache.getById(argv.path)
+              ? cache.getByIdWithPath(argv.path)
               : cache.getByPath(argv.path),
           )
         ),
+        TE.chain(flow(J.stringify, TE.fromEither)),
+        TE.mapLeft(ensureError),
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break

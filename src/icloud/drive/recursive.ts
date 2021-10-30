@@ -7,7 +7,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { error } from '../../lib/errors'
 import { logger } from '../../lib/logging'
 import { Drive } from './drive'
-import { DriveDetails, FolderItem, isFolderItem, isNotRootDetails, RecursiveFolder } from './types'
+import { DriveDetails, FolderLikeItem, isFolderLikeItem, isNotRootDetails, RecursiveFolder } from './types'
 
 export function getFolderRecursive(
   drive: Drive,
@@ -32,7 +32,7 @@ function getFolders(
   drivewsids: string[],
   depth: number,
 ): TE.TaskEither<Error, RecursiveFolder[]> {
-  const M = A.getMonoid<FolderItem>()
+  const M = A.getMonoid<FolderLikeItem>()
 
   logger.debug(`getFolders ${drivewsids} ${depth}`)
 
@@ -42,7 +42,7 @@ function getFolders(
     TE.bindW('foldersItems', ({ folders }) =>
       pipe(
         folders,
-        A.map(folder => pipe(folder.items, A.filter(isFolderItem))),
+        A.map(folder => pipe(folder.items, A.filter(isFolderLikeItem))),
         A.reduce(M.empty, M.concat),
         TE.of,
       )),

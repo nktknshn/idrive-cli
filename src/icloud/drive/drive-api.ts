@@ -9,13 +9,23 @@ import { fetchClient, FetchClientEither } from '../../lib/fetch-client'
 import { input } from '../../lib/input'
 import { logger } from '../../lib/logging'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
-import { download } from './requests'
+import { download, retrieveItemDetails } from './requests'
 import { retrieveHierarchy } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
-import { retrieveItemDetailsInFolders } from './requests/retrieveItemDetailsInFolders'
+import {
+  retrieveItemDetailsInFolders,
+  retrieveItemDetailsInFoldersHierarchy,
+} from './requests/retrieveItemDetailsInFolders'
 import { singleFileUpload, updateDocuments, upload } from './requests/upload'
-import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy, rootDrivewsid } from './types'
+import {
+  DriveDetails,
+  DriveDetailsFolder,
+  DriveDetailsPartialWithHierarchy,
+  DriveDetailsRoot,
+  isRootDetails,
+  rootDrivewsid,
+} from './types'
 
 const getContentType = (extension: string): string => {
   if (extension === '') {
@@ -85,6 +95,26 @@ export class DriveApi {
   }
 
   public getSession = (): ICloudSessionValidated => this.session
+
+  public getRoot = (): TE.TaskEither<Error, DriveDetailsRoot> => {
+    return pipe(
+      this.retrieveItemDetailsInFolder(rootDrivewsid),
+      TE.filterOrElse(isRootDetails, () => error(`invalid root details`)),
+    )
+  }
+
+  // public getZones = (): TE.TaskEither<Error, string[]> => {
+  //   return pipe(
+  //     this.getRoot()
+  //   )
+  // }
+
+  // public byZone = (zone: string): TE.TaskEither<Error, DriveDetailsRoot> => {
+  //   return pipe(
+  //     this.retrieveItemDetailsInFolder(rootDrivewsid),
+  //     TE.filterOrElse(isRootDetails, () => error(`invalid root details`)),
+  //   )
+  // }
 
   public upload = (sourceFilePath: string, targetId: string): TE.TaskEither<Error, void> => {
     const parsedSource = Path.parse(sourceFilePath)
@@ -180,12 +210,45 @@ export class DriveApi {
       TE.map((_) => _.response.body),
     )
   }
+  public retrieveItemDetailsInFoldersHierarchy = (drivewsids: string[]): TE.TaskEither<Error, DriveDetails[]> => {
+    logger.debug(`retrieveItemDetailsInFoldersHierarchy`, { drivewsids })
+
+    return pipe(
+      this.retryingQuery(() =>
+        retrieveItemDetailsInFoldersHierarchy(this.client, this.session, {
+          drivewsids,
+        })
+      ),
+      TE.chainFirstW(({ session }) =>
+        this.setSession({
+          accountData: this.session.accountData,
+          session,
+        })
+      ),
+      TE.map((_) => _.response.body),
+    )
+  }
 
   public retrieveHierarchy = (drivewsids: string[]): TE.TaskEither<Error, DriveDetailsPartialWithHierarchy[]> => {
     logger.debug(`retrieveHierarchy`, { drivewsids })
 
     return pipe(
       this.retryingQuery(() => retrieveHierarchy(this.client, this.session, { drivewsids })),
+      TE.chainFirstW(({ session }) =>
+        this.setSession({
+          accountData: this.session.accountData,
+          session,
+        })
+      ),
+      TE.map((_) => _.response.body),
+    )
+  }
+
+  public retrieveItemDetails = (drivewsids: string[]): TE.TaskEither<Error, unknown[]> => {
+    logger.debug(`retrieveItemDetails`, { drivewsids })
+
+    return pipe(
+      this.retryingQuery(() => retrieveItemDetails(this.client, this.session, { drivewsids })),
       TE.chainFirstW(({ session }) =>
         this.setSession({
           accountData: this.session.accountData,
@@ -204,13 +267,13 @@ export class DriveApi {
     )
   }
 
-  public getRoot = (): TE.TaskEither<Error, DriveDetails> => {
-    return pipe(
-      this.retrieveItemDetailsInFolders([rootDrivewsid]),
-      TE.map(A.lookup(0)),
-      TE.chain(TE.fromOption(() => error(`error getting root`))),
-    )
-  }
+  // public getRoot = (): TE.TaskEither<Error, DriveDetails> => {
+  //   return pipe(
+  //     this.retrieveItemDetailsInFolders([rootDrivewsid]),
+  //     TE.map(A.lookup(0)),
+  //     TE.chain(TE.fromOption(() => error(`error getting root`))),
+  //   )
+  // }
 
   public download = (
     documentId: string,

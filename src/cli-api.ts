@@ -7,10 +7,10 @@ import yargs from 'yargs/yargs'
 import { apiAction } from './cli/cli-actionF'
 import { defaultSessionFile } from './config'
 import { hierarchyToPath } from './icloud/drive/helpers'
-import { error } from './lib/errors'
+import { ensureError, error } from './lib/errors'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
-const actionsNames = ['retrieveHierarchy'] as const
+const actionsNames = ['retrieveHierarchy', 'retrieveItemDetails', 'retrieveItemDetailsInFolders'] as const
 
 type Action = (typeof actionsNames)[number]
 
@@ -30,6 +30,16 @@ function parseArgs() {
       _
         .positional('drivewsids', { type: 'string', array: true, demandOption: true })
         .options({}))
+    .command('retrieveItemDetails [drivewsids..]', 'get h for drivewsids', _ =>
+      _
+        .positional('drivewsids', { type: 'string', array: true, demandOption: true })
+        .options({}))
+    .command('retrieveItemDetailsInFolders [drivewsids..]', 'get h for drivewsids', _ =>
+      _
+        .positional('drivewsids', { type: 'string', array: true, demandOption: true })
+        .options({
+          h: { type: 'boolean', default: false },
+        }))
     .help()
 }
 
@@ -40,16 +50,51 @@ const actions = {
     debug: boolean
     drivewsids: string[]
   }) =>
-    pipe(
-      apiAction(
-        { sessionFile: argv.sessionFile },
-        ({ api }) =>
-          pipe(
-            TE.Do,
-            TE.bind('hierarchy', () => api.retrieveHierarchy(argv.drivewsids)),
-            TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
+    apiAction(
+      { sessionFile: argv.sessionFile },
+      ({ api }) =>
+        pipe(
+          TE.Do,
+          TE.bind('hierarchy', () => api.retrieveHierarchy(argv.drivewsids)),
+          TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
+        ),
+    ),
+  retrieveItemDetails: (argv: {
+    sessionFile: string
+    raw: boolean
+    debug: boolean
+    drivewsids: string[]
+  }) =>
+    apiAction(
+      { sessionFile: argv.sessionFile },
+      ({ api }) =>
+        pipe(
+          TE.Do,
+          TE.bind('details', () => api.retrieveItemDetails(argv.drivewsids)),
+          // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
+        ),
+    ),
+  retrieveItemDetailsInFolders: (argv: {
+    sessionFile: string
+    raw: boolean
+    debug: boolean
+    drivewsids: string[]
+    h: boolean
+  }) =>
+    apiAction(
+      { sessionFile: argv.sessionFile },
+      ({ api }) =>
+        pipe(
+          TE.Do,
+          TE.bind(
+            'details',
+            () =>
+              (argv.h
+                ? api.retrieveItemDetailsInFoldersHierarchy
+                : api.retrieveItemDetailsInFolders)(argv.drivewsids),
           ),
-      ),
+          // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
+        ),
     ),
 } as const
 
@@ -62,6 +107,8 @@ async function main() {
       : loggingLevels.info,
   )
 
+  logger.debug(argv)
+
   cacheLogger.add(
     loggingLevels.info,
   )
@@ -70,10 +117,12 @@ async function main() {
 
   assert(typeof command === 'string' && validateAction(command))
 
+  const te: TE.TaskEither<Error, unknown> = actions[command](argv)
+
   await pipe(
-    actions[command](argv),
+    te,
     TE.chain(flow(J.stringify, TE.fromEither)),
-    TE.mapLeft((e) => error(`${e}`)),
+    TE.mapLeft(ensureError),
     TE.fold(printer.errorTask, printer.printTask),
   )()
   // logger.debug(argv)

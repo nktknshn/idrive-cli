@@ -26,8 +26,8 @@ import {
   DriveFolderLike,
   isFile,
   isFolderDetails,
-  isFolderItem,
   isFolderLike,
+  isFolderLikeItem,
   isRootDetails,
   partitionFoldersFiles,
   RecursiveFolder,
@@ -58,7 +58,7 @@ export class Drive {
 
   public getRoot = (
     cache = this.cache,
-  ): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> => {
+  ): TE.TaskEither<Error, DriveDetailsRoot> => {
     return pipe(
       this.cachingRetrieveItemDetailsInFolder(rootDrivewsid, cache),
       TE.filterOrElseW(isRootDetails, () => error(`invalid root details`)),
@@ -129,7 +129,10 @@ export class Drive {
     return pipe(
       parsedPath,
       A.reduce(
-        this.getRoot(),
+        pipe(
+          this.getRoot(),
+          TE.map(_ => _ as DriveDetails | DriveChildrenItem),
+        ),
         (parent, itemName) =>
           pipe(
             TE.Do,
@@ -291,7 +294,7 @@ export class Drive {
       TE.chainFirst(({ item }) =>
         this.api.moveItemsToTrash([{ drivewsid: item.content.drivewsid, etag: item.content.etag }])
       ),
-      TE.chainFirstW(() => this.cacheSet(this.cache.removeByPath(path))),
+      // TE.chainFirstW(() => this.cacheSet(this.cache.removeByPath(path))),
       TE.chainW(({ item }) =>
         !isRootCacheEntity(item)
           ? pipe(

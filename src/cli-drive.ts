@@ -1,5 +1,6 @@
 import { boolean } from 'fp-ts'
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
+import * as J from 'fp-ts/lib/Json'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
@@ -10,7 +11,8 @@ import { consumeStream } from './icloud/drive/requests/download'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
 import { listUnixPath } from './cli/actions/ls'
-import { update } from './cli/actions/update'
+import { checkForUpdates, update } from './cli/actions/update'
+import { ensureError } from './lib/errors'
 
 function parseArgs() {
   return yargs(hideBin(process.argv))
@@ -21,6 +23,7 @@ function parseArgs() {
       noCache: { alias: 'n', default: false, type: 'boolean' },
       raw: { alias: 'r', default: false, type: 'boolean' },
       debug: { alias: 'd', default: false, type: 'boolean' },
+      update: { alias: 'u', default: false, type: 'boolean' },
     })
     .command('ls [path]', 'list files in a folder', _ =>
       _
@@ -40,6 +43,7 @@ function parseArgs() {
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
         }))
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
+    .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .help()
 }
@@ -54,7 +58,9 @@ async function main() {
   )
 
   cacheLogger.add(
-    loggingLevels.info,
+    argv.debug
+      ? loggingLevels.debug
+      : loggingLevels.info,
   )
 
   // logger.debug(argv)
@@ -83,6 +89,14 @@ async function main() {
     case 'update':
       await pipe(
         update(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
+    case 'check':
+      await pipe(
+        checkForUpdates(argv),
+        TE.chain(flow(J.stringify, TE.fromEither)),
+        TE.mapLeft(ensureError),
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break

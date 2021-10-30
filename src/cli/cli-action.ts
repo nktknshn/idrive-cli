@@ -7,7 +7,7 @@ import { InconsistentCache } from '../icloud/drive/cache/errors'
 import * as Drive from '../icloud/drive/drive'
 import * as DriveApi from '../icloud/drive/drive-api'
 import { readSessionFile, saveSession } from '../icloud/session/session-file'
-import { logger, logReturn, stderrLogger } from '../lib/logging'
+import { logger, logReturn, logReturnAs, stderrLogger } from '../lib/logging'
 import { EnvFiles } from './types'
 
 export function cliAction<Args, T>(
@@ -24,7 +24,13 @@ export function cliAction<Args, T>(
         noCache
           ? TE.of(C.Cache.create())
           : pipe(C.Cache.tryReadFromFile(cacheFile), TE.map(C.Cache.create)),
-        TE.orElseW((e) => TE.of(C.Cache.create())),
+        TE.orElseW((e) =>
+          pipe(
+            e,
+            logReturnAs('error'),
+            () => TE.of(C.Cache.create()),
+          )
+        ),
       )),
     TE.bindW('drive', ({ api, cache }) => TE.of(new Drive.Drive(api, cache))),
     TE.bind('result', ({ drive, api, cache }) =>

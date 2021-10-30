@@ -1,7 +1,15 @@
-import { pipe } from 'fp-ts/lib/function'
+import * as A from 'fp-ts/lib/Array'
+import * as E from 'fp-ts/lib/Either'
+import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { FetchClientEither } from '../../../lib/fetch-client'
-import { expectJson, ResponseParser, ResponseWithSession } from '../../../lib/response-reducer'
+import {
+  basicGetResponse1,
+  createHttpResponseReducer1,
+  expectJson,
+  ResponseParser,
+  ResponseWithSession,
+} from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
 import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy } from '../types'
@@ -10,6 +18,39 @@ interface RetrieveOpts {
   drivewsids: string[]
   partialData: boolean
   includeHierarchy: boolean
+}
+
+export function retrieveItemDetailsInFoldersHierarchy(
+  client: FetchClientEither,
+  { accountData, session }: ICloudSessionValidated,
+  props: { drivewsids: string[] },
+): TE.TaskEither<Error, ResponseWithSession<DriveDetails[]>> {
+  return retrieveItemDetailsInFoldersGeneric(
+    client,
+    { accountData, session },
+    pipe(
+      props.drivewsids.map((drivewsid) => [
+        { drivewsid, partialData: false, includeHierarchy: false },
+        { drivewsid, partialData: true, includeHierarchy: true },
+      ]),
+      A.flatten,
+    ),
+    pipe(
+      createHttpResponseReducer1(
+        flow(
+          basicGetResponse1(
+            (json: unknown): json is DriveDetails[] => Array.isArray(json),
+          ),
+          E.map(
+            flow(
+              A.chunksOf(2),
+              A.map(([a, b]) => ({ ...a, hierarchy: b.hierarchy })),
+            ),
+          ),
+        ),
+      ),
+    ),
+  )
 }
 
 function retrieveItemDetailsInFoldersGeneric<R>(

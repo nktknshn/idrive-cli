@@ -106,7 +106,7 @@ export const basicGetResponse1 = <R>(
       }
       else {
         return E.left(
-          new InvalidJsonInResponse(httpResponse, JSON.stringify(json.right)),
+          InvalidJsonInResponse.create(httpResponse, JSON.stringify(json.right)),
         )
       }
     }

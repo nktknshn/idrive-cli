@@ -10,15 +10,16 @@ import {
 
 export interface ICloudDriveCache {
   readonly byDrivewsid: { readonly [drivewsid: string]: ICloudDriveCacheEntity }
-  readonly byPath: { readonly [path: string]: ICloudDriveCacheEntity }
-  readonly root: O.Option<DriveDetailsRoot>
+  // readonly byPath: { readonly [path: string]: ICloudDriveCacheEntity }
+  // readonly root: O.Option<DriveDetailsRoot>
 }
 
 export type CacheEntityFolder =
-  | CacheEntityFolderRoot
+  | CacheEntityFolderRootDetails
   | CacheEntityFolderDetails
   | CacheEntityFolderItem
-  | CacheEntityAppLibrary
+  | CacheEntityAppLibraryDetails
+  | CacheEntityAppLibraryItem
 
 export type CacheEntityAppLibrary =
   | CacheEntityAppLibraryItem
@@ -30,7 +31,7 @@ export type ICloudDriveCacheEntity =
 
 export type ICloudDriveCacheEntityType = ICloudDriveCacheEntity['type']
 
-export class CacheEntityFolderRoot {
+export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
 
