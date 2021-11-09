@@ -12,7 +12,7 @@ import {
 } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy } from '../types'
+import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy, DriveDetailsWithHierarchy } from '../types'
 
 interface RetrieveOpts {
   drivewsids: string[]
@@ -24,7 +24,7 @@ export function retrieveItemDetailsInFoldersHierarchy(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
   props: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<DriveDetails[]>> {
+): TE.TaskEither<Error, ResponseWithSession<DriveDetailsWithHierarchy[]>> {
   return retrieveItemDetailsInFoldersGeneric(
     client,
     { accountData, session },
@@ -39,7 +39,7 @@ export function retrieveItemDetailsInFoldersHierarchy(
       createHttpResponseReducer1(
         flow(
           basicGetResponse1(
-            (json: unknown): json is DriveDetails[] => Array.isArray(json),
+            (json: unknown): json is DriveDetailsWithHierarchy[] => Array.isArray(json),
           ),
           E.map(
             flow(

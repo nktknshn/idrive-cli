@@ -14,7 +14,7 @@ export interface ICloudDriveCache {
   // readonly root: O.Option<DriveDetailsRoot>
 }
 
-export type CacheEntityFolder =
+export type CacheEntityFolderLike =
   | CacheEntityFolderRootDetails
   | CacheEntityFolderDetails
   | CacheEntityFolderItem
@@ -26,49 +26,92 @@ export type CacheEntityAppLibrary =
   | CacheEntityAppLibraryDetails
 
 export type ICloudDriveCacheEntity =
-  | CacheEntityFolder
+  | CacheEntityFolderLike
   | CacheEntityFile
 
 export type ICloudDriveCacheEntityType = ICloudDriveCacheEntity['type']
 
-export class CacheEntityFolderRootDetails {
+interface CacheEntity {
+  isFile(): this is CacheEntityFile
+  isFolderLike(): this is CacheEntityFolderLike
+}
+
+export class CacheEntityFolderRootDetails implements CacheEntity {
   readonly type = 'ROOT'
   readonly hasDetails = true
+
+  isFile(): this is CacheEntityFile {
+    return false
+  }
+
+  isFolderLike(): this is CacheEntityFolderLike {
+    return true
+  }
 
   constructor(public readonly content: DriveDetailsRoot) {}
 }
 
-export class CacheEntityFolderDetails {
+export class CacheEntityFolderDetails implements CacheEntity {
   readonly type = 'FOLDER'
   readonly hasDetails = true
+  isFile(): this is CacheEntityFile {
+    return false
+  }
 
+  isFolderLike(): this is CacheEntityFolderLike {
+    return true
+  }
   constructor(public readonly content: DriveDetailsFolder) {}
 }
 
-export class CacheEntityFolderItem {
+export class CacheEntityFolderItem implements CacheEntity {
   readonly type = 'FOLDER'
   readonly hasDetails = false
+  isFile(): this is CacheEntityFile {
+    return false
+  }
 
+  isFolderLike(): this is CacheEntityFolderLike {
+    return true
+  }
   constructor(public readonly content: DriveChildrenItemFolder) {}
 }
 
-export class CacheEntityAppLibraryDetails {
+export class CacheEntityAppLibraryDetails implements CacheEntity {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = true
+  isFile(): this is CacheEntityFile {
+    return false
+  }
 
+  isFolderLike(): this is CacheEntityFolderLike {
+    return true
+  }
   constructor(public readonly content: DriveDetailsAppLibrary) {}
 }
 
-export class CacheEntityAppLibraryItem {
+export class CacheEntityAppLibraryItem implements CacheEntity {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = false
+  isFile(): this is CacheEntityFile {
+    return false
+  }
 
+  isFolderLike(): this is CacheEntityFolderLike {
+    return true
+  }
   constructor(public readonly content: DriveChildrenItemAppLibrary) {}
 }
 
-export class CacheEntityFile {
+export class CacheEntityFile implements CacheEntity {
   readonly type = 'FILE'
   readonly hasDetails = false
+  isFile(): this is CacheEntityFile {
+    return true
+  }
 
+  isFolderLike(): this is CacheEntityFolderLike {
+    return false
+  }
   constructor(public readonly content: DriveChildrenItemFile) {}
 }

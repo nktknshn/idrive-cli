@@ -5,6 +5,10 @@ import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
+import Path from 'path'
+
+export { Path }
+export const cast = <T>() => <R extends T>(v: R): T => v
 
 export type ObjectType = Record<string, unknown>
 

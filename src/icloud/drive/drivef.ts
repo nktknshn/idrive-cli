@@ -1,18 +1,23 @@
+import { string } from 'fp-ts'
 import { apS, getApplySemigroup, sequenceS, sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { apply, constant, flow, identity, pipe } from 'fp-ts/lib/function'
+import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
+import { Functor, Functor1, map } from 'fp-ts/lib/Functor'
+import { URIS } from 'fp-ts/lib/HKT'
 import * as J from 'fp-ts/lib/Json'
 import * as O from 'fp-ts/lib/Option'
 import * as ROR from 'fp-ts/lib/ReadonlyRecord'
 import * as R from 'fp-ts/lib/Record'
+import { Semigroup } from 'fp-ts/lib/Semigroup'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { snd } from 'fp-ts/lib/Tuple'
 import { compareDetails } from '../../cli/actions/helpers'
 import { error } from '../../lib/errors'
-import { cacheLogger, logger, logReturn } from '../../lib/logging'
-import { Cache } from './cache/cachef'
+import { cacheLogger, logger, logReturn, logReturnAs } from '../../lib/logging'
+import { cast } from '../../lib/util'
+import { Cache, isFolderLikeCacheEntity, PartialValidPath } from './cache/cachef'
 import { DriveApi } from './drive-api'
 import { fileName, parsePath } from './helpers'
 import {
@@ -20,6 +25,9 @@ import {
   DriveChildrenItemFile,
   DriveDetails,
   DriveDetailsRoot,
+  DriveDetailsWithHierarchy,
+  DriveFolderLike,
+  DriveItemDetails,
   FolderLikeItem,
   isFile,
   isFolderDetails,
@@ -31,50 +39,67 @@ import {
   rootDrivewsid,
 } from './types'
 
-type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
+export { ls } from './drivef/ls'
+
+export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
 
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<FolderLikeItem>()
 
-const readEnv = sequenceS(SRTE.Apply)({
+export const readEnv = sequenceS(SRTE.Apply)({
   cache: SRTE.get<Cache, DriveApi>(),
   api: SRTE.ask<Cache, DriveApi>(),
 })
+
+// export const retrieveItemDetailsInFoldersHierarchy = (drivewsids: string[]): DriveM<DriveDetailsWithHierarchy[]> => {
+//   pipe(
+//     readEnv,
+//     SRTE.bind('task', ({ cache }) => SRTE.fromEither(cache.getFolderDetailsByIds(drivewsids))),
+//   )
+// }
 
 export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<DriveDetails[]> =>
   pipe(
     readEnv,
     SRTE.bind('task', ({ cache }) => SRTE.fromEither(cache.getFolderDetailsByIds(drivewsids))),
-    SRTE.map(
-      logReturn(({ task }) =>
-        cacheLogger.debug(`${task.missed.length} missed caches (${task.missed}), ${task.cached.length} hits`)
-      ),
-    ),
-    SRTE.chain(({ api, cache, task: { missed, cached } }) =>
+    // SRTE.map(
+    //   logReturn(({ task }) =>
+    //     cacheLogger.debug(`${task.missed.length} missed caches (${task.missed}), ${task.cached.length} hits`)
+    //   ),
+    // ),
+    SRTE.chain(({ api, task: { missed, cached } }) =>
       pipe(
-        SRTE.fromTaskEither<Error, DriveDetails[], Cache, DriveApi>(
-          missed.length > 0
-            ? api.retrieveItemDetailsInFolders(missed)
-            : TE.of([]),
-        ),
-        SRTE.chain(details =>
+        readEnv,
+        SRTE.chain(({ cache }) =>
           pipe(
-            cache.putDetailss(details),
-            SRTE.fromEither,
-            SRTE.chain(cache => SRTE.put(cache)),
-            SRTE.chain(() => SRTE.of([...cached.map(_ => _.content), ...details])),
+            SRTE.fromTaskEither<Error, DriveDetails[], Cache, DriveApi>(
+              missed.length > 0
+                ? api.retrieveItemDetailsInFolders(missed)
+                : TE.of([]),
+            ),
+            SRTE.chain(details =>
+              pipe(
+                putDetailss(details),
+                // cache.putDetailss(details),
+                // SRTE.fromEither,
+                // SRTE.chain(cache => SRTE.put(cache)),
+                SRTE.chain(() => SRTE.of([...cached.map(_ => _.content), ...details])),
+              )
+            ),
           )
         ),
       )
     ),
+    // SRTE.chainFirstW(logCache()),
   )
 
-const expectSome = SRTE.chainOptionK(() => error(`invalid response (empty array)`))
+export const expectSome = SRTE.chainOptionK(() => error(`invalid response (empty array)`))
 
 export const retrieveItemDetailsInFolder = (drivewsid: string): DriveM<DriveDetails> =>
   pipe(
     retrieveItemDetailsInFolders([drivewsid]),
     expectSome(A.lookup(0)),
+    // SRTE.chainFirstW(logCache()),
   )
 
 const getSubfolders = (folders: DriveDetails[]) =>
@@ -90,6 +115,8 @@ export const getRoot = (): DriveM<DriveDetailsRoot> =>
     SRTE.filterOrElseW(isRootDetails, () => error(`invalid root details`)),
   )
 
+export const getFolderDetailsById = retrieveItemDetailsInFolder
+
 export const getFolderRecursive = (
   path: string,
   depth: number,
@@ -97,44 +124,82 @@ export const getFolderRecursive = (
   pipe(
     readEnv,
     SRTE.bind('parent', () => getFolderByPath(path)),
-    SRTE.bind('children', ({ parent }) => getFoldersRecursively([parent.drivewsid], depth)),
-    expectSome((_) => A.lookup(0, _.children)),
+    SRTE.chain(({ parent }) => getFoldersRecursively([parent.drivewsid], depth)),
+    expectSome(A.lookup(0)),
   )
 
 export const getFolderByPath = (path: string): DriveM<DriveDetails> =>
   pipe(
-    getFileOrDetailsByPath(path),
+    getItemByPath(path),
     SRTE.filterOrElse(isFolderDetails, () => error(`is not folder`)),
   )
 
-export const getFileOrDetailsByPath = (
+export const getFileOrFolderByPath = (
   path: string,
 ): DriveM<DriveDetails | DriveChildrenItemFile> =>
   pipe(
     getItemByPath(path),
     SRTE.chain(item =>
-      isFolderLike(item)
+      isFolderLike(item) && !isFolderDetails(item)
         ? retrieveItemDetailsInFolder(item.drivewsid)
-        : SRTE.of(item as DriveDetails | DriveChildrenItemFile)
+        : SRTE.of(item)
     ),
   )
 
-export const getItemByPath = (path: string): DriveM<DriveDetails | DriveChildrenItem> => {
-  const [, ...parsedPath] = parsePath(path)
+export const ensureDetails = (
+  itemOrDetails: DriveFolderLike | DriveChildrenItemFile,
+): DriveM<DriveDetails | DriveChildrenItemFile> =>
+  pipe(
+    isFolderLike(itemOrDetails) && !isFolderDetails(itemOrDetails)
+      ? retrieveItemDetailsInFolder(itemOrDetails.drivewsid)
+      : SRTE.of(itemOrDetails),
+  )
 
-  return pipe(
-    parsedPath,
-    A.reduce(
-      pipe(
-        getRoot(),
-        SRTE.map(v => v as DriveDetails | DriveChildrenItem),
+export const withCache = <T>(initialCache: Cache, sg: Semigroup<Cache>) =>
+  (
+    f: () => DriveM<T>,
+  ): DriveM<T> =>
+    pipe(
+      readEnv,
+      SRTE.chain(({ cache }) =>
+        pipe(
+          SRTE.put(initialCache),
+          SRTE.chain(f),
+          SRTE.chainW(result =>
+            pipe(
+              SRTE.get<Cache, DriveApi, Error>(),
+              SRTE.chain((c: Cache) => SRTE.put(sg.concat(cache, c))),
+              SRTE.map(() => result),
+            )
+          ),
+        )
       ),
+    )
+
+export const withEmptyCache = <T>(sg: Semigroup<Cache>) =>
+  (f: () => DriveM<T>): DriveM<T> => withCache<T>(Cache.create(), sg)(f)
+
+export const getItemByPathRelativeG = (
+  path: string[],
+  parent: DriveFolderLike,
+): DriveM<DriveFolderLike | DriveChildrenItemFile> => {
+  logger.debug(`getItemByPathRelativeG: ${path} ${parent.drivewsid}`)
+  return pipe(
+    path,
+    A.reduce(
+      SRTE.of<Cache, DriveApi, Error, DriveFolderLike | DriveChildrenItemFile>(parent),
       (parent, itemName) =>
         pipe(
           ado({
             parent: pipe(
               parent,
-              SRTE.filterOrElse(isFolderDetails, p => error(`${p.drivewsid} is not a folder`)),
+              SRTE.chain((parent): DriveM<DriveDetails> =>
+                isFile(parent)
+                  ? SRTE.left(error(`${parent.drivewsid} is not a folder`))
+                  : !isFolderDetails(parent)
+                  ? retrieveItemDetailsInFolder(parent.drivewsid)
+                  : SRTE.of(parent)
+              ),
             ),
           }),
           SRTE.bind('item', ({ parent }) =>
@@ -143,13 +208,41 @@ export const getItemByPath = (path: string): DriveM<DriveDetails | DriveChildren
             )(
               pipe(parent.items, A.findFirst(item => itemName == fileName(item))),
             )),
-          SRTE.chain(({ item }) =>
-            isFile(item)
-              ? SRTE.of(item as DriveDetails | DriveChildrenItem)
-              : retrieveItemDetailsInFolder(item.drivewsid)
-          ),
+          SRTE.map(_ => _.item),
+          // SRTE.chain(({ item }): DriveM<DriveDetails | DriveChildrenItemFile> =>
+          //   isFile(item)
+          //     ? SRTE.of(item)
+          //     : retrieveItemDetailsInFolder(item.drivewsid)
+          // ),
         ),
     ),
+    // SRTE.chainFirstW(logCache()),
+  )
+}
+
+export const logCache = (msg?: string) =>
+  () =>
+    pipe(
+      readEnv,
+      SRTE.map(_ => _.cache.get()),
+      SRTE.map(logReturnAs(`${msg ?? ''} cache`)),
+    )
+
+export const getItemByPathRelative = (
+  path: string[],
+  parentId: string,
+): DriveM<DriveFolderLike | DriveChildrenItemFile> => {
+  return pipe(
+    getFolderDetailsById(parentId),
+    SRTE.chain(parent => getItemByPathRelativeG(path, parent)),
+  )
+}
+
+export const getItemByPath = (path: string): DriveM<DriveDetails | DriveChildrenItem> => {
+  const [, ...parsedPath] = parsePath(path)
+
+  return pipe(
+    getItemByPathRelative(parsedPath, rootDrivewsid),
   )
 }
 
@@ -180,14 +273,73 @@ export const getFoldersRecursively = (drivewsids: string[], depth: number): Driv
   )
 }
 
+export const updateCacheByIds = (
+  drivewsids: string[],
+): DriveM<DriveDetailsWithHierarchy[]> =>
+  pipe(
+    readEnv,
+    SRTE.chain(({ cache }) =>
+      pipe(
+        cache.getByIds(drivewsids),
+        A.filterMap(identity),
+        A.map(_ => isFolderLikeCacheEntity(_) ? _.content.drivewsid : _.content.parentId),
+        A.uniq(string.Eq),
+        updateFoldersDetails,
+      )
+    ),
+  )
+
+export const updateFolderDetailsByPath = (
+  path: string,
+): DriveM<DriveDetailsWithHierarchy> =>
+  pipe(
+    readEnv,
+    SRTE.chainW(({ cache }) =>
+      pipe(
+        cache.getFolderByPathE(path),
+        SRTE.fromEither,
+        SRTE.chain(_ => updateFoldersDetails([_.content.drivewsid])),
+        expectSome(A.lookup(0)),
+      )
+    ),
+  )
+
+export const putDetailss = (detailss: DriveDetails[]): DriveM<void> =>
+  pipe(
+    readEnv,
+    SRTE.chainW(({ cache }) =>
+      pipe(
+        cache.putDetailss(detailss),
+        SRTE.fromEither,
+        SRTE.chain(cache => SRTE.put(cache)),
+        SRTE.map(constVoid),
+        // SRTE.map(() => detailss),
+      )
+    ),
+  )
+
+export const putItems = (detailss: DriveItemDetails[]): DriveM<void> =>
+  pipe(
+    readEnv,
+    SRTE.chainW(({ cache }) =>
+      pipe(
+        cache.putItems(detailss),
+        SRTE.fromEither,
+        SRTE.chain(cache => SRTE.put(cache)),
+        SRTE.map(constVoid),
+        // SRTE.map(() => detailss),
+      )
+    ),
+  )
+
 export const updateFoldersDetails = (
   drivewsids: string[],
-): DriveM<DriveDetails[]> => {
+): DriveM<DriveDetailsWithHierarchy[]> => {
   return pipe(
     readEnv,
     SRTE.chainW(({ api, cache }) =>
       pipe(
-        api.retrieveItemDetailsInFoldersHierarchy(drivewsids),
+        api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
         SRTE.fromTaskEither,
         SRTE.chain(details =>
           pipe(
@@ -202,9 +354,25 @@ export const updateFoldersDetails = (
   )
 }
 
+// export const move = (
+//   srcpath: string,
+//   dstpath: string,
+// ): DriveM<DriveDetailsWithHierarchy> =>
+//   pipe(
+//     readEnv,
+//     SRTE.chainW(({ cache }) =>
+//       pipe(
+//         cache.getFolderByPathE(path),
+//         SRTE.fromEither,
+//         SRTE.chain(_ => updateFoldersDetails([_.content.drivewsid])),
+//         expectSome(A.lookup(0)),
+//       )
+//     ),
+//   )
+
 export const updateFoldersDetailsRecursively = (
   drivewsids: string[],
-): DriveM<DriveDetails[]> => {
+): DriveM<DriveDetailsWithHierarchy[]> => {
   logger.debug('updateFoldersDetailsRecursively')
   return pipe(
     readEnv,
@@ -216,7 +384,7 @@ export const updateFoldersDetailsRecursively = (
     SRTE.bind('actualDetails', ({ cachedDetails, api, cache }) =>
       SRTE.fromTaskEither(pipe(
         cachedDetails.map(_ => _.content.drivewsid),
-        api.retrieveItemDetailsInFoldersHierarchy,
+        api.retrieveItemDetailsInFoldersHierarchies,
       ))),
     SRTE.bindW('result', ({ cachedDetails, actualDetails }) =>
       pipe(

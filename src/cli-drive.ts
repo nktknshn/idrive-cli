@@ -8,9 +8,10 @@ import { cliAction } from './cli/cli-action'
 import { Env } from './cli/types'
 import { defaultCacheFile, defaultSessionFile } from './config'
 import { consumeStream } from './icloud/drive/requests/download'
-import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
+import { cacheLogger, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
 
 import { listUnixPath } from './cli/actions/ls'
+import { move } from './cli/actions/move'
 import { checkForUpdates, update } from './cli/actions/update'
 import { ensureError } from './lib/errors'
 
@@ -45,6 +46,13 @@ function parseArgs() {
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
+    .command(
+      'mv <srcpath> <dstpath>',
+      'move',
+      (_) =>
+        _.positional('srcpath', { type: 'string', demandOption: true })
+          .positional('dstpath', { type: 'string', demandOption: true }),
+    )
     .help()
 }
 
@@ -58,6 +66,12 @@ async function main() {
   )
 
   cacheLogger.add(
+    argv.debug
+      ? loggingLevels.debug
+      : loggingLevels.info,
+  )
+
+  stderrLogger.add(
     argv.debug
       ? loggingLevels.debug
       : loggingLevels.info,
@@ -89,6 +103,12 @@ async function main() {
     case 'update':
       await pipe(
         update(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
+    case 'mv':
+      await pipe(
+        move(argv),
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break
@@ -138,6 +158,15 @@ const rm = (
     ({ drive }) => drive.removeItemByPath(path),
   )
 }
+
+// const move = (
+//   { sessionFile, cacheFile, srcpath, dstpath, raw, noCache }: Env & { srcpath: string; dstpath: string },
+// ): TE.TaskEither<Error, unknown> => {
+//   return cliAction(
+//     { sessionFile, cacheFile, noCache },
+//     ({ drive }) => move({ sessionFile, cacheFile, srcpath, dstpath, noCache }),
+//   )
+// }
 
 /* const upload = (
   sourcePath: string,

@@ -70,7 +70,7 @@ const actions = {
       ({ api }) =>
         pipe(
           TE.Do,
-          TE.bind('details', () => api.retrieveItemDetails(argv.drivewsids)),
+          TE.bind('details', () => api.retrieveItemsDetails(argv.drivewsids)),
           // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
         ),
     ),
@@ -90,7 +90,7 @@ const actions = {
             'details',
             () =>
               (argv.h
-                ? api.retrieveItemDetailsInFoldersHierarchy
+                ? api.retrieveItemDetailsInFoldersHierarchies
                 : api.retrieveItemDetailsInFolders)(argv.drivewsids),
           ),
           // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),

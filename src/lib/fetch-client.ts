@@ -81,6 +81,9 @@ export const fetchClient: FetchClientEither = (config) =>
     },
     (error) => {
       httplogger.debug('error')
+      if (axios.isAxiosError(error)) {
+        httplogger.debug(error.response)
+      }
       return new FetchError(`Error fetching: ${String(error)}`)
     },
   )

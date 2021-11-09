@@ -15,11 +15,7 @@ import { error } from '../../lib/errors'
 import { logger } from '../../lib/logging'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
-import {
-  compareDetails,
-  compareDriveDetailsPartialWithHierarchy,
-  getCachedDetailsPartialWithHierarchyById,
-} from './helpers'
+import { compareDetails, compareItemWithHierarchy, getCachedDetailsPartialWithHierarchyById } from './helpers'
 
 type Output = string
 type ErrorOutput = Error
@@ -235,7 +231,7 @@ export const update = (
               hierarchy,
             }) =>
               TE.of(
-                compareDriveDetailsPartialWithHierarchy(cachedHierarchy, hierarchy[0]),
+                compareItemWithHierarchy(cachedHierarchy, hierarchy[0]),
               )),
             // TE.map(details => wasChanged(cached, details)),
           )

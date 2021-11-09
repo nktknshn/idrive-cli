@@ -24,13 +24,7 @@ export function cliAction<Args, T>(
         noCache
           ? TE.of(C.Cache.create())
           : pipe(C.Cache.tryReadFromFile(cacheFile), TE.map(C.Cache.create)),
-        TE.orElseW((e) =>
-          pipe(
-            e,
-            logReturnAs('error'),
-            () => TE.of(C.Cache.create()),
-          )
-        ),
+        TE.orElseW((e) => pipe(e, logReturnAs('error'), () => TE.of(C.Cache.create()))),
       )),
     TE.bindW('drive', ({ api, cache }) => TE.of(new Drive.Drive(api, cache))),
     TE.bind('result', ({ drive, api, cache }) =>
@@ -45,7 +39,7 @@ export function cliAction<Args, T>(
                 ? TE.of(constVoid())
                 : C.Cache.trySaveFile(drive.cacheGet(), cacheFile)
             ),
-            logReturn(() => stderrLogger.info({ apiCalls: api.apiCalls })),
+            logReturn(() => stderrLogger.info(`apiCalls: ${api.apiCalls}`)),
           ),
       )),
     TE.map((_) => _.result),

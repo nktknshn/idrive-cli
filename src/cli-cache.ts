@@ -1,12 +1,16 @@
-import { flow, pipe } from 'fp-ts/lib/function'
+import * as A from 'fp-ts/lib/Array'
+import * as E from 'fp-ts/lib/Either'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { defaultCacheFile } from './config'
 import * as C from './icloud/drive/cache/cachef'
-import { ensureError } from './lib/errors'
-import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
+import { ensureNestedPath, parsePath } from './icloud/drive/helpers'
+import { ensureError, error } from './lib/errors'
+import { cacheLogger, logger, loggingLevels, logReturnAs, printer } from './lib/logging'
 
 function parseArgs() {
   return yargs(hideBin(process.argv))
@@ -60,7 +64,21 @@ async function main() {
           pipe(
             isDrivewsid(argv.path)
               ? cache.getByIdWithPath(argv.path)
-              : cache.getByPath(argv.path),
+              : pipe(
+                parsePath(argv.path),
+                ([, ...path]) =>
+                  pipe(
+                    cache.getRootE(),
+                    E.map(root =>
+                      pipe(
+                        cache.get(),
+                        C.getPartialValidPath(path, root),
+                      )
+                    ),
+                  ),
+                logReturnAs('result'),
+                E.map(() => ''),
+              ),
           )
         ),
         TE.chain(flow(J.stringify, TE.fromEither)),

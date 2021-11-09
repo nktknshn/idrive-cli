@@ -49,6 +49,12 @@ export const loggingLevels = {
 }
 
 // export const setLoggingLevel()
+export const logf = <T>(msg: string, lgr = logger.debug) => logReturn<T>(() => lgr(msg))
+
+const plain = (type: string) =>
+  winston.format.printf(({ level, message, label, timestamp }) => {
+    return `${level}: ${type}: ${message}`
+  })
 
 const logger = winston.createLogger({
   level: 'debug',
@@ -78,8 +84,9 @@ const logger = winston.createLogger({
     }),
     prettyPrint({
       colorize: true,
-      depth: 4,
+      depth: 6,
     }),
+    plain('logger'),
   ),
 })
 
@@ -90,6 +97,7 @@ export const stderrLogger = winston.createLogger({
       colorize: true,
       depth: 3,
     }),
+    plain('stderrLogger'),
   ),
   transports: [loggingLevels.infoToStderr],
 })
@@ -101,6 +109,7 @@ export const cacheLogger = winston.createLogger({
       colorize: true,
       depth: 4,
     }),
+    plain('cache'),
   ),
 })
 
@@ -124,9 +133,10 @@ export const logReturn = <T>(logFunc: (value: T) => void) =>
     return value
   }
 
-export const logReturnAs = <T>(key: string, f = identity, _logger = logger.debug) =>
+export const logReturnAs = <T>(key: string, f: (v: T) => unknown = v => JSON.stringify(v), _logger = logger.debug) =>
   (value: T): T => {
-    _logger({ [key]: f(value) })
+    _logger(`${key} = ${f(value)}`)
+
     return value
   }
 

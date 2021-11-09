@@ -16,14 +16,18 @@ import {
   DriveDetails,
   DriveDetailsPartialWithHierarchy,
   DriveDetailsRoot,
+  DriveDetailsWithHierarchy,
   FolderLikeItem,
   Hierarchy,
   isAppLibraryItem,
   isFolderLikeItem,
 } from '../../icloud/drive/types'
 import { error } from '../../lib/errors'
+import { logger } from '../../lib/logging'
+import { Path } from '../../lib/util'
 
 export const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
+  logger.debug(JSON.stringify({ cached, actual }))
   return {
     same: isDeepStrictEqual(cached, actual),
     path: hierarchyToPath(cached) !== hierarchyToPath(actual),
@@ -35,6 +39,22 @@ export const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
     ),
   }
 }
+
+export const compareHierarchiesItem = (
+  cached: Hierarchy,
+  actual: { hierarchy: Hierarchy; extension?: string; name: string; drivewsid: string; etag: string },
+) => {
+  return compareHierarchies(
+    cached,
+    [...actual.hierarchy, {
+      drivewsid: actual.drivewsid,
+      etag: actual.etag,
+      name: actual.name,
+      extension: actual.extension,
+    }],
+  )
+}
+
 export const getCachedDetailsPartialWithHierarchyById = (
   cache: Cache,
   drivewsid: string,
@@ -48,7 +68,7 @@ export const getCachedDetailsPartialWithHierarchyById = (
       )),
     E.bind('hierarchy', () =>
       pipe(
-        cache.getCachedHierarchyByIdRecursive(drivewsid),
+        cache.getCachedHierarchyById(drivewsid),
         E.map(A.dropRight(1)),
       )),
     E.bind('items', ({ details }) =>
@@ -72,18 +92,36 @@ export const compareByDrivewsid = <T extends { drivewsid: string; etag: string }
 export const ordByDrivewsid = <T extends { drivewsid: string; etag: string }>() =>
   Ord.contramap((a: T) => a.drivewsid)(string.Ord)
 
-export const compareDriveDetailsPartialWithHierarchy = (
-  cached: DriveDetailsPartialWithHierarchy,
-  actual: DriveDetailsPartialWithHierarchy,
+export const compareDriveDetailsWithHierarchy = (
+  cached: DriveDetailsWithHierarchy,
+  actual: DriveDetailsWithHierarchy,
 ) => {
   return {
     etag: cached.etag !== actual.etag,
     name: cached.name !== actual.name,
-    // parentId: cached.parentId !== actual.parentId,
     hierarchy: compareHierarchies(cached.hierarchy, actual.hierarchy),
     items: compareItems(cached.items, actual.items),
-    oldPath: path.join(hierarchyToPath(cached.hierarchy), fileName(cached)),
-    newPath: path.join(hierarchyToPath(actual.hierarchy), fileName(actual)),
+    oldPath: Path.join(hierarchyToPath(cached.hierarchy), fileName(cached)),
+    newPath: Path.join(hierarchyToPath(actual.hierarchy), fileName(actual)),
+  }
+}
+
+export const compareItemWithHierarchy = (
+  cached: {
+    etag: string
+    name: string
+    hierarchy: Hierarchy
+    drivewsid: string
+    extension?: string
+  },
+  actual: { etag: string; name: string; hierarchy: Hierarchy; drivewsid: string; extension?: string },
+) => {
+  return {
+    etag: cached.etag !== actual.etag,
+    name: cached.name !== actual.name,
+    hierarchy: compareHierarchies(cached.hierarchy, actual.hierarchy),
+    oldPath: Path.join(hierarchyToPath(cached.hierarchy), fileName(cached)),
+    newPath: Path.join(hierarchyToPath(actual.hierarchy), fileName(actual)),
   }
 }
 

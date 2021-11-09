@@ -112,6 +112,13 @@ export const isFile = (
   entity: DriveDetails | DriveChildrenItem,
 ): entity is DriveChildrenItemFile => entity.type === 'FILE'
 
+export interface InvalidIdFolderResponse {
+  status: 'INVALID_ID'
+  items: []
+}
+
+type ResponseStatus = 'OK' | 'INVALID_ID'
+
 export interface DriveDetailsRoot {
   dateCreated: string
   drivewsid: typeof rootDrivewsid
@@ -128,7 +135,7 @@ export interface DriveDetailsRoot {
   items: DriveChildrenItem[]
   numberOfItems: number
   hierarchy?: Hierarchy
-  status: string
+  status: 'OK'
   extension?: string
 }
 
@@ -147,7 +154,7 @@ export interface DriveDetailsFolder {
   directChildrenCount: number
   items: DriveChildrenItem[]
   numberOfItems: number
-  status: string
+  status: 'OK'
   parentId: string
   hierarchy?: Hierarchy
   isChainedToParent?: boolean
@@ -169,7 +176,7 @@ export interface DriveDetailsAppLibrary {
   directChildrenCount: number
   items: DriveChildrenItem[]
   numberOfItems: number
-  status: string
+  status: 'OK'
   parentId: string
   hierarchy?: Hierarchy
   isChainedToParent?: boolean
@@ -210,8 +217,13 @@ export interface DriveChildrenItemFile {
   extension?: string
   restorePath?: string
   // "parentId": "TRASH_ROOT",
-  dateExpiration?: '2021-11-24T10:07:48Z'
+  dateExpiration?: string
 }
+
+export type DriveItemDetails =
+  | DriveChildrenItemFolder & Record<'hierarchy', Hierarchy>
+  | DriveChildrenItemFile & Record<'hierarchy', Hierarchy>
+  | DriveChildrenItemAppLibrary & Record<'hierarchy', Hierarchy>
 
 export interface DriveChildrenItemAppLibrary {
   dateCreated: string
@@ -245,15 +257,15 @@ export type DriveDetailsPartialWithHierarchy =
   | DriveDetailsFolderPartialWithHierarchy
   | DriveDetailsAppLibraryPartialWithHierarchy
 
-export interface DriveDetailsRootWithHierarchy extends Omit<DriveDetailsRoot, 'items'> {
+export interface DriveDetailsRootWithHierarchy extends DriveDetailsRoot {
   hierarchy: Hierarchy
 }
 
-export interface DriveDetailsFolderWithHierarchy extends Omit<DriveDetailsFolder, 'items'> {
+export interface DriveDetailsFolderWithHierarchy extends DriveDetailsFolder {
   hierarchy: Hierarchy
 }
 
-export interface DriveDetailsAppLibraryWithHierarchy extends Omit<DriveDetailsAppLibrary, 'items'> {
+export interface DriveDetailsAppLibraryWithHierarchy extends DriveDetailsAppLibrary {
   hierarchy: Hierarchy
 }
 

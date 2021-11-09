@@ -11,7 +11,7 @@ import { Readable } from 'stream'
 import { error } from '../../lib/errors'
 import { cacheLogger, logReturn, logReturnAs } from '../../lib/logging'
 import { Cache, isFolderLikeCacheEntity, isFolderLikeType, isRootCacheEntity } from './cache/cachef'
-import { CacheEntityAppLibrary, CacheEntityFolder, ICloudDriveCacheEntity } from './cache/types'
+import { CacheEntityAppLibrary, CacheEntityFolderLike, ICloudDriveCacheEntity } from './cache/types'
 import { DriveApi } from './drive-api'
 import { fileName, parsePath, splitParent } from './helpers'
 import { getFolderRecursive } from './recursive'
@@ -146,14 +146,15 @@ export class Drive {
                 parent.items,
                 A.findFirst(item => itemName == fileName(item)),
                 TE.fromOption(() =>
-                  error(`item "${itemName}" was not found in "${parent.name}" (${parent.drivewsid})`)
+                  error(`item "${itemName}" was nosadasdt found in "${parent.name}" (${parent.drivewsid})`)
                 ),
               )),
             TE.chain(
               // 'result',
-              ({ item }): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> => isFile(item)
-                ? TE.of(item)
-                : this.cachingRetrieveItemDetailsInFolder(item.drivewsid, cache),
+              ({ item }): TE.TaskEither<Error, DriveDetails | DriveChildrenItem> =>
+                isFile(item)
+                  ? TE.of(item)
+                  : this.cachingRetrieveItemDetailsInFolder(item.drivewsid, cache),
             ),
             // TE.map(_ => _.result),
           ),
@@ -182,7 +183,7 @@ export class Drive {
 
   public wasAnythingChangedInFolder = (
     drivewsid: string,
-    wasChangedF: (cached: CacheEntityFolder | CacheEntityAppLibrary, actual: DriveDetails) => WasFolderChanged,
+    wasChangedF: (cached: CacheEntityFolderLike | CacheEntityAppLibrary, actual: DriveDetails) => WasFolderChanged,
   ): TE.TaskEither<Error, WasFolderChanged> => {
     return pipe(
       TE.Do,
@@ -204,7 +205,7 @@ export class Drive {
 
   public wasAnythingChangedInFolderHierarchy = (
     drivewsid: string,
-    wasChangedF: (cached: CacheEntityFolder | CacheEntityAppLibrary, actual: DriveDetails) => WasFolderChanged,
+    wasChangedF: (cached: CacheEntityFolderLike | CacheEntityAppLibrary, actual: DriveDetails) => WasFolderChanged,
   ): TE.TaskEither<Error, WasFolderChanged> => {
     return pipe(
       TE.Do,

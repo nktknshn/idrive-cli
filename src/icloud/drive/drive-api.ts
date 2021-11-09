@@ -23,6 +23,8 @@ import {
   DriveDetailsFolder,
   DriveDetailsPartialWithHierarchy,
   DriveDetailsRoot,
+  DriveDetailsWithHierarchy,
+  DriveItemDetails,
   isRootDetails,
   rootDrivewsid,
 } from './types'
@@ -210,8 +212,20 @@ export class DriveApi {
       TE.map((_) => _.response.body),
     )
   }
-  public retrieveItemDetailsInFoldersHierarchy = (drivewsids: string[]): TE.TaskEither<Error, DriveDetails[]> => {
-    logger.debug(`retrieveItemDetailsInFoldersHierarchy`, { drivewsids })
+
+  public retrieveItemDetailsInFoldersHierarchy = (
+    drivewsid: string,
+  ): TE.TaskEither<Error, DriveDetailsWithHierarchy> => {
+    return pipe(
+      this.retrieveItemDetailsInFoldersHierarchies([drivewsid]),
+      TE.chainOptionK(() => error(`invalid response (empty array)`))(A.lookup(0)),
+    )
+  }
+
+  public retrieveItemDetailsInFoldersHierarchies = (
+    drivewsids: string[],
+  ): TE.TaskEither<Error, DriveDetailsWithHierarchy[]> => {
+    logger.debug(`retrieveItemDetailsInFoldersHierarchy: ${drivewsids}`)
 
     return pipe(
       this.retryingQuery(() =>
@@ -244,7 +258,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemDetails = (drivewsids: string[]): TE.TaskEither<Error, unknown[]> => {
+  public retrieveItemsDetails = (drivewsids: string[]): TE.TaskEither<Error, { items: DriveItemDetails[] }> => {
     logger.debug(`retrieveItemDetails`, { drivewsids })
 
     return pipe(

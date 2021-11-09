@@ -1,5 +1,7 @@
 import * as A from 'fp-ts/lib/Array'
+import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import Path from 'path'
 import { isObjectWithOwnProperty } from '../../lib/util'
@@ -15,7 +17,7 @@ import {
   rootDrivewsid,
 } from './types'
 
-export function parsePath(path: string): string[] {
+export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)
     .replace(/^\//, '')
     .replace(/\/$/, '')
@@ -24,6 +26,20 @@ export function parsePath(path: string): string[] {
   return parsedPath.length == 1 && parsedPath[0] == ''
     ? ['/']
     : ['/', ...parsedPath]
+}
+
+export function ensureNestedPath(path: string): O.Option<NA.NonEmptyArray<string>> {
+  const parsedPath = parsePath(path)
+
+  if (parsedPath.length == 1) {
+    return O.none
+  }
+
+  return pipe(
+    parsedPath,
+    A.dropLeft(1),
+    NA.fromArray,
+  )
 }
 
 export const normalizePath = (path: string) => {
@@ -45,7 +61,11 @@ type WithFileName = {
   drivewsid: string
 }
 
-export const fileName = (item: WithFileName) =>
+export const fileName = (item: {
+  drivewsid: string
+  name: string
+  extension?: string
+}) =>
   (item.drivewsid === rootDrivewsid)
     ? '/'
     : item.extension

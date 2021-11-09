@@ -5,7 +5,7 @@ import { expectJson, ResponseParser, ResponseWithSession } from '../../../lib/re
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy } from '../types'
+import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy, DriveItemDetails } from '../types'
 
 interface RetrieveOpts {
   drivewsids: string[]
@@ -37,13 +37,13 @@ function retrieveItemDetailsGeneric<R>(
 
 const applyHttpResponseToSessionHierarchy = expectJson((
   json: unknown,
-): json is unknown[] => isObjectWithOwnProperty(json, 'items') && Array.isArray(json.items))
+): json is { items: DriveItemDetails[] } => isObjectWithOwnProperty(json, 'items') && Array.isArray(json.items))
 
 export function retrieveItemDetails(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
   { drivewsids }: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<unknown[]>> {
+): TE.TaskEither<Error, ResponseWithSession<{ items: DriveItemDetails[] }>> {
   return retrieveItemDetailsGeneric(
     client,
     { accountData, session },
