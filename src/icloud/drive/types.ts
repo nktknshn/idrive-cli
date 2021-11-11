@@ -1,11 +1,49 @@
+/* eslint-disable @typescript-eslint/no-empty-interface */
 import { pipe } from 'fp-ts/function'
 import * as A from 'fp-ts/lib/Array'
 import * as T from 'fp-ts/lib/Tree'
+import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
+import * as t from './types-io'
 
 export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 export const cloudDocsZone = 'com.apple.CloudDocs'
 export const trashDrivewsid = 'TRASH_ROOT'
+
+export interface DriveDetailsRoot extends TypeOf<typeof t.detailsRoot> {}
+export interface DriveDetailsFolder extends TypeOf<typeof t.detailsFolder> {}
+export interface DriveDetailsAppLibrary extends TypeOf<typeof t.detailsAppLibrary> {}
+export interface DriveChildrenItemFolder extends TypeOf<typeof t.itemFolder> {}
+export interface DriveChildrenItemFile extends TypeOf<typeof t.itemFile> {}
+export interface DriveChildrenItemAppLibrary extends TypeOf<typeof t.itemAppLibrary> {}
+export type DriveItemDetails = TypeOf<typeof t.itemDetails>
+
+export interface Icon extends TypeOf<typeof t.icon> {}
+export interface InvalidId extends TypeOf<typeof t.invalidIdItem> {}
+
+export type DriveDetailsWithHierarchy = TypeOf<typeof t.detailsWithHierarchy>
+
+export type DriveDetailsPartialWithHierarchy = TypeOf<typeof t.driveDetailsWithHierarchyPartial>
+
+export interface DriveDetailsRootWithHierarchy extends TypeOf<typeof t.rootDetailsWithHierarchy> {}
+
+export interface DriveDetailsFolderWithHierarchy extends TypeOf<typeof t.folderDetailsWithHierarchy> {}
+export interface DriveDetailsAppLibraryWithHierarchy extends TypeOf<typeof t.appLibraryDetailsWithHierarchy> {}
+export interface DriveDetailsRootPartialWithHierarchy extends TypeOf<typeof t.rootDetailsWithHierarchyPartial> {}
+
+export interface DriveDetailsFolderPartialWithHierarchy extends TypeOf<typeof t.folderDetailsWithHierarchyPartial> {}
+
+export interface DriveDetailsAppLibraryPartialWithHierarchy
+  extends TypeOf<typeof t.appLibraryDetailsWithHierarchyPartial>
+{}
+
+export type Hierarchy = TypeOf<typeof t.hierarchy>
+
+export interface HierarchyItemRoot extends TypeOf<typeof t.hierarchyItemRoot> {}
+export interface HierarchyItem extends TypeOf<typeof t.hierarchyItem> {}
+export interface HierarchyItemTrash extends TypeOf<typeof t.hierarchyItemTrash> {}
+
+export interface PartialItem extends TypeOf<typeof t.partialItem> {}
 
 export type FolderTree = T.Tree<
   {
@@ -27,8 +65,6 @@ export type RecursiveFolder =
     readonly details: DriveDetails
     readonly deep: false
   }
-
-// export type WithId = { drivewsid: string }
 
 export type DriveDetails =
   | DriveDetailsRoot
@@ -119,189 +155,10 @@ export interface InvalidIdFolderResponse {
 
 type ResponseStatus = 'OK' | 'INVALID_ID'
 
-export interface DriveDetailsRoot {
-  dateCreated: string
-  drivewsid: typeof rootDrivewsid
-  docwsid: string
-  zone: string
-  name: ''
-  etag: string
-  type: 'FOLDER'
-  assetQuota: number
-  fileCount: number
-  shareCount: number
-  shareAliasCount: number
-  directChildrenCount: number
-  items: DriveChildrenItem[]
-  numberOfItems: number
-  hierarchy?: Hierarchy
-  status: 'OK'
-  extension?: string
-}
+export const isHierarchyItemRoot = (
+  item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,
+): item is HierarchyItemRoot => item.drivewsid === rootDrivewsid
 
-export interface DriveDetailsFolder {
-  dateCreated: string
-  drivewsid: string
-  docwsid: string
-  zone: string
-  name: string
-  etag: string
-  type: 'FOLDER'
-  assetQuota: number
-  fileCount: number
-  shareCount: number
-  shareAliasCount: number
-  directChildrenCount: number
-  items: DriveChildrenItem[]
-  numberOfItems: number
-  status: 'OK'
-  parentId: string
-  hierarchy?: Hierarchy
-  isChainedToParent?: boolean
-  extension?: string
-}
-
-export interface DriveDetailsAppLibrary {
-  dateCreated: string
-  drivewsid: string
-  docwsid: string
-  zone: string
-  name: string
-  etag: string
-  type: 'APP_LIBRARY'
-  assetQuota: number
-  fileCount: number
-  shareCount: number
-  shareAliasCount: number
-  directChildrenCount: number
-  items: DriveChildrenItem[]
-  numberOfItems: number
-  status: 'OK'
-  parentId: string
-  hierarchy?: Hierarchy
-  isChainedToParent?: boolean
-  extension?: string
-}
-
-export interface DriveChildrenItemFolder {
-  dateCreated: string
-  drivewsid: string
-  docwsid: string
-  zone: string
-  name: string
-  parentId: string
-  etag: string
-  type: 'FOLDER'
-  assetQuota: number
-  fileCount: number
-  shareCount: number
-  shareAliasCount: number
-  directChildrenCount: number
-  isChainedToParent?: boolean
-  extension?: string
-}
-
-export interface DriveChildrenItemFile {
-  dateCreated: string
-  drivewsid: string
-  docwsid: string
-  zone: string
-  name: string
-  parentId: string
-  dateModified: string
-  dateChanged: string
-  size: number
-  etag: string
-  shortGUID: string
-  type: 'FILE'
-  extension?: string
-  restorePath?: string
-  // "parentId": "TRASH_ROOT",
-  dateExpiration?: string
-}
-
-export type DriveItemDetails =
-  | DriveChildrenItemFolder & Record<'hierarchy', Hierarchy>
-  | DriveChildrenItemFile & Record<'hierarchy', Hierarchy>
-  | DriveChildrenItemAppLibrary & Record<'hierarchy', Hierarchy>
-
-export interface DriveChildrenItemAppLibrary {
-  dateCreated: string
-  drivewsid: string
-  docwsid: string
-  zone: string
-  name: string
-  parentId: string
-  etag: string
-  type: 'APP_LIBRARY'
-  maxDepth: string
-  icons: Icon[]
-  supportedExtensions: string[]
-  supportedTypes: string[]
-  extension?: string
-}
-
-export interface Icon {
-  url: string
-  type: string
-  size: number
-}
-
-export type DriveDetailsWithHierarchy =
-  | DriveDetailsRootWithHierarchy
-  | DriveDetailsFolderWithHierarchy
-  | DriveDetailsAppLibraryWithHierarchy
-
-export type DriveDetailsPartialWithHierarchy =
-  | DriveDetailsRootPartialWithHierarchy
-  | DriveDetailsFolderPartialWithHierarchy
-  | DriveDetailsAppLibraryPartialWithHierarchy
-
-export interface DriveDetailsRootWithHierarchy extends DriveDetailsRoot {
-  hierarchy: Hierarchy
-}
-
-export interface DriveDetailsFolderWithHierarchy extends DriveDetailsFolder {
-  hierarchy: Hierarchy
-}
-
-export interface DriveDetailsAppLibraryWithHierarchy extends DriveDetailsAppLibrary {
-  hierarchy: Hierarchy
-}
-
-export interface DriveDetailsRootPartialWithHierarchy extends Omit<DriveDetailsRoot, 'items'> {
-  hierarchy: Hierarchy
-  items: PartialItem[]
-}
-
-export interface DriveDetailsFolderPartialWithHierarchy extends Omit<DriveDetailsFolder, 'items'> {
-  hierarchy: Hierarchy
-  items: PartialItem[]
-}
-
-export interface DriveDetailsAppLibraryPartialWithHierarchy extends Omit<DriveDetailsAppLibrary, 'items'> {
-  hierarchy: Hierarchy
-  items: PartialItem[]
-}
-
-export type Hierarchy = (HierarchyItem | HierarchyItemRoot)[]
-
-export const isHierarchyItemRoot = (item: HierarchyItem | HierarchyItemRoot): item is HierarchyItemRoot =>
-  item.drivewsid === rootDrivewsid
-
-export interface HierarchyItemRoot {
-  drivewsid: typeof rootDrivewsid
-}
-
-export interface HierarchyItem {
-  drivewsid: string
-  name: string
-  etag: string
-  extension?: string
-}
-
-export interface PartialItem {
-  drivewsid: string
-  docwsid: string
-  etag: string
-}
+export const isHierarchyItemTrash = (
+  item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,
+): item is HierarchyItemTrash => item.drivewsid === trashDrivewsid

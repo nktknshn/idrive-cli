@@ -29,6 +29,7 @@ import {
   DriveFolderLike,
   DriveItemDetails,
   FolderLikeItem,
+  InvalidId,
   isFile,
   isFolderDetails,
   isFolderLike,
@@ -275,7 +276,7 @@ export const getFoldersRecursively = (drivewsids: string[], depth: number): Driv
 
 export const updateCacheByIds = (
   drivewsids: string[],
-): DriveM<DriveDetailsWithHierarchy[]> =>
+): DriveM<(DriveDetailsWithHierarchy | InvalidId)[]> =>
   pipe(
     readEnv,
     SRTE.chain(({ cache }) =>
@@ -291,7 +292,7 @@ export const updateCacheByIds = (
 
 export const updateFolderDetailsByPath = (
   path: string,
-): DriveM<DriveDetailsWithHierarchy> =>
+): DriveM<(DriveDetailsWithHierarchy | InvalidId)> =>
   pipe(
     readEnv,
     SRTE.chainW(({ cache }) =>
@@ -334,7 +335,7 @@ export const putItems = (detailss: DriveItemDetails[]): DriveM<void> =>
 
 export const updateFoldersDetails = (
   drivewsids: string[],
-): DriveM<DriveDetailsWithHierarchy[]> => {
+): DriveM<(DriveDetailsWithHierarchy | InvalidId)[]> => {
   return pipe(
     readEnv,
     SRTE.chainW(({ api, cache }) =>
@@ -372,7 +373,7 @@ export const updateFoldersDetails = (
 
 export const updateFoldersDetailsRecursively = (
   drivewsids: string[],
-): DriveM<DriveDetailsWithHierarchy[]> => {
+): DriveM<(DriveDetailsWithHierarchy | InvalidId)[]> => {
   logger.debug('updateFoldersDetailsRecursively')
   return pipe(
     readEnv,

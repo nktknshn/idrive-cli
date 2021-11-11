@@ -1,0 +1,4 @@
+describe('omit', () => {
+  it('omit', () => {
+  })
+})

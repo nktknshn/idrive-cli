@@ -65,16 +65,16 @@ export const fetchClient: FetchClientEither = (config) =>
     async () => {
       httplogger.debug({
         url: config.url,
-        headers: config.headers,
-        data: config.data,
+        // headers: config.headers,
+        request: config.data,
       })
 
       const res = await _client(config)
 
       httplogger.debug({
         status: res.status,
-        headers: res.headers,
-        data: res.data,
+        // headers: res.headers,
+        response: res.data,
       })
 
       return res

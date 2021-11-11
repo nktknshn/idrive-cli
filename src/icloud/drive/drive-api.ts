@@ -25,6 +25,7 @@ import {
   DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   DriveItemDetails,
+  InvalidId,
   isRootDetails,
   rootDrivewsid,
 } from './types'
@@ -215,7 +216,7 @@ export class DriveApi {
 
   public retrieveItemDetailsInFoldersHierarchy = (
     drivewsid: string,
-  ): TE.TaskEither<Error, DriveDetailsWithHierarchy> => {
+  ): TE.TaskEither<Error, (DriveDetailsWithHierarchy | InvalidId)> => {
     return pipe(
       this.retrieveItemDetailsInFoldersHierarchies([drivewsid]),
       TE.chainOptionK(() => error(`invalid response (empty array)`))(A.lookup(0)),
@@ -224,7 +225,7 @@ export class DriveApi {
 
   public retrieveItemDetailsInFoldersHierarchies = (
     drivewsids: string[],
-  ): TE.TaskEither<Error, DriveDetailsWithHierarchy[]> => {
+  ): TE.TaskEither<Error, (DriveDetailsWithHierarchy | InvalidId)[]> => {
     logger.debug(`retrieveItemDetailsInFoldersHierarchy: ${drivewsids}`)
 
     return pipe(

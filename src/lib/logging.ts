@@ -4,7 +4,9 @@ import { hasOwnProperty, isObjectWithOwnProperty } from './util'
 const { combine, timestamp, label, prettyPrint, json } = winston.format
 import { identity } from 'fp-ts/function'
 import { IO } from 'fp-ts/lib/IO'
+import fs from 'fs'
 import { InvalidJsonInResponse } from './errors'
+
 // const jsonError = winston.format((info, opts) => {
 
 // })
@@ -22,14 +24,15 @@ const printer = {
     },
   errorTask: (value: Error): () => Promise<void> =>
     async () => {
-      console.error({
-        // name: value.name,
-        error: value.message,
-        name: value.name,
-        stack: value.stack,
-        input: InvalidJsonInResponse.is(value) ? value.input : undefined,
-        // httpResponse: InvalidJsonInResponse.is(value) ? value.httpResponse : undefined,
-      })
+      console.error(value.message)
+      // console.error({
+      //   // name: value.name,
+      //   error: value.message,
+      //   name: value.name,
+      //   stack: value.stack,
+      //   input: InvalidJsonInResponse.is(value) ? value.input : undefined,
+      //   // httpResponse: InvalidJsonInResponse.is(value) ? value.httpResponse : undefined,
+      // })
     },
 }
 
@@ -118,10 +121,13 @@ const httplogger = winston.createLogger({
   transports: [
     new winston.transports.File({
       filename: 'data/http-log.json',
-
+      options: { flags: 'w' },
       // tailable: true
       // format: ''
-      format: combine(),
+      format: combine(prettyPrint({
+        colorize: false,
+        depth: 128,
+      })),
       // prettyPrint()
     }),
   ],

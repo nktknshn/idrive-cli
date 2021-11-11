@@ -74,7 +74,6 @@ export const getCachedDetailsPartialWithHierarchyById = (
     E.bind('items', ({ details }) =>
       E.of(details.content.items.map(item => ({
         drivewsid: item.drivewsid,
-        // name: item.name,
         docwsid: item.docwsid,
         etag: item.etag,
       })))),

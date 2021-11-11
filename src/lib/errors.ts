@@ -13,6 +13,10 @@ export class InvalidGlobalSessionResponse extends Error {
   public static is(a: unknown): a is InvalidGlobalSessionResponse {
     return a instanceof InvalidGlobalSessionResponse
   }
+
+  static create(httpResponse: HttpResponse): InvalidGlobalSessionResponse {
+    return new InvalidGlobalSessionResponse(httpResponse)
+  }
 }
 
 export class UnexpectedResponse extends Error {

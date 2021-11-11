@@ -12,19 +12,6 @@ export const headersToArray = (headers: HttpHeaders) => {
   return hs
 }
 
-// export const getHeader = (header: string) => (headers: HttpHeaders) => {
-//   const headerLower = header.toLowerCase()
-//   return pipe(
-//     headersToArray(headers),
-//     A.findFirst(([key, _]) => key.toLowerCase() == headerLower),
-//     O.map(([_, value]) => (Array.isArray(value) ? value : [value])),
-//     O.fold(
-//       () => [],
-//       (v) => v,
-//     ),
-//   )
-// }
-
 export const getHeader = (header: string) =>
   (httpResponse: HttpResponse): string[] =>
     pipe(

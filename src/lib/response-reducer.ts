@@ -72,7 +72,7 @@ export function createHttpResponseReducer1<E, R>(
   ) => ICloudSession = (
     session,
     httpResponse,
-  ) => applyCookies(httpResponse)(session),
+  ) => (applyCookies(httpResponse)(session)),
   onError: (e: E, session: ICloudSession) => ICloudSession = (e, session) => session,
 ) {
   return (session: ICloudSession) =>
@@ -122,9 +122,9 @@ export const expectJson = flow(
   createHttpResponseReducer1,
 )
 
-export type ResponseParser<R> = (
+export type ResponseHandler<R, E1 = Error> = (
   session: ICloudSession,
-) => <E1>(
+) => (
   ma: TE.TaskEither<E1, HttpResponse>,
 ) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
 // export const expectResponse = <UnexpectedResponse, R>(
