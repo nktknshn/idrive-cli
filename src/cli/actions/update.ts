@@ -11,7 +11,7 @@ import { DriveApi } from '../../icloud/drive/drive-api'
 import * as DF from '../../icloud/drive/drivef'
 import { hierarchyToPath } from '../../icloud/drive/helpers'
 import { DriveDetails, rootDrivewsid } from '../../icloud/drive/types'
-import { error } from '../../lib/errors'
+import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
@@ -193,14 +193,14 @@ export const update = (
 ): TE.TaskEither<ErrorOutput, Output> => {
   return cliAction(
     { sessionFile, cacheFile, noCache, dontSaveCache },
-    ({ cache, drive, api }) =>
+    ({ cache, api }) =>
       pipe(
         TE.Do,
         TE.bind('cached', () =>
           pipe(
             cache.getByPath(path),
-            TE.fromOption(() => error(`missing ${path} in cache`)),
-            TE.filterOrElse(isFolderLikeCacheEntity, () => error(`is not folder`)),
+            TE.fromOption(() => err(`missing ${path} in cache`)),
+            TE.filterOrElse(isFolderLikeCacheEntity, () => err(`is not folder`)),
           )),
         TE.chain(({ cached }) => {
           return pipe(
@@ -240,7 +240,7 @@ export const update = (
         }),
         // _ => _,
         TE.chain(flow(J.stringify, TE.fromEither)),
-        TE.mapLeft((e) => error(`${e}`)),
+        TE.mapLeft((e) => err(`${e}`)),
         // TE.fold(() => async, identity),
       ),
   )

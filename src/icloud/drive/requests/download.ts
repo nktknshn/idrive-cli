@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Readable } from 'stream'
-import { error } from '../../../lib/errors'
+import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/fetch-client'
 import { expectJson, ResponseWithSession } from '../../../lib/response-reducer'
 import { isObjectWithOwnProperty } from '../../../lib/util'
@@ -60,7 +60,7 @@ export function getUrlStream(
     client({ method: 'GET', url, headers: {}, data: undefined, responseType: 'stream' }),
     expectResponse(
       _ => _.status == 200,
-      _ => error(`responded ${_.status}`),
+      _ => err(`responded ${_.status}`),
     ),
     TE.map(_ => _.data as Readable),
   )

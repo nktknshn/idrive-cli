@@ -9,7 +9,7 @@ import yargs from 'yargs/yargs'
 import { defaultCacheFile } from './config'
 import * as C from './icloud/drive/cache/cachef'
 import { ensureNestedPath, parsePath } from './icloud/drive/helpers'
-import { ensureError, error } from './lib/errors'
+import { ensureError, err } from './lib/errors'
 import { cacheLogger, logger, loggingLevels, logReturnAs, printer } from './lib/logging'
 
 function parseArgs() {

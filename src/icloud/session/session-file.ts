@@ -3,7 +3,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
-import { BufferDecodingError, error, FileReadingError, JsonParsingError, TypeDecodingError } from '../../lib/errors'
+import { BufferDecodingError, err, FileReadingError, JsonParsingError, TypeDecodingError } from '../../lib/errors'
 import { tryReadJsonFile } from '../../lib/files'
 import { ICloudSession, sessionScheme } from './session'
 
@@ -20,7 +20,7 @@ export const saveSession = (file: string) =>
       TE.chainW((content) =>
         TE.tryCatch(
           () => fs.writeFile(file, content),
-          (e) => error(`Error writing session ${String(e)}`),
+          (e) => err(`Error writing session ${String(e)}`),
         )
       ),
     )

@@ -32,7 +32,7 @@ export interface Apps {
   find: Find
   iclouddrive: EmptyObject
   newspublisher: Newspublisher
-  fmf: EmptyObject
+  fmf?: EmptyObject
   contacts: EmptyObject
 }
 
@@ -108,6 +108,8 @@ export interface DsInfo {
   brMigrated: boolean
   statusCode: number
   familyEligible: boolean
+  isCustomDomainsFeatureAvailable?: boolean
+  isHideMyEmailFeatureAvailable?: boolean
 }
 
 export interface AppleIDEntry {
@@ -153,7 +155,7 @@ export interface Webservices {
   iworkexportws: Archivews
   geows: Archivews
   account: Account
-  fmf: Archivews
+  fmf?: Archivews
   contacts: Archivews
 }
 
@@ -168,9 +170,10 @@ export interface ICloudEnv {
   vipSuffix: string
 }
 
-export enum Status {
-  Active = 'active',
-}
+// export enum Status {
+//   Active = 'active',
+// }
+export type Status = 'active'
 
 export interface Archivews {
   url: string

@@ -1,4 +1,5 @@
 import * as A from 'fp-ts/lib/Array'
+import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
@@ -13,7 +14,9 @@ import {
   isFolderLike,
   isHierarchyItemRoot,
   isHierarchyItemTrash,
+  isInvalidId,
   isRootDetails,
+  MaybeNotFound,
   rootDrivewsid,
 } from './types'
 
@@ -87,5 +90,13 @@ export const hierarchyToPath = (hierarchy: Hierarchy) => {
     ),
     _ => _.join('/'),
     Path.normalize,
+  )
+}
+
+export const zipIds = <T>(drivewsids: string[], details: MaybeNotFound<T>[]) => {
+  return pipe(
+    A.zip(drivewsids, details),
+    A.partitionMap(([dwid, d]) => isInvalidId(d) ? E.left(dwid) : E.right(d)),
+    ({ left: missed, right: found }) => ({ missed, found }),
   )
 }

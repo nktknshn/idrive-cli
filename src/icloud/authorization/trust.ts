@@ -2,7 +2,7 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { error, UnexpectedResponse } from '../../lib/errors'
+import { err, UnexpectedResponse } from '../../lib/errors'
 import { FetchClientEither, HttpResponse } from '../../lib/fetch-client'
 import { getTrustToken } from '../../lib/http-headers'
 import { logger } from '../../lib/logging'
@@ -24,7 +24,7 @@ export function getResponse(
     return pipe(
       O.Do,
       O.bind('trustToken', () => getTrustToken(httpResponse)),
-      E.fromOption(() => error('Missing trust token')),
+      E.fromOption(() => err('Missing trust token')),
     )
   }
 

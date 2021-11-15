@@ -4,7 +4,7 @@ import * as J from 'fp-ts/lib/Json'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
-import { error, JsonParsingError, MissingResponseBody } from './errors'
+import { err, JsonParsingError, MissingResponseBody } from './errors'
 import { HttpResponse } from './fetch-client'
 
 export function tryParseJson(
@@ -33,7 +33,7 @@ export const saveJson = (file: string) =>
       TE.chainW((content) =>
         TE.tryCatch(
           () => fs.writeFile(file, content),
-          (e) => error(`Error writing json ${String(e)}`),
+          (e) => err(`Error writing json ${String(e)}`),
         )
       ),
     )

@@ -22,7 +22,7 @@ import {
   isAppLibraryItem,
   isFolderLikeItem,
 } from '../../icloud/drive/types'
-import { error } from '../../lib/errors'
+import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
 import { Path } from '../../lib/util'
 
@@ -64,7 +64,7 @@ export const getCachedDetailsPartialWithHierarchyById = (
     E.bind('details', () =>
       pipe(
         cache.getFolderByIdE(drivewsid),
-        E.filterOrElse(isDetailsCacheEntity, () => error(`missing details`)),
+        E.filterOrElse(isDetailsCacheEntity, () => err(`missing details`)),
       )),
     E.bind('hierarchy', () =>
       pipe(

@@ -10,7 +10,7 @@ import { authorizeSession } from './icloud/authorization/authorize'
 import { saveAccountData, validateSession } from './icloud/authorization/validate'
 import { hasSessionToken, ICloudSession, ICloudSignInCredentials, session } from './icloud/session/session'
 import { readSessionFile, saveSession } from './icloud/session/session-file'
-import { error } from './lib/errors'
+import { err } from './lib/errors'
 import { fetchClient } from './lib/fetch-client'
 import { input } from './lib/input'
 import { logger } from './lib/logging'
@@ -19,7 +19,7 @@ export const fileExists = (file: string): T.Task<boolean> =>
   pipe(
     TE.tryCatch(
       () => fs.stat(file),
-      (e) => error(`error getting stats: ${e}`),
+      (e) => err(`error getting stats: ${e}`),
     ),
     TE.match(
       () => false,
@@ -34,7 +34,7 @@ const init = (
   return pipe(
     TE.fromTask<boolean, Error>(fileExists(sessionFile)),
     TE.chain(
-      TE.fromPredicate(not(identity), () => error(`${sessionFile} exists.`)),
+      TE.fromPredicate(not(identity), () => err(`${sessionFile} exists.`)),
     ),
     TE.chain(() => TE.of(session(credentials.username, credentials.password))),
     TE.chain(saveSession(sessionFile)),

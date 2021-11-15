@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import Path from 'path'
-import { error } from '../../../lib/errors'
+import { err } from '../../../lib/errors'
 import { FetchClientEither, uploadFileRequest } from '../../../lib/fetch-client'
 import { expectJson, ResponseWithSession } from '../../../lib/response-reducer'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
@@ -112,7 +112,7 @@ export function singleFileUpload(
   return pipe(
     TE.tryCatch(
       () => fs.readFile(filePath),
-      (e) => error(`error opening file ${String(e)}`),
+      (e) => err(`error opening file ${String(e)}`),
     ),
     TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
     TE.chainW(client),

@@ -5,6 +5,7 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
+import { logger, logReturn, logReturnAs } from '../../../lib/logging'
 import {
   applyCookies,
   basicGetResponse1,
@@ -38,7 +39,7 @@ interface RetrieveOpts {
   includeHierarchy: boolean
 }
 
-function retrieveItemDetailsInFoldersGeneric<R>(
+export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
   data: {
@@ -60,25 +61,34 @@ function retrieveItemDetailsInFoldersGeneric<R>(
   )
 }
 
-const decode: t.Decode<unknown, (DriveDetailsWithHierarchy | InvalidId)[]> = flow(
+export const s = t.tuple([
+  driveDetails,
+  driveDetailsWithHierarchyPartial,
+  // t.union([driveDetails, invalidIdItem]),
+  // t.union([driveDetailsWithHierarchyPartial, invalidIdItem]),
+])
+
+export const decode: t.Decode<unknown, (DriveDetailsWithHierarchy | InvalidId)[]> = flow(
+  v => v,
   t.array(
     t.UnknownRecord,
   ).decode,
   E.chain(flow(
     A.chunksOf(2),
     A.map(
-      t.tuple([
-        t.union([driveDetails, invalidIdItem]),
-        t.union([driveDetailsWithHierarchyPartial, invalidIdItem]),
-      ])
-        .decode,
+      v =>
+        pipe(
+          // logReturn(() => console.log(JSON.stringify(v)))(v),
+          v,
+          v => s.decode(v),
+        ),
     ),
     E.sequenceArray,
   )),
   E.map(flow(
     RA.map(([a, b]) =>
       (invalidIdItem.is(a) || invalidIdItem.is(b))
-        ? { status: 'INVALID_ID' as const }
+        ? { status: 'ID_INVALID' as const }
         : ({ ...a, hierarchy: b.hierarchy })
     ),
     RA.toArray,
@@ -105,57 +115,18 @@ export function retrieveItemDetailsInFoldersHierarchy(
         flow(
           withResponse,
           filterStatus(),
-          decodeJson(
-            decode,
-            // t.array(
-            //   t.UnknownRecord,
-            //   // t.union([driveDetails, invalidIdItem]),
-            // ).decode,
-          ),
+          decodeJson(decode),
           applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
         ),
       ),
-    // pipe(
-    //   createHttpResponseReducer1(
-    //     flow(
-    //       basicGetResponse1(
-    //         (json: unknown): json is DriveDetailsWithHierarchy[] => Array.isArray(json),
-    //       ),
-    //       E.map(
-    //         flow(
-    //           A.chunksOf(2),
-    //           A.map(([a, b]) => ({ ...a, hierarchy: b.hierarchy })),
-    //         ),
-    //       ),
-    //     ),
-    //   ),
-    // ),
   )
 }
-
-const handleResponse: ResponseHandler<DriveDetails[]> = (session: ICloudSession) =>
-  TE.chain(
-    flow(
-      withResponse,
-      filterStatus(),
-      decodeJson(
-        t.array(
-          driveDetails,
-          // t.union([driveDetails, invalidIdItem]),
-        ).decode,
-      ),
-      applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
-    ),
-  )
-// expectJson((
-//   json: unknown,
-// ): json is DriveDetails[] => Array.isArray(json))
 
 export function retrieveItemDetailsInFolders(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
   props: RetrieveOpts,
-): TE.TaskEither<Error, ResponseWithSession<DriveDetails[]>> {
+): TE.TaskEither<Error, ResponseWithSession<(DriveDetails | InvalidId)[]>> {
   return retrieveItemDetailsInFoldersGeneric(
     client,
     { accountData, session },
@@ -168,23 +139,21 @@ export function retrieveItemDetailsInFolders(
   )
 }
 
+const handleResponse: ResponseHandler<(DriveDetails | InvalidId)[]> = (session: ICloudSession) =>
+  TE.chain(
+    flow(
+      withResponse,
+      filterStatus(),
+      decodeJson(
+        t.array(
+          // driveDetails,
+          // invalidIdItem,
+          t.union([driveDetails, invalidIdItem]),
+        ).decode,
+      ),
+      applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
+    ),
+  )
 const applyHttpResponseToSessionHierarchy = expectJson((
   json: unknown,
 ): json is DriveDetailsPartialWithHierarchy[] => Array.isArray(json))
-
-export function retrieveHierarchy(
-  client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
-  { drivewsids }: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<DriveDetailsPartialWithHierarchy[]>> {
-  return retrieveItemDetailsInFoldersGeneric(
-    client,
-    { accountData, session },
-    drivewsids.map((drivewsid) => ({
-      drivewsid,
-      partialData: true,
-      includeHierarchy: true,
-    })),
-    applyHttpResponseToSessionHierarchy,
-  )
-}

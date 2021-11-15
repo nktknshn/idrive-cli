@@ -3,7 +3,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { PathReporter } from 'io-ts/PathReporter'
-import { error, InvalidGlobalSessionResponse } from '../../../lib/errors'
+import { err, InvalidGlobalSessionResponse } from '../../../lib/errors'
 import { HttpResponse } from '../../../lib/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/json'
 import { ResponseWithSession } from '../../../lib/response-reducer'
@@ -20,9 +20,23 @@ export const filterStatus = (status = 200) =>
     ),
     TE.filterOrElseW(
       r => r.httpResponse.status == status,
-      r => error(`invalid status ${r.httpResponse.status}`),
+      r => err(`invalid status ${r.httpResponse.status}`),
     ),
   )
+
+const errorMessage = (err: t.ValidationError) => {
+  const path = err.context.map((e) => `${e.key}(${JSON.stringify(e.actual)})`).join('/')
+
+  return `invalid value ${err.value} in ${path}`
+}
+
+const reporter = (validation: t.Validation<any>): string => {
+  return pipe(
+    validation,
+    E.fold((errors) => errors.map(errorMessage).join('\n'), () => 'ok'),
+  )
+}
+// PathReporter.report(E.left(errors))
 
 export const decodeJson = <R>(decode: (u: unknown) => t.Validation<R>) =>
   (te: TE.TaskEither<Error, { httpResponse: HttpResponse }>) =>
@@ -32,7 +46,7 @@ export const decodeJson = <R>(decode: (u: unknown) => t.Validation<R>) =>
       TE.bind('decoded', ({ json }) =>
         pipe(
           decode(json),
-          E.mapLeft(errors => error(`Error decoding json: ${PathReporter.report(E.left(errors))}`)),
+          E.mapLeft(errors => err(`Error decoding json: ${reporter(E.left(errors))}`)),
           TE.fromEither,
         )),
     )

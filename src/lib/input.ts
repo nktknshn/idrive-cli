@@ -3,7 +3,7 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as rl from 'readline'
-import { BufferDecodingError, error } from './errors'
+import { BufferDecodingError, err } from './errors'
 import { tryDecodeBuffer } from './files'
 
 const write: (a: string | Uint8Array) => TE.TaskEither<Error, unknown> = TE.taskify(
@@ -22,7 +22,7 @@ const readSingleLine: T.Task<string> = () => {
   })
 }
 
-const readTask = TE.tryCatch(readSingleLine, (err) => error(String(err)))
+const readTask = TE.tryCatch(readSingleLine, (e) => err(String(e)))
 
 const decodeBytes = (
   bytes: unknown,
@@ -32,7 +32,7 @@ const decodeBytes = (
       ? tryDecodeBuffer(bytes)
       : typeof bytes === 'string'
       ? E.of(bytes)
-      : E.throwError(error(`wrong input`)),
+      : E.throwError(err(`wrong input`)),
   )
 
 export function input({

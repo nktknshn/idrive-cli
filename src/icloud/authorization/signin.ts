@@ -3,7 +3,7 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { error, InvalidJsonInResponse, MissingResponseBody, UnexpectedResponse } from '../../lib/errors'
+import { err, InvalidJsonInResponse, MissingResponseBody, UnexpectedResponse } from '../../lib/errors'
 import { FetchClientEither, HttpResponse } from '../../lib/fetch-client'
 import { getHeader } from '../../lib/http-headers'
 import { logger } from '../../lib/logging'
@@ -47,7 +47,7 @@ function getResponse(
     const responseBody: SignInResponse409Body = json.right as SignInResponse409Body
 
     if (typeof responseBody.authType !== 'string') {
-      return E.left(error('SignInResponse409Body: missing authType'))
+      return E.left(err('SignInResponse409Body: missing authType'))
     }
 
     const twoSVTrustEligible = pipe(

@@ -2323,10 +2323,10 @@
   "resolved" "https://registry.npmjs.org/fp-ts-std/-/fp-ts-std-0.10.1.tgz"
   "version" "0.10.1"
 
-"fp-ts@^2.0.0", "fp-ts@^2.0.5", "fp-ts@^2.1.2", "fp-ts@^2.10.0", "fp-ts@^2.11.1", "fp-ts@^2.11.3", "fp-ts@^2.5.0":
-  "integrity" "sha512-lhV7tGEbs2qoVw4vmqOovChS7CAoIYU0gdiPEF8Vc4bLZct+PAMMeXrCqRyBNEo33XOvwvAmFDEDIrHPWH2/fg=="
-  "resolved" "https://registry.npmjs.org/fp-ts/-/fp-ts-2.11.4.tgz"
-  "version" "2.11.4"
+"fp-ts@^2.0.0", "fp-ts@^2.0.5", "fp-ts@^2.1.2", "fp-ts@^2.10.0", "fp-ts@^2.11.1", "fp-ts@^2.11.5", "fp-ts@^2.5.0":
+  "integrity" "sha512-OqlwJq1BdpB83BZXTqI+dNcA6uYk6qk4u9Cgnt64Y+XS7dwdbp/mobx8S2KXf2AXH+scNmA/UVK3SEFHR3vHZA=="
+  "resolved" "https://registry.npmjs.org/fp-ts/-/fp-ts-2.11.5.tgz"
+  "version" "2.11.5"
 
 "fs-minipass@^2.0.0", "fs-minipass@^2.1.0":
   "integrity" "sha512-V/JgOLFCS+R6Vcq0slCuaeWEdNC3ouDlJMNIsacH2VtALiu9mV4LPrHc5cDl8k5aw6J8jwgWWpiTo5RYhmIzvg=="

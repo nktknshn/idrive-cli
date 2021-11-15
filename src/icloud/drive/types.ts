@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-interface */
 import { pipe } from 'fp-ts/function'
 import * as A from 'fp-ts/lib/Array'
+import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/Tree'
 import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
@@ -19,7 +20,20 @@ export interface DriveChildrenItemAppLibrary extends TypeOf<typeof t.itemAppLibr
 export type DriveItemDetails = TypeOf<typeof t.itemDetails>
 
 export interface Icon extends TypeOf<typeof t.icon> {}
+
 export interface InvalidId extends TypeOf<typeof t.invalidIdItem> {}
+
+export interface ItemNotFound {
+  readonly tag: 'ItemNotFound'
+  drivewsid: string
+}
+
+export type MaybeNotFound<T> = InvalidId | T
+
+export const isNotInvalidId = <T>(i: T | InvalidId): i is T => !t.invalidIdItem.is(i)
+export const isInvalidId = <T>(i: T | InvalidId): i is InvalidId => !t.invalidIdItem.is(i)
+
+export const asOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O.none : O.some(i)
 
 export type DriveDetailsWithHierarchy = TypeOf<typeof t.detailsWithHierarchy>
 
@@ -81,6 +95,8 @@ export type DriveObject = {
   extension?: string
   drivewsid: string
 }
+
+export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
 export const isRootDetails = (details: DriveDetails | DriveChildrenItem): details is DriveDetailsRoot =>
   details.name === '' && details.drivewsid === rootDrivewsid
@@ -147,13 +163,6 @@ export type FolderLikeItem =
 export const isFile = (
   entity: DriveDetails | DriveChildrenItem,
 ): entity is DriveChildrenItemFile => entity.type === 'FILE'
-
-export interface InvalidIdFolderResponse {
-  status: 'INVALID_ID'
-  items: []
-}
-
-type ResponseStatus = 'OK' | 'INVALID_ID'
 
 export const isHierarchyItemRoot = (
   item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,

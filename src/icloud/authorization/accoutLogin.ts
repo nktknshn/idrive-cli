@@ -2,7 +2,7 @@ import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultCountryCode } from '../../config'
-import { error } from '../../lib/errors'
+import { err } from '../../lib/errors'
 import { FetchClientEither } from '../../lib/fetch-client'
 import { logger } from '../../lib/logging'
 import { expectJson } from '../../lib/response-reducer'
@@ -24,7 +24,7 @@ export function requestAccoutLogin(
 
   return pipe(
     session.sessionToken,
-    TE.fromOption(() => error('session missing sessionToken')),
+    TE.fromOption(() => err('session missing sessionToken')),
     TE.map((sessionToken) =>
       buildRequest(
         'POST',

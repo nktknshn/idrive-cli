@@ -4,15 +4,13 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as S from 'fp-ts/lib/Semigroup'
 
-const eithers = [
-  E.right(1),
-  E.right(2),
-  E.right(3),
-  E.right(4),
-]
+const a = ['fdf', 'sab', 'asasasasascd', 'dd', 'asasda', 'ff', 'd']
 
-// const s = getApplySemigroup<string, number[]>(A.getSemigroup<number>())
+const res = pipe(
+  a,
+  A.partitionMapWithIndex((idx, v) => v.length > 3 ? E.left([idx, v] as const) : E.right([idx, v] as const)),
+)
 
-pipe(
-  eithers,
+console.log(
+  res,
 )

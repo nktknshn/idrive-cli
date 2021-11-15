@@ -2,7 +2,9 @@ import { sequenceS } from 'fp-ts/lib/Apply'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as TE from 'fp-ts/lib/TaskEither'
 import { compareHierarchiesItem, compareItemWithHierarchy } from '../../../cli/actions/helpers'
 import * as C from '../../../icloud/drive/cache/cachef'
 import { Cache, isFolderLikeCacheEntity } from '../../../icloud/drive/cache/cachef'
@@ -15,7 +17,9 @@ import {
   DriveDetailsWithHierarchy,
   DriveItemDetails,
   Hierarchy,
+  isNotInvalidId,
 } from '../../../icloud/drive/types'
+import { err } from '../../../lib/errors'
 import { logger, logReturn, logReturnAs } from '../../../lib/logging'
 
 const log = <T>(msg: string) => logReturn<T>(() => logger.debug(msg))
@@ -73,8 +77,12 @@ const onNotFoundInCache = (path: string) =>
               C.entitiesToHierarchy(validPart),
             ),
             lastItem: SRTE.fromTaskEither<Error, DriveDetailsWithHierarchy, Cache, DriveApi>(
-              api.retrieveItemDetailsInFoldersHierarchy(
-                NA.last(validPart).content.drivewsid,
+              pipe(
+                api.retrieveItemDetailsInFolderHierarchyO(
+                  NA.last(validPart).content.drivewsid,
+                ),
+                TE.filterOrElse(O.isSome, () => err(`missing drivewsid`)),
+                TE.map(_ => _.value),
               ),
             ),
           }),
@@ -168,7 +176,7 @@ export const ls = (path: string): DF.DriveM<DriveChildrenItemFile | DriveDetails
         'details',
         ({ api }) =>
           SRTE.fromTaskEither(
-            api.retrieveItemDetailsInFoldersHierarchy(item.content.drivewsid),
+            api.retrieveItemDetailsInFolderHierarchyE(item.content.drivewsid),
           ),
       ),
       SRTE.bind('hierarchy', ({ details, cache }) =>

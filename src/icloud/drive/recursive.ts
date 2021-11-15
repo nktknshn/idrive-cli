@@ -4,11 +4,10 @@ import { apply, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { error } from '../../lib/errors'
+import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import { Drive } from './drive'
 import { DriveDetails, FolderLikeItem, isFolderLikeItem, isNotRootDetails, RecursiveFolder } from './types'
-
+/*
 export function getFolderRecursive(
   drive: Drive,
   path: string,
@@ -128,3 +127,4 @@ const zipWithChildren = (
       ] as const
     ),
   )
+ */

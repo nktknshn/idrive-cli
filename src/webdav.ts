@@ -1,4 +1,4 @@
-import { Command } from 'commander'
+/* import { Command } from 'commander'
 // import assert, { AssertionError } from 'assert'
 import { identity, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -13,7 +13,7 @@ import * as DriveApi from './icloud/drive/drive-api'
 import { fileName } from './icloud/drive/helpers'
 import { DriveChildrenItemFile } from './icloud/drive/types'
 import { readSessionFile } from './icloud/session/session-file'
-import { error } from './lib/errors'
+import { err } from './lib/errors'
 import { logger } from './lib/logging'
 
 interface SerializedFileSystem {
@@ -106,7 +106,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (detals) =>
           async () => {
@@ -128,7 +128,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (detals) =>
           async () => {
@@ -154,7 +154,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (detals) =>
           async () => {
@@ -175,7 +175,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (detals) =>
           async () => {
@@ -191,12 +191,12 @@ class ICloudFileSystem extends v2.FileSystem {
       this.drive.getItemByPath(path.toString()),
       TE.filterOrElse(
         (_): _ is DriveChildrenItemFile => _.type === 'FILE',
-        () => error(`item is not file`),
+        () => err(`item is not file`),
       ),
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (detals) =>
           async () => {
@@ -214,7 +214,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (detals) =>
           async () => {
@@ -235,7 +235,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`), undefined)
+            callback(err(`Error: ${e.message}`), undefined)
           },
         (data) =>
           async () => {
@@ -266,7 +266,7 @@ class ICloudFileSystem extends v2.FileSystem {
         TE.fold(
           (e) =>
             async () => {
-              callback(error(`Error: ${e.message}`))
+              callback(err(`Error: ${e.message}`))
             },
           (data) =>
             async () => {
@@ -285,7 +285,7 @@ class ICloudFileSystem extends v2.FileSystem {
       TE.fold(
         (e) =>
           async () => {
-            callback(error(`Error: ${e.message}`))
+            callback(err(`Error: ${e.message}`))
           },
         (data) =>
           async () => {
@@ -319,10 +319,10 @@ const run = ({
     TE.chainW(({ fs }) =>
       TE.tryCatch(
         () => server.setFileSystemAsync('/', fs),
-        (e) => error(`Error mounting fs: ${e}`),
+        (e) => err(`Error mounting fs: ${e}`),
       )
     ),
-    TE.filterOrElse(identity, () => error('setFileSystemAsync returned false')),
+    TE.filterOrElse(identity, () => err('setFileSystemAsync returned false')),
     TE.chain(() => TE.fromTask(() => server.startAsync(port))),
   )
 }
@@ -341,3 +341,4 @@ async function main() {
 }
 
 main()
+ */

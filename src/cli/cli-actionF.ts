@@ -1,19 +1,19 @@
 import * as E from 'fp-ts/lib/Either'
-import { constVoid, pipe } from 'fp-ts/lib/function'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import { constVoid, hole, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData } from '../icloud/authorization/validate'
 import * as C from '../icloud/drive/cache/cachef'
 import { InconsistentCache } from '../icloud/drive/cache/errors'
-import * as Drive from '../icloud/drive/drive'
 import * as DriveApi from '../icloud/drive/drive-api'
+import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession } from '../icloud/session/session-file'
-import { logger, logReturn, stderrLogger } from '../lib/logging'
+import { logReturn, stderrLogger } from '../lib/logging'
 import { EnvFiles } from './types'
 
 export function cliAction<Args, T>(
   { sessionFile, cacheFile, noCache, dontSaveCache = false }: EnvFiles & { noCache: boolean; dontSaveCache?: boolean },
-  f: (deps: { drive: Drive.Drive; cache: C.Cache; api: DriveApi.DriveApi }) => TE.TaskEither<Error, T>,
+  f: (deps: { cache: C.Cache; api: DriveApi.DriveApi }) => TE.TaskEither<Error, T>,
 ): TE.TaskEither<Error, T> {
   return pipe(
     TE.Do,
@@ -27,18 +27,18 @@ export function cliAction<Args, T>(
           : pipe(C.Cache.tryReadFromFile(cacheFile), TE.map(C.Cache.create)),
         TE.orElseW((e) => TE.of(C.Cache.create())),
       )),
-    TE.bindW('drive', ({ api, cache }) => TE.of(new Drive.Drive(api, cache))),
-    TE.bind('result', ({ drive, api, cache }) =>
+    // TE.bindW('drive', ({ api, cache }) => TE.of(new Drive.Drive(api, cache))),
+    TE.bind('result', ({ api, cache }) =>
       TE.bracket(
-        TE.of({ drive, api }),
-        () => f({ drive, cache, api }),
-        ({ drive, api }, e) =>
+        TE.of({ api }),
+        () => f({ cache, api }),
+        ({ api }, e) =>
           pipe(
             saveSession(sessionFile)(api.getSession().session),
             TE.chain(() =>
               (E.isLeft(e) && InconsistentCache.is(e.left)) || noCache || dontSaveCache
                 ? TE.of(constVoid())
-                : C.Cache.trySaveFile(drive.cacheGet(), cacheFile)
+                : C.Cache.trySaveFile(cache, cacheFile)
             ),
             logReturn(() => stderrLogger.info({ apiCalls: api.apiCalls })),
           ),
@@ -48,28 +48,29 @@ export function cliAction<Args, T>(
 }
 
 export function apiAction<T>(
-  { sessionFile }: {
-    sessionFile: string
-  },
-  action: (deps: { api: DriveApi.DriveApi }) => TE.TaskEither<Error, T>,
+  { sessionFile }: { sessionFile: string },
+  action: (
+    deps: { api: DriveApi.DriveApi; session: ICloudSession; accountData: AccountLoginResponseBody },
+  ) => TE.TaskEither<Error, T>,
 ): TE.TaskEither<Error, T> {
-  return pipe(
-    TE.Do,
-    TE.bind('session', () => readSessionFile(sessionFile)),
-    TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
-    TE.bind('api', (validatedSession) => TE.of(new DriveApi.DriveApi(validatedSession))),
-    TE.bind('result', ({ api }) =>
-      TE.bracket(
-        TE.of({ api }),
-        () => action({ api }),
-        ({ api }, e) =>
-          pipe(
-            saveSession(sessionFile)(api.getSession().session),
-            logReturn(() => stderrLogger.info({ apiCalls: api.apiCalls })),
-          ),
-      )),
-    TE.map((_) => _.result),
-  )
+  return hole()
+  // return pipe(
+  //   TE.Do,
+  //   TE.bind('session', () => readSessionFile(sessionFile)),
+  //   TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
+  //   TE.bind('api', (validatedSession) => TE.of(new DriveApi.DriveApi(validatedSession))),
+  //   TE.bind('result', ({ api, session, accountData }) =>
+  //     TE.bracket(
+  //       TE.of({ api, session, accountData }),
+  //       () => action({ api, session, accountData }),
+  //       ({ api }, e) =>
+  //         pipe(
+  //           saveSession(sessionFile)(api.getSession().session),
+  //           logReturn(() => stderrLogger.info({ apiCalls: api.apiCalls })),
+  //         ),
+  //     )),
+  //   TE.map((_) => _.result),
+  // )
 }
 
 // type CliAction2Deps = {}

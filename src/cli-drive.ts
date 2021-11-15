@@ -88,18 +88,18 @@ async function main() {
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break
-    case 'mkdir':
-      logger.info(await mkdir(argv)())
-      break
-    case 'cat':
-      await pipe(
-        cat(argv),
-        TE.fold(printer.errorTask, printer.printTask),
-      )()
-      break
-    case 'rm':
-      logger.info(await rm(argv)())
-      break
+    // case 'mkdir':
+    //   logger.info(await mkdir(argv)())
+    //   break
+    // case 'cat':
+    //   await pipe(
+    //     cat(argv),
+    //     TE.fold(printer.errorTask, printer.printTask),
+    //   )()
+    //   break
+    // case 'rm':
+    //   logger.info(await rm(argv)())
+    //   break
     case 'update':
       await pipe(
         update(argv),
@@ -127,37 +127,37 @@ async function main() {
   }
 }
 
-const mkdir = (
-  { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
-): TE.TaskEither<Error, unknown> => {
-  return cliAction(
-    { sessionFile, cacheFile, noCache },
-    ({ drive }) => drive.createFolder(path),
-  )
-}
+// const mkdir = (
+//   { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
+// ): TE.TaskEither<Error, unknown> => {
+//   return cliAction(
+//     { sessionFile, cacheFile, noCache },
+//     ({ drive }) => drive.createFolder(path),
+//   )
+// }
 
-const cat = (
-  { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
-): TE.TaskEither<Error, unknown> => {
-  return cliAction(
-    { sessionFile, cacheFile, noCache },
-    ({ drive }) =>
-      pipe(
-        drive.getDownloadStream(path),
-        TE.chain(consumeStream),
-        // TE.map(_ => new TextDecoder().decode(_))
-      ),
-  )
-}
+// const cat = (
+//   { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
+// ): TE.TaskEither<Error, unknown> => {
+//   return cliAction(
+//     { sessionFile, cacheFile, noCache },
+//     ({ drive }) =>
+//       pipe(
+//         drive.getDownloadStream(path),
+//         TE.chain(consumeStream),
+//         // TE.map(_ => new TextDecoder().decode(_))
+//       ),
+//   )
+// }
 
-const rm = (
-  { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
-): TE.TaskEither<Error, unknown> => {
-  return cliAction(
-    { sessionFile, cacheFile, noCache },
-    ({ drive }) => drive.removeItemByPath(path),
-  )
-}
+// const rm = (
+//   { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
+// ): TE.TaskEither<Error, unknown> => {
+//   return cliAction(
+//     { sessionFile, cacheFile, noCache },
+//     ({ drive }) => drive.removeItemByPath(path),
+//   )
+// }
 
 // const move = (
 //   { sessionFile, cacheFile, srcpath, dstpath, raw, noCache }: Env & { srcpath: string; dstpath: string },
