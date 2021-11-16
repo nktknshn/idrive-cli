@@ -5,17 +5,27 @@ import { isObjectWithOwnProperty } from './util'
 
 export class InvalidGlobalSessionResponse extends Error {
   readonly tag = 'InvalidGlobalSessionResponse'
-
   constructor(public readonly httpResponse: HttpResponse) {
     super('InvalidGlobalSessionResponse')
   }
-
   public static is(a: unknown): a is InvalidGlobalSessionResponse {
     return a instanceof InvalidGlobalSessionResponse
   }
-
   static create(httpResponse: HttpResponse): InvalidGlobalSessionResponse {
     return new InvalidGlobalSessionResponse(httpResponse)
+  }
+}
+
+export class BadRequestError extends Error {
+  readonly tag = 'BadRequestError'
+  constructor(public readonly httpResponse: HttpResponse) {
+    super('BadRequestError')
+  }
+  public static is(a: unknown): a is BadRequestError {
+    return a instanceof BadRequestError
+  }
+  static create(httpResponse: HttpResponse): BadRequestError {
+    return new BadRequestError(httpResponse)
   }
 }
 

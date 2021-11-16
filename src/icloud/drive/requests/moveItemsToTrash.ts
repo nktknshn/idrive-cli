@@ -7,7 +7,7 @@ import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
 
 export interface MoveItemToTrashResponse {
-  items: unknown[]
+  items: { drivewsid: string }[]
 }
 
 export function moveItemsToTrash(

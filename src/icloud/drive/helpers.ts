@@ -17,8 +17,8 @@ import {
   isInvalidId,
   isRootDetails,
   MaybeNotFound,
-  rootDrivewsid,
 } from './types'
+import { rootDrivewsid } from './types-io'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)

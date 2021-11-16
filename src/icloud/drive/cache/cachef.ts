@@ -30,8 +30,8 @@ import {
   isFolderDetails,
   isRootDetails,
   MaybeNotFound,
-  rootDrivewsid,
 } from '../types'
+import { rootDrivewsid } from '../types-io'
 import { MissingParentError } from './errors'
 import {
   CacheEntityAppLibrary,

@@ -10,9 +10,10 @@ import { Cache, isFolderLikeCacheEntity } from '../../icloud/drive/cache/cachef'
 import { DriveApi } from '../../icloud/drive/drive-api'
 import * as DF from '../../icloud/drive/drivef'
 import { hierarchyToPath } from '../../icloud/drive/helpers'
-import { DriveDetails, rootDrivewsid } from '../../icloud/drive/types'
+import { isFolderLike } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
+import { EmptyObject } from '../../lib/types'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
 import { compareDetails, compareItemWithHierarchy, getCachedDetailsPartialWithHierarchyById } from './helpers'
@@ -34,34 +35,32 @@ export const move = ({
 }) => {
   return cliAction(
     { sessionFile, cacheFile, noCache, dontSaveCache: true },
-    ({ cache, api }) =>
-      pipe(
-        cache.getByPathE(srcpath),
-        SRTE.fromEither,
-        f => f(cache)(api),
+    ({ cache, api }) => {
+      const res = pipe(
+        // DF.readEnv,
+        DF.Do,
+        SRTE.bind('srcitem', () => DF.ls(srcpath)),
+        SRTE.bind('dstitem', () =>
+          pipe(
+            DF.ls(dstpath),
+            SRTE.filterOrElse(isFolderLike, () => err(`dstpath is not a folder`)),
+          )),
+        SRTE.chain(({ srcitem, dstitem }) =>
+          pipe(
+            api.moveItems(dstitem.drivewsid, [{ drivewsid: srcitem.drivewsid, etag: srcitem.etag }]),
+            SRTE.fromTaskEither,
+            SRTE.chain(({ items }) => DF.putItems(items)),
+          )
+        ),
+        SRTE.chain(DF.saveCache(cacheFile)),
+        // SRTE.chain(({ api, cache }) => pipe(
+        //   api.moveItems()
+        // )),
+        // cache.getByPathE(srcpath),
         // SRTE.fromEither,
-        // SRTE.chain(_ => DF.move(srcpath, dstpath)),
-        // f => f(cache)(api),
-        // !noCache
-        //   ? TE.chainFirst(([items, cache]) => Cache.trySaveFile(cache, cacheFile))
-        //   : TE.chainFirst(() => TE.of(constVoid())),
-        // TE.map(fst),
-      ),
-    // pipe(
-    //   TE.Do,
-    //   TE.bind('result', () =>
-    //     pipe(
-    //       updateFoldersDetailsRecursively([rootDrivewsid], cache, api),
-    //       TE.chain(updatedDetails =>
-    //         pipe(
-    //           updatedDetails,
-    //           cache.putDetailss,
-    //           TE.fromEither,
-    //           TE.chain(Cache.trySaveFileF('data/updated-cache.json')),
-    //           // A.map(_ => cache.getCachedPathForId(_.drivewsid)),
-    //         )
-    //       ),
-    //     )),
-    // ),
+      )
+
+      return res(cache)(api)
+    },
   )
 }

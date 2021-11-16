@@ -3,20 +3,25 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { PathReporter } from 'io-ts/PathReporter'
-import { err, InvalidGlobalSessionResponse } from '../../../lib/errors'
+import { BadRequestError, err, InvalidGlobalSessionResponse } from '../../../lib/errors'
 import { HttpResponse } from '../../../lib/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/json'
-import { ResponseWithSession } from '../../../lib/response-reducer'
+import { applyCookies, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSession } from '../../session/session'
 
 // const applyHttpResponseToSessionHierarchy = expectJson((
 //   json: unknown,
 // ): json is { items: DriveItemDetails[] } => scheme.is(json))
+
 export const filterStatus = (status = 200) =>
   flow(
     TE.filterOrElseW(
       (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
       r => InvalidGlobalSessionResponse.create(r.httpResponse),
+    ),
+    TE.filterOrElseW(
+      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
+      r => BadRequestError.create(r.httpResponse),
     ),
     TE.filterOrElseW(
       r => r.httpResponse.status == status,
@@ -25,7 +30,7 @@ export const filterStatus = (status = 200) =>
   )
 
 const errorMessage = (err: t.ValidationError) => {
-  const path = err.context.map((e) => `${e.key}(${JSON.stringify(e.actual)})`).join('/')
+  const path = err.context.map((e) => `${e.key}`).join('/')
 
   return `invalid value ${err.value} in ${path}`
 }
@@ -73,3 +78,21 @@ export const withResponse = (httpResponse: HttpResponse) =>
     TE.Do,
     TE.bind('httpResponse', () => TE.of<Error, HttpResponse>(httpResponse)),
   )
+
+export const expectJson = <T>(
+  decode: t.Decode<unknown, T>,
+  ap: (
+    session: ICloudSession,
+  ) => (a: { decoded: T; httpResponse: HttpResponse }) => ICloudSession = (
+    session: ICloudSession,
+  ) => (({ httpResponse }) => applyCookies(httpResponse)(session)),
+) =>
+  (session: ICloudSession) =>
+    TE.chain<Error, HttpResponse, ResponseWithSession<T>>(
+      flow(
+        withResponse,
+        filterStatus(),
+        decodeJson(decode),
+        applyToSession(ap(session)),
+      ),
+    )

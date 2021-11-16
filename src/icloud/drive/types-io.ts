@@ -1,6 +1,9 @@
 import * as t from 'io-ts'
 import { omit } from './omit'
-import { rootDrivewsid, trashDrivewsid } from './types'
+
+export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
+export const cloudDocsZone = 'com.apple.CloudDocs'
+export const trashDrivewsid = 'TRASH_ROOT'
 
 export const genericItem = t.intersection([
   t.type({
@@ -64,6 +67,12 @@ export const itemAppLibrary = t.intersection([
   }),
 ])
 
+export const childrenItem = t.union([
+  itemAppLibrary,
+  itemFile,
+  itemFolder,
+])
+
 export const hierarchyItem = t.intersection([
   t.type({
     drivewsid: t.string,
@@ -98,7 +107,7 @@ export const detailsItem = t.union([
 ])
 
 export const detailsRoot = t.intersection([
-  itemFolder,
+  omit('parentId', itemFolder),
   t.type({
     drivewsid: t.literal(rootDrivewsid),
     name: t.literal(''),
@@ -165,7 +174,7 @@ export const partialItem = t.type({
   docwsid: t.string,
   etag: t.string,
 })
-/*
+
 export const rootDetailsWithHierarchyPartial = t.intersection([
   omit('items', rootDetailsWithHierarchy),
   t.type({ items: t.array(partialItem) }),
@@ -180,45 +189,44 @@ export const appLibraryDetailsWithHierarchyPartial = t.intersection([
   omit('items', appLibraryDetailsWithHierarchy),
   t.type({ items: t.array(partialItem) }),
 ])
- */
 
-export const rootDetailsWithHierarchyPartial = t.intersection([
-  itemFolder,
-  t.type({
-    drivewsid: t.literal(rootDrivewsid),
-    name: t.literal(''),
-    numberOfItems: t.number,
-    status: t.literal('OK'),
-    items: t.array(detailsItem),
-  }),
-  t.partial({
-    hierarchy,
-  }),
-  t.type({ items: t.array(partialItem) }),
-])
+// export const rootDetailsWithHierarchyPartial = t.intersection([
+//   itemFolder,
+//   t.type({
+//     drivewsid: t.literal(rootDrivewsid),
+//     name: t.literal(''),
+//     numberOfItems: t.number,
+//     status: t.literal('OK'),
+//     items: t.array(detailsItem),
+//   }),
+//   t.partial({
+//     hierarchy,
+//   }),
+//   t.type({ items: t.array(partialItem) }),
+// ])
 
-export const folderDetailsWithHierarchyPartial = t.intersection([
-  itemFolder,
-  t.type({
-    numberOfItems: t.number,
-    status: t.literal('OK'),
-    hierarchy,
-  }),
-  t.type({ items: t.array(partialItem) }),
-])
+// export const folderDetailsWithHierarchyPartial = t.intersection([
+//   itemFolder,
+//   t.type({
+//     numberOfItems: t.number,
+//     status: t.literal('OK'),
+//     hierarchy,
+//   }),
+//   t.type({ items: t.array(partialItem) }),
+// ])
 
-export const appLibraryDetailsWithHierarchyPartial = t.intersection([
-  itemAppLibrary,
-  t.type({
-    numberOfItems: t.number,
-    status: t.literal('OK'),
-    hierarchy,
-  }),
-  t.type({ items: t.array(partialItem) }),
-])
+// export const appLibraryDetailsWithHierarchyPartial = t.intersection([
+//   itemAppLibrary,
+//   t.type({
+//     numberOfItems: t.number,
+//     status: t.literal('OK'),
+//     hierarchy,
+//   }),
+//   t.type({ items: t.array(partialItem) }),
+// ])
 
 export const driveDetailsWithHierarchyPartial = t.union([
-  // rootDetailsWithHierarchyPartial,
+  rootDetailsWithHierarchyPartial,
   folderDetailsWithHierarchyPartial,
   appLibraryDetailsWithHierarchyPartial,
 ])

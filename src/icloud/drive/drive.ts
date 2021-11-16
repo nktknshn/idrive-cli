@@ -30,7 +30,6 @@ import {
   isRootDetails,
   partitionFoldersFiles,
   RecursiveFolder,
-  rootDrivewsid,
 } from './types'
 import { WasFolderChanged } from './update'
 

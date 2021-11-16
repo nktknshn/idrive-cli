@@ -2,14 +2,17 @@ import * as E from 'fp-ts/lib/Either'
 import * as R from 'fp-ts/lib/Record'
 import * as t from 'io-ts'
 
-export function omit<C extends t.HasProps, K extends keyof t.OutputOf<C>>(key: K, codec: C): OmitC<C, K> {
+type HasProps = t.HasProps
+// | OmitType<any, any, any>)
+
+export function omit<C extends HasProps, K extends keyof t.OutputOf<C>>(key: K, codec: C): OmitC<C, K> {
   const props: t.Props = getProps(codec)
   const keys = Object.getOwnPropertyNames(props)
   const types = keys.map((key) => props[key])
   const len = keys.length
 
   return new OmitType(
-    'OmitType',
+    'StrictType',
     (u): u is any => {
       if (!t.UnknownRecord.is(u)) {
         console.log('false')
@@ -75,13 +78,15 @@ export function omit<C extends t.HasProps, K extends keyof t.OutputOf<C>>(key: K
 }
 
 export class OmitType<
-  C extends t.HasProps,
+  C extends HasProps,
   K extends keyof t.OutputOf<C>,
   A = any,
   O = A,
   I = unknown,
 > extends t.Type<A, O, I> {
-  readonly _tag: 'OmitType' = 'OmitType'
+  readonly _tag: 'StrictType' = 'StrictType'
+  props: t.Props
+
   constructor(
     name: string,
     is: OmitType<C, K, A, O, I>['is'],
@@ -91,12 +96,13 @@ export class OmitType<
     readonly key: K,
   ) {
     super(name, is, validate, encode)
+    this.props = R.deleteAt(key as string)(getProps(codec))
   }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface OmitC<
-  C extends t.HasProps,
+  C extends HasProps,
   K extends keyof t.OutputOf<C>,
 > extends
   OmitType<
@@ -106,9 +112,9 @@ export interface OmitC<
     Omit<t.OutputOf<C>, K>,
     unknown
   >
-{
-}
-function getProps(codec: t.HasProps): t.Props {
+{}
+
+function getProps(codec: HasProps): t.Props {
   switch (codec._tag) {
     case 'RefinementType':
     case 'ReadonlyType':
@@ -119,6 +125,8 @@ function getProps(codec: t.HasProps): t.Props {
       return codec.props
     case 'IntersectionType':
       return codec.types.reduce<t.Props>((props, type) => Object.assign(props, getProps(type)), {})
+      // case 'OmitType':
+      //   return R.deleteAt(codec.key as string)(getProps(codec.codec))
   }
 }
 

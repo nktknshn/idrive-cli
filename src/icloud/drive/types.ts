@@ -7,10 +7,6 @@ import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
 import * as t from './types-io'
 
-export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
-export const cloudDocsZone = 'com.apple.CloudDocs'
-export const trashDrivewsid = 'TRASH_ROOT'
-
 export interface DriveDetailsRoot extends TypeOf<typeof t.detailsRoot> {}
 export interface DriveDetailsFolder extends TypeOf<typeof t.detailsFolder> {}
 export interface DriveDetailsAppLibrary extends TypeOf<typeof t.detailsAppLibrary> {}
@@ -31,7 +27,7 @@ export interface ItemNotFound {
 export type MaybeNotFound<T> = InvalidId | T
 
 export const isNotInvalidId = <T>(i: T | InvalidId): i is T => !t.invalidIdItem.is(i)
-export const isInvalidId = <T>(i: T | InvalidId): i is InvalidId => !t.invalidIdItem.is(i)
+export const isInvalidId = <T>(i: T | InvalidId): i is InvalidId => t.invalidIdItem.is(i)
 
 export const asOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O.none : O.some(i)
 
@@ -50,6 +46,8 @@ export interface DriveDetailsFolderPartialWithHierarchy extends TypeOf<typeof t.
 export interface DriveDetailsAppLibraryPartialWithHierarchy
   extends TypeOf<typeof t.appLibraryDetailsWithHierarchyPartial>
 {}
+
+// export interface DriveChildrenItem extends TypeOf<typeof t.childrenItem> {}
 
 export type Hierarchy = TypeOf<typeof t.hierarchy>
 
@@ -85,10 +83,12 @@ export type DriveDetails =
   | DriveDetailsFolder
   | DriveDetailsAppLibrary
 
-export type DriveChildrenItem =
-  | DriveChildrenItemFile
-  | DriveChildrenItemFolder
-  | DriveChildrenItemAppLibrary
+// export type DriveChildrenItem =
+//   | DriveChildrenItemFile
+//   | DriveChildrenItemFolder
+//   | DriveChildrenItemAppLibrary
+
+export type DriveChildrenItem = TypeOf<typeof t.childrenItem>
 
 export type DriveObject = {
   name: string
@@ -99,7 +99,7 @@ export type DriveObject = {
 export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
 export const isRootDetails = (details: DriveDetails | DriveChildrenItem): details is DriveDetailsRoot =>
-  details.name === '' && details.drivewsid === rootDrivewsid
+  details.name === '' && details.drivewsid === t.rootDrivewsid
 
 export const isNotRootDetails = (details: DriveDetails | DriveChildrenItem): details is
   | DriveDetailsFolder
@@ -166,8 +166,8 @@ export const isFile = (
 
 export const isHierarchyItemRoot = (
   item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,
-): item is HierarchyItemRoot => item.drivewsid === rootDrivewsid
+): item is HierarchyItemRoot => item.drivewsid === t.rootDrivewsid
 
 export const isHierarchyItemTrash = (
   item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,
-): item is HierarchyItemTrash => item.drivewsid === trashDrivewsid
+): item is HierarchyItemTrash => item.drivewsid === t.trashDrivewsid

@@ -22,7 +22,6 @@ import {
   isFolderLike,
   isRootDetails,
   RecursiveFolder,
-  rootDrivewsid,
 } from '../../icloud/drive/types'
 import { logger, logReturn, logReturnAs } from '../../lib/logging'
 import { cliAction } from '../cli-action'
@@ -115,7 +114,7 @@ const showWithFullPath = (path: string) => flow(showFilename, joinWithPath(path)
 
 const showRaw = (result: DriveDetails | DriveChildrenItem) => JSON.stringify(result)
 
-const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (result: DriveChildrenItemFile) =>
     [
       ['name', showFilename(result)],
@@ -133,7 +132,7 @@ const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
       .map(_ => _.join(':\t'))
       .join('\n')
 
-const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (result: DriveDetails) =>
     [
       ['name', showFilename(result)],
@@ -153,7 +152,7 @@ const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
 const ordByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
 const ordByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)
 
-const showDetailsInfo = (
+export const showDetailsInfo = (
   { fullPath, path, showDrivewsid = false, showDocwsid = false, printFolderInfo = false }: {
     showDrivewsid?: boolean
     showDocwsid?: boolean

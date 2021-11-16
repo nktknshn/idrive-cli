@@ -2,7 +2,6 @@ import * as A from 'fp-ts/lib/Array'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
-import { not } from 'fp-ts/lib/Refinement'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import mime from 'mime-types'
@@ -10,12 +9,13 @@ import Path from 'path'
 import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
 import { fetchClient, FetchClientEither } from '../../lib/fetch-client'
 import { input } from '../../lib/input'
-import { logger } from '../../lib/logging'
+import { logger, logReturnAs } from '../../lib/logging'
+import { ResponseWithSession } from '../../lib/response-reducer'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
 import { zipIds } from './helpers'
-import { download, retrieveItemDetails } from './requests'
-import { retrieveHierarchy } from './requests'
+import { download, retrieveHierarchy, retrieveItemDetails } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
+import { moveItems } from './requests/moveItems'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
 import {
   retrieveItemDetailsInFolders,
@@ -25,7 +25,6 @@ import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 import {
   asOption,
   DriveDetails,
-  DriveDetailsFolder,
   DriveDetailsPartialWithHierarchy,
   DriveDetailsRoot,
   DriveDetailsWithHierarchy,
@@ -34,9 +33,8 @@ import {
   isNotInvalidId,
   isRootDetails,
   MaybeNotFound,
-  rootDrivewsid,
 } from './types'
-import { invalidIdItem } from './types-io'
+import { rootDrivewsid } from './types-io'
 
 const getContentType = (extension: string): string => {
   if (extension === '') {
@@ -115,20 +113,7 @@ export class DriveApi {
     )
   }
 
-  // public getZones = (): TE.TaskEither<Error, string[]> => {
-  //   return pipe(
-  //     this.getRoot()
-  //   )
-  // }
-
-  // public byZone = (zone: string): TE.TaskEither<Error, DriveDetailsRoot> => {
-  //   return pipe(
-  //     this.retrieveItemDetailsInFolder(rootDrivewsid),
-  //     TE.filterOrElse(isRootDetails, () => error(`invalid root details`)),
-  //   )
-  // }
-
-  public upload = (sourceFilePath: string, targetId: string): TE.TaskEither<Error, void> => {
+  public upload = (sourceFilePath: string, docwsid: string): TE.TaskEither<Error, void> => {
     const parsedSource = Path.parse(sourceFilePath)
 
     return pipe(
@@ -172,12 +157,12 @@ export class DriveApi {
               this.client,
               { session, accountData: this.session.accountData },
               {
-                request: {
+                data: {
                   allow_conflict: true,
                   command: 'add_file',
                   document_id: uploadResult.response.body[0].document_id,
                   path: {
-                    starting_document_id: targetId,
+                    starting_document_id: docwsid,
                     path: parsedSource.base,
                   },
                   btime: new Date().getTime(),
@@ -206,13 +191,7 @@ export class DriveApi {
     logger.debug(`retrieveItemDetailsInFolders`, { drivewsids })
 
     return pipe(
-      this.retryingQuery(() =>
-        retrieveItemDetailsInFolders(this.client, this.session, {
-          partialData: false,
-          includeHierarchy: false,
-          drivewsids,
-        })
-      ),
+      this.retryingQuery(() => retrieveItemDetailsInFolders(this.client, this.session, { drivewsids })),
       TE.chainFirstW(({ session }) =>
         this.setSession({
           accountData: this.session.accountData,
@@ -257,7 +236,7 @@ export class DriveApi {
   ): TE.TaskEither<Error, DriveDetailsWithHierarchy> => {
     return pipe(
       this.retrieveItemDetailsInFolderHierarchyO(drivewsid),
-      TE.chain(TE.fromOption(() => err(`${drivewsid} wasnt found`))),
+      TE.chain(TE.fromOption(() => err(`${drivewsid} wasn't found`))),
     )
   }
 
@@ -309,14 +288,23 @@ export class DriveApi {
     logger.debug(`retrieveItemDetails`, { drivewsids })
 
     return pipe(
-      this.retryingQuery(() => retrieveItemDetails(this.client, this.session, { drivewsids })),
-      TE.chainFirstW(({ session }) =>
-        this.setSession({
-          accountData: this.session.accountData,
-          session,
-        })
+      this.retryingWithSession(
+        () => retrieveItemDetails(this.client, this.session, { drivewsids }),
       ),
-      TE.map((_) => _.response.body),
+    )
+  }
+
+  public retrieveItemDetailsO = (drivewsid: string): TE.TaskEither<Error, O.Option<DriveItemDetails>> => {
+    return pipe(
+      this.retrieveItemsDetails([drivewsid]),
+      TE.map(_ => A.lookup(0)(_.items)),
+    )
+  }
+
+  public retrieveItemDetailsE = (drivewsid: string): TE.TaskEither<Error, DriveItemDetails> => {
+    return pipe(
+      this.retrieveItemDetailsO(drivewsid),
+      TE.chain(TE.fromOption(() => err(`${drivewsid} wasn't found`))),
     )
   }
 
@@ -360,6 +348,33 @@ export class DriveApi {
           names: folderNames,
         })
       ),
+      TE.chainFirstW(({ session }) =>
+        this.setSession({
+          accountData: this.session.accountData,
+          session,
+        })
+      ),
+      TE.map((_) => _.response.body),
+    )
+  }
+
+  public moveItems = (
+    destinationDrivewsId: string,
+    items: { drivewsid: string; etag: string }[],
+  ) => {
+    return pipe(
+      this.retryingWithSession(
+        () => moveItems(this.client, this.session, { destinationDrivewsId, items }),
+      ),
+    )
+  }
+
+  public retryingWithSession = <E extends Error, A>(
+    te: () => TE.TaskEither<E, ResponseWithSession<A>>,
+  ): TE.TaskEither<Error, A> => {
+    return pipe(
+      te,
+      this.retryingQuery,
       TE.chainFirstW(({ session }) =>
         this.setSession({
           accountData: this.session.accountData,

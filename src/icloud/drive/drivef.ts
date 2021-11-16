@@ -43,12 +43,12 @@ import {
   isRootDetails,
   MaybeNotFound,
   RecursiveFolder,
-  rootDrivewsid,
 } from './types'
 
 export { ls } from './drivef/ls'
 
 export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
+export const Do = SRTE.of<Cache, DriveApi, Error, {}>({})
 
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<FolderLikeItem>()
@@ -88,6 +88,7 @@ function partitateTask(task: (readonly [string, MaybeNotFound<DriveDetails>])[])
 }
 
 import * as S from 'fp-ts/Semigroup'
+import { rootDrivewsid } from './types-io'
 
 const putFoundMissed = ({ found, missed }: {
   found: DriveDetails[]
@@ -488,7 +489,7 @@ export const removeByIds = (drivewsids: string[]): DriveM<void> =>
     ),
   )
 
-export const putItems = (detailss: DriveItemDetails[]): DriveM<void> =>
+export const putItems = (detailss: DriveChildrenItem[]): DriveM<void> =>
   pipe(
     readEnv,
     SRTE.chainW(({ cache }) =>
@@ -607,6 +608,13 @@ export const updateFoldersDetailsRecursively = (
     ),
   )
 }
+
+export const saveCache = (cacheFile: string) =>
+  () =>
+    pipe(
+      readEnv,
+      SRTE.chain(({ cache }) => SRTE.fromTaskEither(Cache.trySaveFile(cache, cacheFile))),
+    )
 
 const shallowFolder = (details: DriveDetails): RecursiveFolder => ({
   details,

@@ -12,7 +12,9 @@ import { cacheLogger, logger, loggingLevels, printer, stderrLogger } from './lib
 
 import { listUnixPath } from './cli/actions/ls'
 import { move } from './cli/actions/move'
+import { rm } from './cli/actions/rm'
 import { checkForUpdates, update } from './cli/actions/update'
+import { upload } from './cli/actions/upload'
 import { ensureError } from './lib/errors'
 
 function parseArgs() {
@@ -45,10 +47,18 @@ function parseArgs() {
         }))
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
+    .command('rm [path]', 'check updates', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command(
       'mv <srcpath> <dstpath>',
       'move',
+      (_) =>
+        _.positional('srcpath', { type: 'string', demandOption: true })
+          .positional('dstpath', { type: 'string', demandOption: true }),
+    )
+    .command(
+      'upload <srcpath> <dstpath>',
+      'upload',
       (_) =>
         _.positional('srcpath', { type: 'string', demandOption: true })
           .positional('dstpath', { type: 'string', demandOption: true }),
@@ -97,9 +107,20 @@ async function main() {
     //     TE.fold(printer.errorTask, printer.printTask),
     //   )()
     //   break
-    // case 'rm':
-    //   logger.info(await rm(argv)())
-    //   break
+    case 'rm':
+      await pipe(
+        rm(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
+    case 'upload':
+      await pipe(
+        upload(argv),
+        TE.chain(flow(J.stringify, TE.fromEither)),
+        TE.mapLeft(ensureError),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
     case 'update':
       await pipe(
         update(argv),

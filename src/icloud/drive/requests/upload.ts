@@ -1,49 +1,90 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
+import * as t from 'io-ts'
 import Path from 'path'
 import { err } from '../../../lib/errors'
 import { FetchClientEither, uploadFileRequest } from '../../../lib/fetch-client'
-import { expectJson, ResponseWithSession } from '../../../lib/response-reducer'
+import { ResponseWithSession } from '../../../lib/response-reducer'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-
+import { expectJson } from './filterStatus'
 // https://p46-docws.icloud.com/ws/com.apple.CloudDocs/upload/web?token=<TOKEN>>&clientBuildNumber=2118Project41&clientMasteringNumber=2118B32&clientId=4dbe4e18-9b69-4a1f-af46-a54bb84caff5&dsid=20322967922
 
-type UploadResponse = [
-  { document_id: string; url: string; owner: string; owner_id: string },
-]
+const uploadResponse = t.array(t.type({
+  document_id: t.string,
+  url: t.string,
+  owner: t.string,
+  owner_id: t.string,
+}))
 
-type SingleFileResponse = {
-  singleFile: {
-    referenceChecksum: string
-    fileChecksum: string
-    wrappingKey: string
-    receipt: string
-    size: number
-  }
-}
+type UploadResponse = t.TypeOf<typeof uploadResponse>
 
-type Status = {
-  status_code: number
-  error_message: string
-}
+const singleFileResponse = t.type({
+  singleFile: t.type({
+    referenceChecksum: t.string,
+    fileChecksum: t.string,
+    wrappingKey: t.string,
+    receipt: t.string,
+    size: t.number,
+  }),
+})
 
-type UpdateDocumentsResponse = {
-  status: Status
-  results: {
-    status: Status
-    operation_id: null
-    document: {
-      status: Status
-      etag: string
-      // etc...
-    }
-  }[]
-}
+type SingleFileResponse = t.TypeOf<typeof singleFileResponse>
 
-type UpdateDocumentsRequest = {
+const status = t.type({
+  status_code: t.number,
+  error_message: t.string,
+})
+
+type Status = t.TypeOf<typeof status>
+
+const updateDocumentsResponse = t.type({
+  status,
+  results: t.array(t.type(
+    {
+      status,
+      operation_id: t.null,
+      document: t.type({
+        status,
+        etag: t.string,
+        // etc...
+      }),
+    },
+  )),
+})
+
+type UpdateDocumentsResponse = t.TypeOf<typeof updateDocumentsResponse>
+
+const updateDocumentsRequest = t.type({
+  allow_conflict: t.boolean,
+  btime: t.number,
+  mtime: t.number,
+  command: t.literal('add_file'),
+  document_id: t.string,
+  file_flags: t.type({
+    is_executable: t.boolean,
+    is_hidden: t.boolean,
+    is_writable: t.boolean,
+  }),
+  path: t.type({
+    path: t.string,
+    starting_document_id: t.string,
+  }),
+  data: t.type({
+    receipt: t.string,
+    reference_signature: t.string,
+    signature: t.string,
+    wrapping_key: t.string,
+    size: t.number,
+  }),
+  // [other: string]: unknown
+})
+
+type UpdateDocumentsRequest = t.TypeOf<typeof updateDocumentsRequest>
+/*
+{
   allow_conflict: boolean
   btime: number
   mtime: number
@@ -66,7 +107,7 @@ type UpdateDocumentsRequest = {
     size: number
   }
   [other: string]: unknown
-}
+} */
 
 export function upload(
   client: FetchClientEither,
@@ -79,11 +120,6 @@ export function upload(
     type: 'FILE'
   },
 ): TE.TaskEither<Error, ResponseWithSession<UploadResponse>> {
-  const applyUploadResponse = expectJson(
-    (json: unknown): json is UploadResponse =>
-      Array.isArray(json) && (!json.length || isObjectWithOwnProperty(json[0], 'url')),
-  )
-
   const token = session.cookies['X-APPLE-WEBAUTH-TOKEN'] ?? ''
 
   return pipe(
@@ -94,7 +130,7 @@ export function upload(
       { data: { filename, content_type: contentType, size, type } },
     ),
     client,
-    applyUploadResponse(session),
+    expectJson(uploadResponse.decode)(session),
   )
 }
 
@@ -105,9 +141,9 @@ export function singleFileUpload(
 ): TE.TaskEither<Error, ResponseWithSession<SingleFileResponse>> {
   const filename = Path.parse(filePath).base
 
-  const applySingleFileResponse = expectJson(
-    (json: unknown): json is SingleFileResponse => isObjectWithOwnProperty(json, 'singleFile'),
-  )
+  // const applySingleFileResponse = expectJson(
+  //   (json: unknown): json is SingleFileResponse => isObjectWithOwnProperty(json, 'singleFile'),
+  // )
 
   return pipe(
     TE.tryCatch(
@@ -116,33 +152,23 @@ export function singleFileUpload(
     ),
     TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
     TE.chainW(client),
-    applySingleFileResponse(session),
+    expectJson(singleFileResponse.decode)(session),
   )
 }
 
 export function updateDocuments(
   client: FetchClientEither,
   { session, accountData }: ICloudSessionValidated,
-  { zone = 'com.apple.CloudDocs', request }: { zone?: string; request: UpdateDocumentsRequest },
+  { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
 ): TE.TaskEither<Error, ResponseWithSession<UpdateDocumentsResponse>> {
-  const applyToSession = expectJson(
-    (json: unknown): json is UpdateDocumentsResponse =>
-      isObjectWithOwnProperty(json, 'status')
-      && isObjectWithOwnProperty(json.status, 'status_code')
-      && json.status.status_code === 0
-      && hasOwnProperty(json, 'results')
-      && Array.isArray(json.results)
-      && json.results.length > 0,
-  )
-
   return pipe(
     session,
     buildRequest(
       'POST',
-      `${accountData.webservices.docws.url}/ws/${zone}/update/documents?clientBuildNumber=2118Project41&clientMasteringNumber=2118B32&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e&appIdentifier=iclouddrive`,
-      request,
+      `${accountData.webservices.docws.url}/ws/${zone}/update/documents?clientBuildNumber=2118Project41&clientMasteringNumber=2118B32&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e&appIdentifier=iclouddrive&errorBreakdown=true`,
+      { data },
     ),
     client,
-    applyToSession(session),
+    expectJson(updateDocumentsResponse.decode)(session),
   )
 }
