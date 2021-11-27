@@ -2,6 +2,7 @@ import { Format, TransformableInfo, TransformFunction } from 'logform'
 import * as winston from 'winston'
 import { hasOwnProperty, isObjectWithOwnProperty } from './util'
 const { combine, timestamp, label, prettyPrint, json } = winston.format
+import chalk from 'chalk'
 import { identity } from 'fp-ts/function'
 import { IO } from 'fp-ts/lib/IO'
 import fs from 'fs'
@@ -54,9 +55,11 @@ export const loggingLevels = {
 // export const setLoggingLevel()
 export const logf = <T>(msg: string, lgr = logger.debug) => logReturn<T>(() => lgr(msg))
 
-const plain = (type: string) =>
+export const logg = (msg: string, f = logger.debug) => f(msg)
+
+const plain = (type: string, f: (s: string) => string = a => a) =>
   winston.format.printf(({ level, message, label, timestamp }) => {
-    return `${level}: ${type}: ${message}`
+    return f(`> ${level}: ${type}: ${message}`)
   })
 
 const logger = winston.createLogger({
@@ -93,8 +96,21 @@ const logger = winston.createLogger({
   ),
 })
 
+export const apiLogger = winston.createLogger({
+  level: 'debug',
+  format: combine(
+    // prettyPrint({
+    //   colorize: true,
+    //   depth: 3,
+    // }),
+    // winston.format.colorize({ colors: { 'debug': 'blue' } }),
+    plain('api', chalk.blue),
+  ),
+  transports: [loggingLevels.infoToStderr],
+})
+
 export const stderrLogger = winston.createLogger({
-  level: 'info',
+  level: 'debug',
   format: combine(
     prettyPrint({
       colorize: true,
@@ -112,7 +128,7 @@ export const cacheLogger = winston.createLogger({
       colorize: true,
       depth: 4,
     }),
-    plain('cache'),
+    plain('cache', chalk.grey),
   ),
 })
 
@@ -136,6 +152,15 @@ const httplogger = winston.createLogger({
 export const logReturn = <T>(logFunc: (value: T) => void) =>
   (value: T): T => {
     logFunc(value)
+    return value
+  }
+
+export const logReturnS = <T>(
+  logFunc: (value: T) => string,
+  _logger = logger.debug,
+) =>
+  (value: T): T => {
+    _logger(logFunc(value))
     return value
   }
 

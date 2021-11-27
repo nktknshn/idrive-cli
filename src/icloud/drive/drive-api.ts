@@ -9,7 +9,7 @@ import Path from 'path'
 import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
 import { fetchClient, FetchClientEither } from '../../lib/fetch-client'
 import { input } from '../../lib/input'
-import { logger, logReturnAs } from '../../lib/logging'
+import { apiLogger, logger, logReturnAs } from '../../lib/logging'
 import { ResponseWithSession } from '../../lib/response-reducer'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
 import { zipIds } from './helpers'
@@ -65,45 +65,6 @@ export class DriveApi {
     private session: ICloudSessionValidated,
     public client: FetchClientEither = fetchClient,
   ) {}
-
-  private onInvalidSession = (): TE.TaskEither<Error, void> => {
-    return pipe(
-      authorizeSession(
-        this.client,
-        this.session.session,
-        { getCode: input({ prompt: 'code: ' }) },
-      ),
-      TE.chainW(this.setSession),
-    )
-  }
-
-  private retryingQuery = <E extends Error, A>(
-    te: () => TE.TaskEither<E, A>,
-  ): TE.TaskEither<Error, A> => {
-    this.incApiCalls()
-
-    return pipe(
-      te(),
-      TE.orElseW((e) => {
-        return InvalidGlobalSessionResponse.is(e)
-          ? pipe(
-            this.onInvalidSession(),
-            TE.chainW(() => this.retryingQuery(te)),
-          )
-          : TE.left(e)
-      }),
-    )
-  }
-
-  private setSession = (
-    session: ICloudSessionValidated,
-  ): TE.TaskEither<never, void> => {
-    return TE.fromTask<void, never>(async () => {
-      this.session = session
-    })
-  }
-
-  public getSession = (): ICloudSessionValidated => this.session
 
   public getRoot = (): TE.TaskEither<Error, DriveDetailsRoot> => {
     return pipe(
@@ -188,17 +149,12 @@ export class DriveApi {
   }
 
   public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (DriveDetails | InvalidId)[]> => {
-    logger.debug(`retrieveItemDetailsInFolders`, { drivewsids })
+    // logger.debug(`retrieveItemDetailsInFolders: ${drivewsids}`)
 
     return pipe(
-      this.retryingQuery(() => retrieveItemDetailsInFolders(this.client, this.session, { drivewsids })),
-      TE.chainFirstW(({ session }) =>
-        this.setSession({
-          accountData: this.session.accountData,
-          session,
-        })
+      this.retryingWithSession(
+        () => retrieveItemDetailsInFolders(this.client, this.session, { drivewsids }),
       ),
-      TE.map((_) => _.response.body),
     )
   }
 
@@ -246,14 +202,7 @@ export class DriveApi {
     logger.debug(`retrieveItemDetailsInFoldersHierarchy: ${drivewsids}`)
 
     return pipe(
-      this.retryingQuery(() => retrieveItemDetailsInFoldersHierarchy(this.client, this.session, { drivewsids })),
-      TE.chainFirstW(({ session }) =>
-        this.setSession({
-          accountData: this.session.accountData,
-          session,
-        })
-      ),
-      TE.map((_) => _.response.body),
+      this.retryingWithSession(() => retrieveItemDetailsInFoldersHierarchy(this.client, this.session, { drivewsids })),
     )
   }
 
@@ -261,6 +210,12 @@ export class DriveApi {
     this.retrieveItemDetailsInFoldersHierarchies,
     TE.map(A.map(asOption)),
   )
+
+  public retrieveItemDetailsInFoldersHierarchiesS = (drivewsids: string[]) =>
+    pipe(
+      this.retrieveItemDetailsInFoldersHierarchies(drivewsids),
+      TE.map(ds => zipIds(drivewsids, ds)),
+    )
 
   public retrieveItemDetailsInFoldersHierarchiesE = flow(
     this.retrieveItemDetailsInFoldersHierarchiesO,
@@ -316,45 +271,26 @@ export class DriveApi {
     )
   }
 
-  // public getRoot = (): TE.TaskEither<Error, DriveDetails> => {
-  //   return pipe(
-  //     this.retrieveItemDetailsInFolders([rootDrivewsid]),
-  //     TE.map(A.lookup(0)),
-  //     TE.chain(TE.fromOption(() => error(`error getting root`))),
-  //   )
-  // }
-
   public download = (
     documentId: string,
     zone: string,
   ): TE.TaskEither<Error, string> => {
     return pipe(
-      this.retryingQuery(() => download(this.client, this.session, { documentId, zone })),
-      TE.chainFirstW(({ session }) =>
-        this.setSession({
-          accountData: this.session.accountData,
-          session,
-        })
+      this.retryingWithSession(
+        () => download(this.client, this.session, { documentId, zone }),
       ),
-      TE.map((_) => _.response.body.data_token.url),
+      TE.map((_) => _.data_token.url),
     )
   }
 
   public createFolders = (parentId: string, folderNames: string[]): TE.TaskEither<Error, CreateFoldersResponse> => {
     return pipe(
-      this.retryingQuery(() =>
+      this.retryingWithSession(() =>
         createFolders(this.client, this.session, {
           destinationDrivewsId: parentId,
           names: folderNames,
         })
       ),
-      TE.chainFirstW(({ session }) =>
-        this.setSession({
-          accountData: this.session.accountData,
-          session,
-        })
-      ),
-      TE.map((_) => _.response.body),
     )
   }
 
@@ -366,6 +302,14 @@ export class DriveApi {
       this.retryingWithSession(
         () => moveItems(this.client, this.session, { destinationDrivewsId, items }),
       ),
+    )
+  }
+
+  public moveItemsToTrash = (
+    items: { drivewsid: string; etag: string }[],
+  ): TE.TaskEither<Error, MoveItemToTrashResponse> => {
+    return pipe(
+      this.retryingWithSession(() => moveItemsToTrash(this.client, this.session, { items })),
     )
   }
 
@@ -385,18 +329,42 @@ export class DriveApi {
     )
   }
 
-  public moveItemsToTrash = (
-    items: { drivewsid: string; etag: string }[],
-  ): TE.TaskEither<Error, MoveItemToTrashResponse> => {
+  private onInvalidSession = (): TE.TaskEither<Error, void> => {
     return pipe(
-      this.retryingQuery(() => moveItemsToTrash(this.client, this.session, { items })),
-      TE.chainFirstW(({ session }) =>
-        this.setSession({
-          accountData: this.session.accountData,
-          session,
-        })
+      authorizeSession(
+        this.client,
+        this.session.session,
+        { getCode: input({ prompt: 'code: ' }) },
       ),
-      TE.map((_) => _.response.body),
+      TE.chainW(this.setSession),
     )
   }
+
+  private retryingQuery = <E extends Error, A>(
+    te: () => TE.TaskEither<E, A>,
+  ): TE.TaskEither<Error, A> => {
+    this.incApiCalls()
+
+    return pipe(
+      te(),
+      TE.orElseW((e) => {
+        return InvalidGlobalSessionResponse.is(e)
+          ? pipe(
+            this.onInvalidSession(),
+            TE.chainW(() => this.retryingQuery(te)),
+          )
+          : TE.left(e)
+      }),
+    )
+  }
+
+  private setSession = (
+    session: ICloudSessionValidated,
+  ): TE.TaskEither<never, void> => {
+    return TE.fromTask<void, never>(async () => {
+      this.session = session
+    })
+  }
+
+  public getSession = (): ICloudSessionValidated => this.session
 }

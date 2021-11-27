@@ -14,6 +14,11 @@ export interface ICloudDriveCache {
   // readonly root: O.Option<DriveDetailsRoot>
 }
 
+export type CacheEntityDetails =
+  | CacheEntityFolderRootDetails
+  | CacheEntityFolderDetails
+  | CacheEntityAppLibraryDetails
+
 export type CacheEntityFolderLike =
   | CacheEntityFolderRootDetails
   | CacheEntityFolderDetails

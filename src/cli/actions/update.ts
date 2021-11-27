@@ -6,15 +6,20 @@ import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import { Cache, isFolderLikeCacheEntity } from '../../icloud/drive/cache/cachef'
+import { Cache } from '../../icloud/drive/cache/Cache'
+import { isFolderLikeCacheEntity } from '../../icloud/drive/cache/cachef'
 import { DriveApi } from '../../icloud/drive/drive-api'
-import * as DF from '../../icloud/drive/drivef'
-import { hierarchyToPath } from '../../icloud/drive/helpers'
+import * as DF from '../../icloud/drive/fdrive'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
-import { compareDetails, compareItemWithHierarchy, getCachedDetailsPartialWithHierarchyById } from './helpers'
+import {
+  compareDetails,
+  compareItemWithHierarchy,
+  getCachedDetailsPartialWithHierarchyById,
+  hierarchyToPath,
+} from './helpers'
 
 type Output = string
 type ErrorOutput = Error

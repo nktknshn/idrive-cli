@@ -8,10 +8,12 @@ import * as Ord from 'fp-ts/lib/Ord'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import Path from 'path'
-import { Cache, isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
+import { Cache } from '../../icloud/drive/cache/Cache'
+import { isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
 import { CacheEntityFile, CacheEntityFolderLike, ICloudDriveCacheEntity } from '../../icloud/drive/cache/types'
 import { DriveApi } from '../../icloud/drive/drive-api'
-import * as DF from '../../icloud/drive/drivef'
+import { lss } from '../../icloud/drive/drivef/lss'
+import * as DF from '../../icloud/drive/fdrive'
 import { fileName } from '../../icloud/drive/helpers'
 import {
   DriveChildrenItem,
@@ -26,7 +28,12 @@ import {
 import { logger, logReturn, logReturnAs } from '../../lib/logging'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
-import { compareDriveDetailsWithHierarchy, compareHierarchies, compareItemWithHierarchy } from './helpers'
+import {
+  compareDriveDetailsWithHierarchy,
+  compareHierarchies,
+  compareItemWithHierarchy,
+  normalizePath,
+} from './helpers'
 
 type Output = string
 type ErrorOutput = Error
@@ -263,15 +270,21 @@ export const listUnixPath = (
     { sessionFile, cacheFile, noCache, dontSaveCache: true },
     ({ cache, api }) => {
       const res = pipe(
-        DF.ls(path),
+        lss([normalizePath(path)]),
         f => f(cache)(api),
         !noCache
           ? TE.chainFirst(([items, cache]) => Cache.trySaveFile(cache, cacheFile))
           : TE.chainFirst(() => TE.of(constVoid())),
-        TE.map(([item, cache]) =>
-          isFolderDetails(item)
-            ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
-            : showFileInfo({ ...opts })(item)
+        TE.map(([items, cache]) =>
+          pipe(
+            items,
+            A.map(item =>
+              isFolderDetails(item)
+                ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
+                : showFileInfo({ ...opts })(item)
+            ),
+            _ => _.join('\n\n'),
+          )
         ),
       )
 

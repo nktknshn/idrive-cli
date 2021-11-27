@@ -5,10 +5,11 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
+import { apiLogger } from '../../../lib/logging'
 import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveDetails, DriveDetailsWithHierarchy, InvalidId } from '../types'
+import { DriveDetails, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from '../types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../types-io'
 import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
 
@@ -18,6 +19,8 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
   handleResponse: ResponseHandler<R>,
 ): TE.TaskEither<Error, ResponseWithSession<R>> {
+  apiLogger.debug(`retrieveItemDetailsInFolders: ${data.map(_ => _.drivewsid)}`)
+
   return pipe(
     session,
     buildRequest(
@@ -30,7 +33,7 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
   )
 }
 
-export const decode: t.Decode<unknown, (DriveDetailsWithHierarchy | InvalidId)[]> = flow(
+export const decode: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
   v => v,
   t.array(
     t.UnknownRecord,

@@ -2,6 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
+import { apiLogger } from '../../../lib/logging'
 import { ResponseWithSession } from '../../../lib/response-reducer'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
@@ -10,19 +11,9 @@ import { DriveChildrenItem, DriveChildrenItemFile } from '../types'
 import { childrenItem } from '../types-io'
 import { expectJson } from './filterStatus'
 
-// POST https://p46-drivews.icloud.com/moveItems?appIdentifier=iclouddrive&reqIdentifier=e94318c1-3c8c-4261-8daa-ad8ef8ba308a&clientBuildNumber=2201Project38&clientMasteringNumber=2201B34&clientId=ab65f63a-3fa9-4c37-908d-4de557ad6afe&dsid=20322967922
+const moveItemToTrashResponse = t.type({ items: t.array(childrenItem) })
 
-// {"destinationDrivewsId":"FOLDER::com.apple.CloudDocs::8C4A4E75-779B-4CF4-9C17-FD6130DA7341","items":[{"drivewsid":"FILE::com.apple.CloudDocs::5B1F269B-7E76-4578-9222-FDE1A8DDA288","etag":"a2::a7","clientId":"FILE::7526db80-ef53-40a7-9056-8ed0bb0eb6f3::7526db80-ef53-40a7-9056-8ed0bb0eb6f3"}]}
-
-// {"items":[{"dateCreated":"2021-11-03T08:28:52Z","drivewsid":"FILE::com.apple.CloudDocs::5B1F269B-7E76-4578-9222-FDE1A8DDA288","docwsid":"5B1F269B-7E76-4578-9222-FDE1A8DDA288","zone":"com.apple.CloudDocs","name":"yarn-error","extension":"log","parentId":"FOLDER::com.apple.CloudDocs::8C4A4E75-779B-4CF4-9C17-FD6130DA7341","isChainedToParent":true,"dateModified":"2021-10-10T15:49:51Z","dateChanged":"2021-11-03T08:29:10Z","size":231265,"etag":"aa::a7","shortGUID":"0cMrs8QS3bEsWhJA9umk4mLzQ","type":"FILE","clientId":"FILE::7526db80-ef53-40a7-9056-8ed0bb0eb6f3::7526db80-ef53-40a7-9056-8ed0bb0eb6f3","status":"OK"}]}
-
-const moveItemToTrashResponse = t.type({
-  items: t.array(childrenItem),
-})
-
-export interface MoveItemToTrashResponse extends t.TypeOf<typeof moveItemToTrashResponse> {
-  // items: DriveChildrenItem[]
-}
+export interface MoveItemToTrashResponse extends t.TypeOf<typeof moveItemToTrashResponse> {}
 
 export function moveItems(
   client: FetchClientEither,
@@ -32,6 +23,8 @@ export function moveItems(
     items: { drivewsid: string; etag: string }[]
   },
 ): TE.TaskEither<Error, ResponseWithSession<MoveItemToTrashResponse>> {
+  apiLogger.debug('moveItems/moveItemsToTrash')
+
   return pipe(
     session,
     buildRequest(

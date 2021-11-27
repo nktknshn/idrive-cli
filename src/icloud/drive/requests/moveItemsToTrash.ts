@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { FetchClientEither } from '../../../lib/fetch-client'
+import { apiLogger } from '../../../lib/logging'
 import { expectJson, ResponseWithSession } from '../../../lib/response-reducer'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
@@ -21,6 +22,8 @@ export function moveItemsToTrash(
   const applyHttpResponseToSession = expectJson((json: unknown): json is MoveItemToTrashResponse =>
     isObjectWithOwnProperty(json, 'items')
   )
+
+  apiLogger.debug('deleteItems/moveItemsToTrash')
 
   return pipe(
     session,

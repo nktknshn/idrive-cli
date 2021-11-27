@@ -8,9 +8,10 @@ import { cliAction } from './cli/cli-action'
 import { Env } from './cli/types'
 import { defaultCacheFile, defaultSessionFile } from './config'
 import { consumeStream } from './icloud/drive/requests/download'
-import { cacheLogger, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
+import { apiLogger, cacheLogger, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
 
 import { listUnixPath } from './cli/actions/ls'
+import { mkdir } from './cli/actions/mkdir'
 import { move } from './cli/actions/move'
 import { rm } from './cli/actions/rm'
 import { checkForUpdates, update } from './cli/actions/update'
@@ -25,7 +26,7 @@ function parseArgs() {
       cacheFile: { alias: ['c', 'cache'], default: defaultCacheFile },
       noCache: { alias: 'n', default: false, type: 'boolean' },
       raw: { alias: 'r', default: false, type: 'boolean' },
-      debug: { alias: 'd', default: false, type: 'boolean' },
+      debug: { alias: 'd', default: true, type: 'boolean' },
       update: { alias: 'u', default: false, type: 'boolean' },
     })
     .command('ls [path]', 'list files in a folder', _ =>
@@ -87,6 +88,12 @@ async function main() {
       : loggingLevels.info,
   )
 
+  apiLogger.add(
+    argv.debug
+      ? loggingLevels.debug
+      : loggingLevels.info,
+  )
+
   // logger.debug(argv)
 
   const [command] = argv._
@@ -98,9 +105,12 @@ async function main() {
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break
-    // case 'mkdir':
-    //   logger.info(await mkdir(argv)())
-    //   break
+    case 'mkdir':
+      await pipe(
+        mkdir(argv),
+        TE.fold(printer.errorTask, printer.printTask),
+      )()
+      break
     // case 'cat':
     //   await pipe(
     //     cat(argv),
@@ -116,8 +126,6 @@ async function main() {
     case 'upload':
       await pipe(
         upload(argv),
-        TE.chain(flow(J.stringify, TE.fromEither)),
-        TE.mapLeft(ensureError),
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break

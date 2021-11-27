@@ -3,14 +3,15 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import * as DF from '../../icloud/drive/fdrive'
-import { isNotRootDetails } from '../../icloud/drive/types'
+import { isFolderDetails, isNotRootDetails } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
+import { logger, logReturn, logReturnS } from '../../lib/logging'
 import { Path } from '../../lib/util'
 import { cliAction } from '../cli-actionF'
 import { normalizePath } from './helpers'
 import { showDetailsInfo, showFolderInfo } from './ls'
 
-export const rm = (
+export const mkdir = (
   { sessionFile, cacheFile, path, noCache }: {
     path: string
     noCache: boolean
@@ -18,6 +19,11 @@ export const rm = (
     cacheFile: string
   },
 ) => {
+  const parentPath = Path.dirname(path)
+  const name = Path.basename(path)
+
+  logger.debug(`mkdir(${name} in ${parentPath})`)
+
   return cliAction({
     sessionFile,
     cacheFile,
@@ -25,26 +31,34 @@ export const rm = (
     dontSaveCache: true,
   }, ({ cache, api }) => {
     const npath = normalizePath(path)
-    const parentPath = normalizePath(Path.dirname(npath))
+    const nparentPath = normalizePath(parentPath)
 
     const res = pipe(
       DF.Do,
-      SRTE.bind('item', () =>
+      SRTE.bind('parent', () =>
         pipe(
-          DF.ls(npath),
-          SRTE.filterOrElse(isNotRootDetails, () => err(`you cannot remove root`)),
+          DF.ls(nparentPath),
+          SRTE.filterOrElse(isFolderDetails, () => err(`${parentPath} is not folder`)),
         )),
-      SRTE.bind('result', ({ item }) =>
+      SRTE.bind('result', ({ parent }) =>
         pipe(
-          api.moveItemsToTrash([item]),
-          SRTE.fromTaskEither,
-          SRTE.chain(
-            resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
+          api.createFolders(parent.drivewsid, [name]),
+          TE.map(
+            logReturnS(
+              resp => `created: ${resp.folders.map(_ => _.drivewsid)}`,
+            ),
           ),
+          DF.fromTaskEither,
         )),
-      // SRTE.chain(({ item }) => DF.retrieveItemDetailsInFolderE(item.parentId)),
-      SRTE.chain(() => DF.lsdir(parentPath)),
+      SRTE.chain(() =>
+        DF.lss([
+          npath,
+          nparentPath,
+        ])
+      ),
       DF.saveCacheFirst(cacheFile),
+      SRTE.map(ds => ds[1]),
+      SRTE.filterOrElse(isFolderDetails, () => err(`imposiburu`)),
       SRTE.map(showDetailsInfo({
         fullPath: false,
         path: '',

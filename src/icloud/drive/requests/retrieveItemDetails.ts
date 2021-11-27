@@ -2,6 +2,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither, HttpResponse } from '../../../lib/fetch-client'
+import { apiLogger } from '../../../lib/logging'
 import {
   applyCookies,
   basicGetResponse1,
@@ -31,6 +32,8 @@ function retrieveItemDetailsGeneric<R>(
   },
   app: ResponseHandler<R>,
 ): TE.TaskEither<Error, ResponseWithSession<R>> {
+  apiLogger.debug('retrieveItemDetails')
+
   return pipe(
     session,
     buildRequest(

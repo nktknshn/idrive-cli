@@ -84,21 +84,21 @@ export const hierarchyItem = t.intersection([
   }),
 ])
 
-export const hierarchyItemRoot = t.type({
+export const hierarchyRoot = t.type({
   drivewsid: t.literal(rootDrivewsid),
 })
 
-export const hierarchyItemTrash = t.type({
+export const hierarchyTrash = t.type({
   drivewsid: t.literal(trashDrivewsid),
 })
 
-export const hierarchy = t.array(
-  t.union([
-    hierarchyItemRoot,
-    hierarchyItemTrash,
-    hierarchyItem,
-  ]),
-)
+export const hierarchyEntry = t.union([
+  hierarchyRoot,
+  hierarchyTrash,
+  hierarchyItem,
+])
+
+export const hierarchy = t.array(hierarchyEntry)
 
 export const detailsItem = t.union([
   itemFolder,

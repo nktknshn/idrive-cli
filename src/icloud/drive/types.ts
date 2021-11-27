@@ -31,7 +31,11 @@ export const isInvalidId = <T>(i: T | InvalidId): i is InvalidId => t.invalidIdI
 
 export const asOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O.none : O.some(i)
 
-export type DriveDetailsWithHierarchy = TypeOf<typeof t.detailsWithHierarchy>
+export type DriveDetailsWithHierarchy =
+  | DriveDetailsRootWithHierarchy
+  | DriveDetailsAppLibraryWithHierarchy
+  | DriveDetailsFolderWithHierarchy
+// TypeOf<typeof t.detailsWithHierarchy>
 
 export type DriveDetailsPartialWithHierarchy = TypeOf<typeof t.driveDetailsWithHierarchyPartial>
 
@@ -51,9 +55,10 @@ export interface DriveDetailsAppLibraryPartialWithHierarchy
 
 export type Hierarchy = TypeOf<typeof t.hierarchy>
 
-export interface HierarchyItemRoot extends TypeOf<typeof t.hierarchyItemRoot> {}
 export interface HierarchyItem extends TypeOf<typeof t.hierarchyItem> {}
-export interface HierarchyItemTrash extends TypeOf<typeof t.hierarchyItemTrash> {}
+export interface HierarchyRoot extends TypeOf<typeof t.hierarchyRoot> {}
+export interface HierarchyTrash extends TypeOf<typeof t.hierarchyTrash> {}
+export type HierarchyEntry = TypeOf<typeof t.hierarchyEntry>
 
 export interface PartialItem extends TypeOf<typeof t.partialItem> {}
 
@@ -165,9 +170,9 @@ export const isFile = (
 ): entity is DriveChildrenItemFile => entity.type === 'FILE'
 
 export const isHierarchyItemRoot = (
-  item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,
-): item is HierarchyItemRoot => item.drivewsid === t.rootDrivewsid
+  item: HierarchyItem | HierarchyRoot | HierarchyTrash,
+): item is HierarchyRoot => item.drivewsid === t.rootDrivewsid
 
 export const isHierarchyItemTrash = (
-  item: HierarchyItem | HierarchyItemRoot | HierarchyItemTrash,
-): item is HierarchyItemTrash => item.drivewsid === t.trashDrivewsid
+  item: HierarchyItem | HierarchyRoot | HierarchyTrash,
+): item is HierarchyTrash => item.drivewsid === t.trashDrivewsid

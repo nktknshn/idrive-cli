@@ -7,8 +7,9 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { defaultCacheFile } from './config'
+import * as Cache from './icloud/drive/cache/Cache'
 import * as C from './icloud/drive/cache/cachef'
-import { ensureNestedPath, parsePath } from './icloud/drive/helpers'
+import { ensureNestedPath, fileName, parsePath } from './icloud/drive/helpers'
 import { ensureError, err } from './lib/errors'
 import { cacheLogger, logger, loggingLevels, logReturnAs, printer } from './lib/logging'
 
@@ -57,8 +58,8 @@ async function main() {
         TE.Do,
         TE.bind('cache', () =>
           pipe(
-            C.Cache.tryReadFromFile(argv.cacheFile),
-            TE.map(C.Cache.create),
+            Cache.Cache.tryReadFromFile(argv.cacheFile),
+            TE.map(Cache.Cache.create),
           )),
         TE.map(({ cache }) =>
           pipe(
@@ -77,7 +78,22 @@ async function main() {
                     ),
                   ),
                 logReturnAs('result'),
-                E.map(() => ''),
+                E.map(r =>
+                  r.valid
+                    ? r.entities.map(_ => ({
+                      hasDetails: _.hasDetails,
+                      name: fileName(_.content),
+                      drivewsid: _.content.drivewsid,
+                    }))
+                    : [
+                      r.validPart.map(_ => ({
+                        hasDetails: _.hasDetails,
+                        name: fileName(_.content),
+                        drivewsid: _.content.drivewsid,
+                      })),
+                      r.rest,
+                    ]
+                ),
               ),
           )
         ),

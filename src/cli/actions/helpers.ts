@@ -8,8 +8,9 @@ import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
 import path from 'path'
 import { isDeepStrictEqual } from 'util'
-import { Cache, isDetailsCacheEntity } from '../../icloud/drive/cache/cachef'
-import { fileName, hierarchyToPath } from '../../icloud/drive/helpers'
+import { Cache } from '../../icloud/drive/cache/Cache'
+import { isDetailsCacheEntity } from '../../icloud/drive/cache/cachef'
+import { fileName, HasName } from '../../icloud/drive/helpers'
 import {
   DriveChildrenItem,
   DriveChildrenItemFile,
@@ -19,8 +20,13 @@ import {
   DriveDetailsWithHierarchy,
   FolderLikeItem,
   Hierarchy,
+  HierarchyItem,
+  HierarchyRoot,
+  HierarchyTrash,
   isAppLibraryItem,
   isFolderLikeItem,
+  isHierarchyItemRoot,
+  isHierarchyItemTrash,
 } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
@@ -198,21 +204,76 @@ export const compareDetails = (cached: DriveDetails, actual: DriveDetails) => {
     updated: pipe(
       items.etag,
       groupByTypeTuple,
-      // groupBy(_ => _[0].zone),
-      // R.map(groupByTypeTuple),
     ),
     added: pipe(
       items.new,
       groupByType,
-      // groupBy(_ => _.zone),
-      // R.map(groupByType),
     ),
     missing: pipe(
       items.missing,
       groupByType,
-      // groupBy(_ => _.zone),
-      // R.map(groupByType),
     ),
     byZone,
   }
+}
+
+interface ParsedHierarchy {
+  root: HierarchyRoot | HierarchyTrash
+  path: HierarchyItem[]
+}
+
+export const parsedHierarchyToPath = ({ root, path }: ParsedHierarchy): NormalizedPath => {
+  let result = isHierarchyItemRoot(root) ? '/' : 'TRASH_ROOT/'
+
+  for (const e of path) {
+    result += fileName(e) + '/'
+  }
+
+  return normalizePath(result)
+}
+
+/*
+
+*/
+export const hierarchyToPath = (hierarchy: Hierarchy): NormalizedPath => {
+  return pipe(
+    hierarchy,
+    A.map(hitem =>
+      isHierarchyItemRoot(hitem)
+        ? '/'
+        : isHierarchyItemTrash(hitem)
+        ? 'TRASH_ROOT/'
+        : fileName(hitem)
+    ),
+    _ => _.length > 0 ? _.join('/') : '/',
+    normalizePath,
+  )
+}
+
+declare const _brand: unique symbol
+
+export interface Brand<B> {
+  readonly [_brand]: B
+}
+
+export interface NormalizedPathBrand {
+  readonly NormalizedPath: unique symbol
+}
+
+export type Branded<A, B> = A & Brand<B>
+
+export type NormalizedPath = Branded<string, NormalizedPathBrand>
+
+const stripSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
+
+export const normalizePath = (path: string): NormalizedPath => {
+  return pipe(Path.normalize(path), stripSlash) as NormalizedPath
+}
+
+export const itemWithHierarchyToPath = (item: HasName & { hierarchy: Hierarchy }) => {
+  return pipe(
+    hierarchyToPath(item.hierarchy),
+    _ => Path.join(_, fileName(item)),
+    normalizePath,
+  )
 }

@@ -1,10 +1,13 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as DF from '../../icloud/drive/drivef'
+import * as TE from 'fp-ts/lib/TaskEither'
+import { fst } from 'fp-ts/lib/Tuple'
+import * as DF from '../../icloud/drive/fdrive'
 import { isFile, isFolderDetails, isFolderLike } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { cliAction } from '../cli-actionF'
-import { showFileInfo, showFolderInfo } from './ls'
+import { normalizePath } from './helpers'
+import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls'
 
 export const upload = (
   { sessionFile, cacheFile, srcpath, dstpath, noCache }: {
@@ -21,15 +24,18 @@ export const upload = (
     noCache,
   }, ({ cache, api }) => {
     const res = pipe(
-      DF.ls(dstpath),
+      DF.ls(normalizePath(dstpath)),
       SRTE.filterOrElse(isFolderLike, () => err(`${dstpath} is not a folder`)),
       SRTE.chain(item => SRTE.fromTaskEither(api.upload(srcpath, item.docwsid))),
-      SRTE.chain(() => DF.ls(dstpath)),
+      SRTE.chain(() => DF.ls(normalizePath(dstpath))),
       SRTE.filterOrElse(isFolderDetails, () => err(`imposiburu`)),
-      SRTE.map(showFolderInfo()),
+      SRTE.map(showDetailsInfo({ path: '', fullPath: false })),
       // SRTE.chain(resp => DF.removeByIds(resp.items.map(_ => _.drivewsid))),
     )
 
-    return res(cache)(api)
+    return pipe(
+      res(cache)(api),
+      TE.map(fst),
+    )
   })
 }
