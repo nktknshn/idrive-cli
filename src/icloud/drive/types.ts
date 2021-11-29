@@ -98,7 +98,7 @@ export type DriveDetails =
 //   | DriveChildrenItemFolder
 //   | DriveChildrenItemAppLibrary
 
-export type DriveChildrenItem = TypeOf<typeof t.childrenItem>
+export type DriveChildrenItem = DriveChildrenItemFile | DriveChildrenItemFolder | DriveChildrenItemAppLibrary
 
 export type DriveObject = {
   name: string

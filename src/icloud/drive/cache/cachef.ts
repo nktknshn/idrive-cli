@@ -409,6 +409,16 @@ export const getByIdE = (drivewsid: string) =>
     )
   }
 
+export const getFolderDetailsByIdE = (drivewsid: string) =>
+  (cache: CacheF): E.Either<Error, CacheEntityDetails> => {
+    return pipe(
+      cache,
+      getById(drivewsid),
+      E.fromOption(() => NotFoundError.create(`missing ${drivewsid}`)),
+      E.chain(assertFolderWithDetailsEntity),
+    )
+  }
+
 export const addItems = (items: DriveChildrenItem[]) =>
   (cache: CacheF): E.Either<Error, CacheF> => {
     return pipe(
