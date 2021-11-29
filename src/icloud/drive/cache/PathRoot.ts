@@ -157,27 +157,22 @@ function validatePath(
 
   type Pile = TwoPiles<DriveDetails, string>
 
+  const lookupItem = (parent: DriveDetails, subItem: string): E.Either<Error, DriveDetails | DriveChildrenItemFile> => {
+    return pipe(
+      findInParent(parent, subItem),
+      E.fromOption(() => NotFoundError.createTemplate(subItem, parent.drivewsid)),
+      E.chain(item =>
+        isFolderLike(item)
+          ? pipe(cache, C.getByIdE(item.drivewsid), E.map(_ => _.content), E.chain(C.assertFolderWithDetails))
+          : E.of<Error, DriveDetails | DriveChildrenItemFile>(item)
+      ),
+    )
+  }
+
   const iterate = (
     root: DriveDetailsRoot,
     pile: Pile,
   ): E.Either<Result, Pile> => {
-    const lookupItem = (parent: DriveDetails, subItem: string) => {
-      return pipe(
-        findInParent(parent, subItem),
-        E.fromOption(() => NotFoundError.createTemplate(subItem, root.drivewsid)),
-        E.chain(item =>
-          isFolderLike(item)
-            ? pipe(
-              cache,
-              C.getByIdE(item.drivewsid),
-              E.map(_ => _.content),
-              E.chain(C.assertFolderWithDetails),
-            )
-            : E.of<Error, DriveDetails | DriveChildrenItemFile>(item)
-        ),
-      )
-    }
-
     const res: E.Either<Result, Pile> = pipe(
       pile,
       matchPilesW(
