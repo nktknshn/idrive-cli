@@ -11,8 +11,9 @@ import { retrieveHierarchy } from './icloud/drive/requests'
 import { ensureError, err } from './lib/errors'
 import { fetchClient } from './lib/fetch-client'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
+import { Path } from './lib/util'
 
-const actionsNames = ['retrieveHierarchy', 'retrieveItemDetails', 'retrieveItemDetailsInFolders'] as const
+const actionsNames = ['retrieveHierarchy', 'retrieveItemDetails', 'retrieveItemDetailsInFolders', 'rename'] as const
 
 type Action = (typeof actionsNames)[number]
 
@@ -42,7 +43,25 @@ function parseArgs() {
         .options({
           h: { type: 'boolean', default: false },
         }))
+    .command('rename [drivewsid] [name] [etag]', 'get h for drivewsids', _ =>
+      _
+        .positional('drivewsid', { type: 'string', demandOption: true })
+        .positional('name', { type: 'string', demandOption: true })
+        .positional('etag', { type: 'string', default: '12::34' /* demandOption: true */ })
+        .options({}))
     .help()
+}
+
+const parseName = (fileName: string): { name: string; extension?: string } => {
+  const extension = pipe(
+    Path.extname(fileName),
+    _ => _ === '' ? undefined : _,
+  )
+
+  return {
+    name: extension ? fileName.slice(0, fileName.length - extension.length) : fileName,
+    extension: extension ? extension.slice(1) : undefined,
+  }
 }
 
 const actions = {
@@ -102,6 +121,29 @@ const actions = {
               (argv.h
                 ? api.retrieveItemDetailsInFoldersHierarchies
                 : api.retrieveItemDetailsInFolders)(argv.drivewsids),
+          ),
+          // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
+        ),
+    ),
+  rename: (argv: {
+    sessionFile: string
+    raw: boolean
+    debug: boolean
+    drivewsid: string
+    name: string
+    etag: string
+  }) =>
+    apiAction(
+      { sessionFile: argv.sessionFile },
+      ({ api }) =>
+        pipe(
+          TE.Do,
+          TE.bind(
+            'result',
+            () =>
+              api.renameItems([
+                { drivewsid: argv.drivewsid, ...parseName(argv.name), etag: argv.etag },
+              ]),
           ),
           // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
         ),

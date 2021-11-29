@@ -60,6 +60,11 @@ export interface HierarchyRoot extends TypeOf<typeof t.hierarchyRoot> {}
 export interface HierarchyTrash extends TypeOf<typeof t.hierarchyTrash> {}
 export type HierarchyEntry = TypeOf<typeof t.hierarchyEntry>
 
+export const isFileHierarchyEntry = (entry: HierarchyEntry) => entry.drivewsid.startsWith('FILE')
+export const isFolderHierarchyEntry = (entry: HierarchyEntry) => entry.drivewsid.startsWith('FOLDER')
+
+export const isFolderDrivewsid = (driwewsid: string) => driwewsid.startsWith('FOLDER')
+
 export interface PartialItem extends TypeOf<typeof t.partialItem> {}
 
 export type FolderTree = T.Tree<

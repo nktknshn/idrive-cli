@@ -25,13 +25,15 @@ import {
   DriveDetailsFolder,
   DriveDetailsRoot,
   Hierarchy,
+  HierarchyEntry,
   InvalidId,
   isFolderDetails,
   isRootDetails,
 } from '../types'
-import { rootDrivewsid } from '../types-io'
+import { hierarchyRoot, hierarchyTrash, rootDrivewsid, trashDrivewsid } from '../types-io'
 import { MissingParentError } from './errors'
 import {
+  CacheEntity,
   CacheEntityAppLibrary,
   CacheEntityAppLibraryDetails,
   CacheEntityAppLibraryItem,
@@ -41,8 +43,7 @@ import {
   CacheEntityFolderItem,
   CacheEntityFolderLike as CacheEntityFolderLike,
   CacheEntityFolderRootDetails,
-  ICloudDriveCache,
-  ICloudDriveCacheEntity,
+  CacheF,
 } from './types'
 
 // import * as C from '../cache/'
@@ -50,29 +51,33 @@ import {
 class lens {
   // public static root = m.Lens.fromProp<ICloudDriveCache>()('root')
   // public static byPath = m.Lens.fromProp<ICloudDriveCache>()('byPath')
-  public static byDrivewsid = m.Lens.fromProp<ICloudDriveCache>()('byDrivewsid')
+  public static byDrivewsid = m.Lens.fromProp<CacheF>()('byDrivewsid')
   // export const update = byPath.compose(byDrivewsid)
 }
 
-export const cachef = (): ICloudDriveCache => ({
+export const cachef = (): CacheF => ({
   byDrivewsid: {},
 })
 
-export const itemsToHierarchy = (items: (DriveDetails | DriveChildrenItem)[]): Hierarchy => {
+export const itemsToHierarchy = (items: (HierarchyEntry)[]): Hierarchy => {
   return pipe(
     items,
     A.map(item =>
-      isRootDetails(item) ? ({ drivewsid: rootDrivewsid }) : ({
-        drivewsid: item.drivewsid,
-        etag: item.etag,
-        name: item.name,
-        extension: item.extension,
-      })
+      hierarchyRoot.is(item)
+        ? ({ drivewsid: rootDrivewsid })
+        : hierarchyTrash.is(item)
+        ? ({ drivewsid: trashDrivewsid })
+        : ({
+          drivewsid: item.drivewsid,
+          etag: item.etag,
+          name: item.name,
+          extension: item.extension,
+        })
     ),
   )
 }
 
-export const entitiesToHierarchy = (entities: ICloudDriveCacheEntity[]): Hierarchy => {
+export const entitiesToHierarchy = (entities: CacheEntity[]): Hierarchy => {
   return pipe(
     entities,
     A.map(_ => _.content),
@@ -81,7 +86,7 @@ export const entitiesToHierarchy = (entities: ICloudDriveCacheEntity[]): Hierarc
 }
 
 export const getItemWithParentsById = (drivewsid: string) =>
-  (cache: ICloudDriveCache): E.Either<Error, NA.NonEmptyArray<ICloudDriveCacheEntity>> => {
+  (cache: CacheF): E.Either<Error, NA.NonEmptyArray<CacheEntity>> => {
     let item = pipe(
       cache.byDrivewsid,
       R.lookup(drivewsid),
@@ -131,7 +136,7 @@ type CacheContent = (
 )
 
 export const extractCacheById = (drivewsid: string) =>
-  (cache: ICloudDriveCache): E.Either<Error, ICloudDriveCache> => {
+  (cache: CacheF): E.Either<Error, CacheF> => {
     return pipe(
       cache,
       getItemWithParentsById(drivewsid),
@@ -141,7 +146,7 @@ export const extractCacheById = (drivewsid: string) =>
   }
 
 const getHierarchyById = (drivewsid: string) =>
-  (cache: ICloudDriveCache): E.Either<Error, Hierarchy> => {
+  (cache: CacheF): E.Either<Error, Hierarchy> => {
     const h: Hierarchy = []
 
     let item = pipe(
@@ -172,7 +177,7 @@ const getHierarchyById = (drivewsid: string) =>
   }
 
 export const getCachedPathForId = (drivewsid: string) =>
-  (cache: ICloudDriveCache): E.Either<Error, string> => {
+  (cache: CacheF): E.Either<Error, string> => {
     return pipe(
       getHierarchyById(drivewsid)(cache),
       E.map(hierarchyToPath),
@@ -180,7 +185,7 @@ export const getCachedPathForId = (drivewsid: string) =>
   }
 
 export const getRoot = () =>
-  (cache: ICloudDriveCache): E.Either<Error, CacheEntityFolderRootDetails> =>
+  (cache: CacheF): E.Either<Error, CacheEntityFolderRootDetails> =>
     pipe(
       cache.byDrivewsid,
       R.lookup(rootDrivewsid),
@@ -189,17 +194,18 @@ export const getRoot = () =>
     )
 
 export const getRootO = () =>
-  (cache: ICloudDriveCache): O.Option<CacheEntityFolderRootDetails> =>
+  (cache: CacheF): O.Option<CacheEntityFolderRootDetails> =>
     pipe(
       cache,
       getRoot(),
       O.fromEither,
     )
 
-const assertFolderWithDetails = (entity: ICloudDriveCacheEntity) =>
+const assertFolderWithDetails = (entity: CacheEntity): E.Either<Error, CacheEntityDetails> =>
   pipe(
     E.of(entity),
-    E.filterOrElse(isFolderLikeCacheEntity, p => ItemIsNotFolder.create(`${p.content.drivewsid} is not a folder`)),
+    E.filterOrElse(isFolderLikeCacheEntity, p =>
+      ItemIsNotFolder.create(`assertFolderWithDetails: ${p.content.drivewsid} is not a folder`)),
     E.filterOrElse(isDetailsCacheEntity, p =>
       FolderLikeMissingDetailsError.create(`${p.content.drivewsid} is missing details`)),
   )
@@ -216,7 +222,7 @@ const getSubItemByName = (
     )
 
 const getParent = (parentId: string) =>
-  (cache: ICloudDriveCache) =>
+  (cache: CacheF) =>
     pipe(
       cache,
       getById(parentId),
@@ -224,40 +230,41 @@ const getParent = (parentId: string) =>
       E.chain(assertFolderWithDetails),
     )
 
-export type PartialValidPath =
+export type PartialValidPath<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityFolderLike> =
   | {
     valid: true
-    entities: NA.NonEmptyArray<ICloudDriveCacheEntity>
-    last: ICloudDriveCacheEntity
+    entities: NA.NonEmptyArray<T>
+    last: T
   }
   | {
     valid: false
-    validPart: CacheEntityFolderLike[]
+    validPart: F[]
     rest: NA.NonEmptyArray<string>
     error: Error
   }
 
+/*
+  valid path is a sequence of details with the last element being and item
+*/
 export const isNonEmpty = <T>(as: T[]): as is NA.NonEmptyArray<T> => as.length > 0
 
 export const getPartialValidPath = (
   path: string[],
-  parentEntity: CacheEntityFolderLike,
+  parentEntity: CacheEntityFolderDetails,
 ) =>
-  (cache: ICloudDriveCache): PartialValidPath => {
-    logger.debug(
+  (cache: CacheF): PartialValidPath => {
+    cacheLogger.debug(
       `getPartialValidPath. path=${path}, parent=${parentEntity.content.drivewsid} ${
         fileName(parentEntity.content)
       } ${parentEntity.hasDetails}`,
     )
 
     const getItem = (
-      validPath: NA.NonEmptyArray<ICloudDriveCacheEntity>,
+      parent: CacheEntityDetails,
       name: string,
-    ) =>
+    ): E.Either<Error, CacheEntity> =>
       pipe(
-        validPath,
-        NA.last,
-        assertFolderWithDetails,
+        E.of(parent),
         E.map(getSubItemByName(name)),
         E.chain(E.fromOption(() => err(`missing ${name}`))),
         E.chain(_ => getByIdE(_.drivewsid)(cache)),
@@ -273,15 +280,16 @@ export const getPartialValidPath = (
       !p.valid
         ? p
         : pipe(
-          getItem(p.entities, name),
+          NA.last(p.entities),
+          assertFolderWithDetails,
+          E.chain(parent => getItem(parent, name)),
           E.map(item =>
-            NA.getSemigroup<ICloudDriveCacheEntity>()
+            NA.getSemigroup<CacheEntityFile | CacheEntityFolderLike>()
               .concat(p.entities, NA.of(item))
           ),
           E.fold(
             (e): PartialValidPath =>
               pipe(
-                // logg(`e: ${e}`),
                 {
                   valid: false,
                   error: e,
@@ -293,7 +301,11 @@ export const getPartialValidPath = (
                     : p.entities) as NA.NonEmptyArray<CacheEntityFolderLike>,
                 },
               ),
-            (path): PartialValidPath => ({ valid: true, entities: path, last: NA.last(path) }),
+            (path): PartialValidPath => ({
+              valid: true,
+              entities: path,
+              last: NA.last(path),
+            }),
           ),
         )
 
@@ -301,13 +313,13 @@ export const getPartialValidPath = (
   }
 
 export const getByPath = (path: string) =>
-  (cache: ICloudDriveCache): E.Either<Error, ICloudDriveCacheEntity> => {
+  (cache: CacheF): E.Either<Error, CacheEntity> => {
     const [, ...itemsNames] = parsePath(path)
 
     return pipe(
       itemsNames,
       A.reduceWithIndex(
-        pipe(cache, getRoot(), E.map(cast<ICloudDriveCacheEntity>())),
+        pipe(cache, getRoot(), E.map(cast<CacheEntity>())),
         (index, parentFolder, itemName) =>
           pipe(
             E.Do,
@@ -335,25 +347,25 @@ export const getByPath = (path: string) =>
   }
 
 export const isRootCacheEntity = (
-  entity: ICloudDriveCacheEntity,
+  entity: CacheEntity,
 ): entity is CacheEntityFolderRootDetails => entity.type === 'ROOT'
 
 export const isFolderLikeCacheEntity = (
-  entity: ICloudDriveCacheEntity,
+  entity: CacheEntity,
 ): entity is CacheEntityFolderLike => isFolderLikeType(entity.type)
 
 export const isDetailsCacheEntity = (
-  entity: ICloudDriveCacheEntity,
+  entity: CacheEntity,
 ): entity is CacheEntityFolderRootDetails | CacheEntityFolderDetails | CacheEntityAppLibraryDetails =>
   isFolderLikeCacheEntity(entity) && entity.hasDetails
 
 export const isFolderLikeType = (
-  type: ICloudDriveCacheEntity['type'],
+  type: CacheEntity['type'],
 ): type is (CacheEntityFolderLike | CacheEntityAppLibrary)['type'] => type !== 'FILE'
 
 export const cacheEntityFromDetails = (
   details: DriveDetails,
-): ICloudDriveCacheEntity =>
+): CacheEntity =>
   isRootDetails(details)
     ? new CacheEntityFolderRootDetails(details)
     : details.type === 'FOLDER'
@@ -362,7 +374,7 @@ export const cacheEntityFromDetails = (
 
 const cacheEntityFromItem = (
   item: DriveChildrenItem,
-): ICloudDriveCacheEntity => {
+): CacheEntity => {
   return item.type === 'FILE'
     ? new CacheEntityFile(item)
     : item.type === 'FOLDER'
@@ -371,17 +383,21 @@ const cacheEntityFromItem = (
 }
 
 const getById = (drivewsid: string) =>
-  (cache: ICloudDriveCache): O.Option<ICloudDriveCacheEntity> => {
+  (cache: CacheF): O.Option<CacheEntity> => {
     return pipe(cache.byDrivewsid, R.lookup(drivewsid))
   }
 
 const getByIdE = (drivewsid: string) =>
-  (cache: ICloudDriveCache): E.Either<Error, ICloudDriveCacheEntity> => {
-    return pipe(cache, getById(drivewsid), E.fromOption(() => NotFoundError.create(`missing ${drivewsid}`)))
+  (cache: CacheF): E.Either<Error, CacheEntity> => {
+    return pipe(
+      cache,
+      getById(drivewsid),
+      E.fromOption(() => NotFoundError.create(`missing ${drivewsid}`)),
+    )
   }
 
 const addItems = (items: DriveChildrenItem[]) =>
-  (cache: ICloudDriveCache): E.Either<Error, ICloudDriveCache> => {
+  (cache: CacheF): E.Either<Error, CacheF> => {
     return pipe(
       items,
       A.reduce(E.of(cache), (acc, cur) => pipe(acc, E.chain(putItem(cur)))),
@@ -390,7 +406,7 @@ const addItems = (items: DriveChildrenItem[]) =>
 
 export const putRoot = (
   details: DriveDetailsRoot,
-): ((s: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+): ((s: CacheF) => E.Either<Error, CacheF>) => {
   return flow(
     lens.byDrivewsid.modify(
       R.upsertAt(rootDrivewsid, cacheEntityFromDetails(details)),
@@ -400,7 +416,7 @@ export const putRoot = (
 }
 
 export const removeById = (drivewsid: string) =>
-  (cache: ICloudDriveCache) =>
+  (cache: CacheF) =>
     pipe(
       cache,
       lens.byDrivewsid.modify(R.deleteAt(drivewsid)),
@@ -408,7 +424,7 @@ export const removeById = (drivewsid: string) =>
 
 export const putDetailss = (
   detailss: DriveDetails[],
-): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   return cache =>
     pipe(
       detailss,
@@ -417,8 +433,8 @@ export const putDetailss = (
 }
 
 export const putEntities = (
-  es: ICloudDriveCacheEntity[],
-): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+  es: CacheEntity[],
+): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   return cache =>
     pipe(
       es,
@@ -436,7 +452,7 @@ export const putEntities = (
 
 export const putDetails = (
   details: DriveDetails,
-): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   cacheLogger.debug(
     `putting ${details.drivewsid} ${fileName(details)} ${details.etag} (${details.items.map(fileName)})`,
   )
@@ -457,7 +473,7 @@ export const putDetails = (
 
 export const putItem = (
   item: DriveChildrenItem,
-): ((cache: ICloudDriveCache) => E.Either<Error, ICloudDriveCache>) => {
+): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   return (cache) =>
     pipe(
       E.Do,
@@ -495,6 +511,6 @@ export const putItem = (
     )
 }
 
-export const validateCacheJson = (json: unknown): json is ICloudDriveCache => {
+export const validateCacheJson = (json: unknown): json is CacheF => {
   return isObjectWithOwnProperty(json, 'byDrivewsid')
 }

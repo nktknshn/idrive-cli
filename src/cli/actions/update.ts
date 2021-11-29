@@ -25,129 +25,6 @@ type Output = string
 type ErrorOutput = Error
 
 type Change = 'ParentChanged'
-/*
-const wasChanged = (
-  cached: CacheEntityFolder,
-  freshDetails: DriveDetails,
-): WasFolderChanged => {
-  return {
-    etag: cached.content.etag !== freshDetails.etag,
-    parentId: isNotRootDetails(freshDetails)
-      && isNotRootDetails(cached.content)
-      && cached.content.parentId !== freshDetails.parentId,
-    details: !cached.hasDetails && isFolderDetails(freshDetails),
-    wasRenamed: cached.content.name !== freshDetails.name,
-    wasReplaced: cached.content.drivewsid !== freshDetails.drivewsid,
-    newItems: [],
-    removedItems: [],
-  }
-} */
-/*
-const wasAnythingChangedInFolderHierarchy = (
-  cachedHierarchy: DriveDetailsPartialWithHierarchy,
-  actualHierarchy: DriveDetailsPartialWithHierarchy,
-) => {
-  return {}
-}
- */
-/*
-const getCachedHierarchyById = (
-  cache: Cache,
-  drivewsid: string,
-) => {
-  return pipe(
-    cache.getCachedHierarchyByIdRecursive(drivewsid),
-    E.map(A.dropRight(1)),
-  )
-}
- */
-
-// function updateCacheItemRecursive(
-//   actualItem: FolderLikeItem,
-//   cache: Cache,
-//   api: DriveApi,
-// ) {
-//   return pipe(
-//     cache.getById(actualItem.drivewsid),
-//     O.fold(
-//       () => cache.putItem(actualItem),
-//       details =>
-//         !details.hasDetails
-//           ? cache.putItem(actualItem)
-//           : pipe(
-//             api.retrieveItemDetailsInFolder(actualItem.drivewsid),
-//             TE.chain(updateCacheDetailsRecursive),
-//           ),
-//     ),
-//   )
-// }
-/*
-function updateCacheDetailsRecursive(
-  actualDetails: DriveDetails,
-  cache: Cache,
-  api: DriveApi,
-): TE.TaskEither<Error, Cache> {
-  return pipe(
-    cache.getById(actualDetails.drivewsid),
-    O.fold(
-      () => TE.fromEither(cache.putDetails(actualDetails)),
-      details =>
-        !details.hasDetails
-          ? TE.fromEither(cache.putDetails(actualDetails))
-          : pipe(
-            compareDetails(details.content, actualDetails),
-            ({ added, missing, updated }) =>
-              pipe(
-                missing.items.map(_ => _.drivewsid),
-                cache.removeByIds,
-                TE.of,
-                TE.chain(cache => TE.of(cache)),
-              ),
-          ),
-    ),
-  )
-} */
-
-// export function updateFoldersDetailsRecursively(
-//   drivewsids: string[],
-//   cache: Cache,
-//   api: DriveApi,
-// ): TE.TaskEither<Error, DriveDetails[]> {
-//   logger.debug({ updateFoldersDetailsRecursively: { drivewsids } })
-
-//   return pipe(
-//     cache.getByIds(drivewsids),
-//     A.filterMap(O.chain(v => v.hasDetails ? O.some(v) : O.none)),
-//     details =>
-//       pipe(
-//         TE.Do,
-//         TE.bind('actualDetails', () =>
-//           pipe(
-//             details.map(_ => _.content.drivewsid),
-//             api.retrieveItemDetailsInFoldersHierarchy,
-//           )),
-//         TE.bind('cache', ({ actualDetails }) =>
-//           pipe(
-//             A.zip(details, actualDetails),
-//             A.map(([a, b]) => compareDetails(a.content, b)),
-//             flow(
-//               A.map(_ => _.updated.folders),
-//               A.flatten,
-//               A.map(snd),
-//             ),
-//             A.map(_ => _.drivewsid),
-//             drivewsids =>
-//               drivewsids.length > 0
-//                 ? pipe(
-//                   updateFoldersDetailsRecursively(drivewsids, cache, api),
-//                   TE.map(A.concat(actualDetails)),
-//                 )
-//                 : TE.of(actualDetails),
-//           )),
-//         TE.chain(({ cache, actualDetails }) => TE.of(cache)),
-//       ),
-//   )
-// }
 
 export const checkForUpdates = ({
   sessionFile,
@@ -157,7 +34,7 @@ export const checkForUpdates = ({
   path: string
 }) => {
   return cliAction(
-    { sessionFile, cacheFile, noCache: false, dontSaveCache: true },
+    { sessionFile, cacheFile, noCache: false },
     ({ cache, api }) =>
       pipe(
         cache.getFolderByPathE(path),
@@ -187,16 +64,15 @@ export const checkForUpdates = ({
 }
 
 export const update = (
-  { sessionFile, cacheFile, path, raw, noCache, recursive, depth, dontSaveCache = true }: Env & {
+  { sessionFile, cacheFile, path, raw, noCache, recursive, depth }: Env & {
     recursive: boolean
     path: string
     fullPath: boolean
     depth: number
-    dontSaveCache?: boolean
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
   return cliAction(
-    { sessionFile, cacheFile, noCache, dontSaveCache },
+    { sessionFile, cacheFile, noCache },
     ({ cache, api }) =>
       pipe(
         TE.Do,

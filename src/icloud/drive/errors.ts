@@ -5,6 +5,10 @@ export class NotFoundError extends Error {
   static create(message?: string): NotFoundError {
     return new NotFoundError(message)
   }
+
+  static createTemplate(target: string, container: string, prefix?: string): NotFoundError {
+    return new NotFoundError(`${prefix ? prefix + ': ' : ''}${target} was not found in ${container}`)
+  }
 }
 
 export class ItemIsNotFolder extends Error {

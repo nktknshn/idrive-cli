@@ -18,14 +18,14 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { snd } from 'fp-ts/lib/Tuple'
 import { compareDetails, NormalizedPath } from '../../cli/actions/helpers'
 import { err } from '../../lib/errors'
-import { cacheLogger, logf, logg, logger, logReturn, logReturnAs } from '../../lib/logging'
+import { cacheLogger, logf, logg, logger, logReturn, logReturnAs, logReturnS } from '../../lib/logging'
 import { cast } from '../../lib/util'
 import { Cache } from './cache/Cache'
 // import * as Cache from './cache/Cache'
 import { isFolderLikeCacheEntity, PartialValidPath } from './cache/cachef'
 import * as C from './cache/cachef'
 import { DriveApi } from './drive-api'
-import { fileName, hasName, parsePath, zipIds } from './helpers'
+import { fileName, getMissedFound, hasName, parsePath } from './helpers'
 import {
   asOption,
   DriveChildrenItem,
@@ -40,7 +40,9 @@ import {
   HierarchyEntry,
   InvalidId,
   isFile,
+  isFileHierarchyEntry,
   isFolderDetails,
+  isFolderHierarchyEntry,
   isFolderLike,
   isFolderLikeItem,
   isInvalidId,
@@ -69,6 +71,7 @@ export const ls = (path: NormalizedPath) =>
       ),
     ),
   )
+
 export const lsdir = (path: NormalizedPath) =>
   pipe(
     lss([path]),
@@ -80,6 +83,11 @@ export const lsdir = (path: NormalizedPath) =>
     ),
     SRTE.filterOrElse(isFolderDetails, () => ItemIsNotFolder.create(`${path} is not a folder`)),
   )
+
+// export type DriveME<A> = SRTE.StateReaderTaskEither<{
+//   cache: Cache,
+//   d5
+// }, DriveApi, Error, A>
 
 export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
 export const Do = SRTE.of<Cache, DriveApi, Error, {}>({})
@@ -98,6 +106,8 @@ export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
 export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
 export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> => SRTE.fromTaskEither(te)
 export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => SRTE.fromOption(f)(opt)
+
+export const logS = flow(logReturnS, SRTE.map)
 
 function enumerate<T>(as: T[]) {
   return pipe(
@@ -148,10 +158,10 @@ const same = (a: HierarchyEntry, b: HierarchyEntry) => {
 }
 
 export const getValidHierarchyPart = (
-  actualDetails: O.Option<DriveDetailsWithHierarchy>[],
+  actualDetails: O.Option<DriveDetails | DriveChildrenItemFile>[],
   cachedHierarchy: Hierarchy,
 ): {
-  validPart: DriveDetailsWithHierarchy[]
+  validPart: (DriveDetails | DriveChildrenItemFile)[]
   rest: string[]
 } => {
   const presentDetails = pipe(
@@ -176,80 +186,6 @@ export const getValidHierarchyPart = (
   )
 }
 
-export const validateHierarchy = (hierarchy: Hierarchy) => {
-  if (hierarchy.length == 0) {
-    return of({
-      validPart: [],
-      rest: [],
-    })
-  }
-
-  return pipe(
-    readEnv,
-    SRTE.chain(({ api }) =>
-      pipe(
-        retrieveItemDetailsInFoldersSaving(
-          hierarchy.map(_ => _.drivewsid),
-        ),
-      )
-    ),
-    SRTE.map(actuals => getValidHierarchyPart(actuals, hierarchy)),
-  )
-}
-
-/*
-returns
-*/
-export const validateCachedPath = (
-  path: NormalizedPath,
-): DriveM<{ validPart: DriveDetailsWithHierarchy[]; rest: string[] }> => {
-  return pipe(
-    readEnv,
-    logf(`validatePath: ${path}`),
-    SRTE.bind('cached', ({ cache }) => SRTE.of(cache.getByPathV(path))),
-    SRTE.chain(({ cached }) =>
-      pipe(
-        cached.valid
-          ? pipe(
-            C.entitiesToHierarchy(cached.entities),
-            logReturnAs('cached.entities'),
-            validateHierarchy,
-          )
-          : pipe(
-            C.entitiesToHierarchy(cached.validPart),
-            logReturnAs('cached part'),
-            validateHierarchy,
-            SRTE.map(_ => ({
-              validPart: _.validPart,
-              rest: pipe(
-                cached.validPart,
-                A.dropLeft(_.validPart.length),
-                A.map(_ => fileName(_.content)),
-                files => [...files, ...cached.rest],
-              ),
-            })),
-          ),
-      )
-    ),
-  )
-}
-
-export const getByPath = (path: NormalizedPath): DriveM<DriveChildrenItemFile | DriveDetails> =>
-  pipe(
-    logg(`getByPath.`),
-    () => validateCachedPath(path),
-    SRTE.chain(({ rest, validPart }) =>
-      pipe(
-        A.isNonEmpty(validPart)
-          ? pipe(
-            getActualRelative(rest, NA.last(validPart)),
-            ensureDetailsC,
-          )
-          : getActual(path),
-      )
-    ),
-  )
-
 export const getActualFolder = (path: NormalizedPath) =>
   pipe(
     () => pipe(getFolderByPath(path)),
@@ -262,17 +198,35 @@ export const getActual = (path: NormalizedPath) =>
     withEmptyCache(Cache.semigroup),
   )
 
-export const getActualRelative = (rest: string[], parent: DriveFolderLike) =>
+export const getActualRelative = (rest: string[], actualParent: DriveDetails) =>
   pipe(
-    readEnv,
-    SRTE.bind('extractedCache', ({ cache }) => SRTE.fromEither(C.extractCacheById(parent.drivewsid)(cache.get()))),
+    logg(`getActualRelative: parent=${actualParent.drivewsid} rest=[${rest}]`),
+    () => readEnv,
+    // SRTE.bind('parent', ({ cache }) => SRTE.fromEither(cache.getFolderByIdE(actualParent.drivewsid))),
+    SRTE.bind(
+      'extractedCache',
+      ({ cache }) => SRTE.fromEither(C.extractCacheById(actualParent.drivewsid)(cache.get())),
+    ),
     chain(({ extractedCache }) =>
       pipe(
-        () => pipe(getItemByPathRelativeG(rest, parent), ensureDetailsC),
+        () => pipe(getItemByPathRelativeG(rest, actualParent), ensureDetailsC),
         withCache(Cache.create(extractedCache), Cache.semigroup),
       )
     ),
   )
+
+export const retrieveItemsDetails = (drivewsids: string[]) => {
+  return pipe(
+    readEnv,
+    SRTE.bind('details', ({ api }) =>
+      pipe(
+        fromTaskEither(
+          api.retrieveItemsDetailsO(drivewsids),
+        ),
+      )),
+    SRTE.map(_ => _.details),
+  )
+}
 
 export const retrieveItemDetailsInFoldersSaving = (
   drivewsids: string[],
@@ -287,7 +241,7 @@ export const retrieveItemDetailsInFoldersSaving = (
       )),
     SRTE.chain(({ details }) =>
       pipe(
-        putFoundMissed(zipIds(drivewsids, details)),
+        putFoundMissed(getMissedFound(drivewsids, details)),
         SRTE.chain(() => of(A.map(asOption)(details))),
       )
     ),
@@ -328,75 +282,18 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<Maybe
   )
 }
 
-export const retrieveItemDetailsInFoldersO = (drivewsids: string[]): DriveM<O.Option<DriveDetails>[]> => {
+export const retrieveItemDetailsInFoldersCachingO = (drivewsids: string[]): DriveM<O.Option<DriveDetails>[]> => {
   return pipe(
     retrieveItemDetailsInFolders(drivewsids),
     SRTE.map(A.map(asOption)),
   )
 }
 
-export const retrieveItemDetailsInFoldersE = (drivewsids: string[]): DriveM<DriveDetails[]> => {
+export const retrieveItemDetailsInFoldersCachingE = (drivewsids: string[]): DriveM<DriveDetails[]> => {
   return pipe(
-    retrieveItemDetailsInFoldersO(drivewsids),
+    retrieveItemDetailsInFoldersCachingO(drivewsids),
     SRTE.map(flow(O.sequenceArray, O.map(RA.toArray))),
     SRTE.chain(v => SRTE.fromOption(() => err(`missing some item`))(v)),
-  )
-}
-
-export const retrieveItemDetailsInFoldersOld = (drivewsids: string[]): DriveM<MaybeNotFound<DriveDetails>[]> => {
-  // const ordering = pipe(
-  //   drivewsids,
-  //   A.mapWithIndex((idx, dwid) => [dwid, idx] as const),
-  //   R.fromFoldableMap(S.last<number>(), A.FoldableWithIndex),
-  // )
-
-  type Z = (readonly [MaybeNotFound<DriveDetails>, string])
-
-  return pipe(
-    readEnv,
-    SRTE.bind('task', ({ cache }) => SRTE.fromEither(cache.getFolderDetailsByIdsSeparated(drivewsids))),
-    // SRTE.map(
-    //   logReturn(({ task }) =>
-    //     cacheLogger.debug(`${task.missed.length} missed caches (${task.missed}), ${task.cached.length} hits`)
-    //   ),
-    // ),
-    SRTE.chain(({ api, task: { missed, cached } }) =>
-      pipe(
-        readEnv,
-        SRTE.chain(({ cache }) =>
-          pipe(
-            SRTE.fromTaskEither<Error, Z[], Cache, DriveApi>(
-              missed.length > 0
-                ? pipe(
-                  api.retrieveItemDetailsInFolders(missed),
-                  TE.map(A.zip(missed)),
-                )
-                : TE.of([]),
-            ),
-            SRTE.chain(details =>
-              pipe(
-                putDetailss(pipe(
-                  details,
-                  A.filterMap((
-                    [response, drivewsid],
-                  ) => isInvalidId(response) ? O.none : O.some(response)),
-                )),
-                // cache.putDetailss(details),
-                // SRTE.fromEither,
-                // SRTE.chain(cache => SRTE.put(cache)),
-                SRTE.chain(() =>
-                  SRTE.of([
-                    ...cached.map(_ => _.content),
-                    // ...pipe(details, A.map(flow(A.map(fst)), A.filter(isNotInvalidId))),
-                  ])
-                ),
-              )
-            ),
-          )
-        ),
-      )
-    ),
-    // SRTE.chainFirstW(logCache()),
   )
 }
 
@@ -409,7 +306,7 @@ export const retrieveItemDetailsInFolder = (drivewsid: string): DriveM<O.Option<
     SRTE.map(asOption),
   )
 
-export const retrieveItemDetailsInFolderE = (drivewsid: string): DriveM<DriveDetails> =>
+export const retrieveItemDetailsInFolderCachingE = (drivewsid: string): DriveM<DriveDetails> =>
   pipe(
     retrieveItemDetailsInFolder(drivewsid),
     SRTE.chain(v => SRTE.fromOption(() => NotFoundError.create(`${drivewsid} was not found`))(v)),
@@ -431,7 +328,7 @@ export const getRoot = (): DriveM<DriveDetailsRoot> =>
   )
 
 export const getFolderDetailsById = retrieveItemDetailsInFolder
-export const getFolderDetailsByIdE = retrieveItemDetailsInFolderE
+export const getFolderDetailsByIdE = retrieveItemDetailsInFolderCachingE
 
 export const getFolderRecursive = (
   path: string,
@@ -461,7 +358,7 @@ export const getFileOrFolderByPath = (
     getItemByPath(path),
     SRTE.chain(item =>
       isFolderLike(item) && !isFolderDetails(item)
-        ? retrieveItemDetailsInFolderE(item.drivewsid)
+        ? retrieveItemDetailsInFolderCachingE(item.drivewsid)
         : SRTE.of(item)
     ),
   )
@@ -471,7 +368,7 @@ export const ensureDetails = (
 ): DriveM<DriveDetails | DriveChildrenItemFile> =>
   pipe(
     isFolderLike(itemOrDetails) && !isFolderDetails(itemOrDetails)
-      ? retrieveItemDetailsInFolderE(itemOrDetails.drivewsid)
+      ? retrieveItemDetailsInFolderCachingE(itemOrDetails.drivewsid)
       : SRTE.of(itemOrDetails),
   )
 
@@ -482,7 +379,7 @@ export const ensureDetailsForFolderLike = (
 ): DriveM<DriveDetails> =>
   pipe(
     !isFolderDetails(itemOrDetails)
-      ? retrieveItemDetailsInFolderE(itemOrDetails.drivewsid)
+      ? retrieveItemDetailsInFolderCachingE(itemOrDetails.drivewsid)
       : SRTE.of(itemOrDetails),
   )
 
@@ -510,6 +407,28 @@ export const withCache = <T>(initialCache: Cache, sg: Semigroup<Cache>) =>
 export const withEmptyCache = <T>(sg: Semigroup<Cache>) =>
   (f: () => DriveM<T>): DriveM<T> => withCache<T>(Cache.create(), sg)(f)
 
+type DetailsOrFile = DriveFolderLike | DriveChildrenItemFile
+type MaybePartial = E.Either<
+  { validPath: NA.NonEmptyArray<DriveDetails>; rest: string[] },
+  DetailsOrFile
+>
+
+/*
+class NotFoundErrorWithIndex extends Error {
+  constructor(readonly index: number, msg: string) {
+    super(msg)
+  }
+
+  static is(e: Error): e is NotFoundErrorWithIndex {
+    return e instanceof NotFoundErrorWithIndex
+  }
+
+  static create(index: number, msg: string): NotFoundErrorWithIndex {
+    return new NotFoundErrorWithIndex(index, msg)
+  }
+}
+*/
+
 export const getItemByPathRelativeG = (
   path: string[],
   parent: DriveFolderLike,
@@ -517,9 +436,9 @@ export const getItemByPathRelativeG = (
   logger.debug(`getItemByPathRelativeG: path=${path} parent=${parent.drivewsid} (${fileName(parent)})`)
   return pipe(
     path,
-    A.reduce(
-      SRTE.of<Cache, DriveApi, Error, DriveFolderLike | DriveChildrenItemFile>(parent),
-      (parent, itemName) =>
+    A.reduceWithIndex(
+      of<DriveFolderLike | DriveChildrenItemFile>(parent),
+      (index, parent, itemName) =>
         pipe(
           ado({
             parent: pipe(
@@ -528,22 +447,33 @@ export const getItemByPathRelativeG = (
                 isFile(parent)
                   ? SRTE.left(err(`${parent.drivewsid} is not a folder`))
                   : !isFolderDetails(parent)
-                  ? retrieveItemDetailsInFolderE(parent.drivewsid)
+                  ? retrieveItemDetailsInFolderCachingE(parent.drivewsid)
                   : SRTE.of(parent)
               ),
             ),
           }),
           SRTE.bind('item', ({ parent }) =>
             SRTE.fromOption(() =>
-              err(`item "${itemName}" was not found in "${parent.name}" (${parent.drivewsid})`)
+              NotFoundError.create(`item "${itemName}" was not found in "${parent.name}" (${parent.drivewsid})`)
             )(
-              pipe(parent.items, A.findFirst(item => itemName == fileName(item))),
+              pipe(
+                parent.items,
+                A.findFirst(item =>
+                  itemName == fileName(item)
+                ),
+              ),
             )),
           SRTE.map(_ => _.item),
         ),
     ),
   )
 }
+
+// export const getItemByPathRelativeM = (
+//   path: string[],
+//   parent: DriveFolderLike,
+// ): DriveM<MaybePartial> => {
+// }
 
 export const logCache = (msg?: string) =>
   () =>
@@ -574,7 +504,7 @@ export const getItemByPath = (path: string): DriveM<DriveDetails | DriveChildren
 export const getFoldersRecursively = (drivewsids: string[], depth: number): DriveM<RecursiveFolder[]> => {
   return pipe(
     ado({
-      folders: retrieveItemDetailsInFoldersE(drivewsids),
+      folders: retrieveItemDetailsInFoldersCachingE(drivewsids),
     }),
     SRTE.bind('foldersItems', ({ folders }) => SRTE.of(getSubfolders(folders))),
     SRTE.bind('g', ({ foldersItems }) =>
@@ -680,7 +610,7 @@ export const updateFoldersDetails = (
         SRTE.fromTaskEither,
         SRTE.chain(details =>
           pipe(
-            zipIds(drivewsids, details),
+            getMissedFound(drivewsids, details),
             ({ missed, found }) =>
               pipe(
                 cache.removeByIds(missed),
@@ -764,7 +694,7 @@ export const saveCache = (cacheFile: string) =>
     )
 
 export const saveCacheFirst = <T>(cacheFile: string) =>
-  (df: DriveM<T>) =>
+  (df: DriveM<T>): DriveM<T> =>
     pipe(
       df,
       chain(v =>

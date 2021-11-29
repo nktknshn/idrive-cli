@@ -8,7 +8,7 @@ import { err } from '../../lib/errors'
 import { Path } from '../../lib/util'
 import { cliAction } from '../cli-actionF'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFolderInfo } from './ls'
+import { showDetailsInfo, showFolderInfo } from './ls_action'
 
 export const rm = (
   { sessionFile, cacheFile, path, noCache }: {
@@ -42,7 +42,6 @@ export const rm = (
             resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
           ),
         )),
-      // SRTE.chain(({ item }) => DF.retrieveItemDetailsInFolderE(item.parentId)),
       SRTE.chain(() => DF.lsdir(parentPath)),
       DF.saveCacheFirst(cacheFile),
       SRTE.map(showDetailsInfo({

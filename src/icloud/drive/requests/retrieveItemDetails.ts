@@ -32,7 +32,7 @@ function retrieveItemDetailsGeneric<R>(
   },
   app: ResponseHandler<R>,
 ): TE.TaskEither<Error, ResponseWithSession<R>> {
-  apiLogger.debug('retrieveItemDetails')
+  apiLogger.debug(`retrieveItemDetails: [${props.items.map(_ => _.drivewsid)}]`)
 
   return pipe(
     session,
@@ -49,7 +49,6 @@ function retrieveItemDetailsGeneric<R>(
 const scheme = t.type({
   items: t.array(
     itemDetails,
-    // t.union([itemDetails, invalidIdItem]),
   ),
 })
 

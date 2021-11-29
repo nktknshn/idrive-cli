@@ -7,7 +7,7 @@ import { isFile, isFolderDetails, isFolderLike } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { cliAction } from '../cli-actionF'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls'
+import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls_action'
 
 export const upload = (
   { sessionFile, cacheFile, srcpath, dstpath, noCache }: {
@@ -28,9 +28,9 @@ export const upload = (
       SRTE.filterOrElse(isFolderLike, () => err(`${dstpath} is not a folder`)),
       SRTE.chain(item => SRTE.fromTaskEither(api.upload(srcpath, item.docwsid))),
       SRTE.chain(() => DF.ls(normalizePath(dstpath))),
-      SRTE.filterOrElse(isFolderDetails, () => err(`imposiburu`)),
+      SRTE.filterOrElse(isFolderDetails, () => err(`dstpath is mystically not a folder`)),
       SRTE.map(showDetailsInfo({ path: '', fullPath: false })),
-      // SRTE.chain(resp => DF.removeByIds(resp.items.map(_ => _.drivewsid))),
+      DF.saveCacheFirst(cacheFile),
     )
 
     return pipe(

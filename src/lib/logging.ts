@@ -3,8 +3,9 @@ import * as winston from 'winston'
 import { hasOwnProperty, isObjectWithOwnProperty } from './util'
 const { combine, timestamp, label, prettyPrint, json } = winston.format
 import chalk from 'chalk'
-import { identity } from 'fp-ts/function'
+import { identity, pipe } from 'fp-ts/function'
 import { IO } from 'fp-ts/lib/IO'
+import * as TE from 'fp-ts/lib/TaskEither'
 import fs from 'fs'
 import { InvalidJsonInResponse } from './errors'
 
@@ -54,6 +55,8 @@ export const loggingLevels = {
 
 // export const setLoggingLevel()
 export const logf = <T>(msg: string, lgr = logger.debug) => logReturn<T>(() => lgr(msg))
+
+export const logff = <T>(f: (v: T) => string, lgr = logger.debug) => (v: T) => logReturn<T>(() => lgr(f(v)))
 
 export const logg = (msg: string, f = logger.debug) => f(msg)
 
@@ -169,6 +172,20 @@ export const logReturnAs = <T>(key: string, f: (v: T) => unknown = v => JSON.str
     _logger(`${key} = ${f(value)}`)
 
     return value
+  }
+
+export const teLogS = <T>(
+  logFunc: (value: T) => string,
+  _logger = logger.debug,
+) =>
+  (te: TE.TaskEither<Error, T>): TE.TaskEither<Error, T> => {
+    return pipe(
+      te,
+      TE.map((v) => {
+        _logger(logFunc(v))
+        return v
+      }),
+    )
   }
 
 export { httplogger, logger, printer }

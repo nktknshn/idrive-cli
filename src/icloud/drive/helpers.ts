@@ -3,9 +3,11 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
+import * as TE from 'fp-ts/lib/TaskEither'
 import { unknown } from 'io-ts'
 import * as t from 'io-ts'
 import Path from 'path'
+import { logger } from '../../lib/logging'
 import { EmptyObject } from '../../lib/types'
 import { isObjectWithOwnProperty } from '../../lib/util'
 import {
@@ -88,7 +90,7 @@ export const fileName = (item: {
     ? `${item.name}${item.extension.length > 0 ? `.${item.extension}` : ''}`
     : `${item.name}`
 
-export const zipIds = <T>(drivewsids: string[], details: MaybeNotFound<T>[]) => {
+export const getMissedFound = <T>(drivewsids: string[], details: MaybeNotFound<T>[]) => {
   return pipe(
     A.zip(drivewsids, details),
     A.partitionMap(([dwid, d]) => isInvalidId(d) ? E.left(dwid) : E.right(d)),

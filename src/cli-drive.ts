@@ -10,7 +10,7 @@ import { defaultCacheFile, defaultSessionFile } from './config'
 import { consumeStream } from './icloud/drive/requests/download'
 import { apiLogger, cacheLogger, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
 
-import { listUnixPath } from './cli/actions/ls'
+import { listUnixPath } from './cli/actions/ls_action'
 import { mkdir } from './cli/actions/mkdir'
 import { move } from './cli/actions/move'
 import { rm } from './cli/actions/rm'
@@ -29,9 +29,9 @@ function parseArgs() {
       debug: { alias: 'd', default: true, type: 'boolean' },
       update: { alias: 'u', default: false, type: 'boolean' },
     })
-    .command('ls [path]', 'list files in a folder', _ =>
+    .command('ls [paths..]', 'list files in a folder', _ =>
       _
-        .positional('path', { type: 'string', default: '/' })
+        .positional('paths', { type: 'string', array: true, default: ['/'] })
         .options({
           fullPath: { alias: ['f'], default: false, type: 'boolean' },
           listInfo: { alias: ['l'], default: false, type: 'boolean' },
@@ -155,72 +155,5 @@ async function main() {
       break
   }
 }
-
-// const mkdir = (
-//   { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
-// ): TE.TaskEither<Error, unknown> => {
-//   return cliAction(
-//     { sessionFile, cacheFile, noCache },
-//     ({ drive }) => drive.createFolder(path),
-//   )
-// }
-
-// const cat = (
-//   { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
-// ): TE.TaskEither<Error, unknown> => {
-//   return cliAction(
-//     { sessionFile, cacheFile, noCache },
-//     ({ drive }) =>
-//       pipe(
-//         drive.getDownloadStream(path),
-//         TE.chain(consumeStream),
-//         // TE.map(_ => new TextDecoder().decode(_))
-//       ),
-//   )
-// }
-
-// const rm = (
-//   { sessionFile, cacheFile, path, raw, noCache }: Env & { path: string },
-// ): TE.TaskEither<Error, unknown> => {
-//   return cliAction(
-//     { sessionFile, cacheFile, noCache },
-//     ({ drive }) => drive.removeItemByPath(path),
-//   )
-// }
-
-// const move = (
-//   { sessionFile, cacheFile, srcpath, dstpath, raw, noCache }: Env & { srcpath: string; dstpath: string },
-// ): TE.TaskEither<Error, unknown> => {
-//   return cliAction(
-//     { sessionFile, cacheFile, noCache },
-//     ({ drive }) => move({ sessionFile, cacheFile, srcpath, dstpath, noCache }),
-//   )
-// }
-
-/* const upload = (
-  sourcePath: string,
-  targetPath: string,
-  { sessionFile = defaultSessionFile, cacheFile = defaultCacheFile } = {},
-): TE.TaskEither<Error, unknown> => {
-  return cliAction(
-    { sessionFile, cacheFile, noCache },
-    ({ drive }) => drive.upload(sourcePath, targetPath),
-  )
-} */
-
-/*
-  program
-    .command('upload <sourcePath> <targetPath>')
-    .description('rm')
-    .action(async (sourcePath: string, targetPath: string) => {
-      assert(sourcePath)
-      assert(targetPath)
-
-      logger.info(await upload(sourcePath, targetPath)())
-    })
-
-  await program.parseAsync()
-} */
-// const byAge: Ord<User> = contramap((user: User) => user.age)(ordNumber)
 
 main()

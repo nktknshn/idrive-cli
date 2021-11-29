@@ -1,6 +1,7 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
@@ -41,21 +42,21 @@ import {
   validateCacheJson,
 } from './cachef'
 import {
+  CacheEntity,
   CacheEntityAppLibrary,
   CacheEntityAppLibraryDetails,
   CacheEntityFolderDetails,
   CacheEntityFolderLike as CacheEntityFolderLike,
   CacheEntityFolderRootDetails,
-  ICloudDriveCache,
-  ICloudDriveCacheEntity,
+  CacheF,
 } from './types'
 
 export class Cache {
-  private readonly cache: ICloudDriveCache
+  private readonly cache: CacheF
 
   static tryReadFromFile = (
     accountDataFilePath: string,
-  ): TE.TaskEither<Error, ICloudDriveCache> => {
+  ): TE.TaskEither<Error, CacheF> => {
     return pipe(
       tryReadJsonFile(accountDataFilePath),
       TE.filterOrElseW(
@@ -78,7 +79,7 @@ export class Cache {
     return (cache: Cache) => pipe(cache.cache, saveJson(cacheFilePath))
   }
 
-  constructor(cache: ICloudDriveCache = cachef()) {
+  constructor(cache: CacheF = cachef()) {
     this.cache = cache
   }
 
@@ -135,7 +136,7 @@ export class Cache {
     )
   }
 
-  getById = (drivewsid: string): O.Option<ICloudDriveCacheEntity> => {
+  getById = (drivewsid: string): O.Option<CacheEntity> => {
     return pipe(
       pipe(this.cache.byDrivewsid, R.lookup(drivewsid)),
       logReturn(
@@ -147,18 +148,18 @@ export class Cache {
     )
   }
 
-  getByIds = (drivewsids: string[]): O.Option<ICloudDriveCacheEntity>[] => {
+  getByIds = (drivewsids: string[]): O.Option<CacheEntity>[] => {
     return pipe(drivewsids, A.map(this.getById))
   }
 
-  getByIdE = (drivewsid: string): E.Either<Error, ICloudDriveCacheEntity> => {
+  getByIdE = (drivewsid: string): E.Either<Error, CacheEntity> => {
     return pipe(
       this.getById(drivewsid),
       E.fromOption(() => err(`missing ${drivewsid} in cache`)),
     )
   }
 
-  getByIdWithPath = (drivewsid: string): O.Option<{ entity: ICloudDriveCacheEntity; path: string }> => {
+  getByIdWithPath = (drivewsid: string): O.Option<{ entity: CacheEntity; path: string }> => {
     return pipe(
       O.Do,
       O.bind('entity', () => this.getById(drivewsid)),
@@ -171,7 +172,7 @@ export class Cache {
       this.getById(drivewsid),
       O.map(
         flow(
-          E.fromPredicate(isFolderLikeCacheEntity, () => err(`${drivewsid} is not a folder`)),
+          E.fromPredicate(isFolderLikeCacheEntity, () => err(`getFolderById: ${drivewsid} is not a folder`)),
         ),
       ),
     )
@@ -182,21 +183,14 @@ export class Cache {
   ): E.Either<Error, CacheEntityFolderLike | CacheEntityAppLibrary> =>
     pipe(
       this.getByPathE(drivewsid),
-      E.filterOrElse(isFolderLikeCacheEntity, () => err(`${drivewsid} is not a folder`)),
+      E.filterOrElse(isFolderLikeCacheEntity, () => err(`getFolderByPathE: ${drivewsid} is not a folder`)),
     )
 
-  // getFolderByPath = (
-  //   drivewsid: string,
-  // ) =>
-  //   pipe(
-  //     this.getByPath(drivewsid),
-  //     O.map(E.filterOrElse(isFolderLikeCacheEntity, () => error(`${drivewsid} is not a folder`))),
-  //   )
   getFolderByIdE = (drivewsid: string) => {
     return pipe(
       this.getByIdE(drivewsid),
       E.chain(flow(
-        E.fromPredicate(isFolderLikeCacheEntity, () => err(`${drivewsid} is not a folder`)),
+        E.fromPredicate(isFolderLikeCacheEntity, () => err(`getFolderByIdE: ${drivewsid} is not a folder`)),
       )),
     )
   }
@@ -286,7 +280,7 @@ export class Cache {
     )
   }
 
-  getByPathE = (path: string): E.Either<Error, ICloudDriveCacheEntity> => {
+  getByPathE = (path: string): E.Either<Error, CacheEntity> => {
     return pipe(
       this.getByPath(path),
       E.fromOption(() => err(`missing ${path} in cache`)),
@@ -315,29 +309,22 @@ export class Cache {
     )
   }
 
-  getByPathV2 = (path: string): PartialValidPath => {
-    const rest = pipe(path, parsePath, A.dropLeft(1))
-
+  getByPathV2 = (
+    path: string,
+  ):
+    | { validPart: CacheEntityFolderLike[]; rest: NA.NonEmptyArray<string> }
+    | { validPart: NA.NonEmptyArray<CacheEntity>; rest: [] } =>
+  {
     return pipe(
-      E.Do,
-      E.bind('root', () => pipe(this.cache, getRoot())),
-      E.fold(
-        (e): PartialValidPath => ({
-          valid: false,
-          error: e,
-          rest: ['/', ...rest],
-          validPart: [],
-        }),
-        ({ root }) =>
-          pipe(
-            this.cache,
-            getPartialValidPath(rest, root),
-          ),
-      ),
+      this.getByPathV(path),
+      _ =>
+        _.valid
+          ? { validPart: _.entities, rest: [] }
+          : { validPart: _.validPart, rest: _.rest },
     )
   }
 
-  getByPath = (path: string): O.Option<ICloudDriveCacheEntity> => {
+  getByPath = (path: string): O.Option<CacheEntity> => {
     return pipe(
       this.cache,
       logReturn(() => logger.debug('getByPath')),
@@ -356,11 +343,11 @@ export class Cache {
     )
   }
 
-  getByIdU = (drivewsid: string): ICloudDriveCacheEntity | undefined => {
+  getByIdU = (drivewsid: string): CacheEntity | undefined => {
     return pipe(this.getById(drivewsid), O.toUndefined)
   }
 
-  getByPathU = (path: string): ICloudDriveCacheEntity | undefined => {
+  getByPathU = (path: string): CacheEntity | undefined => {
     return pipe(this.getByPath(path), O.toUndefined)
   }
 
@@ -406,7 +393,7 @@ export class Cache {
   //     Cache.create,
   //   )
   // }
-  static create(cache: ICloudDriveCache = cachef()): Cache {
+  static create(cache: CacheF = cachef()): Cache {
     return new Cache(cache)
   }
 
@@ -423,7 +410,7 @@ export class Cache {
   }
 
   static concat(a: Cache, b: Cache): Cache {
-    const M = R.getMonoid({ concat: (a: ICloudDriveCacheEntity, b: ICloudDriveCacheEntity) => b })
+    const M = R.getMonoid({ concat: (a: CacheEntity, b: CacheEntity) => b })
 
     // cacheLogger.debug(`concat ${JSON.stringify(a.get())}`)
     // cacheLogger.debug(`concat ${JSON.stringify(b.get())}`)

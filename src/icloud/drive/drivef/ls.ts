@@ -13,10 +13,10 @@ import { Cache } from '../../../icloud/drive/cache/Cache'
 import * as C from '../../../icloud/drive/cache/cachef'
 import { isFolderLikeCacheEntity } from '../../../icloud/drive/cache/cachef'
 import {
+  CacheEntity,
   CacheEntityDetails,
   CacheEntityFile,
   CacheEntityFolderLike,
-  ICloudDriveCacheEntity,
 } from '../../../icloud/drive/cache/types'
 import { DriveApi } from '../../../icloud/drive/drive-api'
 import {
@@ -46,37 +46,37 @@ const ado = sequenceS(SRTE.Apply)
 
 /*
 Receives actual details for the path with help of cache in order to use the least possible count of api requests
-*/
-export function ls(path: string): DF.DriveM<DriveChildrenItemFile | DriveDetails> {
-  //
+// */
+// export function ls(path: string): DF.DriveM<DriveChildrenItemFile | DriveDetails> {
+//   //
 
-  /*
-  1. verify it's still a folder
-  2.
+//   /*
+//   1. verify it's still a folder
+//   2.
 
-  cases:
-  1. the target was found in cache
-  2. the target was not found in cache
-  */
+//   cases:
+//   1. the target was found in cache
+//   2. the target was not found in cache
+//   */
 
-  const res = pipe(
-    logg(`ls: ${path}`),
-    // DF.readEnv,
-    () => DF.getByPath(normalizePath(path)),
-    // SRTE.bind('vpath', ({ cache }) => SRTE.of(cache.getByPathV(path))),
-    // SRTE.chain(({ vpath }) =>
-    //   pipe(
-    //     vpath.valid
-    //       ? isFolderLikeCacheEntity(vpath.last)
-    //         ? onFoundInCacheFolderLike(path)(vpath.last)
-    //         : onFoundInCacheFile(path)(vpath.last)
-    //       : onNotFoundInCache(path)(vpath.validPart, vpath.rest),
-    //   )
-    // ),
-  )
+//   const res = pipe(
+//     logg(`ls: ${path}`),
+//     // DF.readEnv,
+//     () => DF.getByPath(normalizePath(path)),
+//     // SRTE.bind('vpath', ({ cache }) => SRTE.of(cache.getByPathV(path))),
+//     // SRTE.chain(({ vpath }) =>
+//     //   pipe(
+//     //     vpath.valid
+//     //       ? isFolderLikeCacheEntity(vpath.last)
+//     //         ? onFoundInCacheFolderLike(path)(vpath.last)
+//     //         : onFoundInCacheFile(path)(vpath.last)
+//     //       : onNotFoundInCache(path)(vpath.validPart, vpath.rest),
+//     //   )
+//     // ),
+//   )
 
-  return res
-}
+//   return res
+// }
 
 const onFoundInCacheFolderLike = (path: string) =>
   (item: CacheEntityFolderLike): DF.DriveM<DriveDetails> => {
@@ -116,7 +116,7 @@ const onFoundInCacheFolderLike = (path: string) =>
 
 const onNotFoundInCache = (path: string) =>
   (
-    validPart: ICloudDriveCacheEntity[],
+    validPart: CacheEntity[],
     rest: NA.NonEmptyArray<string>,
   ) => {
     // logger.debug(`onNotFoundInCache: validPart: ${validPart.map(_ => _.content.drivewsid)}, rest: ${rest}`)
@@ -250,50 +250,51 @@ const getCachedItem = (path: string) => {
     )
   } */
 
-const onFilePathSame = (
-  item: DriveItemDetails,
-): DF.DriveM<DriveDetails | DriveChildrenItemFile> =>
-  pipe(
-    // DF.readEnv,
-    DF.putItems([item]),
-    log('onFilePathSame'),
-    SRTE.map(() => item),
-    SRTE.chain(DF.ensureDetails),
-  )
+// const onFilePathSame = (
+//   item: DriveItemDetails,
+// ): DF.DriveM<DriveDetails | DriveChildrenItemFile> =>
+//   pipe(
+//     // DF.readEnv,
+//     DF.putItems([item]),
+//     log('onFilePathSame'),
+//     SRTE.map(() => item),
+//     SRTE.chain(DF.ensureDetails),
+//   )
 
-const onFoundInCacheFile = (path: string) =>
-  (entity: CacheEntityFile): DF.DriveM<DriveDetails | DriveChildrenItemFile> => {
-    logger.debug('onFoundInCacheFile')
+// const onFoundInCacheFile = (path: string) =>
+//   (entity: CacheEntityFile): DF.DriveM<DriveDetails | DriveChildrenItemFile> => {
+//     logger.debug('onFoundInCacheFile')
 
-    const res = pipe(
-      DF.readEnv,
-      SRTE.bind(
-        'details',
-        ({ api }) => SRTE.fromTaskEither(api.retrieveItemDetailsE(entity.content.drivewsid)),
-      ),
-      SRTE.bind('hierarchy', ({ details, cache }) =>
-        SRTE.fromEither(pipe(
-          E.Do,
-          E.bind('cachedHierarchy', () => cache.getCachedHierarchyById(entity.content.drivewsid)),
-          E.map(({ cachedHierarchy }) =>
-            compareItemWithHierarchy(
-              { ...entity.content, hierarchy: cachedHierarchy },
-              details,
-            )
-          ),
-        ))),
-      SRTE.chain(({ hierarchy, details, cache }) =>
-        hierarchy.newPath == hierarchy.oldPath
-          ? pipe(
-            onFilePathSame(details),
-          )
-          : pipe(
-            // SRTE.of(constVoid),
-            // log(`path updated: ${hierarchy.oldPath} -> ${hierarchy.newPath}`),
-            onFilePathChanged(path)(),
-          )
-      ),
-    )
+//     const res = pipe(
+//       DF.readEnv,
+//       SRTE.bind(
+//         'details',
+//         ({ api }) => SRTE.fromTaskEither(api.retrieveItemDetailsE(entity.content.drivewsid)),
+//       ),
+//       SRTE.bind('hierarchy', ({ details, cache }) =>
+//         SRTE.fromEither(pipe(
+//           E.Do,
+//           E.bind('cachedHierarchy', () => cache.getCachedHierarchyById(entity.content.drivewsid)),
+//           E.map(({ cachedHierarchy }) =>
+//             compareItemWithHierarchy(
+//               { ...entity.content, hierarchy: cachedHierarchy },
+//               details,
+//             )
+//           ),
+//         ))),
+//       SRTE.chain(({ hierarchy, details, cache }) =>
+//         hierarchy.newPath == hierarchy.oldPath
+//           ? pipe(
+//             // onFilePathSame(details),
+//             onFilePathChanged(path)(),
+//           )
+//           : pipe(
+//             // SRTE.of(constVoid),
+//             // log(`path updated: ${hierarchy.oldPath} -> ${hierarchy.newPath}`),
+//             onFilePathChanged(path)(),
+//           )
+//       ),
+//     )
 
-    return res
-  }
+//     return res
+//   }

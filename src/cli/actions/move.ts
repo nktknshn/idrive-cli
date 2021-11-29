@@ -39,15 +39,18 @@ export const move = ({
   dstpath: string
 }) => {
   return cliAction(
-    { sessionFile, cacheFile, noCache, dontSaveCache: true },
+    { sessionFile, cacheFile, noCache },
     ({ cache, api }) => {
+      const nsrc = normalizePath(srcpath)
+      const ndst = normalizePath(dstpath)
+
       const res = pipe(
         // DF.readEnv,
         DF.Do,
-        SRTE.bind('srcitem', () => DF.ls(normalizePath(srcpath))),
+        SRTE.bind('srcitem', () => DF.ls(nsrc)),
         SRTE.bind('dstitem', () =>
           pipe(
-            DF.ls(normalizePath(dstpath)),
+            DF.ls(ndst),
             SRTE.filterOrElse(isFolderLike, () => err(`dstpath is not a folder`)),
           )),
         SRTE.chain(({ srcitem, dstitem }) =>

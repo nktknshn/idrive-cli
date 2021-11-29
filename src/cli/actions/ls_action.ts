@@ -2,17 +2,19 @@ import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import * as B from 'fp-ts/lib/boolean'
 import * as E from 'fp-ts/lib/Either'
-import { constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
+import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
+import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { fst, snd } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { Cache } from '../../icloud/drive/cache/Cache'
 import { isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
-import { CacheEntityFile, CacheEntityFolderLike, ICloudDriveCacheEntity } from '../../icloud/drive/cache/types'
+import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../icloud/drive/cache/types'
 import { DriveApi } from '../../icloud/drive/drive-api'
-import { lss } from '../../icloud/drive/drivef/lss'
+import { lss, lssMaybe } from '../../icloud/drive/drivef/lss'
 import * as DF from '../../icloud/drive/fdrive'
 import { fileName } from '../../icloud/drive/helpers'
 import {
@@ -63,37 +65,6 @@ const formatDate = (date: Date | string) =>
   )
 
 type OutputGenerator = Generator<string, void, unknown>
-/*
-const showItemRowGenerator = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  function*(item: DriveChildrenItem): OutputGenerator {
-    yield item.etag
-    if (item.type === 'FILE') {
-      yield formatDate(item.dateModified)
-      if (showDrivewsid) {
-        yield item.drivewsid
-      }
-      if (showDocwsid) {
-        yield item.docwsid
-      }
-      yield String(item.size)
-      yield fileName(item)
-    }
-    else {
-      yield item.etag
-      yield formatDate(item.dateCreated)
-      if (showDrivewsid) {
-        yield item.drivewsid
-      }
-      if (showDocwsid) {
-        yield item.docwsid
-      }
-      yield item.type
-      yield fileName(item)
-    }
-  }
-
-const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  showItemRowGenerator({ showDrivewsid = false, showDocwsid = false } = {}) */
 
 const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (item: DriveChildrenItem) =>
@@ -141,20 +112,24 @@ export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}
 
 export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (result: DriveDetails) =>
-    [
-      ['name', showFilename(result)],
-      ['dateCreated', formatDate(result.dateCreated)],
-      ['drivewsid', result.drivewsid],
-      ['docwsid', result.docwsid],
-      ['etag', result.etag],
-      ['extension', result.extension],
-      ['parentId', isRootDetails(result) ? '' : result.parentId],
-      [],
-      // ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
-      // ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
-    ]
-      .map(_ => _.join(':\t'))
-      .join('\n')
+    pipe(
+      [
+        ['name', showFilename(result)],
+        ['dateCreated', formatDate(result.dateCreated)],
+        ['drivewsid', result.drivewsid],
+        ['docwsid', result.docwsid],
+        ['etag', result.etag],
+        !!result.extension && ['extension', result.extension],
+        !isRootDetails(result) && ['parentId', result.parentId],
+        // ['extensions', result.type === 'APP_LIBRARY' ? result.supportedExtensions : ''],
+        // ['types', result.type === 'APP_LIBRARY' ? result.supportedTypes : ''],
+        [],
+        // ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
+        // ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
+      ],
+      A.filter(not(<T>(v: T | false): v is false => !v)),
+      A.map(_ => _.join(':\t')),
+    ).join('\n')
 
 const ordByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
 const ordByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)
@@ -168,16 +143,16 @@ export const showDetailsInfo = (
     path: string
   },
 ) =>
-  (result: DriveDetails) =>
+  (details: DriveDetails) =>
     string.Monoid.concat(
       pipe(
-        result,
+        details,
         O.fromPredicate(() => printFolderInfo),
         O.map(showFolderInfo({ showDrivewsid, showDocwsid })),
         O.fold(constant(string.empty), identity),
       ),
       pipe(
-        result.items,
+        details.items,
         A.sortBy([ordByType, ordByName]),
         A.map(fullPath ? showWithFullPath(path) : showItemRow({ showDrivewsid, showDocwsid })),
         _ => _.join('\n'),
@@ -239,9 +214,9 @@ const showRecursive = ({ ident = 0 }) =>
   }
 
 export const listUnixPath = (
-  { sessionFile, cacheFile, path, raw, noCache, fullPath, recursive, depth, listInfo, update }: Env & {
+  { sessionFile, cacheFile, paths, raw, noCache, fullPath, recursive, depth, listInfo, update }: Env & {
     recursive: boolean
-    path: string
+    paths: string[]
     fullPath: boolean
     listInfo: boolean
     update: boolean
@@ -250,42 +225,41 @@ export const listUnixPath = (
 ): TE.TaskEither<ErrorOutput, Output> => {
   if (recursive) {
     return cliAction(
-      { sessionFile, cacheFile, noCache, dontSaveCache: true },
+      { sessionFile, cacheFile, noCache },
       ({ cache, api }) =>
         pipe(
-          DF.getFolderRecursive(path, depth)(cache)(api),
+          DF.getFolderRecursive(paths[0], depth)(cache)(api),
           noCache
             ? TE.chainFirst(() => TE.of(constVoid()))
             : TE.chainFirst(([item, cache]) => Cache.trySaveFile(cache, cacheFile)),
           TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
-          // TE.map(_ => JSON.stringify(_)),
-          // TE.map(raw ? showRaw : showDetails({ path, fullPath })),
         ),
     )
   }
 
   const opts = { showDocwsid: false, showDrivewsid: listInfo }
+  const npaths = paths.map(normalizePath)
 
   return cliAction(
-    { sessionFile, cacheFile, noCache, dontSaveCache: true },
+    { sessionFile, cacheFile, noCache },
     ({ cache, api }) => {
       const res = pipe(
-        lss([normalizePath(path)]),
-        f => f(cache)(api),
-        !noCache
-          ? TE.chainFirst(([items, cache]) => Cache.trySaveFile(cache, cacheFile))
-          : TE.chainFirst(() => TE.of(constVoid())),
-        TE.map(([items, cache]) =>
-          pipe(
-            items,
-            A.map(item =>
+        lssMaybe(npaths),
+        DF.saveCacheFirst(cacheFile),
+        SRTE.map(
+          flow(
+            A.zip(npaths),
+            A.map(([item, path]) =>
               isFolderDetails(item)
                 ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
                 : showFileInfo({ ...opts })(item)
             ),
             _ => _.join('\n\n'),
-          )
+          ),
         ),
+        apply(cache),
+        apply(api),
+        TE.map(fst),
       )
 
       return res

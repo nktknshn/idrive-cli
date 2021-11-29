@@ -12,11 +12,12 @@ import { input } from '../../lib/input'
 import { apiLogger, logger, logReturnAs } from '../../lib/logging'
 import { ResponseWithSession } from '../../lib/response-reducer'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
-import { zipIds } from './helpers'
+import { getMissedFound } from './helpers'
 import { download, retrieveHierarchy, retrieveItemDetails } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
 import { moveItems } from './requests/moveItems'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
+import { renameItems, RenameResponse } from './requests/rename'
 import {
   retrieveItemDetailsInFolders,
   retrieveItemDetailsInFoldersHierarchy,
@@ -148,6 +149,21 @@ export class DriveApi {
     )
   }
 
+  public renameItems = (items: {
+    drivewsid: string
+    etag: string
+    name: string
+    extension?: string
+  }[]): TE.TaskEither<Error, RenameResponse> => {
+    // logger.debug(`retrieveItemDetailsInFolders: ${drivewsids}`)
+
+    return pipe(
+      this.retryingWithSession(
+        () => renameItems(this.client, this.session, { items }),
+      ),
+    )
+  }
+
   public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (DriveDetails | InvalidId)[]> => {
     // logger.debug(`retrieveItemDetailsInFolders: ${drivewsids}`)
 
@@ -164,7 +180,7 @@ export class DriveApi {
   }> => {
     return pipe(
       this.retrieveItemDetailsInFolders(drivewsids),
-      TE.map(ds => zipIds(drivewsids, ds)),
+      TE.map(ds => getMissedFound(drivewsids, ds)),
     )
   }
 
@@ -199,7 +215,7 @@ export class DriveApi {
   public retrieveItemDetailsInFoldersHierarchies = (
     drivewsids: string[],
   ): TE.TaskEither<Error, (DriveDetailsWithHierarchy | InvalidId)[]> => {
-    logger.debug(`retrieveItemDetailsInFoldersHierarchy: ${drivewsids}`)
+    logger.debug(`retrieveItemDetailsInFoldersHierarchy: [${drivewsids}]`)
 
     return pipe(
       this.retryingWithSession(() => retrieveItemDetailsInFoldersHierarchy(this.client, this.session, { drivewsids })),
@@ -214,7 +230,7 @@ export class DriveApi {
   public retrieveItemDetailsInFoldersHierarchiesS = (drivewsids: string[]) =>
     pipe(
       this.retrieveItemDetailsInFoldersHierarchies(drivewsids),
-      TE.map(ds => zipIds(drivewsids, ds)),
+      TE.map(ds => getMissedFound(drivewsids, ds)),
     )
 
   public retrieveItemDetailsInFoldersHierarchiesE = flow(
@@ -245,6 +261,23 @@ export class DriveApi {
     return pipe(
       this.retryingWithSession(
         () => retrieveItemDetails(this.client, this.session, { drivewsids }),
+      ),
+    )
+  }
+
+  public retrieveItemsDetailsO = (drivewsids: string[]): TE.TaskEither<Error, O.Option<DriveItemDetails>[]> => {
+    return pipe(
+      this.retrieveItemsDetails(drivewsids),
+      TE.map(details =>
+        pipe(
+          drivewsids,
+          A.map(drivewsid =>
+            pipe(
+              details.items,
+              A.findFirst(_ => _.drivewsid == drivewsid),
+            )
+          ),
+        )
       ),
     )
   }
