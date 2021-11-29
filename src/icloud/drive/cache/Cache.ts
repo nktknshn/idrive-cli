@@ -6,15 +6,18 @@ import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { partial } from 'io-ts'
+import { NormalizedPath } from '../../../cli/actions/helpers'
 import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logger, logReturn } from '../../../lib/logging'
-import { MissinRootError } from '../errors'
+import { ItemIsNotFolder, MissinRootError } from '../errors'
 import { fileName, parsePath } from '../helpers'
 import {
   asOption,
   DriveChildrenItem,
+  DriveChildrenItemFile,
   DriveDetails,
   DriveDetailsAppLibrary,
   DriveDetailsFolder,
@@ -45,11 +48,14 @@ import {
   CacheEntity,
   CacheEntityAppLibrary,
   CacheEntityAppLibraryDetails,
+  CacheEntityDetails,
+  CacheEntityFile,
   CacheEntityFolderDetails,
   CacheEntityFolderLike as CacheEntityFolderLike,
   CacheEntityFolderRootDetails,
   CacheF,
 } from './types'
+import { FullyCached, partialPath, PartialyCached } from './validatePath'
 
 export class Cache {
   private readonly cache: CacheF
@@ -321,6 +327,69 @@ export class Cache {
         _.valid
           ? { validPart: _.entities, rest: [] }
           : { validPart: _.validPart, rest: _.rest },
+    )
+  }
+
+  getByPathV3 = (
+    path: NormalizedPath,
+  ): {
+    readonly tag: 'full'
+    path: NA.NonEmptyArray<DriveDetails>
+    file: O.Option<DriveChildrenItemFile>
+  } | PartialyCached => {
+    const validateValid = (
+      entities: NA.NonEmptyArray<CacheEntityDetails | CacheEntityFile>,
+    ): FullyCached | PartialyCached => {
+      const initPath = NA.init(entities)
+      const target = NA.last(entities)
+
+      const validPath = pipe(initPath, A.takeLeftWhile(isDetailsCacheEntity))
+
+      if (A.isNonEmpty(validPath) && validPath.length == initPath.length) {
+        return { tag: 'full', path: pipe(validPath, NA.map(_ => _.content)), target: target.content }
+      }
+      else {
+        return pipe(
+          validPath,
+          A.matchW(
+            () =>
+              partialPath(
+                ItemIsNotFolder.create(`item is not folder or mising details`),
+                [],
+                pipe(entities, NA.map(_ => fileName(_.content))),
+              ),
+            (validPath) =>
+              partialPath(
+                ItemIsNotFolder.create(`item is not folder or mising details`),
+                pipe(validPath, A.map(_ => _.content)),
+                pipe(entities, A.dropLeft(validPath.length), A.map(_ => fileName(_.content))) as NA.NonEmptyArray<
+                  string
+                >,
+              ),
+          ),
+        )
+      }
+    }
+
+    const validate = (p: PartialValidPath) => {
+      if (p.valid) {
+        return validateValid(p.entities)
+      }
+
+      return partialPath(err(`doesnt matter`), pipe(p.validPart, A.map(_ => _.content)), p.rest)
+    }
+
+    return pipe(
+      this.getByPathV(path),
+      validate,
+      p =>
+        p.tag === 'full'
+          ? {
+            tag: 'full' as const,
+            path: p.target.type === 'FILE' ? p.path : NA.concat(p.path, NA.of(p.target)),
+            file: p.target.type === 'FILE' ? O.some(p.target) : O.none,
+          }
+          : p,
     )
   }
 

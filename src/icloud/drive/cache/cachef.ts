@@ -29,6 +29,7 @@ import {
   InvalidId,
   isFolderDetails,
   isFolderLike,
+  isFolderLikeItem,
   isRootDetails,
 } from '../types'
 import { hierarchyRoot, hierarchyTrash, rootDrivewsid, trashDrivewsid } from '../types-io'
@@ -38,7 +39,6 @@ import {
   CacheEntityAppLibrary,
   CacheEntityAppLibraryDetails,
   CacheEntityAppLibraryItem,
-  CacheEntityDetails,
   CacheEntityFile,
   CacheEntityFolderDetails,
   CacheEntityFolderItem,
@@ -243,18 +243,22 @@ const getParent = (parentId: string) =>
       E.chain(assertFolderWithDetailsEntity),
     )
 
-export type PartialValidPath<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityFolderLike> =
-  | {
-    valid: true
-    entities: NA.NonEmptyArray<T>
-    last: T
-  }
-  | {
-    valid: false
-    validPart: F[]
-    rest: NA.NonEmptyArray<string>
-    error: Error
-  }
+type PartialValidPathValid<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityDetails> = {
+  valid: true
+  entities: NA.NonEmptyArray<T>
+  last: T
+}
+
+export type PartialValidPathInvalid<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityDetails> = {
+  valid: false
+  validPart: F[]
+  rest: NA.NonEmptyArray<string>
+  error: Error
+}
+
+export type PartialValidPath<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityDetails> =
+  | PartialValidPathValid<T, F>
+  | PartialValidPathInvalid<T, F>
 
 /*
   valid path is a sequence of details with the last element being and item
@@ -263,7 +267,7 @@ export const isNonEmpty = <T>(as: T[]): as is NA.NonEmptyArray<T> => as.length >
 
 export const getPartialValidPath = (
   path: string[],
-  parentEntity: CacheEntityFolderDetails,
+  parentEntity: CacheEntityDetails,
 ) =>
   (cache: CacheF): PartialValidPath => {
     cacheLogger.debug(
@@ -296,8 +300,13 @@ export const getPartialValidPath = (
           NA.last(p.entities),
           assertFolderWithDetailsEntity,
           E.chain(parent => getItem(parent, name)),
+          E.chain(item =>
+            isFolderLikeCacheEntity(item)
+              ? pipe(getFolderDetailsByIdE(item.content.drivewsid)(cache))
+              : E.of<Error, CacheEntityFile | CacheEntityDetails>(item)
+          ),
           E.map(item =>
-            NA.getSemigroup<CacheEntityFile | CacheEntityFolderLike>()
+            NA.getSemigroup<CacheEntityFile | CacheEntityDetails>()
               .concat(p.entities, NA.of(item))
           ),
           E.fold(
@@ -311,7 +320,7 @@ export const getPartialValidPath = (
                     : pipe(path, A.dropLeft(p.entities.length - 1))) as NA.NonEmptyArray<string>,
                   validPart: (ItemIsNotFolder.is(e) || FolderLikeMissingDetailsError.is(e)
                     ? pipe(p.entities, A.dropRight(1))
-                    : p.entities) as NA.NonEmptyArray<CacheEntityFolderLike>,
+                    : p.entities) as NA.NonEmptyArray<CacheEntityDetails>,
                 },
               ),
             (path): PartialValidPath => ({
@@ -366,6 +375,8 @@ export const isRootCacheEntity = (
 export const isFolderLikeCacheEntity = (
   entity: CacheEntity,
 ): entity is CacheEntityFolderLike => isFolderLikeType(entity.type)
+
+export type CacheEntityDetails = CacheEntityFolderRootDetails | CacheEntityFolderDetails | CacheEntityAppLibraryDetails
 
 export const isDetailsCacheEntity = (
   entity: CacheEntity,

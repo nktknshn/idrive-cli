@@ -8,13 +8,16 @@ import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { fst, snd } from 'fp-ts/lib/Tuple'
 import { hierarchyToPath, itemWithHierarchyToPath, NormalizedPath } from '../../../cli/actions/helpers'
 import { err } from '../../../lib/errors'
+import { modifySubset, modifySubsetDF } from '../../../lib/helpers/projectIndexes'
 import { logf, logg, logger, logReturn, logReturnAs, logReturnS } from '../../../lib/logging'
 import { cast, Path } from '../../../lib/util'
 import { Cache } from '../cache/Cache'
 import * as C from '../cache/cachef'
 import { CacheEntity, CacheEntityFolderLike } from '../cache/types'
+import { findInParent } from '../cache/validatePath'
 import { ItemIsNotFolder, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { fileName, recordFromTuples } from '../helpers'
@@ -40,7 +43,7 @@ import { log } from './ls'
 type DetailsOrFile = (DriveDetails | DriveChildrenItemFile)
 
 type ValidatedHierarchy = {
-  validPart: DetailsOrFile[]
+  validPart: NA.NonEmptyArray<DriveDetails>
   rest: string[]
 }
 
@@ -79,14 +82,13 @@ const toActual = (
 }
 
 export const validateHierarchies = (
-  hierarchies: Hierarchy[],
+  hierarchies: DriveDetails[][],
 ): DF.DriveM<ValidatedHierarchy[]> => {
   const drivewsids = pipe(
     hierarchies,
     A.flatten,
     A.uniq(equalsDrivewsId),
     A.map(_ => _.drivewsid),
-    A.filter(isFolderDrivewsid),
   )
 
   return pipe(
@@ -111,40 +113,6 @@ export const validateHierarchies = (
     SRTE.map(logReturnS(res => res.map(showResult).join(', '))),
   )
 }
-
-/* export const validateHierarchiesItem = (
-  hierarchies: Hierarchy[],
-): DF.DriveM<ValidatedHierarchy[]> => {
-  const drivewsids = pipe(
-    hierarchies,
-    A.flatten,
-    A.uniq(equalsDrivewsId),
-    A.map(_ => _.drivewsid),
-    A.filter(isFolderDrivewsid),
-  )
-
-  return pipe(
-    logg(`validateHierarchiesItem: [${hierarchies.map(showHierarchiy)}]`),
-    () =>
-      drivewsids.length > 0
-        ? DF.retrieveItemDetailsInFoldersSaving(drivewsids)
-        : DF.of([]),
-    SRTE.map(ds => A.zip(drivewsids, ds)),
-    SRTE.map(recordFromTuples),
-    SRTE.map(result =>
-      pipe(
-        hierarchies,
-        A.map(hierarchy =>
-          pipe(
-            toActual(hierarchy, result),
-            actualDetails => DF.getValidHierarchyPart(actualDetails, hierarchy),
-          )
-        ),
-      )
-    ),
-    SRTE.map(logReturnS(res => res.map(showResult).join(', '))),
-  )
-} */
 
 const getPath = (
   path: NormalizedPath,
@@ -171,14 +139,6 @@ const getPath = (
           ),
     ),
   )
-
-  // return pipe(
-  //   validPart,
-  //   A.matchRight(
-  //     () => DF.getActual(path),
-  //     (_, last) => DF.getActualRelative(rest, last),
-  //   ),
-  // )
 }
 
 export const validateCachedPaths = (
@@ -219,16 +179,64 @@ export const validateCachedPaths = (
 // C.getPartialValidPath
 
 // type PartialPath = C.PartialValidPath<DetailsOrFile, DriveDetails>
+type R = [{
+  validPart: NA.NonEmptyArray<DriveDetails>
+  rest: NA.NonEmptyArray<string>
+}, NormalizedPath]
+
+const retrivePartials = (
+  partials: NA.NonEmptyArray<{
+    validPart: NA.NonEmptyArray<DriveDetails>
+    rest: NA.NonEmptyArray<string>
+  }>,
+): DF.DriveM<O.Option<DetailsOrFile>[]> => {
+  const parents = pipe(
+    partials,
+    NA.map(_ => NA.last(_.validPart)),
+    // NA.map(_ => ({ parent: NA.last(_.validPart), rest: _.rest })),
+  )
+
+  const drivewsids = pipe(parents, NA.map(_ => _.drivewsid))
+
+  pipe(
+    partials,
+    NA.map(_ => findInParent(NA.last(_.validPart), NA.head(_.rest))),
+  )
+}
+
+const getActuals = (results: [ValidatedHierarchy, NormalizedPath][]): DF.DriveM<
+  O.Option<DetailsOrFile>[]
+> => {
+  pipe(
+    modifySubsetDF(
+      results,
+      (res): res is R => res[0].rest.length > 0,
+      (subset: R[]) => {
+        const partials = pipe(
+          subset,
+          A.map(fst),
+          // A.map(_ => _.validPart),
+        )
+
+        pipe(
+          partials,
+          A.match(() => DF.of([]), retrivePartials),
+        )
+      },
+    ),
+  )
+}
 
 export const getByPaths = (
   paths: NormalizedPath[],
-): DF.DriveM<DetailsOrFile[]> => {
+): DF.DriveM<O.Option<DetailsOrFile>[]> => {
   const res = pipe(
     logg(`getByPath. ${paths}`),
     () => validateCachedPaths(paths),
     SRTE.map(A.zip(paths)),
-    SRTE.map(A.map(([{ rest, validPart }, path]) => getPath(path, validPart, rest))),
-    SRTE.chain(SRTE.sequenceArray),
+    SRTE.chain(getActuals),
+    // SRTE.map(A.map(([{ rest, validPart }, path]) => getPath(path, validPart, rest))),
+    // SRTE.chain(SRTE.sequenceArray),
     SRTE.map(RA.toArray),
   )
 

@@ -3,7 +3,6 @@ import { apS, getApplySemigroup, sequenceS, sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
-import { Functor, Functor1, map } from 'fp-ts/lib/Functor'
 import { URIS } from 'fp-ts/lib/HKT'
 import * as J from 'fp-ts/lib/Json'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
@@ -106,6 +105,8 @@ export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
 export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
 export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> => SRTE.fromTaskEither(te)
 export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => SRTE.fromOption(f)(opt)
+
+export const map = SRTE.map
 
 export const logS = flow(logReturnS, SRTE.map)
 

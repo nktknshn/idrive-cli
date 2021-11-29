@@ -6,6 +6,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
+import { normalizePath } from './cli/actions/helpers'
 import { defaultCacheFile } from './config'
 import * as Cache from './icloud/drive/cache/Cache'
 import * as C from './icloud/drive/cache/cachef'
@@ -66,34 +67,9 @@ async function main() {
             isDrivewsid(argv.path)
               ? cache.getByIdWithPath(argv.path)
               : pipe(
-                parsePath(argv.path),
-                ([, ...path]) =>
-                  pipe(
-                    cache.getRootE(),
-                    E.map(root =>
-                      pipe(
-                        cache.get(),
-                        C.getPartialValidPath(path, root),
-                      )
-                    ),
-                  ),
+                normalizePath(argv.path),
+                cache.getByPathV3,
                 logReturnAs('result'),
-                E.map(r =>
-                  r.valid
-                    ? r.entities.map(_ => ({
-                      hasDetails: _.hasDetails,
-                      name: fileName(_.content),
-                      drivewsid: _.content.drivewsid,
-                    }))
-                    : [
-                      r.validPart.map(_ => ({
-                        hasDetails: _.hasDetails,
-                        name: fileName(_.content),
-                        drivewsid: _.content.drivewsid,
-                      })),
-                      r.rest,
-                    ]
-                ),
               ),
           )
         ),

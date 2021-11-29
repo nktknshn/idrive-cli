@@ -14,7 +14,7 @@ import { Cache } from '../../icloud/drive/cache/Cache'
 import { isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
 import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../icloud/drive/cache/types'
 import { DriveApi } from '../../icloud/drive/drive-api'
-import { lss, lssMaybe } from '../../icloud/drive/drivef/lss'
+import { lss } from '../../icloud/drive/drivef/lss'
 import * as DF from '../../icloud/drive/fdrive'
 import { fileName } from '../../icloud/drive/helpers'
 import {
@@ -244,7 +244,7 @@ export const listUnixPath = (
     { sessionFile, cacheFile, noCache },
     ({ cache, api }) => {
       const res = pipe(
-        lssMaybe(npaths),
+        lss(npaths),
         DF.saveCacheFirst(cacheFile),
         SRTE.map(
           flow(
