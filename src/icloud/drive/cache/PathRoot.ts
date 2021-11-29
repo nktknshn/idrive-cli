@@ -1,14 +1,21 @@
 import * as B from 'fp-ts/boolean'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath } from '../../../cli/actions/helpers'
-import { NotFoundError } from '../errors'
+import { ItemIsNotFolder, NotFoundError } from '../errors'
 import { fileName, parsePath } from '../helpers'
-import { DriveChildrenItem, DriveDetails, DriveDetailsRoot } from '../types'
-import { getRoot } from './cachef'
+import {
+  DriveChildrenItem,
+  DriveChildrenItemFile,
+  DriveDetails,
+  DriveDetailsRoot,
+  isFolderDetails,
+  isFolderLike,
+} from '../types'
+import * as C from './cachef'
 import { CacheF } from './types'
 
 // points root
@@ -58,7 +65,7 @@ const pileIsDone = <A, B>(
   pile: TwoPiles<A, B>,
 ): pile is { left: NA.NonEmptyArray<A>; right: [] } => pile.right.length == 0
 
-const matchPiles = <A, B, C1, C2, C3>(
+const matchPilesW = <A, B, C1, C2, C3>(
   onThird: (right: NA.NonEmptyArray<B>) => C3,
   onSecond: (left: NA.NonEmptyArray<A>, right: NA.NonEmptyArray<B>) => C2,
   onFirst: (left: NA.NonEmptyArray<A>) => C1,
@@ -80,12 +87,34 @@ const chipPile = <A, B>(f: (r: B) => A) =>
   ): TwoPiles<A, B> =>
     pipe(
       pile,
-      matchPiles(
+      matchPilesW(
         (right): TwoPiles<A, B> => ({ left: NA.of(f(NA.head(right))), right: NA.tail(right) }),
         (left, right): TwoPiles<A, B> => ({
           left: NA.concat(
             left,
             NA.of(f(NA.head(right))),
+          ),
+          right: NA.tail(right),
+        }),
+        (left): TwoPiles<A, B> => pile,
+      ),
+    )
+
+const chipOption = <A, B>(f: (l: O.Option<A>, r: B) => A) =>
+  (
+    pile: TwoPiles<A, B>,
+  ): TwoPiles<A, B> =>
+    pipe(
+      pile,
+      matchPilesW(
+        (right): TwoPiles<A, B> => ({
+          left: NA.of(f(O.none, NA.head(right))),
+          right: NA.tail(right),
+        }),
+        (left, right): TwoPiles<A, B> => ({
+          left: NA.concat(
+            left,
+            NA.of(f(O.some(NA.last(left)), NA.head(right))),
           ),
           right: NA.tail(right),
         }),
@@ -109,7 +138,7 @@ function validatePath(
   const caseRoot = (): PathRoot | ZeroCached => {
     return pipe(
       cache,
-      getRoot(),
+      C.getRoot(),
       E.foldW(
         (): ZeroCached => ({ tag: 'zero' }),
         (root): PathRoot => ({ tag: 'root', root: root.content }),
@@ -122,19 +151,103 @@ function validatePath(
     rest: NA.NonEmptyArray<string>,
   ): FullyCached | PartialyCached => {
     pipe(
-      pileOf(rest),
-      matchPiles(),
+      iterate(root, pileOf(rest)),
     )
   }
 
+  type Pile = TwoPiles<DriveDetails, string>
+
   const iterate = (
     root: DriveDetailsRoot,
-    pile: TwoPiles<DriveDetails, string>,
-  ): TwoPiles<DriveDetails, string> => {
-    pipe(
+    pile: Pile,
+  ): E.Either<Result, Pile> => {
+    const lookupItem = (parent: DriveDetails, subItem: string) => {
+      return pipe(
+        findInParent(parent, subItem),
+        E.fromOption(() => NotFoundError.createTemplate(subItem, root.drivewsid)),
+        E.chain(item =>
+          isFolderLike(item)
+            ? pipe(
+              cache,
+              C.getByIdE(item.drivewsid),
+              E.map(_ => _.content),
+              E.chain(C.assertFolderWithDetails),
+            )
+            : E.of<Error, DriveDetails | DriveChildrenItemFile>(item)
+        ),
+      )
+    }
+
+    const res: E.Either<Result, Pile> = pipe(
       pile,
-      chipPile(),
+      matchPilesW(
+        (rest): E.Either<PartialyCached | FullyCached, Pile> => {
+          // lookup in root
+          const subItem = NA.head(rest)
+          const rest_ = NA.tail(rest)
+
+          return pipe(
+            lookupItem(root, subItem),
+            E.mapLeft(
+              (error): PartialyCached => ({ tag: 'partial', root, error, path: [], rest }),
+            ),
+            E.chain(item =>
+              pipe(
+                rest_,
+                A.matchW(
+                  (): E.Either<PartialyCached | FullyCached, Pile> =>
+                    E.left({ tag: 'full', root, path: [], target: item } as FullyCached),
+                  (rest): E.Either<PartialyCached, Pile> =>
+                    pipe(
+                      C.assertFolderWithDetails(item),
+                      E.mapLeft((error): PartialyCached => ({ tag: 'partial', root, error, path: [], rest })),
+                      E.map(item => pipe(pile, chipPile(() => item))),
+                    ),
+                ),
+              )
+            ),
+          )
+        },
+        (path, rest): E.Either<PartialyCached | FullyCached, Pile> => {
+          // lookup in last details
+          const subItem = NA.head(rest)
+          const rest_ = NA.tail(rest)
+
+          return pipe(
+            lookupItem(NA.last(path), subItem),
+            E.mapLeft(
+              (error): PartialyCached => ({ tag: 'partial', root, error, path, rest }),
+            ),
+            E.chain(item =>
+              pipe(
+                rest_,
+                A.matchW(
+                  (): E.Either<PartialyCached | FullyCached, Pile> =>
+                    E.left({ tag: 'full', root, path, target: item } as FullyCached),
+                  (rest): E.Either<PartialyCached, Pile> =>
+                    pipe(
+                      C.assertFolderWithDetails(item),
+                      E.mapLeft((error): PartialyCached => ({ tag: 'partial', root, error, path, rest })),
+                      E.map(item => pipe(pile, chipPile(() => item))),
+                    ),
+                ),
+              )
+            ),
+          )
+        },
+        (details) => {
+          const path: FullyCached = {
+            tag: 'full',
+            root,
+            path: NA.init(details),
+            target: NA.last(details),
+          }
+          return E.left(path)
+        },
+      ),
     )
+
+    return res
   }
 
   pipe(

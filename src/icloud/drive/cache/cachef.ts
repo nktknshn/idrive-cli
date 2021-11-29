@@ -28,6 +28,7 @@ import {
   HierarchyEntry,
   InvalidId,
   isFolderDetails,
+  isFolderLike,
   isRootDetails,
 } from '../types'
 import { hierarchyRoot, hierarchyTrash, rootDrivewsid, trashDrivewsid } from '../types-io'
@@ -145,7 +146,7 @@ export const extractCacheById = (drivewsid: string) =>
     )
   }
 
-const getHierarchyById = (drivewsid: string) =>
+export const getHierarchyById = (drivewsid: string) =>
   (cache: CacheF): E.Either<Error, Hierarchy> => {
     const h: Hierarchy = []
 
@@ -201,13 +202,25 @@ export const getRootO = () =>
       O.fromEither,
     )
 
-const assertFolderWithDetails = (entity: CacheEntity): E.Either<Error, CacheEntityDetails> =>
+export const assertFolderWithDetailsEntity = (entity: CacheEntity): E.Either<Error, CacheEntityDetails> =>
   pipe(
     E.of(entity),
     E.filterOrElse(isFolderLikeCacheEntity, p =>
       ItemIsNotFolder.create(`assertFolderWithDetails: ${p.content.drivewsid} is not a folder`)),
     E.filterOrElse(isDetailsCacheEntity, p =>
       FolderLikeMissingDetailsError.create(`${p.content.drivewsid} is missing details`)),
+  )
+
+export const assertFolderWithDetails = (
+  entity: DriveDetails | DriveChildrenItem,
+): E.Either<Error, DriveDetails> =>
+  pipe(
+    E.of(entity),
+    E.filterOrElse(
+      isFolderLike,
+      p => ItemIsNotFolder.create(`assertFolderWithDetails: ${p.drivewsid} is not a folder`),
+    ),
+    E.filterOrElse(isFolderDetails, p => FolderLikeMissingDetailsError.create(`${p.drivewsid} is missing details`)),
   )
 
 const getSubItemByName = (
@@ -227,7 +240,7 @@ const getParent = (parentId: string) =>
       cache,
       getById(parentId),
       E.fromOption(() => err(`zipPathWithItems: missing parent`)),
-      E.chain(assertFolderWithDetails),
+      E.chain(assertFolderWithDetailsEntity),
     )
 
 export type PartialValidPath<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityFolderLike> =
@@ -281,7 +294,7 @@ export const getPartialValidPath = (
         ? p
         : pipe(
           NA.last(p.entities),
-          assertFolderWithDetails,
+          assertFolderWithDetailsEntity,
           E.chain(parent => getItem(parent, name)),
           E.map(item =>
             NA.getSemigroup<CacheEntityFile | CacheEntityFolderLike>()
@@ -323,7 +336,7 @@ export const getByPath = (path: string) =>
         (index, parentFolder, itemName) =>
           pipe(
             E.Do,
-            E.bind('folder', () => pipe(parentFolder, E.chain(assertFolderWithDetails))),
+            E.bind('folder', () => pipe(parentFolder, E.chain(assertFolderWithDetailsEntity))),
             E.bindW('item', ({ folder }) =>
               pipe(
                 folder.content.items,
@@ -382,12 +395,12 @@ const cacheEntityFromItem = (
     : new CacheEntityAppLibraryItem(item)
 }
 
-const getById = (drivewsid: string) =>
+export const getById = (drivewsid: string) =>
   (cache: CacheF): O.Option<CacheEntity> => {
     return pipe(cache.byDrivewsid, R.lookup(drivewsid))
   }
 
-const getByIdE = (drivewsid: string) =>
+export const getByIdE = (drivewsid: string) =>
   (cache: CacheF): E.Either<Error, CacheEntity> => {
     return pipe(
       cache,
@@ -396,7 +409,7 @@ const getByIdE = (drivewsid: string) =>
     )
   }
 
-const addItems = (items: DriveChildrenItem[]) =>
+export const addItems = (items: DriveChildrenItem[]) =>
   (cache: CacheF): E.Either<Error, CacheF> => {
     return pipe(
       items,
