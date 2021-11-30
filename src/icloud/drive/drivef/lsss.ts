@@ -222,19 +222,25 @@ const retrivePartials = (
   )
 
   const getWhatWasFound = (found: [O.Some<DriveChildrenItem>, [string[], PartialPath]][]): DF.DriveM<LssResult[]> => {
-    // const nextTask = pipe(
-    //   found,
-    //   A.filter(([item, [rest, partial]]) => {
-    //     if (item.value.type === 'FILE') {
-    //       if (A.isNonEmpty(rest)) {
-    //         // this is not valid
-    //       }
-    //       else {
-    //         // this is valid and return the file
-    //       }
-    //     }
-    //   }),
-    // )
+    const handleFiles = (files: [O.Some<DriveChildrenItemFile>, [string[], PartialPath]][]): LssResult[] => {
+      return pipe(
+        files,
+        A.map(([item, [rest, partial]]) =>
+          pipe(
+            rest,
+            A.match(
+              (): LssResult => ({ valid: true, target: item.value }),
+              (rest): LssResult => ({
+                valid: false,
+                error: ItemIsNotFolder.create(`item is not folder`),
+                rest,
+                validPart: partial.validPart,
+              }),
+            ),
+          )
+        ),
+      )
+    }
 
     // filter out files with empty rest - valid
     // filter out files with non empty rest - invalid
@@ -255,14 +261,15 @@ const retrivePartials = (
       return isFolderLikeItem(v[0].value)
     }
 
+    const handleTask = (task: NextTask[]): DF.DriveM<LssResult[]> => {
+    }
+
     if (A.isNonEmpty(found)) {
       modifySubsetDF(
         found,
         isNextTask,
-        (task) => {
-        },
-        (files: [O.Some<DriveChildrenItemFile>, [string[], PartialPath]]) => {
-        },
+        handleTask,
+        handleFiles,
       )
     }
 
