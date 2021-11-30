@@ -190,8 +190,8 @@ export const getRoot = () =>
     pipe(
       cache.byDrivewsid,
       R.lookup(rootDrivewsid),
-      E.fromOption(() => MissinRootError.create(`missing root`)),
-      E.filterOrElse(isRootCacheEntity, () => err('invalid root details')),
+      E.fromOption(() => MissinRootError.create(`getRoot(): missing root`)),
+      E.filterOrElse(isRootCacheEntity, () => err('getRoot(): invalid root details')),
     )
 
 export const getRootO = () =>
@@ -243,13 +243,13 @@ const getParent = (parentId: string) =>
       E.chain(assertFolderWithDetailsEntity),
     )
 
-type PartialValidPathValid<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityDetails> = {
+export type PartialValidPathValid<T = CacheEntityDetails | CacheEntityFile> = {
   valid: true
   entities: NA.NonEmptyArray<T>
   last: T
 }
 
-export type PartialValidPathInvalid<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityDetails> = {
+export type PartialValidPathInvalid<F = CacheEntityDetails> = {
   valid: false
   validPart: F[]
   rest: NA.NonEmptyArray<string>
@@ -257,8 +257,8 @@ export type PartialValidPathInvalid<T = CacheEntityDetails | CacheEntityFile, F 
 }
 
 export type PartialValidPath<T = CacheEntityDetails | CacheEntityFile, F = CacheEntityDetails> =
-  | PartialValidPathValid<T, F>
-  | PartialValidPathInvalid<T, F>
+  | PartialValidPathValid<T>
+  | PartialValidPathInvalid<F>
 
 /*
   valid path is a sequence of details with the last element being and item

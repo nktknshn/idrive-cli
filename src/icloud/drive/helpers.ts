@@ -79,11 +79,7 @@ export const hasName = <
   ]).is(a)
 }
 
-export const fileName = (item: {
-  drivewsid: string
-  name?: string
-  extension?: string
-}) =>
+export const fileName = (item: HasName) =>
   (item.drivewsid === rootDrivewsid)
     ? '/'
     : item.extension

@@ -6,7 +6,10 @@ import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/These'
 import { NEA } from '../../../lib/types'
 import { fileName, hasName } from '../helpers'
-import { DriveDetails, isRootDetails } from '../types'
+import { DriveDetails, DriveDetailsRoot, isRootDetails } from '../types'
+
+export type Hierarchy = [DriveDetailsRoot, ...DriveDetails[]]
+export const isHierarchy = (details: NEA<DriveDetails>): details is Hierarchy => isRootDetails(details[0])
 
 const same = (a: DriveDetails, b: DriveDetails) => {
   if (a.drivewsid !== b.drivewsid) {
@@ -32,46 +35,43 @@ const same = (a: DriveDetails, b: DriveDetails) => {
 
   return true
 }
-export type MaybeValidPath = T.These<NEA<DriveDetails>, NEA<string>>
+export type MaybeValidPath = T.These<Hierarchy, NEA<string>>
 // | { validPart: NEA<DriveDetails>; rest: [] }
 // | { validPart: NEA<DriveDetails>; rest: NEA<string> }
 // | { validPart: DriveDetails[]; rest: NEA<string> }
 
 export const getValidHierarchyPart = (
-  actualDetails: NA.NonEmptyArray<O.Option<DriveDetails>>,
-  cachedHierarchy: NA.NonEmptyArray<DriveDetails>,
-): MaybeValidPath => {
-  const presentDetails = pipe(
-    actualDetails,
+  actualDetails: [DriveDetailsRoot, ...O.Option<DriveDetails>[]],
+  cachedHierarchy: Hierarchy,
+): WithDetails => {
+  const [root, ...rest] = actualDetails
+  const [, ...cachedRest] = cachedHierarchy
+
+  const actualRestDetails = pipe(
+    rest,
     A.takeLeftWhile(O.isSome),
     A.map(_ => _.value),
   )
 
   return pipe(
-    A.zip(presentDetails, cachedHierarchy),
+    A.zip(actualRestDetails, cachedRest),
     A.takeLeftWhile(([a, b]) => same(a, b)),
     _ => ({
-      validPart: A.takeLeft(_.length)(presentDetails),
+      validPart: A.takeLeft(_.length)(actualRestDetails),
       rest: pipe(
-        A.dropLeft(_.length)(cachedHierarchy),
-        A.map(_ => hasName(_) ? fileName(_) : 'ERROR'),
+        A.dropLeft(_.length)(cachedRest),
+        A.map(fileName),
       ),
     }),
-    ({ validPart, rest }) => fromPartAndRest(validPart, rest),
+    ({ validPart, rest }) =>
+      pipe(
+        rest,
+        A.matchW(
+          () => valid([root, ...validPart]),
+          rest => partial([root, ...validPart], rest),
+        ),
+      ),
   )
-}
-
-// TODO: make it overloaded
-export const fromPartAndRest = (validPart: DriveDetails[], rest: string[]): MaybeValidPath => {
-  if (A.isNonEmpty(validPart) && A.isNonEmpty(rest)) {
-    return T.both(validPart, rest)
-  }
-  else if (A.isNonEmpty(validPart)) {
-    return T.left(validPart)
-  }
-  else {
-    return T.right(rest as NEA<string>)
-  }
 }
 
 export const isValid = T.isLeft
@@ -82,9 +82,28 @@ export const isWithRest = (vh: MaybeValidPath): vh is WithRest => T.isBoth(vh) |
 export const isWithDetails = (vh: MaybeValidPath): vh is WithDetails => T.isBoth(vh) || T.isLeft(vh)
 export const isPartial = (vh: MaybeValidPath): vh is Partial => T.isBoth(vh)
 
-export type Partial = T.Both<NEA<DriveDetails>, NEA<string>>
-export type WithRest = T.Both<NEA<DriveDetails>, NEA<string>> | E.Right<NEA<string>>
-export type WithDetails = T.Both<NEA<DriveDetails>, NEA<string>> | E.Left<NEA<DriveDetails>>
-export type Valid = E.Left<NEA<DriveDetails>>
+export type Partial<H = Hierarchy> = T.Both<H, NEA<string>>
+export type WithRest<H = Hierarchy> = T.Both<H, NEA<string>> | E.Right<NEA<string>>
+export type WithDetails<H = Hierarchy> = T.Both<H, NEA<string>> | E.Left<Hierarchy>
+export type Valid<H = Hierarchy> = E.Left<H>
 
-export const partial = (validPart: NEA<DriveDetails>, rest: NEA<string>): Partial => T.both(validPart, rest) as Partial
+export const partial = <H>(validPart: H, rest: NEA<string>): Partial<H> => T.both(validPart, rest) as Partial<H>
+
+export const valid = <H>(validPart: H): Valid<H> => T.left(validPart) as Valid<H>
+
+export const concat = (h: Hierarchy, details: DriveDetails): Hierarchy => NA.concat(h, NA.of(details)) as Hierarchy
+
+const showDetails = (ds: DriveDetails[]) => {
+  return `${ds.map(fileName).join(' → ')}`
+}
+
+export const showMaybeValidPath = (p: MaybeValidPath): string => {
+  return pipe(
+    p,
+    T.match(
+      (details) => `valid: ${showDetails(details)}`,
+      (rest) => `invalid:  rest ${rest}`,
+      (details, rest) => `partial. valid: [${showDetails(details)}], rest: [${rest}]`,
+    ),
+  )
+}

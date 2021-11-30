@@ -1,3 +1,6 @@
+import { fileName, HasName } from './helpers'
+import { DriveChildrenItem, DriveChildrenItemFile } from './types'
+
 export class NotFoundError extends Error {
   static is(e: Error): e is NotFoundError {
     return e instanceof NotFoundError
@@ -19,6 +22,10 @@ export class ItemIsNotFolder extends Error {
 
   static create(message?: string): ItemIsNotFolder {
     return new ItemIsNotFolder(message)
+  }
+
+  static createTemplate(item: HasName): ItemIsNotFolder {
+    return new ItemIsNotFolder(`${item.drivewsid} (${fileName(item)}) is not a folder`)
   }
 }
 

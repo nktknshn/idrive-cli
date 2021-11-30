@@ -104,6 +104,7 @@ export const readEnv = sequenceS(SRTE.Apply)({
 
 export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
 export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
+export const left = <A>(e: Error): DriveM<A> => SRTE.left(e)
 export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> => SRTE.fromTaskEither(te)
 export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => SRTE.fromOption(f)(opt)
 

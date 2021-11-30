@@ -3,6 +3,7 @@ import * as E from 'fp-ts/lib/Either'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
@@ -68,13 +69,14 @@ async function main() {
               ? cache.getByIdWithPath(argv.path)
               : pipe(
                 normalizePath(argv.path),
-                cache.getByPathV3,
-                logReturnAs('result'),
+                cache.getByPathVE,
+                E.fold((e) => `Error: ${e.message}`, Cache.showGetByPathVEResult),
+                // logReturnAs('result'),
               ),
           )
         ),
-        TE.chain(flow(J.stringify, TE.fromEither)),
-        TE.mapLeft(ensureError),
+        // TE.chain(flow(J.stringify, TE.fromEither)),
+        // TE.mapLeft(ensureError),
         TE.fold(printer.errorTask, printer.printTask),
       )()
       break
