@@ -127,11 +127,3 @@ export type ResponseHandler<R, E1 = Error> = (
 ) => (
   ma: TE.TaskEither<E1, HttpResponse>,
 ) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
-// export const expectResponse = <UnexpectedResponse, R>(
-//   f: (httpResponse: HttpResponse, json: JsonEither) => O.Option<R>,
-// ) =>
-//   (httpResponse: HttpResponse, json: JsonEither) =>
-//     pipe(
-//       f(httpResponse, json),
-//       E.fromOption(() => UnexpectedResponse.create(httpResponse, json)),
-//     )

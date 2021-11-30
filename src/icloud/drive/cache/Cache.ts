@@ -346,7 +346,11 @@ export class Cache {
       const validPath = pipe(initPath, A.takeLeftWhile(isDetailsCacheEntity))
 
       if (A.isNonEmpty(validPath) && validPath.length == initPath.length) {
-        return { tag: 'full', path: pipe(validPath, NA.map(_ => _.content)), target: target.content }
+        return {
+          tag: 'full',
+          path: pipe(validPath, NA.map(_ => _.content)),
+          target: target.content,
+        }
       }
       else {
         return pipe(

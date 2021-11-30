@@ -24,6 +24,7 @@
     "logging-ts": "^0.3.4",
     "mime-types": "^2.1.33",
     "monocle-ts": "^2.3.11",
+    "newtype-ts": "^0.3.4",
     "node": "^16.9.1",
     "npm": "^7.24.1",
     "spectacles-ts": "^0.0.8",

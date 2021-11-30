@@ -3752,7 +3752,7 @@
   "resolved" "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz"
   "version" "2.6.2"
 
-"newtype-ts@^0.3.0", "newtype-ts@^0.3.2":
+"newtype-ts@^0.3.0", "newtype-ts@^0.3.2", "newtype-ts@^0.3.4":
   "integrity" "sha512-lFJnWAt0oXX1j1ErNy9RU5+FPNtVyzugHW2MchaaMiOeeS9LEmqAAOqyHPFQ0Uw895jStSYGSCslrByzYxFJYQ=="
   "resolved" "https://registry.npmjs.org/newtype-ts/-/newtype-ts-0.3.4.tgz"
   "version" "0.3.4"

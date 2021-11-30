@@ -139,54 +139,6 @@ const putFoundMissed = ({ found, missed }: {
     SRTE.chain(() => removeByIds(missed)),
   )
 
-const same = (a: HierarchyEntry, b: HierarchyEntry) => {
-  if (a.drivewsid !== b.drivewsid) {
-    return false
-  }
-
-  if (hasName(a) && hasName(b)) {
-    return fileName(a) == fileName(b)
-  }
-
-  // if (
-  //   !isHierarchyItemTrash(a) && !isHierarchyItemRoot(a)
-  //   && !isHierarchyItemTrash(b) && !isHierarchyItemRoot(b)
-  // ) {
-  //   return fileName(a) == fileName(b)
-  // }
-
-  return true
-}
-
-export const getValidHierarchyPart = (
-  actualDetails: NA.NonEmptyArray<O.Option<DriveDetails>>,
-  cachedHierarchy: NA.NonEmptyArray<DriveDetails>,
-): {
-  validPart: DriveDetails[]
-  rest: string[]
-} => {
-  const presentDetails = pipe(
-    actualDetails,
-    A.takeLeftWhile(O.isSome),
-    A.map(_ => _.value),
-  )
-
-  return pipe(
-    A.zip(
-      presentDetails,
-      cachedHierarchy,
-    ),
-    A.takeLeftWhile(([a, b]) => same(a, b)),
-    _ => ({
-      validPart: A.takeLeft(_.length)(presentDetails),
-      rest: pipe(
-        A.dropLeft(_.length)(cachedHierarchy),
-        A.map(_ => hasName(_) ? fileName(_) : 'ERROR'),
-      ),
-    }),
-  )
-}
-
 export const getActualFolder = (path: NormalizedPath) =>
   pipe(
     () => pipe(getFolderByPath(path)),
