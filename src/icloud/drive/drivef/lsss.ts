@@ -32,12 +32,13 @@ import {
   DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
-  Hierarchy,
+  // Hierarchy,
   HierarchyItem,
   isFolderDetails,
   isFolderDrivewsid,
   isFolderHierarchyEntry,
   isFolderLikeItem,
+  isRootDetails,
 } from '../types'
 import { HierarchyEntry } from '../types'
 import { driveDetails } from '../types-io'
@@ -77,9 +78,9 @@ const showValidPart = (vp: CacheEntity[]) =>
 const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
 
 const toActual = (
-  h: NA.NonEmptyArray<DriveDetails>,
+  h: NEA<DriveDetails>,
   actualsRecord: Record<string, O.Option<DriveDetails>>,
-): NA.NonEmptyArray<O.Option<DriveDetails>> => {
+): NEA<O.Option<DriveDetails>> => {
   return pipe(
     h,
     NA.map(h => R.lookup(h.drivewsid)(actualsRecord)),
@@ -87,9 +88,12 @@ const toActual = (
   )
 }
 
+type Hierarchy = [DriveDetailsRoot, ...DriveDetails[]]
+const isHierarchy = (details: NEA<DriveDetails>): details is Hierarchy => isRootDetails(details[0])
+
 export const validateHierarchies = (
-  hierarchies: NA.NonEmptyArray<NA.NonEmptyArray<DriveDetails>>,
-): DF.DriveM<NA.NonEmptyArray<H.MaybeValidPath>> => {
+  hierarchies: NEA<Hierarchy>,
+): DF.DriveM<NEA<H.MaybeValidPath>> => {
   const drivewsids = pipe(
     hierarchies,
     NA.flatten,
@@ -100,7 +104,7 @@ export const validateHierarchies = (
   const res = pipe(
     logg(`validateHierarchies: [${hierarchies.map(showHierarchiy)}]`),
     () => DF.retrieveItemDetailsInFoldersSaving(drivewsids),
-    SRTE.map(ds => NA.zip(drivewsids, ds as NA.NonEmptyArray<O.Option<DriveDetailsWithHierarchy>>)),
+    SRTE.map(ds => NA.zip(drivewsids, ds as NEA<O.Option<DriveDetailsWithHierarchy>>)),
     SRTE.map(recordFromTuples),
     SRTE.map(resultRecord =>
       pipe(
@@ -117,17 +121,17 @@ export const validateHierarchies = (
 type V =
   | {
     readonly tag: 'full'
-    path: NA.NonEmptyArray<DriveDetails>
+    path: NEA<DriveDetails>
     file: O.Option<DriveChildrenItemFile>
   }
   | (PartialyCached & {
-    path: NA.NonEmptyArray<DriveDetails>
+    path: NEA<DriveDetails>
   })
 
 export const validateCachedPaths = (
-  paths: NA.NonEmptyArray<NormalizedPath>,
-): DF.DriveM<NA.NonEmptyArray<H.MaybeValidPath>> => {
-  return pipe(
+  paths: NEA<NormalizedPath>,
+): DF.DriveM<NEA<H.WithDetails>> => {
+  const res = pipe(
     logg(`validateCachedPaths: ${paths}`),
     () => DF.readEnv,
     SRTE.bind('cached', ({ cache }) =>
@@ -144,26 +148,27 @@ export const validateCachedPaths = (
     SRTE.chain(({ cached }) =>
       pipe(
         // logReturnS(c => `getByPathV: ${c.map(showPartialValid)}`),
-        modifySubsetDF(
-          cached,
-          // select non empty validparts
-          (p): p is V => A.isNonEmpty(p.path),
-          (hs: NEA<V>) => validateHierarchies(pipe(hs, NA.map(_ => _.path))),
-          (p: PartialyCached) => T.right(p.rest),
-        ),
+        // modifySubsetDF(
+        //   cached,
+        //   // select non empty validparts
+        //   (p): p is V => A.isNonEmpty(p.path),
+        //   (hs: NEA<V>) => validateHierarchies(pipe(hs, NA.map(_ => _.path))),
+        //   (p: PartialyCached) => T.right(p.rest),
+        // ),
+        validateHierarchies(pipe(cached, NA.map(_ => _.left))),
         SRTE.map(NA.zip(cached)),
         SRTE.map(NA.map(([validated, cached]) =>
-          cached.tag === 'full'
+          H.isValid(cached)
             ? validated
             : pipe(
               validated,
               T.match(
-                (details) => H.fromPartAndRest(details, cached.rest),
-                (rest) => H.fromPartAndRest([], [...rest, ...cached.rest]),
+                (details) => H.fromPartAndRest(details, cached.right),
+                (rest) => H.fromPartAndRest([], [...rest, ...cached.right]),
                 (details, rest) =>
                   H.fromPartAndRest(
-                    [...details, ...cached.path],
-                    [...rest, ...cached.rest],
+                    [...details, ...cached.left],
+                    [...rest, ...cached.right],
                   ),
               ),
             )
@@ -272,7 +277,7 @@ const handleItems = (
 }
 
 const retrivePartials = (
-  partialPaths: NA.NonEmptyArray<H.Partial>,
+  partialPaths: NEA<H.Partial>,
   // partialPaths: NEA<H.WithRest>,
 ): DF.DriveM<NEA<LssResult>> => {
   const subItems = pipe(
@@ -330,7 +335,7 @@ const retrieveRootIfMissing = (): DF.DriveM<void> => {
 }
 
 export const getByPaths = (
-  paths: NA.NonEmptyArray<NormalizedPath>,
+  paths: NEA<NormalizedPath>,
 ): DF.DriveM<NEA<LssResult>> => {
   const res = pipe(
     logg(`getByPath. ${paths}`),
