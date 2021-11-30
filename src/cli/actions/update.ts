@@ -19,6 +19,7 @@ import {
   compareItemWithHierarchy,
   getCachedDetailsPartialWithHierarchyById,
   hierarchyToPath,
+  normalizePath,
 } from './helpers'
 
 type Output = string
@@ -37,7 +38,7 @@ export const checkForUpdates = ({
     { sessionFile, cacheFile, noCache: false },
     ({ cache, api }) =>
       pipe(
-        cache.getFolderByPathE(path),
+        cache.getFolderByPathE(normalizePath(path)),
         SRTE.fromEither,
         SRTE.chain(_ => DF.updateFoldersDetailsRecursively([_.content.drivewsid])),
         f => f(cache)(api),

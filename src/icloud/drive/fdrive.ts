@@ -53,6 +53,7 @@ import {
 } from './types'
 
 import * as S from 'fp-ts/Semigroup'
+import { NEA } from '../../lib/types'
 import { log } from './drivef/ls'
 import { lss } from './drivef/lss'
 import { ItemIsNotFolder, MissinRootError, NotFoundError } from './errors'
@@ -196,6 +197,26 @@ export const retrieveItemDetailsInFoldersSaving = (
       pipe(
         putFoundMissed(getMissedFound(drivewsids, details)),
         SRTE.chain(() => of(A.map(asOption)(details))),
+      )
+    ),
+  )
+
+export const retrieveItemDetailsInFoldersSavingNEA = (
+  drivewsids: NEA<string>,
+): DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>> =>
+  retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>>
+
+export const retrieveItemDetailsInFoldersSavingE = (
+  drivewsids: NEA<string>,
+): DriveM<NEA<DriveDetailsWithHierarchy>> =>
+  pipe(
+    retrieveItemDetailsInFoldersSavingNEA(drivewsids),
+    chain(details =>
+      pipe(
+        O.sequenceArray(details),
+        fromOption(() => err(`some of the ids was not found`)),
+        // SRTE.map(RA.toArray),
+        SRTE.map(v => v as NEA<DriveDetailsWithHierarchy>),
       )
     ),
   )
@@ -498,7 +519,7 @@ export const updateCacheByIds = (
   )
 
 export const updateFolderDetailsByPath = (
-  path: string,
+  path: NormalizedPath,
 ): DriveM<(DriveDetailsWithHierarchy | InvalidId)> =>
   pipe(
     readEnv,

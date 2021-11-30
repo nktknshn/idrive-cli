@@ -12,6 +12,7 @@ import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logger, logReturn } from '../../../lib/logging'
+import { fromPartAndRest, MaybeValidPath } from '../drivef/validation'
 import { ItemIsNotFolder, MissinRootError } from '../errors'
 import { fileName, parsePath } from '../helpers'
 import {
@@ -185,11 +186,11 @@ export class Cache {
   }
 
   getFolderByPathE = (
-    drivewsid: string,
+    path: NormalizedPath,
   ): E.Either<Error, CacheEntityFolderLike | CacheEntityAppLibrary> =>
     pipe(
-      this.getByPathE(drivewsid),
-      E.filterOrElse(isFolderLikeCacheEntity, () => err(`getFolderByPathE: ${drivewsid} is not a folder`)),
+      this.getByPathE(path),
+      E.filterOrElse(isFolderLikeCacheEntity, () => err(`getFolderByPathE: ${path} is not a folder`)),
     )
 
   getFolderByIdE = (drivewsid: string) => {
@@ -286,15 +287,16 @@ export class Cache {
     )
   }
 
-  getByPathE = (path: string): E.Either<Error, CacheEntity> => {
+  getByPathE = (path: NormalizedPath): E.Either<Error, CacheEntity> => {
     return pipe(
       this.getByPath(path),
       E.fromOption(() => err(`missing ${path} in cache`)),
     )
   }
 
-  getByPathV = (path: string): PartialValidPath => {
-    const rest = pipe(path, parsePath, A.dropLeft(1))
+  getByPathV = (path: NormalizedPath): PartialValidPath => {
+    const parts = parsePath(path)
+    const rest = pipe(parts, A.dropLeft(1))
 
     return pipe(
       E.Do,
@@ -303,7 +305,7 @@ export class Cache {
         (e): PartialValidPath => ({
           valid: false,
           error: e,
-          rest: ['/', ...rest],
+          rest: parts,
           validPart: [],
         }),
         ({ root }) =>
@@ -316,7 +318,7 @@ export class Cache {
   }
 
   getByPathV2 = (
-    path: string,
+    path: NormalizedPath,
   ):
     | { validPart: CacheEntityFolderLike[]; rest: NA.NonEmptyArray<string> }
     | { validPart: NA.NonEmptyArray<CacheEntity>; rest: [] } =>
@@ -332,11 +334,7 @@ export class Cache {
 
   getByPathV3 = (
     path: NormalizedPath,
-  ): {
-    readonly tag: 'full'
-    path: NA.NonEmptyArray<DriveDetails>
-    file: O.Option<DriveChildrenItemFile>
-  } | PartialyCached => {
+  ): MaybeValidPath => {
     const validateValid = (
       entities: NA.NonEmptyArray<CacheEntityDetails | CacheEntityFile>,
     ): FullyCached | PartialyCached => {
@@ -394,6 +392,7 @@ export class Cache {
             file: p.target.type === 'FILE' ? O.some(p.target) : O.none,
           }
           : p,
+      _ => _.tag === 'full' ? fromPartAndRest(_.path, []) : fromPartAndRest(_.path, _.rest),
     )
   }
 

@@ -59,7 +59,7 @@ export const modifySubset = <A, B extends A>(
 export const modifySubsetDF = <A, B extends A, C, D extends A>(
   values: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
-  f: ((v: B[]) => DF.DriveM<C[]>),
+  f: ((v: NA.NonEmptyArray<B>) => DF.DriveM<C[]>),
   fac: (a: D) => C,
 ): DF.DriveM<NA.NonEmptyArray<C>> => {
   const subset = pipe(
@@ -70,7 +70,7 @@ export const modifySubsetDF = <A, B extends A, C, D extends A>(
   )
 
   return pipe(
-    f(subset.map(_ => _.a)),
+    pipe(subset.map(_ => _.a), A.match(() => DF.of([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
     SRTE.map(res => projectIndexes2(values as NA.NonEmptyArray<D>, res, fac)),

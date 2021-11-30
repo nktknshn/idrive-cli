@@ -8,7 +8,12 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { TypeOf } from 'io-ts'
-import { compareHierarchiesItem, compareItemWithHierarchy, normalizePath } from '../../../cli/actions/helpers'
+import {
+  compareHierarchiesItem,
+  compareItemWithHierarchy,
+  NormalizedPath,
+  normalizePath,
+} from '../../../cli/actions/helpers'
 import { Cache } from '../../../icloud/drive/cache/Cache'
 import * as C from '../../../icloud/drive/cache/cachef'
 import { isFolderLikeCacheEntity } from '../../../icloud/drive/cache/cachef'
@@ -213,7 +218,7 @@ const onFilePathChanged = (oldpath: string) =>
       SRTE.chain(DF.ensureDetails),
     )
 
-const getCachedItem = (path: string) => {
+const getCachedItem = (path: NormalizedPath) => {
   return pipe(
     DF.readEnv,
     SRTE.bind('item', ({ cache }) => SRTE.fromEither(cache.getByPathE(path))),

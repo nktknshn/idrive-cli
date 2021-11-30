@@ -266,6 +266,9 @@ export type NormalizedPath = Branded<string, NormalizedPathBrand>
 
 const stripSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
 
+/*
+NormalizedPath has no trailing slash
+*/
 export const normalizePath = (path: string): NormalizedPath => {
   return pipe(Path.normalize(path), stripSlash) as NormalizedPath
 }
