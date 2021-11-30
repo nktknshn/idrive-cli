@@ -159,10 +159,10 @@ const same = (a: HierarchyEntry, b: HierarchyEntry) => {
 }
 
 export const getValidHierarchyPart = (
-  actualDetails: O.Option<DriveDetails | DriveChildrenItemFile>[],
-  cachedHierarchy: Hierarchy,
+  actualDetails: NA.NonEmptyArray<O.Option<DriveDetails>>,
+  cachedHierarchy: NA.NonEmptyArray<DriveDetails>,
 ): {
-  validPart: (DriveDetails | DriveChildrenItemFile)[]
+  validPart: DriveDetails[]
   rest: string[]
 } => {
   const presentDetails = pipe(
@@ -173,7 +173,7 @@ export const getValidHierarchyPart = (
 
   return pipe(
     A.zip(
-      C.itemsToHierarchy(presentDetails),
+      presentDetails,
       cachedHierarchy,
     ),
     A.takeLeftWhile(([a, b]) => same(a, b)),
