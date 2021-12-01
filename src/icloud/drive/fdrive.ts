@@ -54,12 +54,25 @@ import {
 
 import * as S from 'fp-ts/Semigroup'
 import { NEA } from '../../lib/types'
+import { GetByPathResult } from './cache/GetByPathResultValid'
 import { log } from './drivef/ls'
 import { lss } from './drivef/lss'
+import { lsss } from './drivef/lsss'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
 import { rootDrivewsid } from './types-io'
 
 export { lss }
+
+export const lssPartial = (paths: NEA<NormalizedPath>) => {
+  return lsss(paths)
+}
+
+export const lsPartial = (path: NormalizedPath): DriveM<GetByPathResult> => {
+  return pipe(
+    lsss([path]),
+    map(NA.head),
+  )
+}
 
 export const ls = (path: NormalizedPath) =>
   pipe(

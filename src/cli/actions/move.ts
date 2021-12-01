@@ -8,6 +8,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { Cache } from '../../icloud/drive/cache/Cache'
 import { isFolderLikeCacheEntity } from '../../icloud/drive/cache/cachef'
+import * as V from '../../icloud/drive/cache/GetByPathResultValid'
 import { DriveApi } from '../../icloud/drive/drive-api'
 import * as DF from '../../icloud/drive/fdrive'
 import { isFolderLike } from '../../icloud/drive/types'
@@ -22,11 +23,6 @@ import {
   getCachedDetailsPartialWithHierarchyById,
   normalizePath,
 } from './helpers'
-
-type Output = string
-type ErrorOutput = Error
-
-type Change = 'ParentChanged'
 
 export const move = ({
   sessionFile,
@@ -50,7 +46,8 @@ export const move = ({
         SRTE.bind('srcitem', () => DF.ls(nsrc)),
         SRTE.bind('dstitem', () =>
           pipe(
-            DF.ls(ndst),
+            DF.lsPartial(ndst),
+            DF.map(result => result.valid ? V.target(result) : result),
             SRTE.filterOrElse(isFolderLike, () => err(`dstpath is not a folder`)),
           )),
         SRTE.chain(({ srcitem, dstitem }) =>
