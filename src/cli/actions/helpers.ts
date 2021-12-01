@@ -12,11 +12,11 @@ import { Cache } from '../../icloud/drive/cache/Cache'
 import { isDetailsCacheEntity } from '../../icloud/drive/cache/cachef'
 import { fileName, HasName } from '../../icloud/drive/helpers'
 import {
+  Details,
+  DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemFile,
-  DriveDetails,
   DriveDetailsPartialWithHierarchy,
-  DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   FolderLikeItem,
   Hierarchy,
@@ -130,7 +130,7 @@ export const compareItemWithHierarchy = (
   }
 }
 
-export const getAppLibraries = (root: DriveDetailsRoot) =>
+export const getAppLibraries = (root: DetailsRoot) =>
   pipe(
     root.items,
     A.filter(isAppLibraryItem),
@@ -176,7 +176,7 @@ export const groupByTypeTuple = (items: [DriveChildrenItem, DriveChildrenItem][]
     }),
   )
 
-export const compareDetails = (cached: DriveDetails, actual: DriveDetails) => {
+export const compareDetails = (cached: Details, actual: Details) => {
   const items = compareItems(cached.items, actual.items)
 
   const cachedByZone = pipe(
@@ -266,9 +266,9 @@ export type NormalizedPath = Branded<string, NormalizedPathBrand>
 
 const stripSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
 
-/*
-NormalizedPath has no trailing slash
-*/
+/**
+ * NormalizedPath has Path.normalize applied and no trailing slash
+ */
 export const normalizePath = (path: string): NormalizedPath => {
   return pipe(Path.normalize(path), stripSlash) as NormalizedPath
 }

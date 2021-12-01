@@ -1,11 +1,11 @@
 import * as O from 'fp-ts/lib/Option'
 import {
+  DetailsAppLibrary,
+  DetailsFolder,
+  DetailsRoot,
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
-  DriveDetailsAppLibrary,
-  DriveDetailsFolder,
-  DriveDetailsRoot,
 } from '../types'
 
 export interface CacheF {
@@ -44,14 +44,14 @@ export type ICloudDriveCacheEntityType = CacheEntity['type']
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
-  constructor(public readonly content: DriveDetailsRoot) {}
+  constructor(public readonly content: DetailsRoot) {}
 }
 
 export class CacheEntityFolderDetails {
   readonly type = 'FOLDER'
   readonly hasDetails = true
 
-  constructor(public readonly content: DriveDetailsFolder) {}
+  constructor(public readonly content: DetailsFolder) {}
 }
 
 export class CacheEntityFolderItem {
@@ -65,7 +65,7 @@ export class CacheEntityAppLibraryDetails {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = true
 
-  constructor(public readonly content: DriveDetailsAppLibrary) {}
+  constructor(public readonly content: DetailsAppLibrary) {}
 }
 
 export class CacheEntityAppLibraryItem {

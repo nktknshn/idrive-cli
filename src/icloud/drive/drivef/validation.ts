@@ -1,17 +1,19 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
+import { Eq } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/These'
+import { normalizePath } from '../../../cli/actions/helpers'
 import { NEA } from '../../../lib/types'
 import { fileName, hasName } from '../helpers'
-import { DriveDetails, DriveDetailsRoot, isRootDetails } from '../types'
+import { Details, DetailsRoot, isRootDetails } from '../types'
 
-export type Hierarchy = [DriveDetailsRoot, ...DriveDetails[]]
-export const isHierarchy = (details: NEA<DriveDetails>): details is Hierarchy => isRootDetails(details[0])
+export type Hierarchy = [DetailsRoot, ...Details[]]
+export const isHierarchy = (details: NEA<Details>): details is Hierarchy => isRootDetails(details[0])
 
-const same = (a: DriveDetails, b: DriveDetails) => {
+const same = (a: Details, b: Details) => {
   if (a.drivewsid !== b.drivewsid) {
     return false
   }
@@ -31,7 +33,7 @@ const same = (a: DriveDetails, b: DriveDetails) => {
 export type MaybeValidPath = T.These<Hierarchy, NEA<string>>
 
 export const getValidHierarchyPart = (
-  actualDetails: [DriveDetailsRoot, ...O.Option<DriveDetails>[]],
+  actualDetails: [DetailsRoot, ...O.Option<Details>[]],
   cachedHierarchy: Hierarchy,
 ): WithDetails => {
   const [root, ...actualRest] = actualDetails
@@ -81,13 +83,26 @@ export const partialPath = <H>(validPart: H, rest: NEA<string>): Partial<H> => T
 
 export const validPath = <H>(validPart: H): Valid<H> => T.left(validPart) as Valid<H>
 
-export const concat = (h: Hierarchy, details: NEA<DriveDetails>): Hierarchy => NA.concat(h, details) as Hierarchy
+export const concat = (h: Hierarchy, details: NEA<Details>): Hierarchy => NA.concat(h, details) as Hierarchy
+
+export const eq: Eq<Hierarchy> = {
+  equals: (a, b) => {
+    if (a.length !== b.length) {
+      return false
+    }
+
+    return pipe(
+      A.zip(a, b),
+      A.every(([a, b]) => same(a, b)),
+    )
+  },
+}
 
 // export const concatPaths = (a: Hierarchy, b: Partial): Hierarchy => {
 //   return partial
 // }
 
-const showDetails = (ds: DriveDetails[]) => {
+const showDetails = (ds: Details[]) => {
   return `${ds.map(fileName).join(' → ')}`
 }
 

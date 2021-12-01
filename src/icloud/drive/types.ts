@@ -7,9 +7,9 @@ import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
 import * as t from './types-io'
 
-export interface DriveDetailsRoot extends TypeOf<typeof t.detailsRoot> {}
-export interface DriveDetailsFolder extends TypeOf<typeof t.detailsFolder> {}
-export interface DriveDetailsAppLibrary extends TypeOf<typeof t.detailsAppLibrary> {}
+export interface DetailsRoot extends TypeOf<typeof t.detailsRoot> {}
+export interface DetailsFolder extends TypeOf<typeof t.detailsFolder> {}
+export interface DetailsAppLibrary extends TypeOf<typeof t.detailsAppLibrary> {}
 export interface DriveChildrenItemFolder extends TypeOf<typeof t.itemFolder> {}
 export interface DriveChildrenItemFile extends TypeOf<typeof t.itemFile> {}
 export interface DriveChildrenItemAppLibrary extends TypeOf<typeof t.itemAppLibrary> {}
@@ -69,29 +69,29 @@ export interface PartialItem extends TypeOf<typeof t.partialItem> {}
 
 export type FolderTree = T.Tree<
   {
-    readonly details: DriveDetails
+    readonly details: Details
     readonly deep: true
   } | {
-    readonly details: DriveDetails
+    readonly details: Details
     readonly deep: false
   }
 >
 
 export type RecursiveFolder =
   | {
-    readonly details: DriveDetails
+    readonly details: Details
     readonly deep: true
     readonly children: RecursiveFolder[]
   }
   | {
-    readonly details: DriveDetails
+    readonly details: Details
     readonly deep: false
   }
 
-export type DriveDetails =
-  | DriveDetailsRoot
-  | DriveDetailsFolder
-  | DriveDetailsAppLibrary
+export type Details =
+  | DetailsRoot
+  | DetailsFolder
+  | DetailsAppLibrary
 
 // export type DriveChildrenItem =
 //   | DriveChildrenItemFile
@@ -108,22 +108,22 @@ export type DriveObject = {
 
 export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
-export const isRootDetails = (details: DriveDetails | DriveChildrenItem): details is DriveDetailsRoot =>
+export const isRootDetails = (details: Details | DriveChildrenItem): details is DetailsRoot =>
   details.name === '' && details.drivewsid === t.rootDrivewsid
 
-export const isNotRootDetails = (details: DriveDetails | DriveChildrenItem): details is
-  | DriveDetailsFolder
-  | DriveDetailsAppLibrary => !isRootDetails(details)
+export const isNotRootDetails = (details: Details | DriveChildrenItem): details is
+  | DetailsFolder
+  | DetailsAppLibrary => !isRootDetails(details)
 
 export type DriveFolderLike =
-  | DriveDetailsFolder
-  | DriveDetailsAppLibrary
-  | DriveDetailsRoot
+  | DetailsFolder
+  | DetailsAppLibrary
+  | DetailsRoot
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
 
 export const isFolderLike = (
-  entity: DriveDetails | DriveChildrenItem,
+  entity: Details | DriveChildrenItem,
 ): entity is DriveFolderLike => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
 
 export const partitionFoldersFiles = (
@@ -137,12 +137,12 @@ export const partitionFoldersFiles = (
     right,
   }))
 
-export const isFolderDetails = (
-  entity: DriveDetails | DriveChildrenItem,
+export const isDetails = (
+  entity: Details | DriveChildrenItem,
 ): entity is
-  | DriveDetailsFolder
-  | DriveDetailsAppLibrary
-  | DriveDetailsRoot => isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items')
+  | DetailsFolder
+  | DetailsAppLibrary
+  | DetailsRoot => isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items')
 
 export const isFileItem = (
   entity: DriveChildrenItem,
@@ -171,7 +171,7 @@ export type FolderLikeItem =
   | DriveChildrenItemAppLibrary
 
 export const isFile = (
-  entity: DriveDetails | DriveChildrenItem,
+  entity: Details | DriveChildrenItem,
 ): entity is DriveChildrenItemFile => entity.type === 'FILE'
 
 export const isHierarchyItemRoot = (

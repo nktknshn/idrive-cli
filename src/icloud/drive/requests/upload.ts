@@ -45,6 +45,11 @@ const updateDocumentsResponse = t.type({
       document: t.type({
         status,
         etag: t.string,
+        zone: t.string,
+        type: t.string,
+        document_id: t.string,
+        parent_id: t.string,
+        mtime: t.number,
         // etc...
       }),
     },

@@ -7,19 +7,13 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath } from '../../../cli/actions/helpers'
+import { cacheLogger, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
 import * as H from '../drivef/validation'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { fileName, parsePath } from '../helpers'
-import {
-  DriveChildrenItem,
-  DriveChildrenItemFile,
-  DriveDetails,
-  DriveDetailsRoot,
-  isFolderDetails,
-  isFolderLike,
-} from '../types'
+import { Details, DetailsRoot, DriveChildrenItem, DriveChildrenItemFile, isDetails, isFolderLike } from '../types'
 import * as C from './cachef'
 import { CacheF } from './types'
 import { findInParent } from './validatePath'
@@ -28,13 +22,19 @@ export type GetByPathVEResult =
   | { valid: true; path: H.Valid<DetailsPath>; file: O.Option<DriveChildrenItemFile> }
   | { valid: false; path: H.Partial<DetailsPath>; error: Error }
 
-type DetailsPath = NEA<DriveDetails>
+type DetailsPath = NEA<Details>
+
+const showDetails = (d: Details): string => {
+  return `${d.type}: ${fileName(d)}`
+}
 
 export const getPartialValidPathV2 = (
   path: string[],
-  parentEntity: DriveDetails,
+  parentEntity: Details,
 ) =>
   (cache: CacheF): GetByPathVEResult => {
+    cacheLogger.debug(`getPartialValidPathV2: [${path}], parent: ${showDetails(parentEntity)}`)
+
     if (A.isEmpty(path)) {
       return { valid: true, path: H.validPath([parentEntity]), file: O.none }
     }
@@ -45,7 +45,9 @@ export const getPartialValidPathV2 = (
     const subitem = findInParent(parentEntity, subItemName)
     const rest = NA.tail(path)
 
-    const result: NEA<DriveDetails> = [parentEntity]
+    const result: NEA<Details> = [parentEntity]
+
+    logger.debug(`subitem: ${pipe(subitem, O.fold(() => `None`, si => `Some(${fileName(si)})`))}`)
 
     if (O.isNone(subitem)) {
       return {
@@ -77,6 +79,7 @@ export const getPartialValidPathV2 = (
 
         return pipe(
           cache,
+          // BUG
           C.getFolderDetailsByIdE(subitem.value.drivewsid),
           E.fold(
             (): GetByPathVEResult => ({

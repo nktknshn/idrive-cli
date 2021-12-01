@@ -21,16 +21,16 @@ import { ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { fileName, recordFromTuples } from '../helpers'
 import {
+  Details,
+  DetailsRoot,
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
-  DriveDetails,
-  DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
   Hierarchy,
   HierarchyItem,
-  isFolderDetails,
+  isDetails,
   isFolderDrivewsid,
   isFolderHierarchyEntry,
 } from '../types'
@@ -41,7 +41,7 @@ import { log } from './ls'
 import { lsss } from './lsss'
 import { getValidHierarchyPart } from './validation'
 
-type DetailsOrFile = (DriveDetails | DriveChildrenItemFile)
+export type DetailsOrFile = (Details | DriveChildrenItemFile)
 
 export const lss = (paths: NormalizedPath[]): DF.DriveM<DetailsOrFile[]> => {
   // return getByPaths(paths)

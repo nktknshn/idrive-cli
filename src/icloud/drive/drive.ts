@@ -17,15 +17,15 @@ import { DriveApi } from './drive-api'
 import { fileName, parsePath, splitParent } from './helpers'
 import { getUrlStream } from './requests/download'
 import {
+  Details,
+  DetailsFolder,
+  DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
-  DriveDetails,
-  DriveDetailsFolder,
-  DriveDetailsRoot,
   DriveFolderLike,
+  isDetails,
   isFile,
-  isFolderDetails,
   isFolderLike,
   isFolderLikeItem,
   isRootDetails,

@@ -4,7 +4,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath } from '../../../cli/actions/helpers'
 import { isFolderLikeCacheEntity } from '../../../icloud/drive/cache/cachef'
 import { CacheEntityFile, CacheEntityFolderLike } from '../../../icloud/drive/cache/types'
-import { DriveChildrenItemFile, DriveDetails, Hierarchy } from '../../../icloud/drive/types'
+import { Details, DriveChildrenItemFile, Hierarchy } from '../../../icloud/drive/types'
 import * as DF from '../fdrive'
 import { log } from './ls'
 
@@ -14,20 +14,20 @@ export const lookupCache = (
       path: NormalizedPath,
       entity: CacheEntityFolderLike,
       cachedHierarchy: Hierarchy,
-    ) => DF.DriveM<DriveChildrenItemFile | DriveDetails>
+    ) => DF.DriveM<DriveChildrenItemFile | Details>
     onFoundInCacheFile: (
       path: NormalizedPath,
       entity: CacheEntityFile,
       cachedHierarchy: Hierarchy,
-    ) => DF.DriveM<DriveChildrenItemFile | DriveDetails>
+    ) => DF.DriveM<DriveChildrenItemFile | Details>
     onNotFoundInCache: (
       path: NormalizedPath,
       validPart: CacheEntityFolderLike[],
       rest: NA.NonEmptyArray<string>,
-    ) => DF.DriveM<DriveChildrenItemFile | DriveDetails>
+    ) => DF.DriveM<DriveChildrenItemFile | Details>
   },
 ) =>
-  (path: NormalizedPath): DF.DriveM<DriveChildrenItemFile | DriveDetails> => {
+  (path: NormalizedPath): DF.DriveM<DriveChildrenItemFile | Details> => {
     const res = pipe(
       DF.readEnv,
       log(`lookupCache: ${path}`),

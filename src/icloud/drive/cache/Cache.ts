@@ -16,15 +16,15 @@ import { ItemIsNotFolderError, MissinRootError } from '../errors'
 import { fileName, parsePath } from '../helpers'
 import {
   asOption,
+  Details,
+  DetailsAppLibrary,
+  DetailsFolder,
+  DetailsRoot,
   DriveChildrenItem,
-  DriveDetails,
-  DriveDetailsAppLibrary,
-  DriveDetailsFolder,
-  DriveDetailsRoot,
   Hierarchy,
   invalidId,
+  isDetails,
   isFileItem,
-  isFolderDetails,
   isRootDetails,
   MaybeNotFound,
 } from '../types'
@@ -98,15 +98,15 @@ export class Cache {
   public copy = (): Cache => Cache.create(this.cache)
   public get = () => this.cache
 
-  putDetails = (details: DriveDetails): E.Either<Error, Cache> => {
+  putDetails = (details: Details): E.Either<Error, Cache> => {
     return pipe(this.cache, putDetails(details), E.map(Cache.create))
   }
 
-  putRoot = (details: DriveDetailsRoot): E.Either<Error, Cache> => {
+  putRoot = (details: DetailsRoot): E.Either<Error, Cache> => {
     return pipe(this.cache, putRoot(details), E.map(Cache.create))
   }
 
-  putDetailss = <D extends DriveDetails>(detailss: D[]): E.Either<Error, Cache> => {
+  putDetailss = <D extends Details>(detailss: D[]): E.Either<Error, Cache> => {
     return pipe(
       detailss,
       A.reduce(
@@ -224,11 +224,11 @@ export class Cache {
 
   getFolderDetailsByIds = (
     drivewsids: string[],
-  ): E.Either<Error, MaybeNotFound<DriveDetails>[]> => {
+  ): E.Either<Error, MaybeNotFound<Details>[]> => {
     return pipe(
       drivewsids,
       A.map(id => this.getFolderDetailsById(id)),
-      A.map(O.fold(() => E.right<Error, MaybeNotFound<DriveDetails>>(invalidId), E.map(v => v.content))),
+      A.map(O.fold(() => E.right<Error, MaybeNotFound<Details>>(invalidId), E.map(v => v.content))),
       E.sequenceArray,
       E.map(RA.toArray),
     )
@@ -236,7 +236,7 @@ export class Cache {
 
   getFolderDetailsByIdsO = (
     drivewsids: string[],
-  ): E.Either<Error, O.Option<DriveDetailsRoot | DriveDetailsFolder | DriveDetailsAppLibrary>[]> =>
+  ): E.Either<Error, O.Option<DetailsRoot | DetailsFolder | DetailsAppLibrary>[]> =>
     pipe(
       this.getFolderDetailsByIds(drivewsids),
       E.map(A.map(asOption)),
@@ -582,7 +582,7 @@ export class Cache {
     return new Cache(cache)
   }
 
-  static fromRootDetails(rootDetails: DriveDetailsRoot): Cache {
+  static fromRootDetails(rootDetails: DetailsRoot): Cache {
     return new Cache({
       // root: O.some(rootDetails),
       byDrivewsid: {

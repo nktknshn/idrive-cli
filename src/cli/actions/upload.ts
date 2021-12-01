@@ -1,41 +1,129 @@
-import { pipe } from 'fp-ts/lib/function'
+import { constVoid, pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
+import * as V from '../../icloud/drive/cache/GetByPathResultValid'
+import * as H from '../../icloud/drive/drivef/validation'
 import * as DF from '../../icloud/drive/fdrive'
-import { isFile, isFolderDetails, isFolderLike } from '../../icloud/drive/types'
+import { fileName, parseName } from '../../icloud/drive/helpers'
+import { isDetails, isFile, isFolderLike, isFolderLikeItem } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { cliAction } from '../cli-actionF'
 import { normalizePath } from './helpers'
 import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls_action'
 
+type Env = {
+  srcpath: string
+  dstpath: string
+}
+
+// export const uploadReader = () => {
+//   return pipe(
+//     R.ask<Env>(),
+//     SRTE.fromReader,
+//     DF.from
+//   )
+// }
+
 export const upload = (
-  { sessionFile, cacheFile, srcpath, dstpath, noCache }: {
+  { sessionFile, cacheFile, srcpath, dstpath, noCache, overwright }: {
     srcpath: string
     dstpath: string
     noCache: boolean
     sessionFile: string
     cacheFile: string
+    overwright: boolean
   },
 ) => {
-  return cliAction({
-    sessionFile,
-    cacheFile,
-    noCache,
-  }, ({ cache, api }) => {
-    const res = pipe(
-      DF.ls(normalizePath(dstpath)),
-      SRTE.filterOrElse(isFolderLike, () => err(`${dstpath} is not a folder`)),
-      SRTE.chain(item => SRTE.fromTaskEither(api.upload(srcpath, item.docwsid))),
-      SRTE.chain(() => DF.ls(normalizePath(dstpath))),
-      SRTE.filterOrElse(isFolderDetails, () => err(`dstpath is mystically not a folder`)),
-      SRTE.map(showDetailsInfo({ path: '', fullPath: false })),
-      DF.saveCacheFirst(cacheFile),
-    )
+  return cliAction(
+    { sessionFile, cacheFile, noCache },
+    ({ cache, api }) => {
+      const res = pipe(
+        DF.Do,
+        SRTE.bind('src', () => DF.of(srcpath)),
+        SRTE.bind('overwright', () => DF.of(overwright)),
+        SRTE.bind('dst', () => DF.lsPartial(normalizePath(dstpath))),
+        SRTE.chain(handle),
+        DF.saveCacheFirst(cacheFile),
+      )
 
-    return pipe(
-      res(cache)(api),
-      TE.map(fst),
-    )
-  })
+      return pipe(
+        res(cache)(api),
+        TE.map(fst),
+      )
+    },
+  )
+}
+
+const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
+  return `${type}::${zone}::${document_id}`
+}
+
+const handle = (
+  { src, dst, overwright }: { dst: V.GetByPathResult; src: string; overwright: boolean },
+): DF.DriveM<void> => {
+  // upload to the directory
+  if (dst.valid) {
+    const dstitem = V.target(dst)
+
+    if (isFolderLike(dstitem)) {
+      return pipe(
+        DF.readEnv,
+        DF.chain(({ api }) =>
+          pipe(
+            api.upload(src, dstitem.docwsid),
+            DF.fromTaskEither,
+            DF.map(constVoid),
+          )
+        ),
+      )
+    }
+    //
+    else if (overwright) {
+      const parent = NA.last(dst.path.left)
+      return pipe(
+        DF.readEnv,
+        SRTE.bind('uploadResult', ({ api }) => DF.fromTaskEither(api.upload(src, parent.docwsid))),
+        SRTE.bind('removeResult', ({ api }) => {
+          return DF.fromTaskEither(api.moveItemsToTrash([dstitem]))
+        }),
+        DF.chain(({ api, uploadResult, removeResult }) => {
+          const drivewsid = getDrivewsid(uploadResult)
+          return pipe(
+            api.renameItems([{
+              drivewsid,
+              etag: uploadResult.etag,
+              ...parseName(fileName(dstitem)),
+            }]),
+            DF.fromTaskEither,
+            DF.map(constVoid),
+          )
+        }),
+      )
+    }
+
+    return DF.errS(`invalid destination path: ${V.asString(dst)} It's a file`)
+  }
+
+  if (dst.path.right.length == 1) {
+    // upload and rename
+    const dstitem = NA.last(dst.path.left)
+    const fname = NA.head(dst.path.right)
+    if (isFolderLike(dstitem)) {
+      return pipe(
+        DF.readEnv,
+        DF.chain(({ api }) =>
+          pipe(
+            api.upload(src, dstitem.docwsid, fname),
+            DF.fromTaskEither,
+            DF.map(constVoid),
+          )
+        ),
+      )
+    }
+  }
+
+  return DF.errS(`invalid destination path: ${H.showMaybeValidPath(dst.path)}`)
 }

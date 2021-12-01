@@ -6,7 +6,7 @@ import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import { DriveDetails, FolderLikeItem, isFolderLikeItem, isNotRootDetails, RecursiveFolder } from './types'
+import { Details, FolderLikeItem, isFolderLikeItem, isNotRootDetails, RecursiveFolder } from './types'
 /*
 export function getFolderRecursive(
   drive: Drive,

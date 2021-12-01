@@ -11,11 +11,11 @@ import { logger } from '../../lib/logging'
 import { EmptyObject } from '../../lib/types'
 import { isObjectWithOwnProperty } from '../../lib/util'
 import {
+  Details,
+  DetailsRoot,
   DriveChildrenItem,
-  DriveDetails,
-  DriveDetailsRoot,
   Hierarchy,
-  isFolderDetails,
+  isDetails,
   isFolderLike,
   isHierarchyItemRoot,
   isHierarchyItemTrash,
@@ -102,4 +102,16 @@ export const recordFromTuples = <T>(ts: readonly [string, T][]): Record<string, 
   }
 
   return obj
+}
+
+export const parseName = (fileName: string): { name: string; extension?: string } => {
+  const extension = pipe(
+    Path.extname(fileName),
+    _ => _ === '' ? undefined : _,
+  )
+
+  return {
+    name: extension ? fileName.slice(0, fileName.length - extension.length) : fileName,
+    extension: extension ? extension.slice(1) : undefined,
+  }
 }

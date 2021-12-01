@@ -16,18 +16,18 @@ import { cast, hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { fileName, parsePath } from '../helpers'
 import {
+  Details,
+  DetailsAppLibrary,
+  DetailsFolder,
+  DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
-  DriveDetails,
-  DriveDetailsAppLibrary,
-  DriveDetailsFolder,
-  DriveDetailsRoot,
   Hierarchy,
   HierarchyEntry,
   InvalidId,
-  isFolderDetails,
+  isDetails,
   isFolderLike,
   isFolderLikeItem,
   isRootDetails,
@@ -128,9 +128,9 @@ export const getItemWithParentsById = (drivewsid: string) =>
   }
 
 type CacheContent = (
-  | DriveDetailsRoot
-  | DriveDetailsFolder
-  | DriveDetailsAppLibrary
+  | DetailsRoot
+  | DetailsFolder
+  | DetailsAppLibrary
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
   | DriveChildrenItemFile
@@ -212,15 +212,15 @@ export const assertFolderWithDetailsEntity = (entity: CacheEntity): E.Either<Err
   )
 
 export const assertFolderWithDetails = (
-  entity: DriveDetails | DriveChildrenItem,
-): E.Either<Error, DriveDetails> =>
+  entity: Details | DriveChildrenItem,
+): E.Either<Error, Details> =>
   pipe(
     E.of(entity),
     E.filterOrElse(
       isFolderLike,
       p => ItemIsNotFolderError.create(`assertFolderWithDetails: ${p.drivewsid} is not a folder`),
     ),
-    E.filterOrElse(isFolderDetails, p => FolderLikeMissingDetailsError.create(`${p.drivewsid} is missing details`)),
+    E.filterOrElse(isDetails, p => FolderLikeMissingDetailsError.create(`${p.drivewsid} is missing details`)),
   )
 
 const getSubItemByName = (
@@ -388,7 +388,7 @@ export const isFolderLikeType = (
 ): type is (CacheEntityFolderLike | CacheEntityAppLibrary)['type'] => type !== 'FILE'
 
 export const cacheEntityFromDetails = (
-  details: DriveDetails,
+  details: Details,
 ): CacheEntity =>
   isRootDetails(details)
     ? new CacheEntityFolderRootDetails(details)
@@ -439,7 +439,7 @@ export const addItems = (items: DriveChildrenItem[]) =>
   }
 
 export const putRoot = (
-  details: DriveDetailsRoot,
+  details: DetailsRoot,
 ): ((s: CacheF) => E.Either<Error, CacheF>) => {
   return flow(
     lens.byDrivewsid.modify(
@@ -457,7 +457,7 @@ export const removeById = (drivewsid: string) =>
     )
 
 export const putDetailss = (
-  detailss: DriveDetails[],
+  detailss: Details[],
 ): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   return cache =>
     pipe(
@@ -485,7 +485,7 @@ export const putEntities = (
 }
 
 export const putDetails = (
-  details: DriveDetails,
+  details: Details,
 ): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   cacheLogger.debug(
     `putting ${details.drivewsid} ${fileName(details)} ${details.etag} (${details.items.map(fileName)})`,
@@ -499,6 +499,7 @@ export const putDetails = (
         pipe(
           cache,
           lens.byDrivewsid.modify(R.upsertAt(details.drivewsid, entity)),
+          // E.of,
           addItems(details.items),
         )
       ),

@@ -25,18 +25,18 @@ import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../erro
 import * as DF from '../fdrive'
 import { fileName, recordFromTuples } from '../helpers'
 import {
+  Details,
+  DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
-  DriveDetails,
-  DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
   // Hierarchy,
   HierarchyItem,
+  isDetails,
   isFileItem,
-  isFolderDetails,
   isFolderDrivewsid,
   isFolderHierarchyEntry,
   isFolderLikeItem,
@@ -49,14 +49,14 @@ import { log } from './ls'
 // import { getValidHierarchyPart, ValidatedHierarchy } from './validation'
 import * as H from './validation'
 
-type DetailsOrFile = (DriveDetails | DriveChildrenItemFile)
+type DetailsOrFile = (Details | DriveChildrenItemFile)
 
 const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
 
 const toActual = (
   cachedHierarchy: H.Hierarchy,
-  actualsRecord: Record<string, O.Option<DriveDetails>>,
-): [DriveDetailsRoot, ...O.Option<DriveDetails>[]] => {
+  actualsRecord: Record<string, O.Option<Details>>,
+): [DetailsRoot, ...O.Option<Details>[]] => {
   return pipe(
     cachedHierarchy,
     A.dropLeft(1),
@@ -69,7 +69,7 @@ const toActual = (
 const showHierarchiy = (h: H.Hierarchy) => {
   const [root, ...rest] = h
 
-  return `${isRootDetails(root) ? 'root' : '<!not root!>'}/${rest.join('/')}`
+  return `${isRootDetails(root) ? 'root' : '<!not root!>'}/${rest.map(fileName).join('/')}`
 }
 
 export const validateHierarchies = (
@@ -156,7 +156,8 @@ const concatCachedWithValidated = (
     }
     else {
       /*
-      he cached part of the path is only partially valid
+      the cached part of the path is only partially valid
+
       cached
       [/ dir0 dir1 dir2 ] [ dir3 file1 ]
       validated
@@ -193,7 +194,7 @@ export const validateCachedPaths = (
       )),
     SRTE.chain(({ cached }) =>
       pipe(
-        logg(`cached: ${cached.map(V.showGetByPathResult)}`),
+        logg(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
         () => validateHierarchies(pipe(cached, NA.map(_ => _.path.left))),
         SRTE.map(NA.zip(cached)),
         SRTE.map(NA.map(([validated, cached]): V.GetByPathResult => {
@@ -202,7 +203,7 @@ export const validateCachedPaths = (
         })),
       )
     ),
-    DF.logS(paths => `result: ${paths.map(V.showGetByPathResult)}`),
+    DF.logS(paths => `result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
   )
 }
 

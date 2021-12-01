@@ -9,7 +9,7 @@ import { apiLogger } from '../../../lib/logging'
 import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveDetails, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from '../types'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from '../types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../types-io'
 import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
 
@@ -89,7 +89,7 @@ export function retrieveItemDetailsInFolders(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
   { drivewsids }: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<(DriveDetails | InvalidId)[]>> {
+): TE.TaskEither<Error, ResponseWithSession<(Details | InvalidId)[]>> {
   return retrieveItemDetailsInFoldersGeneric(
     client,
     { accountData, session },

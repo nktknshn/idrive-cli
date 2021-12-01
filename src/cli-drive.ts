@@ -48,7 +48,11 @@ function parseArgs() {
         }))
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
-    .command('rm [path]', 'check updates', (_) => _.positional('path', { type: 'string', demandOption: true }))
+    .command(
+      'rm [paths..]',
+      'check updates',
+      (_) => _.positional('paths', { type: 'string', array: true, demandOption: true }),
+    )
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command(
       'mv <srcpath> <dstpath>',
@@ -62,7 +66,10 @@ function parseArgs() {
       'upload',
       (_) =>
         _.positional('srcpath', { type: 'string', demandOption: true })
-          .positional('dstpath', { type: 'string', demandOption: true }),
+          .positional('dstpath', { type: 'string', demandOption: true })
+          .options({
+            overwright: { default: false, type: 'boolean' },
+          }),
     )
     .help()
 }

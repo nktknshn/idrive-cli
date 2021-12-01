@@ -27,7 +27,7 @@ export function renameItems(
     }[]
   },
 ): TE.TaskEither<Error, ResponseWithSession<RenameResponse>> {
-  apiLogger.debug('moveItems/moveItemsToTrash')
+  apiLogger.debug('renameItems')
 
   return pipe(
     session,

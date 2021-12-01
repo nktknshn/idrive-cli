@@ -7,6 +7,7 @@ import yargs from 'yargs/yargs'
 import { hierarchyToPath } from './cli/actions/helpers'
 import { apiAction } from './cli/cli-actionF'
 import { defaultSessionFile } from './config'
+import { parseName } from './icloud/drive/helpers'
 import { retrieveHierarchy } from './icloud/drive/requests'
 import { ensureError, err } from './lib/errors'
 import { fetchClient } from './lib/fetch-client'
@@ -50,18 +51,6 @@ function parseArgs() {
         .positional('etag', { type: 'string', default: '12::34' /* demandOption: true */ })
         .options({}))
     .help()
-}
-
-const parseName = (fileName: string): { name: string; extension?: string } => {
-  const extension = pipe(
-    Path.extname(fileName),
-    _ => _ === '' ? undefined : _,
-  )
-
-  return {
-    name: extension ? fileName.slice(0, fileName.length - extension.length) : fileName,
-    extension: extension ? extension.slice(1) : undefined,
-  }
 }
 
 const actions = {

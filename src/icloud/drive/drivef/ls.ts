@@ -25,8 +25,8 @@ import {
 } from '../../../icloud/drive/cache/types'
 import { DriveApi } from '../../../icloud/drive/drive-api'
 import {
+  Details,
   DriveChildrenItemFile,
-  DriveDetails,
   DriveDetailsWithHierarchy,
   DriveItemDetails,
   Hierarchy,
@@ -84,7 +84,7 @@ Receives actual details for the path with help of cache in order to use the leas
 // }
 
 const onFoundInCacheFolderLike = (path: string) =>
-  (item: CacheEntityFolderLike): DF.DriveM<DriveDetails> => {
+  (item: CacheEntityFolderLike): DF.DriveM<Details> => {
     return pipe(
       DF.readEnv,
       log('found folder in cache'),
@@ -129,7 +129,7 @@ const onNotFoundInCache = (path: string) =>
     const onHierarchiesSame = (
       lastItem: DriveDetailsWithHierarchy,
       rest: NA.NonEmptyArray<string>,
-    ): DF.DriveM<DriveChildrenItemFile | DriveDetails> => {
+    ): DF.DriveM<DriveChildrenItemFile | Details> => {
       logger.debug('onHierarchiesSame')
 
       return pipe(
@@ -153,7 +153,7 @@ const onNotFoundInCache = (path: string) =>
     const onHierarchiesDifferent = (
       cached: Hierarchy,
       actual: Hierarchy,
-    ): DF.DriveM<DriveChildrenItemFile | DriveDetails> => {
+    ): DF.DriveM<DriveChildrenItemFile | Details> => {
       // logger.debug('onHierarchiesDifferent')
 
       return pipe(
@@ -166,7 +166,7 @@ const onNotFoundInCache = (path: string) =>
     return pipe(
       DF.readEnv,
       log(`onNotFoundInCache: validPart: ${validPart.map(_ => _.content.drivewsid)}, rest: ${rest}`),
-      SRTE.chain(({ cache, api }): DF.DriveM<DriveChildrenItemFile | DriveDetails> => {
+      SRTE.chain(({ cache, api }): DF.DriveM<DriveChildrenItemFile | Details> => {
         if (isNonEmpty(validPart)) {
           return pipe(
             ado({
@@ -205,7 +205,7 @@ const onNotFoundInCache = (path: string) =>
   }
 
 const onFilePathChanged = (oldpath: string) =>
-  (): DF.DriveM<DriveDetails | DriveChildrenItemFile> =>
+  (): DF.DriveM<Details | DriveChildrenItemFile> =>
     pipe(
       DF.readEnv,
       log('onFilePathChanged'),

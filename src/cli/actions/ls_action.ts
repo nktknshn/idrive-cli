@@ -13,7 +13,7 @@ import { fst, snd } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { Cache } from '../../icloud/drive/cache/Cache'
 import { isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
-import { showGetByPathResult } from '../../icloud/drive/cache/GetByPathResultValid'
+import { showGetByPathResult, target } from '../../icloud/drive/cache/GetByPathResultValid'
 import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../icloud/drive/cache/types'
 import { DriveApi } from '../../icloud/drive/drive-api'
 import { lss } from '../../icloud/drive/drivef/lss'
@@ -21,11 +21,11 @@ import { lsss } from '../../icloud/drive/drivef/lsss'
 import * as DF from '../../icloud/drive/fdrive'
 import { fileName } from '../../icloud/drive/helpers'
 import {
+  Details,
   DriveChildrenItem,
   DriveChildrenItemFile,
-  DriveDetails,
+  isDetails,
   isFileItem,
-  isFolderDetails,
   isFolderLike,
   isRootDetails,
   RecursiveFolder,
@@ -50,10 +50,10 @@ const joinWithPath = (path: string) =>
       Path.normalize,
     )
 
-const showFilename = (item: DriveChildrenItem | DriveDetails) =>
+const showFilename = (item: DriveChildrenItem | Details) =>
   item.type === 'FILE'
     ? fileName(item)
-    : isFolderDetails(item) && isRootDetails(item)
+    : isDetails(item) && isRootDetails(item)
     ? '/'
     : `${fileName(item)}/`
 
@@ -93,7 +93,7 @@ const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
 
 const showWithFullPath = (path: string) => flow(showFilename, joinWithPath(path))
 
-const showRaw = (result: DriveDetails | DriveChildrenItem) => JSON.stringify(result)
+const showRaw = (result: Details | DriveChildrenItem) => JSON.stringify(result)
 
 export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (result: DriveChildrenItemFile) =>
@@ -114,7 +114,7 @@ export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}
       .join('\n')
 
 export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (result: DriveDetails) =>
+  (result: Details) =>
     pipe(
       [
         ['name', showFilename(result)],
@@ -146,7 +146,7 @@ export const showDetailsInfo = (
     path: string
   },
 ) =>
-  (details: DriveDetails) =>
+  (details: Details) =>
     string.Monoid.concat(
       pipe(
         details,
@@ -256,7 +256,14 @@ export const listUnixPath = (
             A.zip(npaths),
             A.map(([result, path]) => {
               if (result.valid) {
-                return showGetByPathResult(result)
+                return pipe(
+                  target(result),
+                  item =>
+                    isDetails(item)
+                      ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
+                      : showFileInfo({ ...opts })(item),
+                )
+                // return showGetByPathResult(result)
               }
               return showGetByPathResult(result)
             } // isFolderDetails(item)

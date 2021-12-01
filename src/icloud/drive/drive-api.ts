@@ -25,9 +25,9 @@ import {
 import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 import {
   asOption,
-  DriveDetails,
+  Details,
+  DetailsRoot,
   DriveDetailsPartialWithHierarchy,
-  DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   DriveItemDetails,
   InvalidId,
@@ -67,7 +67,7 @@ export class DriveApi {
     public client: FetchClientEither = fetchClient,
   ) {}
 
-  public getRoot = (): TE.TaskEither<Error, DriveDetailsRoot> => {
+  public getRoot = (): TE.TaskEither<Error, DetailsRoot> => {
     return pipe(
       this.retrieveItemDetailsInFolder(rootDrivewsid),
       TE.filterOrElse(isNotInvalidId, () => err(`not found for root details`)),
@@ -75,8 +75,14 @@ export class DriveApi {
     )
   }
 
-  public upload = (sourceFilePath: string, docwsid: string): TE.TaskEither<Error, void> => {
-    const parsedSource = Path.parse(sourceFilePath)
+  public upload = (
+    sourceFilePath: string,
+    docwsid: string,
+    fname?: string,
+  ): TE.TaskEither<Error, { document_id: string; zone: string; parent_id: string; type: string; etag: string }> => {
+    const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
+
+    logger.debug(`upload: ${sourceFilePath} into=${docwsid} fname=${parsedSource.base}.${parsedSource.ext}`)
 
     return pipe(
       TE.Do,
@@ -145,7 +151,9 @@ export class DriveApi {
               },
             ), this.retryingQuery),
       ),
-      TE.chainW(() => TE.of(constVoid())),
+      TE.chainW(({ singleFileUploadResult, updateDocumentsResult, uploadResult }) =>
+        TE.of(updateDocumentsResult.response.body.results[0].document)
+      ),
     )
   }
 
@@ -164,7 +172,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (DriveDetails | InvalidId)[]> => {
+  public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (Details | InvalidId)[]> => {
     // logger.debug(`retrieveItemDetailsInFolders: ${drivewsids}`)
 
     return pipe(
@@ -175,7 +183,7 @@ export class DriveApi {
   }
 
   public retrieveItemDetailsInFoldersS = (drivewsids: string[]): TE.TaskEither<Error, {
-    found: DriveDetails[]
+    found: Details[]
     missed: string[]
   }> => {
     return pipe(
@@ -296,7 +304,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemDetailsInFolder = (drivewsid: string): TE.TaskEither<Error, (DriveDetails | InvalidId)> => {
+  public retrieveItemDetailsInFolder = (drivewsid: string): TE.TaskEither<Error, (Details | InvalidId)> => {
     return pipe(
       this.retrieveItemDetailsInFolders([drivewsid]),
       TE.map(A.lookup(0)),

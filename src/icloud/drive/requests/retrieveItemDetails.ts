@@ -14,7 +14,7 @@ import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { ICloudSession } from '../../session/session'
 import { buildRequest } from '../../session/session-http'
-import { DriveDetails, DriveDetailsFolder, DriveDetailsPartialWithHierarchy, DriveItemDetails } from '../types'
+import { Details, DetailsFolder, DriveDetailsPartialWithHierarchy, DriveItemDetails } from '../types'
 import { invalidIdItem, itemDetails } from '../types-io'
 import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
 

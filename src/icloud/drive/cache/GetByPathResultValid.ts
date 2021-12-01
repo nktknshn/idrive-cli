@@ -1,9 +1,11 @@
-import { identity, pipe } from 'fp-ts/lib/function'
+import * as A from 'fp-ts/lib/Array'
+import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
+import { normalizePath } from '../../../cli/actions/helpers'
 import * as H from '../drivef/validation'
 import { fileName } from '../helpers'
-import { DriveChildrenItemFile, DriveDetails } from '../types'
+import { Details, DriveChildrenItemFile } from '../types'
 
 export type GetByPathResultValid = { valid: true; path: H.Valid; file: O.Option<DriveChildrenItemFile> }
 
@@ -13,7 +15,7 @@ export type GetByPathResult =
   | GetByPathResultValid
   | GetByPathResultInvalid
 
-export const target = (res: GetByPathResultValid): DriveDetails | DriveChildrenItemFile => {
+export const target = (res: GetByPathResultValid): Details | DriveChildrenItemFile => {
   return pipe(
     res.file,
     O.foldW(() => NA.last(res.path.left), identity),
@@ -37,4 +39,13 @@ export const showGetByPathResult = (p: GetByPathResult) => {
     return `valid: ${p.path.left.map(fileName)} file: ${pipe(p.file, O.fold(() => `none`, fileName))}`
   }
   return `invalid (${p.error.message}). valid part ${p.path.left.map(fileName)}, rest: ${p.path.right}`
+}
+
+export const asString = (result: GetByPathResultValid) => {
+  return normalizePath(
+    [
+      ...result.path.left.map(fileName),
+      ...pipe(result.file, O.fold(() => [], flow(fileName, A.of))),
+    ].join('/'),
+  )
 }

@@ -9,50 +9,43 @@ import { NormalizedPath } from '../../../cli/actions/helpers'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { fileName, parsePath } from '../helpers'
-import {
-  DriveChildrenItem,
-  DriveChildrenItemFile,
-  DriveDetails,
-  DriveDetailsRoot,
-  isFolderDetails,
-  isFolderLike,
-} from '../types'
+import { Details, DetailsRoot, DriveChildrenItem, DriveChildrenItemFile, isDetails, isFolderLike } from '../types'
 import * as C from './cachef'
 import { CacheF } from './types'
 
 // points root
 type PathRoot = {
   readonly tag: 'root'
-  root: DriveDetailsRoot
+  root: DetailsRoot
 }
 
 // points anything relative to root
 export type FullyCached = {
   readonly tag: 'full'
   // root: DriveDetailsRoot
-  path: NA.NonEmptyArray<DriveDetails>
-  target: DriveDetails | DriveChildrenItemFile
+  path: NA.NonEmptyArray<Details>
+  target: Details | DriveChildrenItemFile
 }
 
 export type PartialyCached = {
   readonly tag: 'partial'
   // root: DriveDetailsRoot
   error: Error
-  path: DriveDetails[]
+  path: Details[]
   rest: NA.NonEmptyArray<string>
 }
 
 export const partialPath = (
   // root: DriveDetailsRoot,
   error: Error,
-  path: DriveDetails[],
+  path: Details[],
   rest: NA.NonEmptyArray<string>,
 ): PartialyCached => ({ error, path, rest, tag: 'partial' })
 
 export const fullPath = (
   // root: DriveDetailsRoot,
-  path: NA.NonEmptyArray<DriveDetails>,
-  target: DriveDetails | DriveChildrenItemFile,
+  path: NA.NonEmptyArray<Details>,
+  target: Details | DriveChildrenItemFile,
 ): FullyCached => ({ path, target, tag: 'full' })
 
 type ZeroCached = {
@@ -61,16 +54,16 @@ type ZeroCached = {
 
 type Result = PathRoot | FullyCached | PartialyCached | ZeroCached
 
-export const findInParent = (parent: DriveDetails, itemName: string): O.Option<DriveChildrenItem> => {
+export const findInParent = (parent: Details, itemName: string): O.Option<DriveChildrenItem> => {
   return pipe(
     parent.items,
     A.findFirst(item => fileName(item) == itemName),
   )
 }
 
-const go = (path: NA.NonEmptyArray<DriveDetails>, rest: string[], itemName: string) =>
+const go = (path: NA.NonEmptyArray<Details>, rest: string[], itemName: string) =>
   (cache: CacheF): E.Either<FullyCached | PartialyCached, {
-    item: DriveDetails
+    item: Details
     rest: NA.NonEmptyArray<string>
   }> => {
     const parent = NA.last(path)
@@ -78,7 +71,7 @@ const go = (path: NA.NonEmptyArray<DriveDetails>, rest: string[], itemName: stri
     const rest_ = NA.concat(NA.of(itemName), rest)
 
     const res: E.Either<FullyCached | PartialyCached, {
-      item: DriveDetails
+      item: Details
       rest: NA.NonEmptyArray<string>
     }> = pipe(
       item,
@@ -93,7 +86,7 @@ const go = (path: NA.NonEmptyArray<DriveDetails>, rest: string[], itemName: stri
                 return pipe(
                   isFolderLike(item)
                     ? pipe(cache, C.getFolderDetailsByIdE(item.drivewsid), E.map(_ => _.content))
-                    : E.of<Error, DriveDetails | DriveChildrenItemFile>(item),
+                    : E.of<Error, Details | DriveChildrenItemFile>(item),
                   E.foldW(
                     error => E.left(partialPath(error, path, rest_)),
                     item => E.left(fullPath(path, item)),
@@ -119,7 +112,7 @@ const go = (path: NA.NonEmptyArray<DriveDetails>, rest: string[], itemName: stri
   }
 
 export const validatePath = (
-  parents: NA.NonEmptyArray<DriveDetails>,
+  parents: NA.NonEmptyArray<Details>,
   parts: NA.NonEmptyArray<string>,
 ) =>
   (cache: CacheF): FullyCached | PartialyCached => {

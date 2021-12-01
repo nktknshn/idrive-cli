@@ -27,10 +27,10 @@ import { DriveApi } from './drive-api'
 import { fileName, getMissedFound, hasName, parsePath } from './helpers'
 import {
   asOption,
+  Details,
+  DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemFile,
-  DriveDetails,
-  DriveDetailsRoot,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
   DriveItemDetails,
@@ -38,9 +38,9 @@ import {
   Hierarchy,
   HierarchyEntry,
   InvalidId,
+  isDetails,
   isFile,
   isFileHierarchyEntry,
-  isFolderDetails,
   isFolderHierarchyEntry,
   isFolderLike,
   isFolderLikeItem,
@@ -94,7 +94,7 @@ export const lsdir = (path: NormalizedPath) =>
         fromOption(() => err(`wat`)),
       ),
     ),
-    SRTE.filterOrElse(isFolderDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
+    SRTE.filterOrElse(isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
 // export type DriveME<A> = SRTE.StateReaderTaskEither<{
@@ -120,6 +120,7 @@ export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
 export const left = <A>(e: Error): DriveM<A> => SRTE.left(e)
 export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> => SRTE.fromTaskEither(te)
 export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => SRTE.fromOption(f)(opt)
+export const errS = <A>(s: string): DriveM<A> => SRTE.left(err(s))
 
 export const map = SRTE.map
 
@@ -132,7 +133,7 @@ function enumerate<T>(as: T[]) {
   )
 }
 
-function partitateTask(task: (readonly [string, MaybeNotFound<DriveDetails>])[]) {
+function partitateTask(task: (readonly [string, MaybeNotFound<Details>])[]) {
   return pipe(
     task,
     A.partitionMapWithIndex((idx, [dwid, result]) =>
@@ -145,7 +146,7 @@ function partitateTask(task: (readonly [string, MaybeNotFound<DriveDetails>])[])
 }
 
 const putFoundMissed = ({ found, missed }: {
-  found: DriveDetails[]
+  found: Details[]
   missed: string[]
 }) =>
   pipe(
@@ -166,7 +167,7 @@ export const getActual = (path: NormalizedPath) =>
     withEmptyCache(Cache.semigroup),
   )
 
-export const getActualRelative = (rest: string[], actualParent: DriveDetails) =>
+export const getActualRelative = (rest: string[], actualParent: Details) =>
   pipe(
     logg(`getActualRelative: parent=${actualParent.drivewsid} rest=[${rest}]`),
     () => readEnv,
@@ -235,7 +236,7 @@ export const retrieveItemDetailsInFoldersSavingE = (
     ),
   )
 
-export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<MaybeNotFound<DriveDetails>[]> => {
+export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<MaybeNotFound<Details>[]> => {
   return pipe(
     readEnv,
     SRTE.bind('task', ({ cache }) =>
@@ -247,7 +248,7 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<Maybe
         readEnv,
         SRTE.chain(() =>
           pipe(
-            SRTE.fromTaskEither<Error, { found: DriveDetails[]; missed: string[] }, Cache, DriveApi>(
+            SRTE.fromTaskEither<Error, { found: Details[]; missed: string[] }, Cache, DriveApi>(
               missed.length > 0
                 ? api.retrieveItemDetailsInFoldersS(missed)
                 : TE.of({ missed: [], found: [] }),
@@ -270,14 +271,14 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<Maybe
   )
 }
 
-export const retrieveItemDetailsInFoldersCachingO = (drivewsids: string[]): DriveM<O.Option<DriveDetails>[]> => {
+export const retrieveItemDetailsInFoldersCachingO = (drivewsids: string[]): DriveM<O.Option<Details>[]> => {
   return pipe(
     retrieveItemDetailsInFolders(drivewsids),
     SRTE.map(A.map(asOption)),
   )
 }
 
-export const retrieveItemDetailsInFoldersCachingE = (drivewsids: string[]): DriveM<DriveDetails[]> => {
+export const retrieveItemDetailsInFoldersCachingE = (drivewsids: string[]): DriveM<Details[]> => {
   return pipe(
     retrieveItemDetailsInFoldersCachingO(drivewsids),
     SRTE.map(flow(O.sequenceArray, O.map(RA.toArray))),
@@ -287,27 +288,27 @@ export const retrieveItemDetailsInFoldersCachingE = (drivewsids: string[]): Driv
 
 export const expectSome = SRTE.chainOptionK(() => err(`invalid response (empty array)`))
 
-export const retrieveItemDetailsInFolder = (drivewsid: string): DriveM<O.Option<DriveDetails>> =>
+export const retrieveItemDetailsInFolder = (drivewsid: string): DriveM<O.Option<Details>> =>
   pipe(
     retrieveItemDetailsInFolders([drivewsid]),
     expectSome(A.lookup(0)),
     SRTE.map(asOption),
   )
 
-export const retrieveItemDetailsInFolderCachingE = (drivewsid: string): DriveM<DriveDetails> =>
+export const retrieveItemDetailsInFolderCachingE = (drivewsid: string): DriveM<Details> =>
   pipe(
     retrieveItemDetailsInFolder(drivewsid),
     SRTE.chain(v => SRTE.fromOption(() => NotFoundError.create(`${drivewsid} was not found`))(v)),
   )
 
-const getSubfolders = (folders: DriveDetails[]) =>
+const getSubfolders = (folders: Details[]) =>
   pipe(
     folders,
     A.map(folder => pipe(folder.items, A.filter(isFolderLikeItem))),
     A.reduce(FolderLikeItemM.empty, FolderLikeItemM.concat),
   )
 
-export const getRoot = (): DriveM<DriveDetailsRoot> =>
+export const getRoot = (): DriveM<DetailsRoot> =>
   pipe(
     retrieveItemDetailsInFolder(rootDrivewsid),
     SRTE.filterOrElseW(O.isSome, () => MissinRootError.create(`misticaly missing root details`)),
@@ -329,7 +330,7 @@ export const getFolderRecursive = (
     expectSome(A.lookup(0)),
   )
 
-export const getFolderByPath = (path: string): DriveM<DriveDetails> =>
+export const getFolderByPath = (path: string): DriveM<Details> =>
   pipe(
     getItemByPath(path),
     SRTE.filterOrElse(
@@ -341,11 +342,11 @@ export const getFolderByPath = (path: string): DriveM<DriveDetails> =>
 
 export const getFileOrFolderByPath = (
   path: string,
-): DriveM<DriveDetails | DriveChildrenItemFile> =>
+): DriveM<Details | DriveChildrenItemFile> =>
   pipe(
     getItemByPath(path),
     SRTE.chain(item =>
-      isFolderLike(item) && !isFolderDetails(item)
+      isFolderLike(item) && !isDetails(item)
         ? retrieveItemDetailsInFolderCachingE(item.drivewsid)
         : SRTE.of(item)
     ),
@@ -353,9 +354,9 @@ export const getFileOrFolderByPath = (
 
 export const ensureDetails = (
   itemOrDetails: DriveFolderLike | DriveChildrenItemFile,
-): DriveM<DriveDetails | DriveChildrenItemFile> =>
+): DriveM<Details | DriveChildrenItemFile> =>
   pipe(
-    isFolderLike(itemOrDetails) && !isFolderDetails(itemOrDetails)
+    isFolderLike(itemOrDetails) && !isDetails(itemOrDetails)
       ? retrieveItemDetailsInFolderCachingE(itemOrDetails.drivewsid)
       : SRTE.of(itemOrDetails),
   )
@@ -364,9 +365,9 @@ export const ensureDetailsC = chain(ensureDetails)
 
 export const ensureDetailsForFolderLike = (
   itemOrDetails: DriveFolderLike,
-): DriveM<DriveDetails> =>
+): DriveM<Details> =>
   pipe(
-    !isFolderDetails(itemOrDetails)
+    !isDetails(itemOrDetails)
       ? retrieveItemDetailsInFolderCachingE(itemOrDetails.drivewsid)
       : SRTE.of(itemOrDetails),
   )
@@ -397,7 +398,7 @@ export const withEmptyCache = <T>(sg: Semigroup<Cache>) =>
 
 type DetailsOrFile = DriveFolderLike | DriveChildrenItemFile
 type MaybePartial = E.Either<
-  { validPath: NA.NonEmptyArray<DriveDetails>; rest: string[] },
+  { validPath: NA.NonEmptyArray<Details>; rest: string[] },
   DetailsOrFile
 >
 
@@ -431,10 +432,10 @@ export const getItemByPathRelativeG = (
           ado({
             parent: pipe(
               parent,
-              SRTE.chain((parent): DriveM<DriveDetails> =>
+              SRTE.chain((parent): DriveM<Details> =>
                 isFile(parent)
                   ? SRTE.left(err(`${parent.drivewsid} is not a folder`))
-                  : !isFolderDetails(parent)
+                  : !isDetails(parent)
                   ? retrieveItemDetailsInFolderCachingE(parent.drivewsid)
                   : SRTE.of(parent)
               ),
@@ -481,7 +482,7 @@ export const getItemByPathRelative = (
   )
 }
 
-export const getItemByPath = (path: string): DriveM<DriveDetails | DriveChildrenItem> => {
+export const getItemByPath = (path: string): DriveM<Details | DriveChildrenItem> => {
   const [, ...parsedPath] = parsePath(path)
 
   return pipe(
@@ -547,7 +548,7 @@ export const updateFolderDetailsByPath = (
     ),
   )
 
-export const putDetailss = (detailss: DriveDetails[]): DriveM<void> =>
+export const putDetailss = (detailss: Details[]): DriveM<void> =>
   pipe(
     readEnv,
     SRTE.chainW(({ cache }) =>
@@ -688,18 +689,19 @@ export const saveCacheFirst = <T>(cacheFile: string) =>
       chain(v =>
         pipe(
           readEnv,
+          logS(() => `saving cache`, cacheLogger.debug),
           SRTE.chain(({ cache }) => SRTE.fromTaskEither(Cache.trySaveFile(cache, cacheFile))),
           SRTE.chain(() => of(v)),
         )
       ),
     )
 
-const shallowFolder = (details: DriveDetails): RecursiveFolder => ({
+const shallowFolder = (details: Details): RecursiveFolder => ({
   details,
   deep: false,
 })
 
-const deepFolder = (details: DriveDetails, children: RecursiveFolder[]): RecursiveFolder => ({
+const deepFolder = (details: Details, children: RecursiveFolder[]): RecursiveFolder => ({
   details,
   children,
   deep: true,
@@ -723,9 +725,9 @@ const groupBy = <T>(f: (item: T) => string): (items: T[]) => Record<string, T[]>
   }
 
 const zipWithChildren = (
-  folders: DriveDetails[],
+  folders: Details[],
   itemByParentId: Record<string, RecursiveFolder[]>,
-): (readonly [DriveDetails, RecursiveFolder[]])[] =>
+): (readonly [Details, RecursiveFolder[]])[] =>
   pipe(
     folders,
     A.map(folder =>
