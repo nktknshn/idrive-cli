@@ -1,28 +1,12 @@
-import * as A from 'fp-ts/lib/Array'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
-import * as J from 'fp-ts/lib/Json'
-import * as O from 'fp-ts/lib/Option'
-import { snd } from 'fp-ts/lib/ReadonlyTuple'
+import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
-import { Cache } from '../../icloud/drive/cache/Cache'
-import { isFolderLikeCacheEntity } from '../../icloud/drive/cache/cachef'
 import * as V from '../../icloud/drive/cache/GetByPathResultValid'
-import { DriveApi } from '../../icloud/drive/drive-api'
 import * as DF from '../../icloud/drive/fdrive'
 import { isFolderLike } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
-import { logger } from '../../lib/logging'
-import { EmptyObject } from '../../lib/types'
 import { cliAction } from '../cli-action'
 import { Env } from '../types'
-import {
-  compareDetails,
-  compareItemWithHierarchy,
-  getCachedDetailsPartialWithHierarchyById,
-  normalizePath,
-} from './helpers'
+import { normalizePath } from './helpers'
 
 export const move = ({
   sessionFile,
@@ -43,7 +27,14 @@ export const move = ({
       const res = pipe(
         // DF.readEnv,
         DF.Do,
+        // src must be present
         SRTE.bind('srcitem', () => DF.ls(nsrc)),
+        /*
+          dst must be either
+          - an existing folder. then we move srcitem into it
+          - partially valid path with path equal to the path of src and a singleton rest. Then we rename the item
+          - partially valid path with path *not* equal to the path of src and a singleton rest. Then we move the item into the path *and* rename the item
+        */
         SRTE.bind('dstitem', () =>
           pipe(
             DF.lsPartial(ndst),

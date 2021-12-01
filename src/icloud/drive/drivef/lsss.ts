@@ -160,6 +160,8 @@ const concatCachedWithValidated = (
       cached
       [/ dir0 dir1 dir2 ] [ dir3 file1 ]
       validated
+      [ / dir0 dir1 ] [ dir2 ]
+      result
       [ / dir0 dir1 ] [ dir2 dir3 file1 ]
       */
 
@@ -204,11 +206,7 @@ export const validateCachedPaths = (
   )
 }
 
-type PartialPath = H.Partial
-
 type LssResult = V.GetByPathResult
-// | { valid: true; target: DetailsOrFile }
-// | { valid: false; validPart: NEA<DriveDetails>; rest: NEA<string>; error: Error }
 
 const handleFiles = (
   [item, [rest, partial]]: [O.Some<DriveChildrenItemFile>, [string[], V.GetByPathResultInvalid]],
