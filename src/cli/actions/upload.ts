@@ -1,5 +1,6 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import { isSome } from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -61,6 +62,32 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
   return `${type}::${zone}::${document_id}`
 }
 
+const uploadOverwrighting = (
+  { src, dst }: { dst: V.GetByPathResultValidWithFile; src: string },
+) => {
+  const dstitem = V.target(dst)
+  const parent = NA.last(dst.path.details)
+  return pipe(
+    DF.readEnv,
+    SRTE.bind('uploadResult', ({ api }) => DF.fromTaskEither(api.upload(src, parent.docwsid))),
+    SRTE.bind('removeResult', ({ api }) => {
+      return DF.fromTaskEither(api.moveItemsToTrash([dstitem]))
+    }),
+    DF.chain(({ api, uploadResult, removeResult }) => {
+      const drivewsid = getDrivewsid(uploadResult)
+      return pipe(
+        api.renameItems([{
+          drivewsid,
+          etag: uploadResult.etag,
+          ...parseName(fileName(dstitem)),
+        }]),
+        DF.fromTaskEither,
+        DF.map(constVoid),
+      )
+    }),
+  )
+}
+
 const handle = (
   { src, dst, overwright }: { dst: V.GetByPathResult; src: string; overwright: boolean },
 ): DF.DriveM<void> => {
@@ -81,36 +108,17 @@ const handle = (
       )
     }
     //
-    else if (overwright) {
-      const parent = NA.last(dst.path.left)
-      return pipe(
-        DF.readEnv,
-        SRTE.bind('uploadResult', ({ api }) => DF.fromTaskEither(api.upload(src, parent.docwsid))),
-        SRTE.bind('removeResult', ({ api }) => {
-          return DF.fromTaskEither(api.moveItemsToTrash([dstitem]))
-        }),
-        DF.chain(({ api, uploadResult, removeResult }) => {
-          const drivewsid = getDrivewsid(uploadResult)
-          return pipe(
-            api.renameItems([{
-              drivewsid,
-              etag: uploadResult.etag,
-              ...parseName(fileName(dstitem)),
-            }]),
-            DF.fromTaskEither,
-            DF.map(constVoid),
-          )
-        }),
-      )
+    else if (overwright && V.isValidWithFile(dst)) {
+      return uploadOverwrighting({ src, dst })
     }
 
     return DF.errS(`invalid destination path: ${V.asString(dst)} It's a file`)
   }
 
-  if (dst.path.right.length == 1) {
+  if (dst.path.rest.length == 1) {
     // upload and rename
-    const dstitem = NA.last(dst.path.left)
-    const fname = NA.head(dst.path.right)
+    const dstitem = NA.last(dst.path.details)
+    const fname = NA.head(dst.path.rest)
     if (isFolderLike(dstitem)) {
       return pipe(
         DF.readEnv,

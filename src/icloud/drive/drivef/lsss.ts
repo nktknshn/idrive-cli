@@ -111,7 +111,7 @@ const concatCachedWithValidated = (
 
       if (O.isSome(cached.file)) {
         const fname = fileName(cached.file.value)
-        const parent = NA.last(validated.left)
+        const parent = NA.last(validated.details)
 
         return pipe(
           findInParent(parent, fileName(cached.file.value)),
@@ -126,15 +126,15 @@ const concatCachedWithValidated = (
           E.fold(
             (e) =>
               V.invalidResult(
-                H.partialPath(validated.left, [fname]),
+                H.partialPath(validated.details, [fname]),
                 e,
               ),
-            file => V.validResult(validated.left, O.some(file)),
+            file => V.validResult(validated.details, O.some(file)),
           ),
         )
       }
       else {
-        return V.validResult(validated.left)
+        return V.validResult(validated.details)
       }
     }
     else {
@@ -148,8 +148,8 @@ const concatCachedWithValidated = (
       // the cached part of the path is valid
       return V.invalidResult(
         H.partialPath(
-          validated.left,
-          cached.path.right,
+          validated.details,
+          cached.path.rest,
         ),
         cached.error,
       )
@@ -168,8 +168,8 @@ const concatCachedWithValidated = (
 
       return V.invalidResult(
         H.partialPath(
-          validated.left,
-          NA.concat(validated.right, cached.path.right),
+          validated.details,
+          NA.concat(validated.rest, cached.path.rest),
         ),
         err(`the path changed`),
       )
@@ -177,9 +177,7 @@ const concatCachedWithValidated = (
   }
 }
 
-/*
-
-*/
+/** validates cached entities returning the parts that are not changed */
 export const validateCachedPaths = (
   paths: NEA<NormalizedPath>,
 ): DF.DriveM<NEA<V.GetByPathResult>> => {
@@ -195,7 +193,7 @@ export const validateCachedPaths = (
     SRTE.chain(({ cached }) =>
       pipe(
         logg(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
-        () => validateHierarchies(pipe(cached, NA.map(_ => _.path.left))),
+        () => validateHierarchies(pipe(cached, NA.map(_ => _.path.details))),
         SRTE.map(NA.zip(cached)),
         SRTE.map(NA.map(([validated, cached]): V.GetByPathResult => {
           /* by this moment we have validated hierarchy the path (excluding file) */
@@ -216,12 +214,12 @@ const handleFiles = (
     rest,
     A.match(
       // if the rest is empty the file is the target
-      (): V.GetByPathResultValid => ({ valid: true, file: item, path: H.validPath(partial.path.left) }),
+      (): V.GetByPathResultValid => ({ valid: true, file: item, path: H.validPath(partial.path.details) }),
       // otherwise this is mistake to try to enter the file as a into a folder
       (rest): V.GetByPathResult => ({
         valid: false,
         error: ItemIsNotFolderError.create(`item is not folder`),
-        path: H.partialPath(partial.path.left, NA.concat([fileName(item.value)], rest)),
+        path: H.partialPath(partial.path.details, NA.concat([fileName(item.value)], rest)),
       }),
     ),
   )
@@ -271,7 +269,7 @@ const handleFolders = (task: NEA<DepperFolders>): DF.DriveM<NEA<LssResult>> => {
             NA.map(([details, [item, [rest, partial]]]): V.GetByPathResultInvalid =>
               V.invalidResult(
                 H.partialPath(
-                  H.concat(partial.path.left, [details]),
+                  H.concat(partial.path.details, [details]),
                   rest,
                 ),
                 err(`we need to go deepr)`),
@@ -284,7 +282,7 @@ const handleFolders = (task: NEA<DepperFolders>): DF.DriveM<NEA<LssResult>> => {
         ([details, [item, [rest, partial]]]): V.GetByPathResultValid => {
           return {
             valid: true,
-            path: H.validPath(H.concat(partial.path.left, [details])),
+            path: H.validPath(H.concat(partial.path.details, [details])),
             file: O.none,
           }
         },
@@ -322,8 +320,8 @@ const retrivePartials = (
 
   const subItems = pipe(
     partialPaths,
-    NA.map(_ => findInParent(NA.last(_.path.left), NA.head(_.path.right))),
-    NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.path.right)), NA.zip(partialPaths))),
+    NA.map(_ => findInParent(NA.last(_.path.details), NA.head(_.path.rest))),
+    NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.path.rest)), NA.zip(partialPaths))),
   )
 
   return modifySubsetDF(
@@ -336,8 +334,8 @@ const retrivePartials = (
       return {
         valid: false,
         error: NotFoundError.createTemplate(
-          NA.head(partial.path.right),
-          fileName(NA.last(partial.path.left)),
+          NA.head(partial.path.rest),
+          fileName(NA.last(partial.path.details)),
         ),
         path: partial.path,
       }
@@ -366,17 +364,13 @@ const getActuals = (
   )
 }
 
-const retrieveRootIfMissing = (): DF.DriveM<void> => {
-  return pipe(DF.getRoot(), DF.map(constVoid))
-}
-
 export const getByPaths = (
   paths: NEA<NormalizedPath>,
 ): DF.DriveM<NEA<LssResult>> => {
   const res = pipe(
     logg(`getByPath. ${paths}`),
     // the domain logic implies there is root details in cache
-    () => retrieveRootIfMissing(),
+    () => DF.retrieveRootIfMissing(),
     DF.chain(() => validateCachedPaths(paths)),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),

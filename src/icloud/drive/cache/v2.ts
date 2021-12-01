@@ -94,14 +94,14 @@ export const getPartialValidPathV2 = (
                   result.valid
                     ? ({
                       valid: true,
-                      path: H.validPath<DetailsPath>(NA.concat([parentEntity], result.path.left)),
+                      path: H.validPath<DetailsPath>(NA.concat([parentEntity], result.path.details)),
                       file: result.file,
                     })
                     : ({
                       valid: false,
                       path: H.partialPath<DetailsPath>(
-                        NA.concat([parentEntity], result.path.left),
-                        result.path.right,
+                        NA.concat([parentEntity], result.path.details),
+                        result.path.rest,
                       ),
                       error: result.error,
                     }),

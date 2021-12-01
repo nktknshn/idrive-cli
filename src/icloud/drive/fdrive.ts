@@ -97,6 +97,10 @@ export const lsdir = (path: NormalizedPath) =>
     SRTE.filterOrElse(isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
+export const retrieveRootIfMissing = (): DriveM<void> => {
+  return pipe(getRoot(), map(constVoid))
+}
+
 // export type DriveME<A> = SRTE.StateReaderTaskEither<{
 //   cache: Cache,
 //   d5

@@ -262,6 +262,9 @@ export interface NormalizedPathBrand {
 
 export type Branded<A, B> = A & Brand<B>
 
+/**
+ * NormalizedPath has Path.normalize applied and no trailing slash
+ */
 export type NormalizedPath = Branded<string, NormalizedPathBrand>
 
 const stripSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')

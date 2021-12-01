@@ -105,16 +105,16 @@ const handle = (
   }
 
   if (
-    H.eq.equals(dstitem.path.left, srcitem.path.left)
-    && dstitem.path.right.length == 1
+    H.eq.equals(dstitem.path.details, srcitem.path.details)
+    && dstitem.path.rest.length == 1
   ) {
-    const fname = NA.head(dstitem.path.right)
+    const fname = NA.head(dstitem.path.rest)
     return caseRename(src, fname)
   }
 
-  if (dstitem.path.right.length == 1) {
-    const dst = NA.last(dstitem.path.left)
-    const fname = NA.head(dstitem.path.right)
+  if (dstitem.path.rest.length == 1) {
+    const dst = NA.last(dstitem.path.details)
+    const fname = NA.head(dstitem.path.rest)
 
     return caseMoveAndRename(src, dst, fname)
   }

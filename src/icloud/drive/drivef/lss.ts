@@ -56,7 +56,7 @@ export const lss = (paths: NormalizedPath[]): DF.DriveM<DetailsOrFile[]> => {
           res.valid
             ? DF.of(V.target(res))
             : DF.left<DetailsOrFile>(
-              err(`error: ${res.error}. validPart=${res.path.left.map(fileName)} rest=[${res.path.right}]`),
+              err(`error: ${res.error}. validPart=${res.path.details.map(fileName)} rest=[${res.path.rest}]`),
             )
         ),
         SRTE.sequenceArray,

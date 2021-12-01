@@ -9,6 +9,8 @@ import { Details, DriveChildrenItemFile } from '../types'
 
 export type GetByPathResultValid = { valid: true; path: H.Valid; file: O.Option<DriveChildrenItemFile> }
 
+export type GetByPathResultValidWithFile = { valid: true; path: H.Valid; file: O.Some<DriveChildrenItemFile> }
+
 export type GetByPathResultInvalid = { valid: false; path: H.Partial; error: Error }
 
 export type GetByPathResult =
@@ -18,8 +20,12 @@ export type GetByPathResult =
 export const target = (res: GetByPathResultValid): Details | DriveChildrenItemFile => {
   return pipe(
     res.file,
-    O.foldW(() => NA.last(res.path.left), identity),
+    O.foldW(() => NA.last(res.path.details), identity),
   )
+}
+
+export const isValidWithFile = (res: GetByPathResult): res is GetByPathResultValidWithFile => {
+  return res.valid === true && O.isSome(res.file)
 }
 
 export const validResult = (path: H.Hierarchy, file: O.Option<DriveChildrenItemFile> = O.none): GetByPathResult => ({
@@ -36,15 +42,15 @@ export const invalidResult = (path: H.Partial, error: Error): GetByPathResultInv
 
 export const showGetByPathResult = (p: GetByPathResult) => {
   if (p.valid) {
-    return `valid: ${p.path.left.map(fileName)} file: ${pipe(p.file, O.fold(() => `none`, fileName))}`
+    return `valid: ${p.path.details.map(fileName)} file: ${pipe(p.file, O.fold(() => `none`, fileName))}`
   }
-  return `invalid (${p.error.message}). valid part ${p.path.left.map(fileName)}, rest: ${p.path.right}`
+  return `invalid (${p.error.message}). valid part ${p.path.details.map(fileName)}, rest: ${p.path.rest}`
 }
 
 export const asString = (result: GetByPathResultValid) => {
   return normalizePath(
     [
-      ...result.path.left.map(fileName),
+      ...result.path.details.map(fileName),
       ...pipe(result.file, O.fold(() => [], flow(fileName, A.of))),
     ].join('/'),
   )
