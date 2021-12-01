@@ -6,7 +6,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath } from '../../../cli/actions/helpers'
-import { FolderLikeMissingDetailsError, ItemIsNotFolder, NotFoundError } from '../errors'
+import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { fileName, parsePath } from '../helpers'
 import {

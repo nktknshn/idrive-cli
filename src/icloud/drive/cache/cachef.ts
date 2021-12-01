@@ -13,7 +13,7 @@ import { hierarchyToPath } from '../../../cli/actions/helpers'
 import { err } from '../../../lib/errors'
 import { cacheLogger, logg, logger, logReturnAs } from '../../../lib/logging'
 import { cast, hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
-import { FolderLikeMissingDetailsError, ItemIsNotFolder, MissinRootError, NotFoundError } from '../errors'
+import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { fileName, parsePath } from '../helpers'
 import {
   DriveChildrenItem,
@@ -206,7 +206,7 @@ export const assertFolderWithDetailsEntity = (entity: CacheEntity): E.Either<Err
   pipe(
     E.of(entity),
     E.filterOrElse(isFolderLikeCacheEntity, p =>
-      ItemIsNotFolder.create(`assertFolderWithDetails: ${p.content.drivewsid} is not a folder`)),
+      ItemIsNotFolderError.create(`assertFolderWithDetails: ${p.content.drivewsid} is not a folder`)),
     E.filterOrElse(isDetailsCacheEntity, p =>
       FolderLikeMissingDetailsError.create(`${p.content.drivewsid} is missing details`)),
   )
@@ -218,7 +218,7 @@ export const assertFolderWithDetails = (
     E.of(entity),
     E.filterOrElse(
       isFolderLike,
-      p => ItemIsNotFolder.create(`assertFolderWithDetails: ${p.drivewsid} is not a folder`),
+      p => ItemIsNotFolderError.create(`assertFolderWithDetails: ${p.drivewsid} is not a folder`),
     ),
     E.filterOrElse(isFolderDetails, p => FolderLikeMissingDetailsError.create(`${p.drivewsid} is missing details`)),
   )
@@ -315,10 +315,10 @@ export const getPartialValidPath = (
                 {
                   valid: false,
                   error: e,
-                  rest: (ItemIsNotFolder.is(e) || FolderLikeMissingDetailsError.is(e)
+                  rest: (ItemIsNotFolderError.is(e) || FolderLikeMissingDetailsError.is(e)
                     ? pipe(path, A.dropLeft(p.entities.length - 2))
                     : pipe(path, A.dropLeft(p.entities.length - 1))) as NA.NonEmptyArray<string>,
-                  validPart: (ItemIsNotFolder.is(e) || FolderLikeMissingDetailsError.is(e)
+                  validPart: (ItemIsNotFolderError.is(e) || FolderLikeMissingDetailsError.is(e)
                     ? pipe(p.entities, A.dropRight(1))
                     : p.entities) as NA.NonEmptyArray<CacheEntityDetails>,
                 },

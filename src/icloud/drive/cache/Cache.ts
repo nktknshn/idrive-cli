@@ -12,13 +12,11 @@ import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logger, logReturn } from '../../../lib/logging'
-import * as H from '../drivef/validation'
-import { ItemIsNotFolder, MissinRootError } from '../errors'
+import { ItemIsNotFolderError, MissinRootError } from '../errors'
 import { fileName, parsePath } from '../helpers'
 import {
   asOption,
   DriveChildrenItem,
-  DriveChildrenItemFile,
   DriveDetails,
   DriveDetailsAppLibrary,
   DriveDetailsFolder,
@@ -50,6 +48,7 @@ import {
   removeById,
   validateCacheJson,
 } from './cachef'
+import { GetByPathResult } from './GetByPathResultValid'
 import {
   CacheEntity,
   CacheEntityAppLibrary,
@@ -63,17 +62,6 @@ import {
 } from './types'
 import { getPartialValidPathV2 } from './v2'
 import { FullyCached, partialPath, PartialyCached } from './validatePath'
-
-export type GetByPathVEResult =
-  | { valid: true; path: H.Valid; file: O.Option<DriveChildrenItemFile> }
-  | { valid: false; path: H.Partial; error: Error }
-
-export const showGetByPathVEResult = (p: GetByPathVEResult) => {
-  if (p.valid) {
-    return `valid: ${p.path.left.map(fileName)}. file: ${pipe(p.file, O.fold(() => `none`, fileName))}`
-  }
-  return `invalid (${p.error.message}). valid part ${p.path.left.map(fileName)}, rest: ${p.path.right}`
-}
 
 export class Cache {
   private readonly cache: CacheF
@@ -336,7 +324,7 @@ export class Cache {
 
   getByPathVE = (
     path: NormalizedPath,
-  ): E.Either<Error, GetByPathVEResult> => {
+  ): E.Either<Error, GetByPathResult> => {
     const parts = parsePath(path)
     const rest = pipe(parts, A.dropLeft(1))
 
@@ -347,7 +335,7 @@ export class Cache {
         pipe(
           this.cache,
           getPartialValidPathV2(rest, root.content),
-          v => v as GetByPathVEResult,
+          v => v as GetByPathResult,
         )
       ),
       // E.map(_ => _.)

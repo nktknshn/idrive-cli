@@ -9,7 +9,7 @@ import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath } from '../../../cli/actions/helpers'
 import { NEA } from '../../../lib/types'
 import * as H from '../drivef/validation'
-import { FolderLikeMissingDetailsError, ItemIsNotFolder, NotFoundError } from '../errors'
+import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { fileName, parsePath } from '../helpers'
 import {
@@ -36,7 +36,7 @@ export const getPartialValidPathV2 = (
 ) =>
   (cache: CacheF): GetByPathVEResult => {
     if (A.isEmpty(path)) {
-      return { valid: true, path: H.valid([parentEntity]), file: O.none }
+      return { valid: true, path: H.validPath([parentEntity]), file: O.none }
     }
 
     assert(A.isNonEmpty(path))
@@ -50,7 +50,7 @@ export const getPartialValidPathV2 = (
     if (O.isNone(subitem)) {
       return {
         valid: false,
-        path: H.partial<DetailsPath>(result, path),
+        path: H.partialPath<DetailsPath>(result, path),
         error: NotFoundError.createTemplate(subItemName, fileName(parentEntity)),
       }
     }
@@ -59,14 +59,14 @@ export const getPartialValidPathV2 = (
       if (A.isNonEmpty(rest)) {
         return {
           valid: false,
-          path: H.partial<DetailsPath>(result, path),
-          error: ItemIsNotFolder.createTemplate(subitem.value),
+          path: H.partialPath<DetailsPath>(result, path),
+          error: ItemIsNotFolderError.createTemplate(subitem.value),
         }
       }
       else {
         return {
           valid: true,
-          path: H.valid<DetailsPath>([parentEntity]),
+          path: H.validPath<DetailsPath>([parentEntity]),
           file: O.some(subitem.value),
         }
       }
@@ -81,7 +81,7 @@ export const getPartialValidPathV2 = (
           E.fold(
             (): GetByPathVEResult => ({
               valid: false,
-              path: H.partial<DetailsPath>(result, path),
+              path: H.partialPath<DetailsPath>(result, path),
               error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
             }),
             ({ content }): GetByPathVEResult =>
@@ -91,12 +91,12 @@ export const getPartialValidPathV2 = (
                   result.valid
                     ? ({
                       valid: true,
-                      path: H.valid<DetailsPath>(NA.concat([parentEntity], result.path.left)),
+                      path: H.validPath<DetailsPath>(NA.concat([parentEntity], result.path.left)),
                       file: result.file,
                     })
                     : ({
                       valid: false,
-                      path: H.partial<DetailsPath>(
+                      path: H.partialPath<DetailsPath>(
                         NA.concat([parentEntity], result.path.left),
                         result.path.right,
                       ),
@@ -114,12 +114,12 @@ export const getPartialValidPathV2 = (
           E.fold(
             (): GetByPathVEResult => ({
               valid: false,
-              path: H.partial<DetailsPath>(result, path),
+              path: H.partialPath<DetailsPath>(result, path),
               error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
             }),
             ({ content }): GetByPathVEResult => ({
               valid: true,
-              path: H.valid<DetailsPath>(NA.concat([parentEntity], [content])),
+              path: H.validPath<DetailsPath>(NA.concat([parentEntity], [content])),
               file: O.none,
             }),
           ),

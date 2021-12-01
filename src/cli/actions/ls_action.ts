@@ -1,3 +1,4 @@
+import assert from 'assert'
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import * as B from 'fp-ts/lib/boolean'
@@ -12,9 +13,11 @@ import { fst, snd } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { Cache } from '../../icloud/drive/cache/Cache'
 import { isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
+import { showGetByPathResult } from '../../icloud/drive/cache/GetByPathResultValid'
 import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../icloud/drive/cache/types'
 import { DriveApi } from '../../icloud/drive/drive-api'
 import { lss } from '../../icloud/drive/drivef/lss'
+import { lsss } from '../../icloud/drive/drivef/lsss'
 import * as DF from '../../icloud/drive/fdrive'
 import { fileName } from '../../icloud/drive/helpers'
 import {
@@ -240,19 +243,25 @@ export const listUnixPath = (
   const opts = { showDocwsid: false, showDrivewsid: listInfo }
   const npaths = paths.map(normalizePath)
 
+  assert(A.isNonEmpty(npaths))
+
   return cliAction(
     { sessionFile, cacheFile, noCache },
     ({ cache, api }) => {
       const res = pipe(
-        lss(npaths),
+        lsss(npaths),
         DF.saveCacheFirst(cacheFile),
         SRTE.map(
           flow(
             A.zip(npaths),
-            A.map(([item, path]) =>
-              isFolderDetails(item)
-                ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
-                : showFileInfo({ ...opts })(item)
+            A.map(([result, path]) => {
+              if (result.valid) {
+                return showGetByPathResult(result)
+              }
+              return showGetByPathResult(result)
+            } // isFolderDetails(item)
+              //   ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
+              //   : showFileInfo({ ...opts })(item)
             ),
             _ => _.join('\n\n'),
           ),

@@ -26,29 +26,19 @@ const same = (a: DriveDetails, b: DriveDetails) => {
     return fileName(a) == fileName(b)
   }
 
-  // if (
-  //   !isHierarchyItemTrash(a) && !isHierarchyItemRoot(a)
-  //   && !isHierarchyItemTrash(b) && !isHierarchyItemRoot(b)
-  // ) {
-  //   return fileName(a) == fileName(b)
-  // }
-
   return true
 }
 export type MaybeValidPath = T.These<Hierarchy, NEA<string>>
-// | { validPart: NEA<DriveDetails>; rest: [] }
-// | { validPart: NEA<DriveDetails>; rest: NEA<string> }
-// | { validPart: DriveDetails[]; rest: NEA<string> }
 
 export const getValidHierarchyPart = (
   actualDetails: [DriveDetailsRoot, ...O.Option<DriveDetails>[]],
   cachedHierarchy: Hierarchy,
 ): WithDetails => {
-  const [root, ...rest] = actualDetails
+  const [root, ...actualRest] = actualDetails
   const [, ...cachedRest] = cachedHierarchy
 
   const actualRestDetails = pipe(
-    rest,
+    actualRest,
     A.takeLeftWhile(O.isSome),
     A.map(_ => _.value),
   )
@@ -67,8 +57,8 @@ export const getValidHierarchyPart = (
       pipe(
         rest,
         A.matchW(
-          () => valid([root, ...validPart]),
-          rest => partial([root, ...validPart], rest),
+          () => validPath([root, ...validPart]),
+          rest => partialPath([root, ...validPart], rest),
         ),
       ),
   )
@@ -87,11 +77,15 @@ export type WithRest<H = Hierarchy> = T.Both<H, NEA<string>> | E.Right<NEA<strin
 export type WithDetails<H = Hierarchy> = T.Both<H, NEA<string>> | E.Left<Hierarchy>
 export type Valid<H = Hierarchy> = E.Left<H>
 
-export const partial = <H>(validPart: H, rest: NEA<string>): Partial<H> => T.both(validPart, rest) as Partial<H>
+export const partialPath = <H>(validPart: H, rest: NEA<string>): Partial<H> => T.both(validPart, rest) as Partial<H>
 
-export const valid = <H>(validPart: H): Valid<H> => T.left(validPart) as Valid<H>
+export const validPath = <H>(validPart: H): Valid<H> => T.left(validPart) as Valid<H>
 
-export const concat = (h: Hierarchy, details: DriveDetails): Hierarchy => NA.concat(h, NA.of(details)) as Hierarchy
+export const concat = (h: Hierarchy, details: NEA<DriveDetails>): Hierarchy => NA.concat(h, details) as Hierarchy
+
+// export const concatPaths = (a: Hierarchy, b: Partial): Hierarchy => {
+//   return partial
+// }
 
 const showDetails = (ds: DriveDetails[]) => {
   return `${ds.map(fileName).join(' → ')}`
@@ -101,8 +95,8 @@ export const showMaybeValidPath = (p: MaybeValidPath): string => {
   return pipe(
     p,
     T.match(
-      (details) => `valid: ${showDetails(details)}`,
-      (rest) => `invalid:  rest ${rest}`,
+      (details) => `valid: [${showDetails(details)}]`,
+      (rest) => `invalid: rest ${rest}`,
       (details, rest) => `partial. valid: [${showDetails(details)}], rest: [${rest}]`,
     ),
   )

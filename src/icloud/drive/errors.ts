@@ -14,23 +14,35 @@ export class NotFoundError extends Error {
   }
 }
 
-export class ItemIsNotFolder extends Error {
-  // readonly tag = 'ItemIsNotFolder'
-  static is(e: Error): e is ItemIsNotFolder {
-    return e instanceof ItemIsNotFolder
+export class ItemIsNotFolderError extends Error {
+  static is(e: Error): e is ItemIsNotFolderError {
+    return e instanceof ItemIsNotFolderError
   }
 
-  static create(message?: string): ItemIsNotFolder {
-    return new ItemIsNotFolder(message)
+  static create(message?: string): ItemIsNotFolderError {
+    return new ItemIsNotFolderError(message)
   }
 
-  static createTemplate(item: HasName): ItemIsNotFolder {
-    return new ItemIsNotFolder(`${item.drivewsid} (${fileName(item)}) is not a folder`)
+  static createTemplate(item: HasName): ItemIsNotFolderError {
+    return new ItemIsNotFolderError(`${item.drivewsid} (${fileName(item)}) is not a folder`)
+  }
+}
+
+export class ItemIsNotFileError extends Error {
+  static is(e: Error): e is ItemIsNotFileError {
+    return e instanceof ItemIsNotFileError
+  }
+
+  static create(message?: string): ItemIsNotFileError {
+    return new ItemIsNotFileError(message)
+  }
+
+  static createTemplate(item: HasName): ItemIsNotFileError {
+    return new ItemIsNotFileError(`${item.drivewsid} (${fileName(item)}) is not a file`)
   }
 }
 
 export class FolderLikeMissingDetailsError extends Error {
-  // readonly tag = 'ItemIsNotFolder'
   static is(e: Error): e is FolderLikeMissingDetailsError {
     return e instanceof FolderLikeMissingDetailsError
   }

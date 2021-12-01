@@ -56,7 +56,7 @@ import * as S from 'fp-ts/Semigroup'
 import { NEA } from '../../lib/types'
 import { log } from './drivef/ls'
 import { lss } from './drivef/lss'
-import { ItemIsNotFolder, MissinRootError, NotFoundError } from './errors'
+import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
 import { rootDrivewsid } from './types-io'
 
 export { lss }
@@ -81,7 +81,7 @@ export const lsdir = (path: NormalizedPath) =>
         fromOption(() => err(`wat`)),
       ),
     ),
-    SRTE.filterOrElse(isFolderDetails, () => ItemIsNotFolder.create(`${path} is not a folder`)),
+    SRTE.filterOrElse(isFolderDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
 // export type DriveME<A> = SRTE.StateReaderTaskEither<{
@@ -321,7 +321,7 @@ export const getFolderByPath = (path: string): DriveM<DriveDetails> =>
     getItemByPath(path),
     SRTE.filterOrElse(
       isFolderLike,
-      (item) => ItemIsNotFolder.create(`${path} is not folder details (type=${item.type})`),
+      (item) => ItemIsNotFolderError.create(`${path} is not folder details (type=${item.type})`),
     ),
     SRTE.chain(ensureDetailsForFolderLike),
   )
