@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { NormalizedPath } from '../../../cli/actions/helpers'
+import { NormalizedPath } from '../../../cli/cli-drive-actions/helpers'
 import { isFolderLikeCacheEntity } from '../../../icloud/drive/cache/cachef'
 import { CacheEntityFile, CacheEntityFolderLike } from '../../../icloud/drive/cache/types'
 import { Details, DriveChildrenItemFile, Hierarchy } from '../../../icloud/drive/types'

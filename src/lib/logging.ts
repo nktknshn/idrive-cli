@@ -188,4 +188,11 @@ export const teLogS = <T>(
     )
   }
 
+export const initLoggers = (
+  argv: { debug: boolean },
+  loggers: winston.Logger[],
+) => {
+  loggers.forEach(logger => logger.add(argv.debug ? loggingLevels.debug : loggingLevels.info))
+}
+
 export { httplogger, logger, printer }

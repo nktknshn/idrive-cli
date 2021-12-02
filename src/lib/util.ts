@@ -48,6 +48,7 @@ export const separateEithers = flow(
 
 import * as R from 'fp-ts/lib/Record'
 
+import { isString } from 'fp-ts/lib/string'
 import { last } from 'fp-ts/Semigroup'
 
 export const buildRecord = R.fromFoldable(last<string>(), A.Foldable)
@@ -87,4 +88,15 @@ export function splitPair(
     O.fromNullable(new RegExp(`(.*?)${sep}(.*)`).exec(keyVal)),
     O.map(([_, ...vs]) => [vs[0], vs[1]] as const),
   )
+}
+
+export const isKeyOf = <R extends Record<string, unknown>>(
+  commands: R,
+  command: string | number | symbol,
+): command is (keyof R) => {
+  if (!isString(command)) {
+    return false
+  }
+
+  return Object.keys(commands).includes(command)
 }

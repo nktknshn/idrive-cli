@@ -48,6 +48,7 @@ export const upload = (
         SRTE.bind('dst', () => DF.lsPartial(normalizePath(dstpath))),
         SRTE.chain(handle),
         DF.saveCacheFirst(cacheFile),
+        DF.map(() => `Success.`),
       )
 
       return pipe(

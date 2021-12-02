@@ -3,6 +3,8 @@ import * as E from 'fp-ts/lib/Either'
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as TE from 'fp-ts/lib/TaskEither'
+import { fst } from 'fp-ts/lib/Tuple'
 import * as V from '../../icloud/drive/cache/GetByPathResultValid'
 import { DriveApi } from '../../icloud/drive/drive-api'
 import { DetailsOrFile } from '../../icloud/drive/drivef/lss'
@@ -137,9 +139,10 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
         SRTE.bind('srcdst', () => DF.lssPartial([nsrc, ndst])),
         SRTE.chain(handle),
         DF.saveCacheFirst(cacheFile),
+        DF.map(() => `Success.`),
       )
 
-      return res(cache)(api)
+      return pipe(res(cache)(api), TE.map(fst))
     },
   )
 }
