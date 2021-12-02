@@ -21,20 +21,24 @@ export function parseArgs() {
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
         }))
-    .command('update [path]', 'update cache', _ =>
-      _
-        .positional('path', { type: 'string', default: '/' })
-        .options({
-          fullPath: { alias: ['f'], default: false, type: 'boolean' },
-          recursive: { alias: ['R'], default: false, type: 'boolean' },
-          depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
-        }))
+    // .command('update [path]', 'update cache', _ =>
+    //   _
+    //     .positional('path', { type: 'string', default: '/' })
+    //     .options({
+    //       fullPath: { alias: ['f'], default: false, type: 'boolean' },
+    //       recursive: { alias: ['R'], default: false, type: 'boolean' },
+    //       depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
+    //     }))
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
-    .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
+    // .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
     .command(
       'rm [paths..]',
       'check updates',
-      (_) => _.positional('paths', { type: 'string', array: true, demandOption: true }),
+      (_) =>
+        _.positional('paths', { type: 'string', array: true, demandOption: true })
+          .options({
+            trash: { alias: ['t'], default: true, type: 'boolean' },
+          }),
     )
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
     .command(

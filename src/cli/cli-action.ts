@@ -12,7 +12,7 @@ import { logger, logReturn, logReturnAs, stderrLogger } from '../lib/logging'
 import { EnvFiles } from './types'
 
 export function cliAction<Args, T>(
-  { sessionFile, cacheFile, noCache }: EnvFiles & { noCache: boolean;  },
+  { sessionFile, cacheFile, noCache }: EnvFiles & { noCache: boolean },
   f: (deps: { cache: Cache; api: DriveApi.DriveApi }) => TE.TaskEither<Error, T>,
 ): TE.TaskEither<Error, T> {
   return pipe(
@@ -40,7 +40,7 @@ export function cliAction<Args, T>(
             //     ? TE.of(constVoid())
             //     : Cache.trySaveFile(cache, cacheFile)
             // ),
-            logReturn(() => stderrLogger.info(`apiCalls: ${JSON.stringify(api.apiCalls)}`)),
+            // logReturn(() => stderrLogger.info(`apiCalls: ${JSON.stringify(api.apiCalls)}`)),
           ),
       )),
     TE.map((_) => _.result),

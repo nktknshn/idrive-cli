@@ -8,6 +8,7 @@
     "drive": "./node_modules/.bin/node dist/cli-drive.js",
     "cache": "./node_modules/.bin/node dist/cli-cache.js",
     "api": "./node_modules/.bin/node dist/cli-api.js",
+    "trash": "./node_modules/.bin/node dist/cli-trash.js",
     "test": "./node_modules/.bin/jest"
   },
   "author": "",

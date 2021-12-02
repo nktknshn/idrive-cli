@@ -1,5 +1,6 @@
 import { identity } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
+import { bind } from 'fp-ts/lib/Chain'
 import * as E from 'fp-ts/lib/Either'
 import { fromEquals } from 'fp-ts/lib/Eq'
 import { constant, constVoid, flow, hole, pipe } from 'fp-ts/lib/function'
@@ -11,6 +12,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/These'
 import { fst, snd } from 'fp-ts/lib/Tuple'
 import { hierarchyToPath, itemWithHierarchyToPath, NormalizedPath } from '../../../cli/cli-drive-actions/helpers'
+import { showDetailsInfo } from '../../../cli/cli-drive-actions/ls_action'
 import { err } from '../../../lib/errors'
 import { modifySubset, modifySubsetDF } from '../../../lib/helpers/projectIndexes'
 import { logf, logg, logger, logReturn, logReturnAs, logReturnS } from '../../../lib/logging'
@@ -43,7 +45,7 @@ import {
   isRootDetails,
 } from '../types'
 import { HierarchyEntry } from '../types'
-import { driveDetails } from '../types-io'
+import { driveDetails, rootDrivewsid } from '../types-io'
 import { lookupCache } from './lookupCache'
 import { log } from './ls'
 // import { getValidHierarchyPart, ValidatedHierarchy } from './validation'
@@ -54,15 +56,14 @@ type DetailsOrFile = (Details | DriveChildrenItemFile)
 const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
 
 const toActual = (
-  cachedHierarchy: H.Hierarchy,
+  cachedPath: Details[],
   actualsRecord: Record<string, O.Option<Details>>,
-): [DetailsRoot, ...O.Option<Details>[]] => {
+): O.Option<Details>[] => {
   return pipe(
-    cachedHierarchy,
-    A.dropLeft(1),
+    cachedPath,
+    // A.dropLeft(1),
     A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
     A.map(O.flatten),
-    details => [cachedHierarchy[0], ...details],
   )
 }
 
@@ -75,28 +76,55 @@ const showHierarchiy = (h: H.Hierarchy) => {
 export const validateHierarchies = (
   cachedHierarchies: NEA<H.Hierarchy>,
 ): DF.DriveM<NEA<H.WithDetails>> => {
-  const drivewsids = pipe(
+  const cachedRoot = cachedHierarchies[0][0]
+  const cachedPaths = pipe(
     cachedHierarchies,
-    NA.flatten,
-    NA.uniq(equalsDrivewsId),
-    NA.map(_ => _.drivewsid),
+    NA.map(A.dropLeft(1)),
+  )
+
+  const drivewsids = pipe(
+    cachedPaths,
+    A.flatten,
+    A.uniq(equalsDrivewsId),
+    A.map(_ => _.drivewsid),
   )
 
   const res = pipe(
     logg(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
-    () => DF.retrieveItemDetailsInFoldersSavingNEA(drivewsids),
-    SRTE.map(ds => NA.zip(drivewsids, ds)),
-    SRTE.map(recordFromTuples),
-    SRTE.map(resultRecord =>
+    () =>
       pipe(
-        cachedHierarchies,
-        NA.map(cached => H.getValidHierarchyPart(toActual(cached, resultRecord), cached)),
+        DF.Do,
+        SRTE.bind('validation', () => DF.retrieveItemDetailsInFoldersSavingNEA([rootDrivewsid, ...drivewsids])),
+      ),
+    SRTE.map(({ validation }) => {
+      const detailsRecord = recordFromTuples(
+        NA.zip([rootDrivewsid, ...drivewsids], validation),
       )
-    ),
+      return pipe(
+        cachedPaths,
+        NA.map(cachedPath =>
+          H.getValidHierarchyPart(
+            [validation[0].value, ...toActual(cachedPath, detailsRecord)],
+            [cachedRoot, ...cachedPath],
+          )
+        ),
+      )
+    }),
+    // SRTE.map(recordFromTuples),
+    // SRTE.map(resultRecord =>
+    //   pipe(
+    //     cachedHierarchies,
+    //     NA.map(cached => H.getValidHierarchyPart(toActual(cached, resultRecord), cached)),
+    //   )
+    // ),
     // SRTE.map(logReturnS(res => res.map(showResult).join(', '))),
   )
 
   return res
+}
+
+const showDetails = (detals: Details) => {
+  return `${detals.type} ${fileName(detals)}. items: [${detals.items.map(fileName)}]`
 }
 
 const concatCachedWithValidated = (
@@ -134,6 +162,7 @@ const concatCachedWithValidated = (
         )
       }
       else {
+        logger.debug(`V.validResult: ${showDetails(NA.last(validated.details))}`)
         return V.validResult(validated.details)
       }
     }
@@ -370,7 +399,12 @@ export const getByPaths = (
   const res = pipe(
     logg(`getByPath. ${paths}`),
     // the domain logic implies there is root details in cache
-    () => DF.retrieveRootIfMissing(),
+    () =>
+      pipe(
+        DF.retrieveRootIfMissing(),
+        // DF.removeByIds([rootDrivewsid]),
+        // DF.chain(() => DF.retrieveRootIfMissing()),
+      ),
     DF.chain(() => validateCachedPaths(paths)),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),

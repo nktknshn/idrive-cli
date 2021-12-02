@@ -159,6 +159,8 @@ export const driveDetails = t.union([
 
 export const invalidIdItem = t.type({ status: t.literal('ID_INVALID') })
 
+// itemDetails
+
 export const itemDetails = t.union([
   t.intersection([itemFolder, t.type({ hierarchy })]),
   t.intersection([itemFile, t.type({ hierarchy })]),
@@ -237,4 +239,18 @@ export const driveDetailsWithHierarchyPartial = t.union([
   rootDetailsWithHierarchyPartial,
   folderDetailsWithHierarchyPartial,
   appLibraryDetailsWithHierarchyPartial,
+])
+
+type TrashRootItem = t.TypeOf<typeof trashItem>
+
+export const trashItem = t.union([
+  t.intersection([itemFolder, t.type({ 'restorePath': t.string })]),
+  t.intersection([itemFile, t.type({ 'restorePath': t.string })]),
+  t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })]),
+])
+
+export const trashItemDetails = t.union([
+  t.intersection([detailsFolder, t.type({ 'restorePath': t.string })]),
+  t.intersection([detailsAppLibrary, t.type({ 'restorePath': t.string })]),
+  // t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })]),
 ])

@@ -31,6 +31,7 @@ import {
   DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemFile,
+  DriveDetailsRootWithHierarchy,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
   DriveItemDetails,
@@ -219,11 +220,17 @@ export const retrieveItemDetailsInFoldersSaving = (
       )
     ),
   )
-
-export const retrieveItemDetailsInFoldersSavingNEA = (
+export function retrieveItemDetailsInFoldersSavingNEA(
+  drivewsids: [typeof rootDrivewsid, ...string[]],
+): DriveM<[O.Some<DriveDetailsRootWithHierarchy>, ...O.Option<DriveDetailsWithHierarchy>[]]>
+export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: NEA<string>,
-): DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>> =>
-  retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>>
+): DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>>
+export function retrieveItemDetailsInFoldersSavingNEA(
+  drivewsids: NEA<string>,
+): DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>> {
+  return retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>>
+}
 
 export const retrieveItemDetailsInFoldersSavingE = (
   drivewsids: NEA<string>,

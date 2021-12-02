@@ -37,22 +37,22 @@ export const getValidHierarchyPart = (
   actualDetails: [DetailsRoot, ...O.Option<Details>[]],
   cachedHierarchy: Hierarchy,
 ): WithDetails => {
-  const [root, ...actualRest] = actualDetails
-  const [, ...cachedRest] = cachedHierarchy
+  const [actualRoot, ...actualPath] = actualDetails
+  const [cachedroot, ...cachedPath] = cachedHierarchy
 
-  const actualRestDetails = pipe(
-    actualRest,
+  const actualPathDetails = pipe(
+    actualPath,
     A.takeLeftWhile(O.isSome),
     A.map(_ => _.value),
   )
 
   return pipe(
-    A.zip(actualRestDetails, cachedRest),
+    A.zip(actualPathDetails, cachedPath),
     A.takeLeftWhile(([a, b]) => same(a, b)),
     _ => ({
-      validPart: A.takeLeft(_.length)(actualRestDetails),
+      validPart: A.takeLeft(_.length)(actualPathDetails),
       rest: pipe(
-        A.dropLeft(_.length)(cachedRest),
+        A.dropLeft(_.length)(cachedPath),
         A.map(fileName),
       ),
     }),
@@ -60,8 +60,8 @@ export const getValidHierarchyPart = (
       pipe(
         rest,
         A.matchW(
-          () => validPath([root, ...validPart]),
-          rest => partialPath([root, ...validPart], rest),
+          () => validPath([actualRoot, ...validPart]),
+          rest => partialPath([actualRoot, ...validPart], rest),
         ),
       ),
   )

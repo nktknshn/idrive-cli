@@ -34,7 +34,6 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
 }
 
 export const decode: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
-  v => v,
   t.array(
     t.UnknownRecord,
   ).decode,

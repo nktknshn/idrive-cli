@@ -15,11 +15,12 @@ import { normalizePath } from './helpers'
 import { showDetailsInfo, showFolderInfo } from './ls_action'
 
 export const rm = (
-  { sessionFile, cacheFile, paths, noCache }: {
+  { sessionFile, cacheFile, paths, noCache, trash }: {
     paths: string[]
     noCache: boolean
     sessionFile: string
     cacheFile: string
+    trash: boolean
   },
 ) => {
   return cliAction({
@@ -31,7 +32,6 @@ export const rm = (
     assert(A.isNonEmpty(paths))
 
     const npaths = pipe(paths, NA.map(normalizePath))
-    // const parentPath = normalizePath(Path.dirname(npath))
 
     const res = pipe(
       DF.Do,
@@ -42,7 +42,7 @@ export const rm = (
         )),
       SRTE.bind('result', ({ items }) =>
         pipe(
-          api.moveItemsToTrash(items),
+          api.moveItemsToTrash(items, trash),
           SRTE.fromTaskEither,
           SRTE.chain(
             resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),

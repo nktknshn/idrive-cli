@@ -72,7 +72,7 @@ const uploadOverwrighting = (
     DF.readEnv,
     SRTE.bind('uploadResult', ({ api }) => DF.fromTaskEither(api.upload(src, parent.docwsid))),
     SRTE.bind('removeResult', ({ api }) => {
-      return DF.fromTaskEither(api.moveItemsToTrash([dstitem]))
+      return DF.fromTaskEither(api.moveItemsToTrash([dstitem], true))
     }),
     DF.chain(({ api, uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)

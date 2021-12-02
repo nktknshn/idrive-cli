@@ -67,7 +67,7 @@ export function apiAction<T>(
         ({ api }, e) =>
           pipe(
             saveSession(sessionFile)(api.getSession().session),
-            logReturn(() => stderrLogger.info(JSON.stringify({ apiCalls: api.apiCalls }))),
+            // logReturn(() => stderrLogger.info(JSON.stringify({ apiCalls: api.apiCalls }))),
           ),
       )),
     TE.map((_) => _.result),

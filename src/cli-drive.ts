@@ -27,10 +27,12 @@ async function main() {
     return
   }
 
-  pipe(
-    commands[command](argv),
+  const commandFunction = commands[command]
+
+  await pipe(
+    commandFunction(argv),
     TE.fold(printer.errorTask, printer.printTask),
-  )
+  )()
 }
 
 main()

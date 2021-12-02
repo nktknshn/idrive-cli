@@ -13,7 +13,7 @@ import { apiLogger, logger, logReturnAs } from '../../lib/logging'
 import { ResponseWithSession } from '../../lib/response-reducer'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
-import { download, retrieveHierarchy, retrieveItemDetails } from './requests'
+import { download, retrieveHierarchy, retrieveItemDetails, retrieveTrashDetails } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
 import { moveItems } from './requests/moveItems'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
@@ -22,11 +22,13 @@ import {
   retrieveItemDetailsInFolders,
   retrieveItemDetailsInFoldersHierarchy,
 } from './requests/retrieveItemDetailsInFolders'
+import { putBackItemsFromTrash, RetrieveTrashDetailsResponse, Trash } from './requests/retrieveTrashDetails'
 import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 import {
   asOption,
   Details,
   DetailsRoot,
+  DriveChildrenItem,
   DriveDetailsPartialWithHierarchy,
   DriveDetailsWithHierarchy,
   DriveItemDetails,
@@ -168,6 +170,24 @@ export class DriveApi {
     return pipe(
       this.retryingWithSession(
         () => renameItems(this.client, this.session, { items }),
+      ),
+    )
+  }
+
+  public retrieveTrashDetails = (): TE.TaskEither<Error, Trash> => {
+    return pipe(
+      this.retryingWithSession(
+        () => retrieveTrashDetails(this.client, this.session),
+      ),
+    )
+  }
+
+  public putBackItemsFromTrash = (
+    items: [{ drivewsid: string; etag: string }],
+  ): TE.TaskEither<Error, { items: DriveChildrenItem[] }> => {
+    return pipe(
+      this.retryingWithSession(
+        () => putBackItemsFromTrash(this.client, this.session, items),
       ),
     )
   }
@@ -348,9 +368,10 @@ export class DriveApi {
 
   public moveItemsToTrash = (
     items: { drivewsid: string; etag: string }[],
+    trash: boolean,
   ): TE.TaskEither<Error, MoveItemToTrashResponse> => {
     return pipe(
-      this.retryingWithSession(() => moveItemsToTrash(this.client, this.session, { items })),
+      this.retryingWithSession(() => moveItemsToTrash(this.client, this.session, { items, trash })),
     )
   }
 
