@@ -8,36 +8,22 @@ import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveChildrenItem, DriveItemDetails } from '../types'
-import { detailsItem, itemDetails, trashItem } from '../types-io'
+import { DetailsTrash, DriveChildrenItem, DriveItemDetails } from '../types'
+import { detailsItem, itemDetails, trashDetails, trashItem } from '../types-io'
 import { applyToSession, decodeJson, expectJson, filterStatus, withResponse } from './filterStatus'
 import { retrieveItemDetailsInFoldersGeneric } from './retrieveItemDetailsInFolders'
 
-const trash = t.type({
-  items: t.array(trashItem),
-  // items: t.array(t.type({
-  //   drivewsid: t.string,
-  //   docwsid: t.string,
-  //   etag: t.string,
-  // })),
-  numberOfItems: t.number,
-  drivewsid: t.literal('TRASH_ROOT'),
-})
-
-export const scheme = t.array(
-  trash,
+export const scheme = t.tuple(
+  [trashDetails],
 )
 
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
 }
 
-export interface Trash extends t.TypeOf<typeof trash> {
-}
-
 export function retrieveTrashDetails(
   client: FetchClientEither,
   { session, accountData }: ICloudSessionValidated,
-): TE.TaskEither<Error, ResponseWithSession<Trash>> {
+): TE.TaskEither<Error, ResponseWithSession<DetailsTrash>> {
   apiLogger.debug('retrieveTrashDetails')
 
   return retrieveItemDetailsInFoldersGeneric(

@@ -1,12 +1,15 @@
+import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import yargs from 'yargs'
+import yargs, { Options } from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { cliAction } from './cli/cli-action'
 import * as AS from './cli/cli-drive-actions'
+import { normalizePath } from './cli/cli-drive-actions/helpers'
 import { defaultCacheFile, defaultSessionFile } from './config'
 import { fileName } from './icloud/drive/helpers'
+import { DetailsTrash } from './icloud/drive/types'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -23,7 +26,7 @@ export function parseArgs() {
       'ls [paths..]',
       'list files in trash',
       _ =>
-        _.positional('paths', { type: 'string', array: true, demandOption: true })
+        _.positional('paths', { type: 'string', array: true, default: ['/'] })
           .options({}),
     )
     .command(
@@ -36,9 +39,22 @@ export function parseArgs() {
     .help()
 }
 
+const showTrash = (trash: DetailsTrash) => {
+  const items = trash.items
+
+  let result = ''
+
+  for (const item of items) {
+    result += fileName(item)
+  }
+}
+
 const ls = (
-  argv: { sessionFile: string; cacheFile: string; noCache: boolean },
+  argv: { sessionFile: string; cacheFile: string; noCache: boolean; paths: string[] },
 ) => {
+  const npaths = pipe(argv.paths, A.map(normalizePath))
+
+  logger.debug(`paths: ${npaths}`)
   return cliAction(
     argv,
     ({ cache, api }) => {

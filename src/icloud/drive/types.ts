@@ -7,6 +7,7 @@ import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
 import * as t from './types-io'
 
+export interface DetailsTrash extends TypeOf<typeof t.trashDetails> {}
 export interface DetailsRoot extends TypeOf<typeof t.detailsRoot> {}
 export interface DetailsFolder extends TypeOf<typeof t.detailsFolder> {}
 export interface DetailsAppLibrary extends TypeOf<typeof t.detailsAppLibrary> {}

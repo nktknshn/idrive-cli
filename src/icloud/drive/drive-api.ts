@@ -22,12 +22,13 @@ import {
   retrieveItemDetailsInFolders,
   retrieveItemDetailsInFoldersHierarchy,
 } from './requests/retrieveItemDetailsInFolders'
-import { putBackItemsFromTrash, RetrieveTrashDetailsResponse, Trash } from './requests/retrieveTrashDetails'
+import { putBackItemsFromTrash, RetrieveTrashDetailsResponse } from './requests/retrieveTrashDetails'
 import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 import {
   asOption,
   Details,
   DetailsRoot,
+  DetailsTrash,
   DriveChildrenItem,
   DriveDetailsPartialWithHierarchy,
   DriveDetailsWithHierarchy,
@@ -174,7 +175,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveTrashDetails = (): TE.TaskEither<Error, Trash> => {
+  public retrieveTrashDetails = (): TE.TaskEither<Error, DetailsTrash> => {
     return pipe(
       this.retryingWithSession(
         () => retrieveTrashDetails(this.client, this.session),

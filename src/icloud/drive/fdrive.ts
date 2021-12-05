@@ -64,6 +64,14 @@ import { rootDrivewsid } from './types-io'
 
 export { lss }
 
+export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
+export const Do = SRTE.of<Cache, DriveApi, Error, {}>({})
+
+// export const log =
+
+const ado = sequenceS(SRTE.Apply)
+const FolderLikeItemM = A.getMonoid<FolderLikeItem>()
+
 export const lssPartial = (paths: NEA<NormalizedPath>) => {
   return lsss(paths)
 }
@@ -106,14 +114,6 @@ export const retrieveRootIfMissing = (): DriveM<void> => {
 //   cache: Cache,
 //   d5
 // }, DriveApi, Error, A>
-
-export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
-export const Do = SRTE.of<Cache, DriveApi, Error, {}>({})
-
-// export const log =
-
-const ado = sequenceS(SRTE.Apply)
-const FolderLikeItemM = A.getMonoid<FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
   cache: SRTE.get<Cache, DriveApi>(),
