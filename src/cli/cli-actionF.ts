@@ -74,6 +74,9 @@ export function apiAction<T>(
   )
 }
 
+export function apiActionM() {
+}
+
 // type CliAction2Deps = {}
 
 // type Dep<R, A> = RTE.ReaderTaskEither<R, Error, A>
