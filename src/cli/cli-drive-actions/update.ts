@@ -41,7 +41,7 @@ export const checkForUpdates = ({
         cache.getFolderByPathE(normalizePath(path)),
         SRTE.fromEither,
         SRTE.chain(_ => DF.updateFoldersDetailsRecursively([_.content.drivewsid])),
-        f => f(cache)(api),
+        f => f(cache)({ api }),
         TE.chainFirst(([items, cache]) => Cache.trySaveFile(cache, cacheFile)),
         TE.map(fst),
       ),

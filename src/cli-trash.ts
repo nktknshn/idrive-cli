@@ -4,12 +4,11 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
 import yargs, { Options } from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { cliAction } from './cli/cli-action'
+import { cliAction, cliActionM } from './cli/cli-action'
 import * as AS from './cli/cli-drive-actions'
 import { normalizePath } from './cli/cli-drive-actions/helpers'
 import { defaultCacheFile, defaultSessionFile } from './config'
-import { fileName } from './icloud/drive/helpers'
-import { DetailsTrash } from './icloud/drive/types'
+import { DetailsTrash, fileName } from './icloud/drive/types'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -55,14 +54,16 @@ const ls = (
   const npaths = pipe(argv.paths, A.map(normalizePath))
 
   logger.debug(`paths: ${npaths}`)
-  return cliAction(
+  return pipe(
     argv,
-    ({ cache, api }) => {
-      return pipe(
-        api.retrieveTrashDetails(),
-        TE.map(_ => _.items.map(fileName).join('\n')),
-      )
-    },
+    cliActionM(
+      ({ cache, api }) => {
+        return pipe(
+          api.retrieveTrashDetails(),
+          TE.map(_ => _.items.map(fileName).join('\n')),
+        )
+      },
+    ),
   )
 }
 
@@ -80,10 +81,7 @@ const recover = (
   )
 }
 
-const commands = {
-  ls,
-  recover,
-}
+const commands = { ls, recover }
 
 async function main() {
   const { argv, showHelp } = parseArgs()

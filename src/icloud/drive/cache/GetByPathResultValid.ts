@@ -4,8 +4,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../cli/cli-drive-actions/helpers'
 import * as H from '../drivef/validation'
-import { fileName } from '../helpers'
-import { Details, DriveChildrenItemFile } from '../types'
+import { Details, DetailsTrash, DriveChildrenItemFile, fileName } from '../types'
 
 export type GetByPathResultValid = { valid: true; path: H.Valid; file: O.Option<DriveChildrenItemFile> }
 

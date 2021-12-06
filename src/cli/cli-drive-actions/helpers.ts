@@ -10,7 +10,6 @@ import path from 'path'
 import { isDeepStrictEqual } from 'util'
 import { Cache } from '../../icloud/drive/cache/Cache'
 import { isDetailsCacheEntity } from '../../icloud/drive/cache/cachef'
-import { fileName, HasName } from '../../icloud/drive/helpers'
 import {
   Details,
   DetailsRoot,
@@ -18,7 +17,9 @@ import {
   DriveChildrenItemFile,
   DriveDetailsPartialWithHierarchy,
   DriveDetailsWithHierarchy,
+  fileName,
   FolderLikeItem,
+  HasName,
   Hierarchy,
   HierarchyItem,
   HierarchyRoot,

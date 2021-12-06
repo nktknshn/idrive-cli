@@ -25,7 +25,7 @@ import { CacheEntity, CacheEntityFolderLike } from '../cache/types'
 import { findInParent, partialPath, PartialyCached } from '../cache/validatePath'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
-import { fileName, recordFromTuples } from '../helpers'
+import { recordFromTuples } from '../helpers'
 import {
   Details,
   DetailsRoot,
@@ -35,6 +35,7 @@ import {
   DriveChildrenItemFolder,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
+  fileName,
   // Hierarchy,
   HierarchyItem,
   isDetails,
@@ -43,6 +44,7 @@ import {
   isFolderHierarchyEntry,
   isFolderLikeItem,
   isRootDetails,
+  Root,
 } from '../types'
 import { HierarchyEntry } from '../types'
 import { driveDetails, rootDrivewsid } from '../types-io'
@@ -414,6 +416,12 @@ export const getByPaths = (
 }
 
 export const lsss = (
+  paths: NEA<NormalizedPath>,
+): DF.DriveM<NEA<LssResult>> => {
+  return getByPaths(paths)
+}
+
+export const lsssG = <TRoot extends Root>(
   paths: NEA<NormalizedPath>,
 ): DF.DriveM<NEA<LssResult>> => {
   return getByPaths(paths)

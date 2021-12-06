@@ -75,7 +75,7 @@ export const mkdir = ({
         DF.saveCacheFirst(cacheFile),
       )
 
-      return pipe(res(cache)(api), TE.map(fst))
+      return pipe(res(cache)({ api }), TE.map(fst))
     },
   )
 }

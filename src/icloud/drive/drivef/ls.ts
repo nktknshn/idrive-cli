@@ -43,7 +43,6 @@ import { err } from '../../../lib/errors'
 import { logg, logger, logReturn, logReturnAs } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
 import * as DF from '../fdrive'
-import { hasName } from '../helpers'
 import { hierarchy, rootDrivewsid, trashDrivewsid } from '../types-io'
 
 export const log = <T>(msg: string) => logReturn<T>(() => logger.debug(msg))
@@ -90,9 +89,9 @@ const onFoundInCacheFolderLike = (path: string) =>
       log('found folder in cache'),
       SRTE.bind(
         'details',
-        ({ api }) =>
+        ({ env }) =>
           SRTE.fromTaskEither(
-            api.retrieveItemDetailsInFolderHierarchyE(item.content.drivewsid),
+            env.api.retrieveItemDetailsInFolderHierarchyE(item.content.drivewsid),
           ),
       ),
       SRTE.bind('hierarchy', ({ details, cache }) =>
@@ -166,16 +165,16 @@ const onNotFoundInCache = (path: string) =>
     return pipe(
       DF.readEnv,
       log(`onNotFoundInCache: validPart: ${validPart.map(_ => _.content.drivewsid)}, rest: ${rest}`),
-      SRTE.chain(({ cache, api }): DF.DriveM<DriveChildrenItemFile | Details> => {
+      SRTE.chain(({ cache, env }): DF.DriveM<DriveChildrenItemFile | Details> => {
         if (isNonEmpty(validPart)) {
           return pipe(
             ado({
               cachedHierarchy: SRTE.of(
                 C.entitiesToHierarchy(validPart),
               ),
-              lastItem: SRTE.fromTaskEither<Error, DriveDetailsWithHierarchy, Cache, DriveApi>(
+              lastItem: SRTE.fromTaskEither<Error, DriveDetailsWithHierarchy, Cache, DF.DriveMEnv>(
                 pipe(
-                  api.retrieveItemDetailsInFolderHierarchyO(
+                  env.api.retrieveItemDetailsInFolderHierarchyO(
                     NA.last(validPart).content.drivewsid,
                   ),
                   TE.filterOrElse(O.isSome, () => err(`missing drivewsid`)),

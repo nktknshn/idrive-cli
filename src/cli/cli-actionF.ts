@@ -1,4 +1,7 @@
 import * as E from 'fp-ts/lib/Either'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as DF from '../icloud/drive/fdrive'
+
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
@@ -74,7 +77,36 @@ export function apiAction<T>(
   )
 }
 
-export function apiActionM() {
+import * as R from 'fp-ts/lib/Reader'
+
+export function apiActionM<T>(
+  // cfg: R.Reader<{ sessionFile: string }, T>,
+  action: (
+    deps: { api: DriveApi.DriveApi; session: ICloudSession; accountData: AccountLoginResponseBody },
+  ) => TE.TaskEither<Error, T>,
+): R.Reader<{ sessionFile: string }, TE.TaskEither<Error, T>> {
+  return pipe(
+    R.ask<{ sessionFile: string }>(),
+    R.map(({ sessionFile }) =>
+      pipe(
+        TE.Do,
+        TE.bind('session', () => readSessionFile(sessionFile)),
+        TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
+        TE.bind('api', (validatedSession) => TE.of(new DriveApi.DriveApi(validatedSession))),
+        TE.bind('result', ({ api, session, accountData }) =>
+          TE.bracket(
+            TE.of({ api, session, accountData }),
+            () => action({ api, session, accountData }),
+            ({ api }, e) =>
+              pipe(
+                saveSession(sessionFile)(api.getSession().session),
+                // logReturn(() => stderrLogger.info(JSON.stringify({ apiCalls: api.apiCalls }))),
+              ),
+          )),
+        TE.map((_) => _.result),
+      )
+    ),
+  )
 }
 
 // type CliAction2Deps = {}

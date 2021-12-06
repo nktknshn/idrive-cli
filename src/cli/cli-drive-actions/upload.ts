@@ -8,8 +8,8 @@ import { fst } from 'fp-ts/lib/Tuple'
 import * as V from '../../icloud/drive/cache/GetByPathResultValid'
 import * as H from '../../icloud/drive/drivef/validation'
 import * as DF from '../../icloud/drive/fdrive'
-import { fileName, parseName } from '../../icloud/drive/helpers'
-import { isDetails, isFile, isFolderLike, isFolderLikeItem } from '../../icloud/drive/types'
+import { parseName } from '../../icloud/drive/helpers'
+import { fileName, isDetails, isFile, isFolderLike, isFolderLikeItem } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { cliAction } from '../cli-actionF'
 import { normalizePath } from './helpers'
@@ -52,7 +52,7 @@ export const upload = (
       )
 
       return pipe(
-        res(cache)(api),
+        res(cache)({ api }),
         TE.map(fst),
       )
     },
@@ -70,14 +70,14 @@ const uploadOverwrighting = (
   const parent = NA.last(dst.path.details)
   return pipe(
     DF.readEnv,
-    SRTE.bind('uploadResult', ({ api }) => DF.fromTaskEither(api.upload(src, parent.docwsid))),
-    SRTE.bind('removeResult', ({ api }) => {
-      return DF.fromTaskEither(api.moveItemsToTrash([dstitem], true))
+    SRTE.bind('uploadResult', ({ env }) => DF.fromTaskEither(env.api.upload(src, parent.docwsid))),
+    SRTE.bind('removeResult', ({ env }) => {
+      return DF.fromTaskEither(env.api.moveItemsToTrash([dstitem], true))
     }),
-    DF.chain(({ api, uploadResult, removeResult }) => {
+    DF.chain(({ env, uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        api.renameItems([{
+        env.api.renameItems([{
           drivewsid,
           etag: uploadResult.etag,
           ...parseName(fileName(dstitem)),
@@ -99,9 +99,9 @@ const handle = (
     if (isFolderLike(dstitem)) {
       return pipe(
         DF.readEnv,
-        DF.chain(({ api }) =>
+        DF.chain(({ env }) =>
           pipe(
-            api.upload(src, dstitem.docwsid),
+            env.api.upload(src, dstitem.docwsid),
             DF.fromTaskEither,
             DF.map(constVoid),
           )
@@ -123,9 +123,9 @@ const handle = (
     if (isFolderLike(dstitem)) {
       return pipe(
         DF.readEnv,
-        DF.chain(({ api }) =>
+        DF.chain(({ env }) =>
           pipe(
-            api.upload(src, dstitem.docwsid, fname),
+            env.api.upload(src, dstitem.docwsid, fname),
             DF.fromTaskEither,
             DF.map(constVoid),
           )

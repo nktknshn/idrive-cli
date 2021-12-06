@@ -12,8 +12,15 @@ import { NEA } from '../../../lib/types'
 import * as H from '../drivef/validation'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
-import { fileName, parsePath } from '../helpers'
-import { Details, DetailsRoot, DriveChildrenItem, DriveChildrenItemFile, isDetails, isFolderLike } from '../types'
+import {
+  Details,
+  DetailsRoot,
+  DriveChildrenItem,
+  DriveChildrenItemFile,
+  fileName,
+  isDetails,
+  isFolderLike,
+} from '../types'
 import * as C from './cachef'
 import { CacheF } from './types'
 import { findInParent } from './validatePath'

@@ -7,18 +7,32 @@ import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/These'
 import { normalizePath } from '../../../cli/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
-import { fileName, hasName } from '../helpers'
-import { Details, DetailsRoot, isRootDetails } from '../types'
+import {
+  Details,
+  DetailsRoot,
+  DetailsTrash,
+  fileName,
+  hasName,
+  isRegularDetails,
+  isRootDetails,
+  isTrashDetails,
+  RegularDetails,
+  Root,
+} from '../types'
 
+// export type Hierarchy = [DetailsRoot, ...Details[]]
 export type Hierarchy = [DetailsRoot, ...Details[]]
-export const isHierarchy = (details: NEA<Details>): details is Hierarchy => isRootDetails(details[0])
+// export type TrashHierarchy = [DetailsTrash, ...Details[]]
+
+export const isHierarchy = (details: NEA<Details>): details is Hierarchy =>
+  isRootDetails(details[0]) || isTrashDetails(details[0])
 
 const same = (a: Details, b: Details) => {
   if (a.drivewsid !== b.drivewsid) {
     return false
   }
 
-  if (!isRootDetails(a) && !isRootDetails(b)) {
+  if (isRegularDetails(a) && isRegularDetails(b)) {
     if (a.parentId !== b.parentId) {
       return false
     }
@@ -123,8 +137,8 @@ export const eq: Eq<Hierarchy> = {
   },
 }
 
-const showDetails = (ds: Details[]) => {
-  return `${ds.map(fileName).join(' → ')}`
+const showDetails = (ds: (Details | DetailsTrash)[]) => {
+  return `${ds.map(d => isRegularDetails(d) ? fileName(d) : isTrashDetails(d) ? 'Trash' : '/').join(' → ')}`
 }
 
 export const match = <H, R>(

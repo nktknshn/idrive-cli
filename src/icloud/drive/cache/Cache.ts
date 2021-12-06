@@ -13,7 +13,7 @@ import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logger, logReturn } from '../../../lib/logging'
 import { ItemIsNotFolderError, MissinRootError } from '../errors'
-import { fileName, parsePath } from '../helpers'
+import { parsePath } from '../helpers'
 import {
   asOption,
   Details,
@@ -21,6 +21,7 @@ import {
   DetailsFolder,
   DetailsRoot,
   DriveChildrenItem,
+  fileName,
   Hierarchy,
   invalidId,
   isDetails,

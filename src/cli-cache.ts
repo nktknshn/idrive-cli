@@ -12,7 +12,6 @@ import { defaultCacheFile } from './config'
 import * as Cache from './icloud/drive/cache/Cache'
 import * as C from './icloud/drive/cache/cachef'
 import * as GetByPathResultValid from './icloud/drive/cache/GetByPathResultValid'
-import { ensureNestedPath, fileName, parsePath } from './icloud/drive/helpers'
 import { ensureError, err } from './lib/errors'
 import { cacheLogger, logger, loggingLevels, logReturnAs, printer } from './lib/logging'
 

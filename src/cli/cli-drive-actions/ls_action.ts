@@ -19,11 +19,11 @@ import { DriveApi } from '../../icloud/drive/drive-api'
 import { lss } from '../../icloud/drive/drivef/lss'
 import { lsss } from '../../icloud/drive/drivef/lsss'
 import * as DF from '../../icloud/drive/fdrive'
-import { fileName } from '../../icloud/drive/helpers'
 import {
   Details,
   DriveChildrenItem,
   DriveChildrenItemFile,
+  fileName,
   isDetails,
   isFileItem,
   isFolderLike,
@@ -231,7 +231,7 @@ export const listUnixPath = (
       { sessionFile, cacheFile, noCache },
       ({ cache, api }) =>
         pipe(
-          DF.getFolderRecursive(paths[0], depth)(cache)(api),
+          DF.getFolderRecursive(paths[0], depth)(cache)({ api }),
           noCache
             ? TE.chainFirst(() => TE.of(constVoid()))
             : TE.chainFirst(([item, cache]) => Cache.trySaveFile(cache, cacheFile)),
@@ -274,7 +274,7 @@ export const listUnixPath = (
           ),
         ),
         apply(cache),
-        apply(api),
+        apply({ api }),
         TE.map(fst),
       )
 

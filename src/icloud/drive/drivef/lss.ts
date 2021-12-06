@@ -19,7 +19,6 @@ import * as V from '../cache/GetByPathResultValid'
 import { CacheEntity, CacheEntityFolderLike } from '../cache/types'
 import { ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
-import { fileName, recordFromTuples } from '../helpers'
 import {
   Details,
   DetailsRoot,
@@ -28,6 +27,7 @@ import {
   DriveChildrenItemFolder,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
+  fileName,
   Hierarchy,
   HierarchyItem,
   isDetails,

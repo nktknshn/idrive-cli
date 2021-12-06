@@ -5,7 +5,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
-import { apiAction } from './cli/cli-actionF'
+import { apiAction, apiActionM } from './cli/cli-actionF'
 import { hierarchyToPath } from './cli/cli-drive-actions/helpers'
 import { defaultSessionFile } from './config'
 import { parseName } from './icloud/drive/helpers'
@@ -76,13 +76,15 @@ const putBackItemsFromTrash = (argv: {
   drivewsid: string
   etag: string
 }) => {
-  return apiAction(
+  return pipe(
     { sessionFile: argv.sessionFile },
-    ({ api }) =>
-      pipe(api.putBackItemsFromTrash([{
-        drivewsid: argv.drivewsid,
-        etag: argv.etag,
-      }])),
+    apiActionM(
+      ({ api }) =>
+        pipe(api.putBackItemsFromTrash([{
+          drivewsid: argv.drivewsid,
+          etag: argv.etag,
+        }])),
+    ),
   )
 }
 

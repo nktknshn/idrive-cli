@@ -13,7 +13,7 @@ import * as DF from '../../icloud/drive/fdrive'
 import { parseName } from '../../icloud/drive/helpers'
 import { MoveItemToTrashResponse } from '../../icloud/drive/requests/moveItems'
 import { RenameResponse } from '../../icloud/drive/requests/rename'
-import { Details, isDetails, isFolderLike } from '../../icloud/drive/types'
+import { Details, DetailsTrash, isDetails, isFolderLike } from '../../icloud/drive/types'
 import { err } from '../../lib/errors'
 import { NEA } from '../../lib/types'
 import { cliAction } from '../cli-action'
@@ -26,9 +26,9 @@ const caseMove = (
 ): DF.DriveM<MoveItemToTrashResponse> => {
   return pipe(
     DF.readEnv,
-    DF.chain(({ api }) =>
+    DF.chain(({ env }) =>
       pipe(
-        api.moveItems(dst.drivewsid, [{ drivewsid: src.drivewsid, etag: src.etag }]),
+        env.api.moveItems(dst.drivewsid, [{ drivewsid: src.drivewsid, etag: src.etag }]),
         DF.fromTaskEither,
       )
     ),
@@ -41,9 +41,9 @@ const caseRename = (
 ): DF.DriveM<RenameResponse> => {
   return pipe(
     DF.readEnv,
-    DF.chain(({ api }) =>
+    DF.chain(({ env }) =>
       pipe(
-        api.renameItems([
+        env.api.renameItems([
           { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
         ]),
         DF.fromTaskEither,
@@ -54,22 +54,22 @@ const caseRename = (
 
 const caseMoveAndRename = (
   src: DetailsOrFile,
-  dst: Details,
+  dst: (Details | DetailsTrash),
   name: string,
 ): DF.DriveM<RenameResponse> => {
   return pipe(
     DF.readEnv,
-    DF.chain(({ api }) =>
+    DF.chain(({ env }) =>
       pipe(
         DF.fromTaskEither(
-          api.moveItems(
+          env.api.moveItems(
             dst.drivewsid,
             [{ drivewsid: src.drivewsid, etag: src.etag }],
           ),
         ),
         DF.chain(() => {
           return DF.fromTaskEither(
-            api.renameItems([
+            env.api.renameItems([
               { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
             ]),
           )
@@ -142,7 +142,7 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
         DF.map(() => `Success.`),
       )
 
-      return pipe(res(cache)(api), TE.map(fst))
+      return pipe(res(cache)({ api }), TE.map(fst))
     },
   )
 }

@@ -8,8 +8,15 @@ import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath } from '../../../cli/cli-drive-actions/helpers'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
-import { fileName, parsePath } from '../helpers'
-import { Details, DetailsRoot, DriveChildrenItem, DriveChildrenItemFile, isDetails, isFolderLike } from '../types'
+import {
+  Details,
+  DetailsRoot,
+  DriveChildrenItem,
+  DriveChildrenItemFile,
+  fileName,
+  isDetails,
+  isFolderLike,
+} from '../types'
 import * as C from './cachef'
 import { CacheF } from './types'
 

@@ -9,7 +9,7 @@ import * as t from 'io-ts'
 import Path from 'path'
 import { logger } from '../../lib/logging'
 import { EmptyObject } from '../../lib/types'
-import { isObjectWithOwnProperty } from '../../lib/util'
+import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
 import {
   Details,
   DetailsRoot,
@@ -23,7 +23,7 @@ import {
   isRootDetails,
   MaybeNotFound,
 } from './types'
-import { rootDrivewsid } from './types-io'
+import { rootDrivewsid, trashDrivewsid } from './types-io'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)
@@ -63,28 +63,7 @@ export const splitParent = (path: string) => {
   return name === '' ? O.none : O.some([parent, name] as const)
 }
 
-export type HasName = {
-  drivewsid: string
-  name: string
-  extension?: string
-}
-
-export const hasName = <
-  A extends HasName,
-  B extends Record<string, unknown>,
->(a: A | B): a is A => {
-  return t.intersection([
-    t.type({ drivewsid: t.string, name: t.string }),
-    t.partial({ extension: t.string }),
-  ]).is(a)
-}
-
-export const fileName = (item: HasName) =>
-  (item.drivewsid === rootDrivewsid)
-    ? '/'
-    : item.extension
-    ? `${item.name}${item.extension.length > 0 ? `.${item.extension}` : ''}`
-    : `${item.name}`
+// type Not<A, B, A| B> = asd
 
 export const getMissedFound = <T>(drivewsids: string[], details: MaybeNotFound<T>[]) => {
   return pipe(

@@ -14,7 +14,7 @@ import { err } from '../../../lib/errors'
 import { cacheLogger, logg, logger, logReturnAs } from '../../../lib/logging'
 import { cast, hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
-import { fileName, parsePath } from '../helpers'
+import { parsePath } from '../helpers'
 import {
   Details,
   DetailsAppLibrary,
@@ -24,6 +24,7 @@ import {
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
+  fileName,
   Hierarchy,
   HierarchyEntry,
   InvalidId,

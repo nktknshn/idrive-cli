@@ -1,15 +1,11 @@
 import { string } from 'fp-ts'
-import { apS, getApplySemigroup, sequenceS, sequenceT } from 'fp-ts/lib/Apply'
+import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
-import { URIS } from 'fp-ts/lib/HKT'
-import * as J from 'fp-ts/lib/Json'
+import { apply, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
-import * as ROR from 'fp-ts/lib/ReadonlyRecord'
-import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as R from 'fp-ts/lib/Record'
 import { Semigroup } from 'fp-ts/lib/Semigroup'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
@@ -17,14 +13,18 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { snd } from 'fp-ts/lib/Tuple'
 import { compareDetails, NormalizedPath } from '../../cli/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
-import { cacheLogger, logf, logg, logger, logReturn, logReturnAs, logReturnS } from '../../lib/logging'
-import { cast } from '../../lib/util'
+import { cacheLogger, logg, logger, logReturnAs, logReturnS } from '../../lib/logging'
+import { NEA } from '../../lib/types'
 import { Cache } from './cache/Cache'
-// import * as Cache from './cache/Cache'
-import { isFolderLikeCacheEntity, PartialValidPath } from './cache/cachef'
 import * as C from './cache/cachef'
+// import * as Cache from './cache/Cache'
+import { isFolderLikeCacheEntity } from './cache/cachef'
+import { GetByPathResult } from './cache/GetByPathResultValid'
 import { DriveApi } from './drive-api'
-import { fileName, getMissedFound, hasName, parsePath } from './helpers'
+import { lss } from './drivef/lss'
+import { lsss } from './drivef/lsss'
+import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
+import { getMissedFound, parsePath } from './helpers'
 import {
   asOption,
   Details,
@@ -34,40 +34,28 @@ import {
   DriveDetailsRootWithHierarchy,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
-  DriveItemDetails,
+  fileName,
   FolderLikeItem,
-  Hierarchy,
-  HierarchyEntry,
   InvalidId,
   isDetails,
   isFile,
-  isFileHierarchyEntry,
-  isFolderHierarchyEntry,
   isFolderLike,
   isFolderLikeItem,
-  isInvalidId,
-  isNotInvalidId,
   isNotRootDetails,
   isRootDetails,
   MaybeNotFound,
   RecursiveFolder,
 } from './types'
-
-import * as S from 'fp-ts/Semigroup'
-import { NEA } from '../../lib/types'
-import { GetByPathResult } from './cache/GetByPathResultValid'
-import { log } from './drivef/ls'
-import { lss } from './drivef/lss'
-import { lsss } from './drivef/lsss'
-import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
 import { rootDrivewsid } from './types-io'
 
 export { lss }
 
-export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveApi, Error, A>
-export const Do = SRTE.of<Cache, DriveApi, Error, {}>({})
+export type DriveMEnv = {
+  api: DriveApi
+}
 
-// export const log =
+export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveMEnv, Error, A>
+export const Do = SRTE.of<Cache, DriveMEnv, Error, {}>({})
 
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<FolderLikeItem>()
@@ -87,10 +75,7 @@ export const ls = (path: NormalizedPath) =>
   pipe(
     lss([path]),
     chain(
-      flow(
-        A.lookup(0),
-        fromOption(() => err(`wat`)),
-      ),
+      flow(A.lookup(0), fromOption(() => err(`wat`))),
     ),
   )
 
@@ -98,10 +83,7 @@ export const lsdir = (path: NormalizedPath) =>
   pipe(
     lss([path]),
     chain(
-      flow(
-        A.lookup(0),
-        fromOption(() => err(`wat`)),
-      ),
+      flow(A.lookup(0), fromOption(() => err(`wat`))),
     ),
     SRTE.filterOrElse(isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
@@ -116,8 +98,8 @@ export const retrieveRootIfMissing = (): DriveM<void> => {
 // }, DriveApi, Error, A>
 
 export const readEnv = sequenceS(SRTE.Apply)({
-  cache: SRTE.get<Cache, DriveApi>(),
-  api: SRTE.ask<Cache, DriveApi>(),
+  cache: SRTE.get<Cache, DriveMEnv>(),
+  env: SRTE.ask<Cache, DriveMEnv>(),
 })
 
 export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
@@ -192,10 +174,10 @@ export const getActualRelative = (rest: string[], actualParent: Details) =>
 export const retrieveItemsDetails = (drivewsids: string[]) => {
   return pipe(
     readEnv,
-    SRTE.bind('details', ({ api }) =>
+    SRTE.bind('details', ({ env }) =>
       pipe(
         fromTaskEither(
-          api.retrieveItemsDetailsO(drivewsids),
+          env.api.retrieveItemsDetailsO(drivewsids),
         ),
       )),
     SRTE.map(_ => _.details),
@@ -207,10 +189,10 @@ export const retrieveItemDetailsInFoldersSaving = (
 ): DriveM<O.Option<DriveDetailsWithHierarchy>[]> =>
   pipe(
     readEnv,
-    SRTE.bind('details', ({ api }) =>
+    SRTE.bind('details', ({ env }) =>
       pipe(
         fromTaskEither(
-          api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
+          env.api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
         ),
       )),
     SRTE.chain(({ details }) =>
@@ -254,17 +236,12 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<Maybe
       SRTE.fromEither(pipe(
         cache.getFolderDetailsByIdsSeparated(drivewsids),
       ))),
-    SRTE.chain(({ api, task: { missed } }) =>
+    SRTE.chain(({ env, task: { missed } }) =>
       pipe(
-        readEnv,
-        SRTE.chain(() =>
-          pipe(
-            SRTE.fromTaskEither<Error, { found: Details[]; missed: string[] }, Cache, DriveApi>(
-              missed.length > 0
-                ? api.retrieveItemDetailsInFoldersS(missed)
-                : TE.of({ missed: [], found: [] }),
-            ),
-          )
+        SRTE.fromTaskEither<Error, { found: Details[]; missed: string[] }, Cache, DriveMEnv>(
+          missed.length > 0
+            ? env.api.retrieveItemDetailsInFoldersS(missed)
+            : TE.of({ missed: [], found: [] }),
         ),
       )
     ),
@@ -395,7 +372,7 @@ export const withCache = <T>(initialCache: Cache, sg: Semigroup<Cache>) =>
           SRTE.chain(f),
           SRTE.chainW(result =>
             pipe(
-              SRTE.get<Cache, DriveApi, Error>(),
+              SRTE.get<Cache, DriveMEnv, Error>(),
               SRTE.chain((c: Cache) => SRTE.put(sg.concat(cache, c))),
               SRTE.map(() => result),
             )
@@ -604,9 +581,9 @@ export const updateFoldersDetails = (
 ): DriveM<(MaybeNotFound<DriveDetailsWithHierarchy>)[]> => {
   return pipe(
     readEnv,
-    SRTE.chainW(({ api, cache }) =>
+    SRTE.chainW(({ env, cache }) =>
       pipe(
-        api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
+        env.api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
         SRTE.fromTaskEither,
         SRTE.chain(details =>
           pipe(
@@ -633,15 +610,15 @@ export const updateFoldersDetailsRecursively = (
   logger.debug('updateFoldersDetailsRecursively')
   return pipe(
     readEnv,
-    SRTE.bind('cachedDetails', ({ api, cache }) =>
+    SRTE.bind('cachedDetails', ({ env, cache }) =>
       SRTE.of(pipe(
         cache.getByIds(drivewsids),
         A.filterMap(O.chain(v => v.hasDetails ? O.some(v) : O.none)),
       ))),
-    SRTE.bind('actualDetails', ({ cachedDetails, api, cache }) =>
+    SRTE.bind('actualDetails', ({ cachedDetails, env, cache }) =>
       SRTE.fromTaskEither(pipe(
         cachedDetails.map(_ => _.content.drivewsid),
-        api.retrieveItemDetailsInFoldersHierarchiesE,
+        env.api.retrieveItemDetailsInFoldersHierarchiesE,
       ))),
     SRTE.bindW('result', ({ cachedDetails, actualDetails }) =>
       pipe(
