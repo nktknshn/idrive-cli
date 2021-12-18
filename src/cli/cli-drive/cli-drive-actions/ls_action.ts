@@ -6,19 +6,19 @@ import * as E from 'fp-ts/lib/Either'
 import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
-import { not } from 'fp-ts/lib/Refinement'
+import { not, Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst, snd } from 'fp-ts/lib/Tuple'
 import Path from 'path'
-import { Cache } from '../../icloud/drive/cache/Cache'
-import { isFolderLikeCacheEntity, isFolderLikeType } from '../../icloud/drive/cache/cachef'
-import { showGetByPathResult, target } from '../../icloud/drive/cache/GetByPathResultValid'
-import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../icloud/drive/cache/types'
-import { DriveApi } from '../../icloud/drive/drive-api'
-import { lss } from '../../icloud/drive/drivef/lss'
-import { lsss } from '../../icloud/drive/drivef/lsss'
-import * as DF from '../../icloud/drive/fdrive'
+import { Cache } from '../../../icloud/drive/cache/Cache'
+import { isFolderLikeCacheEntity, isFolderLikeType } from '../../../icloud/drive/cache/cachef'
+import { showGetByPathResult, target } from '../../../icloud/drive/cache/GetByPathResultValid'
+import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../../icloud/drive/cache/types'
+import { DriveApi } from '../../../icloud/drive/drive-api'
+import { lss } from '../../../icloud/drive/drivef/lss'
+import { lsss } from '../../../icloud/drive/drivef/lsss'
+import * as DF from '../../../icloud/drive/fdrive'
 import {
   Details,
   DriveChildrenItem,
@@ -29,10 +29,10 @@ import {
   isFolderLike,
   isRootDetails,
   RecursiveFolder,
-} from '../../icloud/drive/types'
-import { logger, logReturn, logReturnAs } from '../../lib/logging'
-import { cliAction } from '../cli-action'
-import { Env } from '../types'
+} from '../../../icloud/drive/types'
+import { logger, logReturn, logReturnAs } from '../../../lib/logging'
+import { cliAction } from '../../cli-action'
+import { Env } from '../../types'
 import {
   compareDriveDetailsWithHierarchy,
   compareHierarchies,
@@ -216,6 +216,18 @@ const showRecursive = ({ ident = 0 }) =>
     return rows.join('\n')
   }
 
+const conditional = <A, B, R>(
+  ref: (input: A | B) => input is A,
+  onFalse: (b: B) => R,
+  onTrue: (a: A) => R,
+) =>
+  (input: A | B): R => {
+    if (ref(input)) {
+      return onTrue(input)
+    }
+    return onFalse(input)
+  }
+
 export const listUnixPath = (
   { sessionFile, cacheFile, paths, raw, noCache, fullPath, recursive, depth, listInfo, update }: Env & {
     recursive: boolean
@@ -258,18 +270,15 @@ export const listUnixPath = (
               if (result.valid) {
                 return pipe(
                   target(result),
-                  item =>
-                    isDetails(item)
-                      ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
-                      : showFileInfo({ ...opts })(item),
+                  conditional(
+                    isDetails,
+                    showFileInfo({ ...opts }),
+                    showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts }),
+                  ),
                 )
-                // return showGetByPathResult(result)
               }
               return showGetByPathResult(result)
-            } // isFolderDetails(item)
-              //   ? showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts })(item)
-              //   : showFileInfo({ ...opts })(item)
-            ),
+            }),
             _ => _.join('\n\n'),
           ),
         ),

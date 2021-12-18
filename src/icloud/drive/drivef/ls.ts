@@ -13,7 +13,7 @@ import {
   compareItemWithHierarchy,
   NormalizedPath,
   normalizePath,
-} from '../../../cli/cli-drive-actions/helpers'
+} from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { Cache } from '../../../icloud/drive/cache/Cache'
 import * as C from '../../../icloud/drive/cache/cachef'
 import { isFolderLikeCacheEntity } from '../../../icloud/drive/cache/cachef'

@@ -8,8 +8,8 @@ import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
 import path from 'path'
 import { isDeepStrictEqual } from 'util'
-import { Cache } from '../../icloud/drive/cache/Cache'
-import { isDetailsCacheEntity } from '../../icloud/drive/cache/cachef'
+import { Cache } from '../../../icloud/drive/cache/Cache'
+import { isDetailsCacheEntity } from '../../../icloud/drive/cache/cachef'
 import {
   Details,
   DetailsRoot,
@@ -28,10 +28,10 @@ import {
   isFolderLikeItem,
   isHierarchyItemRoot,
   isHierarchyItemTrash,
-} from '../../icloud/drive/types'
-import { err } from '../../lib/errors'
-import { logger } from '../../lib/logging'
-import { Path } from '../../lib/util'
+} from '../../../icloud/drive/types'
+import { err } from '../../../lib/errors'
+import { logger } from '../../../lib/logging'
+import { Path } from '../../../lib/util'
 
 export const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
   logger.debug(JSON.stringify({ cached, actual }))

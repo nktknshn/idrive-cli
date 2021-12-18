@@ -1,17 +1,17 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import { parseArgs } from './cli-drive-args'
-import * as AS from './cli/cli-drive-actions'
+import * as Action from './cli/cli-drive/cli-drive-actions'
+import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
 const commands = {
-  ls: AS.listUnixPath,
-  mkdir: AS.mkdir,
-  rm: AS.rm,
-  upload: AS.upload,
-  mv: AS.move,
+  ls: Action.listUnixPath,
+  mkdir: Action.mkdir,
+  rm: Action.rm,
+  upload: Action.upload,
+  mv: Action.move,
 }
 
 async function main() {

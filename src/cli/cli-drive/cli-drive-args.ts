@@ -1,6 +1,6 @@
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
-import { defaultCacheFile, defaultSessionFile } from './config'
+import { defaultCacheFile, defaultSessionFile } from '../../config'
 
 export function parseArgs() {
   return yargs(hideBin(process.argv))

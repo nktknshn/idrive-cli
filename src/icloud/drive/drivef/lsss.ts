@@ -1,59 +1,37 @@
-import { identity } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
-import { bind } from 'fp-ts/lib/Chain'
 import * as E from 'fp-ts/lib/Either'
 import { fromEquals } from 'fp-ts/lib/Eq'
-import { constant, constVoid, flow, hole, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as T from 'fp-ts/lib/These'
-import { fst, snd } from 'fp-ts/lib/Tuple'
-import { hierarchyToPath, itemWithHierarchyToPath, NormalizedPath } from '../../../cli/cli-drive-actions/helpers'
-import { showDetailsInfo } from '../../../cli/cli-drive-actions/ls_action'
+import { fst } from 'fp-ts/lib/Tuple'
+import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../../lib/errors'
-import { modifySubset, modifySubsetDF } from '../../../lib/helpers/projectIndexes'
-import { logf, logg, logger, logReturn, logReturnAs, logReturnS } from '../../../lib/logging'
+import { modifySubsetDF } from '../../../lib/helpers/projectIndexes'
+import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
-import { cast, Path } from '../../../lib/util'
-import * as CC from '../cache/Cache'
-import * as C from '../cache/cachef'
 import * as V from '../cache/GetByPathResultValid'
-import { CacheEntity, CacheEntityFolderLike } from '../cache/types'
-import { findInParent, partialPath, PartialyCached } from '../cache/validatePath'
+import { findInParent } from '../cache/validatePath'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { recordFromTuples } from '../helpers'
 import {
   Details,
-  DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
   DriveDetailsWithHierarchy,
-  DriveFolderLike,
   fileName,
-  // Hierarchy,
-  HierarchyItem,
-  isDetails,
   isFileItem,
-  isFolderDrivewsid,
-  isFolderHierarchyEntry,
   isFolderLikeItem,
   isRootDetails,
   Root,
 } from '../types'
-import { HierarchyEntry } from '../types'
-import { driveDetails, rootDrivewsid } from '../types-io'
-import { lookupCache } from './lookupCache'
-import { log } from './ls'
-// import { getValidHierarchyPart, ValidatedHierarchy } from './validation'
+import { rootDrivewsid } from '../types-io'
 import * as H from './validation'
-
-type DetailsOrFile = (Details | DriveChildrenItemFile)
 
 const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
 
@@ -112,14 +90,6 @@ export const validateHierarchies = (
         ),
       )
     }),
-    // SRTE.map(recordFromTuples),
-    // SRTE.map(resultRecord =>
-    //   pipe(
-    //     cachedHierarchies,
-    //     NA.map(cached => H.getValidHierarchyPart(toActual(cached, resultRecord), cached)),
-    //   )
-    // ),
-    // SRTE.map(logReturnS(res => res.map(showResult).join(', '))),
   )
 
   return res
