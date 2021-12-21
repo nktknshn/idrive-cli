@@ -23,30 +23,37 @@ import { GetByPathResult } from './cache/GetByPathResultValid'
 import { DriveApi } from './drive-api'
 import { lss } from './drivef/lss'
 import { lsss } from './drivef/lsss'
+import { Hierarchy } from './drivef/validation'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
 import { getMissedFound, parsePath } from './helpers'
 import {
   asOption,
   Details,
   DetailsRoot,
+  DetailsTrash,
   DriveChildrenItem,
   DriveChildrenItemFile,
+  DriveChildrenItemFolder,
+  DriveChildrenTrashItem,
   DriveDetailsRootWithHierarchy,
+  DriveDetailsTrashWithHierarchy,
   DriveDetailsWithHierarchy,
   DriveFolderLike,
   fileName,
   FolderLikeItem,
   InvalidId,
+  isCloudDocsRootDetails,
   isDetails,
   isFile,
   isFolderLike,
   isFolderLikeItem,
   isNotRootDetails,
-  isRootDetails,
+  itemType,
   MaybeNotFound,
   RecursiveFolder,
+  Root,
 } from './types'
-import { rootDrivewsid } from './types-io'
+import { rootDrivewsid, trashDrivewsid } from './types-io'
 
 export { lss }
 
@@ -64,7 +71,7 @@ export const lssPartial = (paths: NEA<NormalizedPath>) => {
   return lsss(paths)
 }
 
-export const lsPartial = (path: NormalizedPath): DriveM<GetByPathResult> => {
+export const lsPartial = <R extends Root>(path: NormalizedPath, root: R): DriveM<GetByPathResult<Hierarchy<R>>> => {
   return pipe(
     lsss([path]),
     map(NA.head),
@@ -113,24 +120,24 @@ export const map = SRTE.map
 
 export const logS = flow(logReturnS, SRTE.map)
 
-function enumerate<T>(as: T[]) {
-  return pipe(
-    as,
-    A.mapWithIndex((idx, v) => [idx, v] as const),
-  )
-}
+// function enumerate<T>(as: T[]) {
+//   return pipe(
+//     as,
+//     A.mapWithIndex((idx, v) => [idx, v] as const),
+//   )
+// }
 
-function partitateTask(task: (readonly [string, MaybeNotFound<Details>])[]) {
-  return pipe(
-    task,
-    A.partitionMapWithIndex((idx, [dwid, result]) =>
-      result.status === 'ID_INVALID'
-        ? E.left({ idx, dwid })
-        : E.right({ idx, dwid, result })
-    ),
-    ({ left: missed, right: cached }) => ({ missed, cached }),
-  )
-}
+// function partitateTask(task: (readonly [string, MaybeNotFound<Details>])[]) {
+//   return pipe(
+//     task,
+//     A.partitionMapWithIndex((idx, [dwid, result]) =>
+//       result.status === 'ID_INVALID'
+//         ? E.left({ idx, dwid })
+//         : E.right({ idx, dwid, result })
+//     ),
+//     ({ left: missed, right: cached }) => ({ missed, cached }),
+//   )
+// }
 
 const putFoundMissed = ({ found, missed }: {
   found: Details[]
@@ -205,6 +212,9 @@ export const retrieveItemDetailsInFoldersSaving = (
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof rootDrivewsid, ...string[]],
 ): DriveM<[O.Some<DriveDetailsRootWithHierarchy>, ...O.Option<DriveDetailsWithHierarchy>[]]>
+export function retrieveItemDetailsInFoldersSavingNEA(
+  drivewsids: [typeof trashDrivewsid, ...string[]],
+): DriveM<[O.Some<DriveDetailsTrashWithHierarchy>, ...O.Option<DriveDetailsWithHierarchy>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: NEA<string>,
 ): DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>>
@@ -301,7 +311,7 @@ export const getRoot = (): DriveM<DetailsRoot> =>
     retrieveItemDetailsInFolder(rootDrivewsid),
     SRTE.filterOrElseW(O.isSome, () => MissinRootError.create(`misticaly missing root details`)),
     SRTE.map(_ => _.value),
-    SRTE.filterOrElseW(isRootDetails, () => err(`invalid root details`)),
+    SRTE.filterOrElseW(isCloudDocsRootDetails, () => err(`invalid root details`)),
   )
 
 export const getFolderDetailsById = retrieveItemDetailsInFolder
@@ -323,7 +333,7 @@ export const getFolderByPath = (path: string): DriveM<Details> =>
     getItemByPath(path),
     SRTE.filterOrElse(
       isFolderLike,
-      (item) => ItemIsNotFolderError.create(`${path} is not folder details (type=${item.type})`),
+      (item) => ItemIsNotFolderError.create(`${path} is not folder details (type=${itemType(item)})`),
     ),
     SRTE.chain(ensureDetailsForFolderLike),
   )
@@ -429,17 +439,21 @@ export const getItemByPathRelativeG = (
               ),
             ),
           }),
-          SRTE.bind('item', ({ parent }) =>
-            SRTE.fromOption(() =>
-              NotFoundError.create(`item "${itemName}" was not found in "${parent.name}" (${parent.drivewsid})`)
-            )(
-              pipe(
-                parent.items,
-                A.findFirst(item =>
-                  itemName == fileName(item)
+          SRTE.bind(
+            'item',
+            ({ parent }) =>
+              SRTE.fromOption(() =>
+                NotFoundError.createTemplate(
+                  itemName,
+                  `"${fileName(parent)}" (${parent.drivewsid})`,
+                )
+              )(
+                pipe(
+                  parent.items,
+                  A.findFirst((item: DriveChildrenItem | DriveChildrenTrashItem) => itemName == fileName(item)),
                 ),
               ),
-            )),
+          ),
           SRTE.map(_ => _.item),
         ),
     ),
@@ -603,65 +617,65 @@ export const updateFoldersDetails = (
   )
 }
 
-export const updateFoldersDetailsRecursively = (
-  drivewsids: string[],
-): DriveM<DriveDetailsWithHierarchy[]> => {
-  // ): DriveM<MaybeNotFound<DriveDetailsWithHierarchy>[]> => {
-  logger.debug('updateFoldersDetailsRecursively')
-  return pipe(
-    readEnv,
-    SRTE.bind('cachedDetails', ({ env, cache }) =>
-      SRTE.of(pipe(
-        cache.getByIds(drivewsids),
-        A.filterMap(O.chain(v => v.hasDetails ? O.some(v) : O.none)),
-      ))),
-    SRTE.bind('actualDetails', ({ cachedDetails, env, cache }) =>
-      SRTE.fromTaskEither(pipe(
-        cachedDetails.map(_ => _.content.drivewsid),
-        env.api.retrieveItemDetailsInFoldersHierarchiesE,
-      ))),
-    SRTE.bindW('result', ({ cachedDetails, actualDetails }) =>
-      pipe(
-        A.zip(cachedDetails, actualDetails),
-        A.map(([cached, actual]) => compareDetails(cached.content, actual)),
-        flow(
-          A.map(_ => _.updated.folders),
-          A.flatten,
-          A.map(snd),
-          A.map(_ => _.drivewsid),
-        ),
-        drivewsids =>
-          drivewsids.length > 0
-            ? pipe(
-              updateFoldersDetailsRecursively(drivewsids),
-              SRTE.map(A.concat(actualDetails)),
-            )
-            : SRTE.of(actualDetails),
-      )),
-    SRTE.chainW(({ actualDetails, result }) =>
-      pipe(
-        readEnv,
-        SRTE.chainW(({ cache }) =>
-          pipe(
-            // cache,
-            // logReturn(_ =>
-            //   cacheLogger.debug({ input: _.get().byDrivewsid['FOLDER::iCloud.md.obsidian::documents'].content.etag })
-            // ),
-            cache.putDetailss(actualDetails),
-            // E.map(
-            //   logReturn(_ =>
-            //     cacheLogger.debug({ output: _.get().byDrivewsid['FOLDER::iCloud.md.obsidian::documents'].content.etag })
-            //   ),
-            // ),
-            SRTE.fromEither,
-            SRTE.chain(cache => SRTE.put(cache)),
-            SRTE.map(() => result),
-          )
-        ),
-      )
-    ),
-  )
-}
+// export const updateFoldersDetailsRecursively = (
+//   drivewsids: string[],
+// ): DriveM<DriveDetailsWithHierarchy[]> => {
+//   // ): DriveM<MaybeNotFound<DriveDetailsWithHierarchy>[]> => {
+//   logger.debug('updateFoldersDetailsRecursively')
+//   return pipe(
+//     readEnv,
+//     SRTE.bind('cachedDetails', ({ env, cache }) =>
+//       SRTE.of(pipe(
+//         cache.getByIds(drivewsids),
+//         A.filterMap(O.chain(v => v.hasDetails ? O.some(v) : O.none)),
+//       ))),
+//     SRTE.bind('actualDetails', ({ cachedDetails, env, cache }) =>
+//       SRTE.fromTaskEither(pipe(
+//         cachedDetails.map(_ => _.content.drivewsid),
+//         env.api.retrieveItemDetailsInFoldersHierarchiesE,
+//       ))),
+//     SRTE.bindW('result', ({ cachedDetails, actualDetails }) =>
+//       pipe(
+//         A.zip(cachedDetails, actualDetails),
+//         A.map(([cached, actual]) => compareDetails(cached.content, actual)),
+//         flow(
+//           A.map(_ => _.updated.folders),
+//           A.flatten,
+//           A.map(snd),
+//           A.map(_ => _.drivewsid),
+//         ),
+//         drivewsids =>
+//           drivewsids.length > 0
+//             ? pipe(
+//               updateFoldersDetailsRecursively(drivewsids),
+//               SRTE.map(A.concat(actualDetails)),
+//             )
+//             : SRTE.of(actualDetails),
+//       )),
+//     SRTE.chainW(({ actualDetails, result }) =>
+//       pipe(
+//         readEnv,
+//         SRTE.chainW(({ cache }) =>
+//           pipe(
+//             // cache,
+//             // logReturn(_ =>
+//             //   cacheLogger.debug({ input: _.get().byDrivewsid['FOLDER::iCloud.md.obsidian::documents'].content.etag })
+//             // ),
+//             cache.putDetailss(actualDetails),
+//             // E.map(
+//             //   logReturn(_ =>
+//             //     cacheLogger.debug({ output: _.get().byDrivewsid['FOLDER::iCloud.md.obsidian::documents'].content.etag })
+//             //   ),
+//             // ),
+//             SRTE.fromEither,
+//             SRTE.chain(cache => SRTE.put(cache)),
+//             SRTE.map(() => result),
+//           )
+//         ),
+//       )
+//     ),
+//   )
+// }
 
 export const saveCache = (cacheFile: string) =>
   () =>

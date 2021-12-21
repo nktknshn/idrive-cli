@@ -6,6 +6,28 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DF from '../../icloud/drive/fdrive'
 
+/** modify subset of input which is `refinement` keeping the order*/
+export const modifySubsetDF = <A, B extends A, C, D extends A>(
+  input: NA.NonEmptyArray<A>,
+  refinement: Refinement<A, B>,
+  f: ((v: NA.NonEmptyArray<B>) => DF.DriveM<C[]>),
+  fac: (a: D) => C,
+): DF.DriveM<NA.NonEmptyArray<C>> => {
+  const subset = pipe(
+    input,
+    A.filterMapWithIndex(
+      (index, a) => refinement(a) ? O.some({ a, index }) : O.none,
+    ),
+  )
+
+  return pipe(
+    pipe(subset.map(_ => _.a), A.match(() => DF.of([]), f)),
+    SRTE.map(A.zip(subset)),
+    SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
+    SRTE.map(res => projectIndexes2(input as NA.NonEmptyArray<D>, res, fac)),
+  )
+}
+
 export const projectIndexes = <T>(as: T[], values: { index: number; a: T }[]) => {
   return pipe(
     as,
@@ -53,26 +75,5 @@ export const modifySubset = <A, B extends A>(
     A.zip(subset),
     A.map(([a, { index }]) => ({ a, index })),
     res => projectIndexes(as, res),
-  )
-}
-
-export const modifySubsetDF = <A, B extends A, C, D extends A>(
-  values: NA.NonEmptyArray<A>,
-  refinement: Refinement<A, B>,
-  f: ((v: NA.NonEmptyArray<B>) => DF.DriveM<C[]>),
-  fac: (a: D) => C,
-): DF.DriveM<NA.NonEmptyArray<C>> => {
-  const subset = pipe(
-    values,
-    A.filterMapWithIndex(
-      (index, a) => refinement(a) ? O.some({ a, index }) : O.none,
-    ),
-  )
-
-  return pipe(
-    pipe(subset.map(_ => _.a), A.match(() => DF.of([]), f)),
-    SRTE.map(A.zip(subset)),
-    SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
-    SRTE.map(res => projectIndexes2(values as NA.NonEmptyArray<D>, res, fac)),
   )
 }

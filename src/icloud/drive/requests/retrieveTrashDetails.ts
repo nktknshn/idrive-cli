@@ -9,12 +9,12 @@ import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
 import { DetailsTrash, DriveChildrenItem, DriveItemDetails } from '../types'
-import { detailsItem, itemDetails, trashDetails, trashItem } from '../types-io'
+import { detailsItem, detailsTrash, itemDetails, trashItem } from '../types-io'
 import { applyToSession, decodeJson, expectJson, filterStatus, withResponse } from './filterStatus'
 import { retrieveItemDetailsInFoldersGeneric } from './retrieveItemDetailsInFolders'
 
 export const scheme = t.tuple(
-  [trashDetails],
+  [detailsTrash],
 )
 
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {

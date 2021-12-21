@@ -34,8 +34,8 @@ import {
   DriveDetailsWithHierarchy,
   DriveItemDetails,
   InvalidId,
+  isCloudDocsRootDetails,
   isNotInvalidId,
-  isRootDetails,
   MaybeNotFound,
 } from './types'
 import { rootDrivewsid } from './types-io'
@@ -74,7 +74,7 @@ export class DriveApi {
     return pipe(
       this.retrieveItemDetailsInFolder(rootDrivewsid),
       TE.filterOrElse(isNotInvalidId, () => err(`not found for root details`)),
-      TE.filterOrElseW(isRootDetails, () => err(`invalid root details`)),
+      TE.filterOrElseW(isCloudDocsRootDetails, () => err(`invalid root details`)),
     )
   }
 

@@ -24,10 +24,12 @@ import {
   DriveChildrenItem,
   DriveChildrenItemFile,
   fileName,
+  isCloudDocsRootDetails,
   isDetails,
   isFileItem,
   isFolderLike,
-  isRootDetails,
+  isTrashDetails,
+  isTrashDetailsG,
   RecursiveFolder,
 } from '../../../icloud/drive/types'
 import { logger, logReturn, logReturnAs } from '../../../lib/logging'
@@ -51,9 +53,11 @@ const joinWithPath = (path: string) =>
     )
 
 const showFilename = (item: DriveChildrenItem | Details) =>
-  item.type === 'FILE'
+  isTrashDetailsG(item)
+    ? 'TRASH'
+    : item.type === 'FILE'
     ? fileName(item)
-    : isDetails(item) && isRootDetails(item)
+    : isDetails(item) && isCloudDocsRootDetails(item)
     ? '/'
     : `${fileName(item)}/`
 
@@ -118,17 +122,17 @@ export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = 
     pipe(
       [
         ['name', showFilename(result)],
-        ['dateCreated', formatDate(result.dateCreated)],
-        ['drivewsid', result.drivewsid],
-        ['docwsid', result.docwsid],
-        ['etag', result.etag],
-        !!result.extension && ['extension', result.extension],
-        !isRootDetails(result) && ['parentId', result.parentId],
-        // ['extensions', result.type === 'APP_LIBRARY' ? result.supportedExtensions : ''],
-        // ['types', result.type === 'APP_LIBRARY' ? result.supportedTypes : ''],
+        ...(isTrashDetailsG(result)
+          ? []
+          : [
+            ['dateCreated', formatDate(result.dateCreated)],
+            ['drivewsid', result.drivewsid],
+            ['docwsid', result.docwsid],
+            ['etag', result.etag],
+            !!result.extension && ['extension', result.extension],
+            !isCloudDocsRootDetails(result) && ['parentId', result.parentId],
+          ]),
         [],
-        // ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
-        // ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
       ],
       A.filter(not(<T>(v: T | false): v is false => !v)),
       A.map(_ => _.join(':\t')),
@@ -218,8 +222,8 @@ const showRecursive = ({ ident = 0 }) =>
 
 const conditional = <A, B, R>(
   ref: (input: A | B) => input is A,
-  onFalse: (b: B) => R,
   onTrue: (a: A) => R,
+  onFalse: (b: B) => R,
 ) =>
   (input: A | B): R => {
     if (ref(input)) {
@@ -272,8 +276,8 @@ export const listUnixPath = (
                   target(result),
                   conditional(
                     isDetails,
-                    showFileInfo({ ...opts }),
                     showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts }),
+                    showFileInfo({ ...opts }),
                   ),
                 )
               }

@@ -28,10 +28,10 @@ import {
   Hierarchy,
   HierarchyEntry,
   InvalidId,
+  isCloudDocsRootDetails,
   isDetails,
   isFolderLike,
   isFolderLikeItem,
-  isRootDetails,
 } from '../types'
 import { hierarchyRoot, hierarchyTrash, rootDrivewsid, trashDrivewsid } from '../types-io'
 import { MissingParentError } from './errors'
@@ -391,7 +391,7 @@ export const isFolderLikeType = (
 export const cacheEntityFromDetails = (
   details: Details,
 ): CacheEntity =>
-  isRootDetails(details)
+  isCloudDocsRootDetails(details)
     ? new CacheEntityFolderRootDetails(details)
     : details.type === 'FOLDER'
     ? new CacheEntityFolderDetails(details)

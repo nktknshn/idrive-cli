@@ -151,12 +151,6 @@ export const detailsAppLibrary = t.intersection([
   // }),
 ])
 
-export const driveDetails = t.union([
-  detailsRoot,
-  detailsFolder,
-  detailsAppLibrary,
-])
-
 export const invalidIdItem = t.type({ status: t.literal('ID_INVALID') })
 
 // itemDetails
@@ -169,7 +163,35 @@ export const itemDetails = t.union([
   //   invalidIdItem,
 ])
 
+export const trashItemFolder = t.intersection([itemFolder, t.type({ 'restorePath': t.string })])
+export const trashItemFile = t.intersection([itemFile, t.type({ 'restorePath': t.string })])
+export const trashItemAppLibrary = t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })])
+
+export const trashItem = t.union([
+  trashItemFolder,
+  trashItemAppLibrary,
+  trashItemFile,
+])
+
+// export const trashItemDetails = t.union([
+//   t.intersection([detailsFolder, t.type({ 'restorePath': t.string })]),
+//   t.intersection([detailsAppLibrary, t.type({ 'restorePath': t.string })]),
+//   // t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })]),
+// ])
+
+export const detailsTrash = t.type({
+  items: t.array(trashItem),
+  // items: t.array(t.type({
+  //   drivewsid: t.string,
+  //   docwsid: t.string,
+  //   etag: t.string,
+  // })),
+  numberOfItems: t.number,
+  drivewsid: t.literal(trashDrivewsid),
+})
+
 export const rootDetailsWithHierarchy = t.intersection([detailsRoot, t.type({ hierarchy })])
+export const trashDetailsWithHierarchy = t.intersection([detailsTrash, t.type({ hierarchy })])
 export const folderDetailsWithHierarchy = t.intersection([detailsFolder, t.type({ hierarchy })])
 export const appLibraryDetailsWithHierarchy = t.intersection([detailsAppLibrary, t.type({ hierarchy })])
 
@@ -177,7 +199,10 @@ export const detailsWithHierarchy = t.union([
   rootDetailsWithHierarchy,
   folderDetailsWithHierarchy,
   appLibraryDetailsWithHierarchy,
+  trashDetailsWithHierarchy,
 ])
+
+// dateExpiration
 
 export const partialItem = t.type({
   drivewsid: t.string,
@@ -187,6 +212,11 @@ export const partialItem = t.type({
 
 export const rootDetailsWithHierarchyPartial = t.intersection([
   omit('items', rootDetailsWithHierarchy),
+  t.type({ items: t.array(partialItem) }),
+])
+
+export const trashDetailsWithHierarchyPartial = t.intersection([
+  omit('items', trashDetailsWithHierarchy),
   t.type({ items: t.array(partialItem) }),
 ])
 
@@ -202,31 +232,14 @@ export const appLibraryDetailsWithHierarchyPartial = t.intersection([
 
 export const driveDetailsWithHierarchyPartial = t.union([
   rootDetailsWithHierarchyPartial,
+  trashDetailsWithHierarchyPartial,
   folderDetailsWithHierarchyPartial,
   appLibraryDetailsWithHierarchyPartial,
 ])
 
-type TrashRootItem = t.TypeOf<typeof trashItem>
-
-export const trashItem = t.union([
-  t.intersection([itemFolder, t.type({ 'restorePath': t.string })]),
-  t.intersection([itemFile, t.type({ 'restorePath': t.string })]),
-  t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })]),
+export const driveDetails = t.union([
+  detailsRoot,
+  detailsFolder,
+  detailsAppLibrary,
+  detailsTrash,
 ])
-
-export const trashItemDetails = t.union([
-  t.intersection([detailsFolder, t.type({ 'restorePath': t.string })]),
-  t.intersection([detailsAppLibrary, t.type({ 'restorePath': t.string })]),
-  // t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })]),
-])
-
-export const trashDetails = t.type({
-  items: t.array(trashItem),
-  // items: t.array(t.type({
-  //   drivewsid: t.string,
-  //   docwsid: t.string,
-  //   etag: t.string,
-  // })),
-  numberOfItems: t.number,
-  drivewsid: t.literal('TRASH_ROOT'),
-})

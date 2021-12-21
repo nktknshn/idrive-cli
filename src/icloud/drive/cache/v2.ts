@@ -15,12 +15,15 @@ import * as DF from '../fdrive'
 import {
   Details,
   DetailsRoot,
+  DetailsTrash,
   DriveChildrenItem,
   DriveChildrenItemFile,
   fileName,
   isDetails,
   isFolderLike,
+  isTrashDetails,
 } from '../types'
+import { trashDrivewsid } from '../types-io'
 import * as C from './cachef'
 import { CacheF } from './types'
 import { findInParent } from './validatePath'
@@ -32,7 +35,7 @@ export type GetByPathVEResult =
 type DetailsPath = NEA<Details>
 
 const showDetails = (d: Details): string => {
-  return `${d.type}: ${fileName(d)}`
+  return isTrashDetails(d) ? 'TRASH' : `${d.type}: ${fileName(d)}`
 }
 
 export const getPartialValidPathV2 = (
@@ -60,7 +63,10 @@ export const getPartialValidPathV2 = (
       return {
         valid: false,
         path: H.partialPath<DetailsPath>(result, path),
-        error: NotFoundError.createTemplate(subItemName, fileName(parentEntity)),
+        error: NotFoundError.createTemplate(
+          subItemName,
+          showDetails(parentEntity),
+        ),
       }
     }
 

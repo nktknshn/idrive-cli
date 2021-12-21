@@ -13,6 +13,7 @@ import {
   DetailsRoot,
   DriveChildrenItem,
   DriveChildrenItemFile,
+  DriveChildrenTrashItem,
   fileName,
   isDetails,
   isFolderLike,
@@ -61,10 +62,13 @@ type ZeroCached = {
 
 type Result = PathRoot | FullyCached | PartialyCached | ZeroCached
 
-export const findInParent = (parent: Details, itemName: string): O.Option<DriveChildrenItem> => {
+export const findInParent = (
+  parent: Details,
+  itemName: string,
+): O.Option<DriveChildrenItem | DriveChildrenTrashItem> => {
   return pipe(
     parent.items,
-    A.findFirst(item => fileName(item) == itemName),
+    A.findFirst((item: DriveChildrenItem | DriveChildrenTrashItem) => fileName(item) == itemName),
   )
 }
 

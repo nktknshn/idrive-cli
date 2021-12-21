@@ -23,6 +23,23 @@ export function hasOwnProperty<X extends ObjectType, Y extends PropertyKey>(
   return prop in obj
 }
 
+type WithKeys<Y extends PropertyKey[]> = Y extends [infer X, ...infer R]
+  ? X extends PropertyKey ? R extends PropertyKey[] ? Record<X, unknown> & WithKeys<R> : {} : {}
+  : {}
+
+export function hasOwnProperties<X extends ObjectType, Y extends PropertyKey[]>(
+  obj: X,
+  ...props: Y
+): obj is X & WithKeys<Y> {
+  for (const p of props) {
+    if (!(p in obj)) {
+      return false
+    }
+  }
+
+  return true
+}
+
 export function getObjectProperty<X extends ObjectType, Y extends PropertyKey>(
   a: unknown,
   prop: Y,

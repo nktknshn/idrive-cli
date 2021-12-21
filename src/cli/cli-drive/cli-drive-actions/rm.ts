@@ -7,7 +7,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import * as DF from '../../../icloud/drive/fdrive'
-import { isNotRootDetails, isRootDetails } from '../../../icloud/drive/types'
+import { isCloudDocsRootDetails, isNotRootDetails } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { Path } from '../../../lib/util'
 import { cliAction } from '../../cli-actionF'
@@ -38,7 +38,7 @@ export const rm = (
       SRTE.bind('items', () =>
         pipe(
           DF.lss(npaths),
-          SRTE.filterOrElse(not(A.some(isRootDetails)), () => err(`you cannot remove root`)),
+          SRTE.filterOrElse(not(A.some(isCloudDocsRootDetails)), () => err(`you cannot remove root`)),
         )),
       SRTE.bind('result', ({ items }) =>
         pipe(

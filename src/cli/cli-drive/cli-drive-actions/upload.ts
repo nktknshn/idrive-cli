@@ -9,7 +9,7 @@ import * as V from '../../../icloud/drive/cache/GetByPathResultValid'
 import * as H from '../../../icloud/drive/drivef/validation'
 import * as DF from '../../../icloud/drive/fdrive'
 import { parseName } from '../../../icloud/drive/helpers'
-import { fileName, isDetails, isFile, isFolderLike, isFolderLikeItem } from '../../../icloud/drive/types'
+import { DetailsRoot, fileName, isDetails, isFile, isFolderLike, isFolderLikeItem } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { cliAction } from '../../cli-actionF'
 import { normalizePath } from './helpers'
@@ -64,10 +64,11 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
 }
 
 const uploadOverwrighting = (
-  { src, dst }: { dst: V.GetByPathResultValidWithFile; src: string },
+  { src, dst }: { dst: V.GetByPathResultValidWithFile<H.Hierarchy<DetailsRoot>>; src: string },
 ) => {
   const dstitem = V.target(dst)
   const parent = NA.last(dst.path.details)
+
   return pipe(
     DF.readEnv,
     SRTE.bind('uploadResult', ({ env }) => DF.fromTaskEither(env.api.upload(src, parent.docwsid))),

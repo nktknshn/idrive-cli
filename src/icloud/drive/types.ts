@@ -8,23 +8,40 @@ import * as t from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
 import * as types from './types-io'
 
-export interface DetailsTrash extends TypeOf<typeof types.trashDetails> {}
+export interface DetailsTrash extends TypeOf<typeof types.detailsTrash> {}
+
 export interface DetailsRoot extends TypeOf<typeof types.detailsRoot> {}
 export interface DetailsFolder extends TypeOf<typeof types.detailsFolder> {}
 export interface DetailsAppLibrary extends TypeOf<typeof types.detailsAppLibrary> {}
+
+export interface TrashItemFolder extends TypeOf<typeof types.trashItemFolder> {}
+export interface TrashItemFile extends TypeOf<typeof types.trashItemFile> {}
+export interface TrashItemAppLibrary extends TypeOf<typeof types.trashItemAppLibrary> {}
+
+export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItemAppLibrary
+
+export type Root = DetailsRoot | DetailsTrash
+
+export type Details =
+  | DetailsTrash
+  | DetailsRoot
+  | RegularDetails
+
+export type RegularDetails =
+  | DetailsFolder
+  | DetailsAppLibrary
+
 export interface DriveChildrenItemFolder extends TypeOf<typeof types.itemFolder> {}
 export interface DriveChildrenItemFile extends TypeOf<typeof types.itemFile> {}
 export interface DriveChildrenItemAppLibrary extends TypeOf<typeof types.itemAppLibrary> {}
+
+export type DriveChildrenItem = DriveChildrenItemFile | DriveChildrenItemFolder | DriveChildrenItemAppLibrary
+
 export type DriveItemDetails = TypeOf<typeof types.itemDetails>
 
 export interface Icon extends TypeOf<typeof types.icon> {}
 
 export interface InvalidId extends TypeOf<typeof types.invalidIdItem> {}
-
-export interface ItemNotFound {
-  readonly tag: 'ItemNotFound'
-  drivewsid: string
-}
 
 export type MaybeNotFound<T> = InvalidId | T
 
@@ -35,17 +52,21 @@ export const asOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O
 
 export type DriveDetailsWithHierarchy =
   | DriveDetailsRootWithHierarchy
+  | DriveDetailsTrashWithHierarchy
   | DriveDetailsAppLibraryWithHierarchy
   | DriveDetailsFolderWithHierarchy
+
 // TypeOf<typeof t.detailsWithHierarchy>
 
 export type DriveDetailsPartialWithHierarchy = TypeOf<typeof types.driveDetailsWithHierarchyPartial>
 
 export interface DriveDetailsRootWithHierarchy extends TypeOf<typeof types.rootDetailsWithHierarchy> {}
+export interface DriveDetailsTrashWithHierarchy extends TypeOf<typeof types.trashDetailsWithHierarchy> {}
 
 export interface DriveDetailsFolderWithHierarchy extends TypeOf<typeof types.folderDetailsWithHierarchy> {}
 export interface DriveDetailsAppLibraryWithHierarchy extends TypeOf<typeof types.appLibraryDetailsWithHierarchy> {}
 export interface DriveDetailsRootPartialWithHierarchy extends TypeOf<typeof types.rootDetailsWithHierarchyPartial> {}
+export interface DriveDetailsTrashPartialWithHierarchy extends TypeOf<typeof types.trashDetailsWithHierarchyPartial> {}
 
 export interface DriveDetailsFolderPartialWithHierarchy
   extends TypeOf<typeof types.folderDetailsWithHierarchyPartial>
@@ -92,23 +113,10 @@ export type RecursiveFolder =
     readonly deep: false
   }
 
-export type Root = DetailsRoot | DetailsTrash
-
-export type Details =
-  // | DetailsTrash
-  | DetailsRoot
-  | DetailsFolder
-  | DetailsAppLibrary
-
-export type RegularDetails =
-  | DetailsFolder
-  | DetailsAppLibrary
 // export type DriveChildrenItem =
 //   | DriveChildrenItemFile
 //   | DriveChildrenItemFolder
 //   | DriveChildrenItemAppLibrary
-
-export type DriveChildrenItem = DriveChildrenItemFile | DriveChildrenItemFolder | DriveChildrenItemAppLibrary
 
 export type DriveObject = {
   name: string
@@ -120,22 +128,26 @@ export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
 export const isRegularDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is
   | DetailsFolder
-  | DetailsAppLibrary => !isRootDetails(details) && !isTrashDetails(details)
+  | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
 
-export const isRootDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is DetailsRoot =>
+export const isCloudDocsRootDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is DetailsRoot =>
   details.drivewsid === types.rootDrivewsid
 
 export const isTrashDetails = (details: DetailsTrash | DetailsRoot | DriveChildrenItem): details is DetailsTrash =>
   details.drivewsid === types.trashDrivewsid
 
+export const isTrashDetailsG = <T extends { drivewsid: string }>(details: DetailsTrash | T): details is DetailsTrash =>
+  details.drivewsid === types.trashDrivewsid
+
 export const isNotRootDetails = (details: Details | DriveChildrenItem): details is
   | DetailsFolder
-  | DetailsAppLibrary => !isRootDetails(details)
+  | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
 
 export type DriveFolderLike =
   | DetailsFolder
   | DetailsAppLibrary
   | DetailsRoot
+  | DetailsTrash
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
 
@@ -159,10 +171,7 @@ export const partitionFoldersFiles = (
 
 export const isDetails = (
   entity: Details | DriveChildrenItem,
-): entity is
-  | DetailsFolder
-  | DetailsAppLibrary
-  | DetailsRoot => isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items')
+): entity is Details => isTrashDetails(entity) || (isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items'))
 
 export const isFileItem = (
   entity: DriveChildrenItem,
@@ -219,12 +228,25 @@ export const hasName = <
   ]).is(a)
 }
 
-export const fileName = (item: HasName) =>
-  (item.drivewsid === types.rootDrivewsid)
+export const fileName = (item: HasName | DetailsTrash) => {
+  if (isTrashDetailsG(item)) {
+    return 'TRASH'
+  }
+
+  return (item.drivewsid === types.rootDrivewsid)
     ? '/'
     : item.extension
     ? `${item.name}${item.extension.length > 0 ? `.${item.extension}` : ''}`
     : `${item.name}`
+}
+
+export const itemType = (item: { type: string } | DetailsTrash) => {
+  if ('type' in item) {
+    return item.type
+  }
+
+  return 'TRASH_ROOT'
+}
 
 // export const itemType = (item: HasName) =>
 // hasOwnProperty(item, 'drivewsid') && item.drivewsid === types.trashDrivewsid

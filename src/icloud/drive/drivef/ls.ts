@@ -203,28 +203,28 @@ const onNotFoundInCache = (path: string) =>
     )
   }
 
-const onFilePathChanged = (oldpath: string) =>
-  (): DF.DriveM<Details | DriveChildrenItemFile> =>
-    pipe(
-      DF.readEnv,
-      log('onFilePathChanged'),
-      SRTE.chain(() =>
-        pipe(
-          () => DF.getItemByPath(oldpath),
-          DF.withEmptyCache(Cache),
-        )
-      ),
-      SRTE.chain(DF.ensureDetails),
-    )
+// const onFilePathChanged = (oldpath: string) =>
+//   (): DF.DriveM<Details | DriveChildrenItemFile> =>
+//     pipe(
+//       DF.readEnv,
+//       log('onFilePathChanged'),
+//       SRTE.chain(() =>
+//         pipe(
+//           () => DF.getItemByPath(oldpath),
+//           DF.withEmptyCache(Cache),
+//         )
+//       ),
+//       SRTE.chain(DF.ensureDetails),
+//     )
 
-const getCachedItem = (path: NormalizedPath) => {
-  return pipe(
-    DF.readEnv,
-    SRTE.bind('item', ({ cache }) => SRTE.fromEither(cache.getByPathE(path))),
-    SRTE.bind('hierarchy', ({ cache, item }) => SRTE.fromEither(cache.getCachedHierarchyById(item.content.drivewsid))),
-    SRTE.map(({ item, hierarchy }) => ({ ...item.content, hierarchy })),
-  )
-}
+// const getCachedItem = (path: NormalizedPath) => {
+//   return pipe(
+//     DF.readEnv,
+//     SRTE.bind('item', ({ cache }) => SRTE.fromEither(cache.getByPathE(path))),
+//     SRTE.bind('hierarchy', ({ cache, item }) => SRTE.fromEither(cache.getCachedHierarchyById(item.content.drivewsid))),
+//     SRTE.map(({ item, hierarchy }) => ({ ...item.content, hierarchy })),
+//   )
+// }
 
 /* const onFilePathChangedV = (oldpath: string) =>
   (): DF.DriveM<DriveDetails | DriveChildrenItemFile> => {

@@ -4,49 +4,74 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import * as H from '../drivef/validation'
-import { Details, DetailsTrash, DriveChildrenItemFile, fileName } from '../types'
+import {
+  Details,
+  DetailsAppLibrary,
+  DetailsFolder,
+  DetailsTrash,
+  DriveChildrenItemFile,
+  fileName,
+  Hierarchy,
+  Root,
+} from '../types'
 
-export type GetByPathResultValid = { valid: true; path: H.Valid; file: O.Option<DriveChildrenItemFile> }
+export type GetByPathResultValid<H> = {
+  valid: true
+  path: H.Valid<H>
+  file: O.Option<DriveChildrenItemFile>
+}
 
-export type GetByPathResultValidWithFile = { valid: true; path: H.Valid; file: O.Some<DriveChildrenItemFile> }
+export type GetByPathResultValidWithFile<H> = {
+  valid: true
+  path: H.Valid<H>
+  file: O.Some<DriveChildrenItemFile>
+}
 
-export type GetByPathResultInvalid = { valid: false; path: H.Partial; error: Error }
+export type GetByPathResultInvalid<H> = { valid: false; path: H.Partial<H>; error: Error }
 
-export type GetByPathResult =
-  | GetByPathResultValid
-  | GetByPathResultInvalid
+export type GetByPathResult<H> =
+  | GetByPathResultValid<H>
+  | GetByPathResultInvalid<H>
 
-export const target = (res: GetByPathResultValid): Details | DriveChildrenItemFile => {
+export const target = <R extends Root>(
+  res: GetByPathResultValid<H.Hierarchy<R>>,
+): R | DetailsFolder | DetailsAppLibrary | DriveChildrenItemFile => {
   return pipe(
     res.file,
     O.foldW(() => NA.last(res.path.details), identity),
   )
 }
 
-export const isValidWithFile = (res: GetByPathResult): res is GetByPathResultValidWithFile => {
+export const isValidWithFile = <H>(res: GetByPathResult<H>): res is GetByPathResultValidWithFile<H> => {
   return res.valid === true && O.isSome(res.file)
 }
 
-export const validResult = (path: H.Hierarchy, file: O.Option<DriveChildrenItemFile> = O.none): GetByPathResult => ({
+export const validResult = <R extends Root>(
+  path: H.Hierarchy<R>,
+  file: O.Option<DriveChildrenItemFile> = O.none,
+): GetByPathResult<H.Hierarchy<R>> => ({
   valid: true,
   path: H.validPath(path),
   file,
 })
 
-export const invalidResult = (path: H.Partial, error: Error): GetByPathResultInvalid => ({
+export const invalidResult = <R extends Root>(
+  path: H.Partial<H.Hierarchy<R>>,
+  error: Error,
+): GetByPathResultInvalid<H.Hierarchy<R>> => ({
   valid: false,
   path,
   error,
 })
 
-export const showGetByPathResult = (p: GetByPathResult) => {
+export const showGetByPathResult = <R extends Root>(p: GetByPathResult<H.Hierarchy<R>>) => {
   if (p.valid) {
     return `valid: ${p.path.details.map(fileName)} file: ${pipe(p.file, O.fold(() => `none`, fileName))}`
   }
   return `invalid (${p.error.message}). valid part ${p.path.details.map(fileName)}, rest: ${p.path.rest}`
 }
 
-export const asString = (result: GetByPathResultValid) => {
+export const asString = <R extends Root>(result: GetByPathResultValid<H.Hierarchy<R>>) => {
   return normalizePath(
     [
       ...result.path.details.map(fileName),

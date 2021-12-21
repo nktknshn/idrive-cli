@@ -20,13 +20,14 @@ import {
   DetailsAppLibrary,
   DetailsFolder,
   DetailsRoot,
+  DetailsTrash,
   DriveChildrenItem,
   fileName,
   Hierarchy,
   invalidId,
+  isCloudDocsRootDetails,
   isDetails,
   isFileItem,
-  isRootDetails,
   MaybeNotFound,
 } from '../types'
 import { rootDrivewsid } from '../types-io'
@@ -237,7 +238,7 @@ export class Cache {
 
   getFolderDetailsByIdsO = (
     drivewsids: string[],
-  ): E.Either<Error, O.Option<DetailsRoot | DetailsFolder | DetailsAppLibrary>[]> =>
+  ): E.Either<Error, O.Option<Details>[]> =>
     pipe(
       this.getFolderDetailsByIds(drivewsids),
       E.map(A.map(asOption)),
@@ -308,18 +309,34 @@ export class Cache {
       E.Do,
       E.bind('root', () => pipe(this.cache, getRoot())),
       E.fold(
-        (e): PartialValidPath => ({
-          valid: false,
-          error: e,
-          rest: parts,
-          validPart: [],
-        }),
+        (e): PartialValidPath => ({ valid: false, error: e, rest: parts, validPart: [] }),
         ({ root }) =>
           pipe(
             this.cache,
             getPartialValidPath(rest, root),
           ),
       ),
+    )
+  }
+
+  getByPathVER = (
+    root: DetailsRoot | DetailsTrash,
+    path: NormalizedPath,
+  ): E.Either<Error, GetByPathResult> => {
+    const parts = parsePath(path)
+    const rest = pipe(parts, A.dropLeft(1))
+
+    return pipe(
+      E.Do,
+      E.bind('root', () => E.of(root)),
+      E.map(({ root }) =>
+        pipe(
+          this.cache,
+          getPartialValidPathV2(rest, root),
+          v => v as GetByPathResult,
+        )
+      ),
+      // E.map(_ => _.)
     )
   }
 
@@ -343,94 +360,6 @@ export class Cache {
     )
   }
 
-  // getByPathV4 = (path: NormalizedPath): E.Either<Error, GetByPathVEResult> => {
-  //   const verifyMiddle = (details: (DriveDetails | DriveChildrenItemFile)[]): details is ((
-  //     | DriveDetailsFolder
-  //     | DriveDetailsAppLibrary
-  //   )[]) => pipe(details, A.every(d => isFolderDetails(d) && !isRootDetails(d)))
-
-  //   // verify the sequence
-  //   // it should be
-  //   // root, [...details], [details | file]
-  //   // root file
-  //   // root details file
-  //   // root details
-  //   //
-
-  //   // return H.valid(valid.entities)
-
-  //   const mapValid = (valid: PartialValidPathValid): E.Either<Error, GetByPathVEResult> => {
-  //     const details = pipe(valid.entities, NA.map(_ => _.content))
-
-  //     const [root, ...rest] = details
-
-  //     if (!isRootDetails(root)) {
-  //       return E.left(err(`first item is not root`))
-  //     }
-
-  //     if (A.isNonEmpty(rest)) {
-  //       return pipe(
-  //         rest,
-  //         NA.matchRight((middle, last) => {
-  //           if (isRootDetails(last)) {
-  //             return E.left(err(`how is the root the last?`))
-  //           }
-
-  //           if (!verifyMiddle(middle)) {
-  //             return E.left(err(`middle contains invalid elements`))
-  //           }
-
-  //           return E.right({
-  //             valid: true,
-  //             path: isFileItem(last) ? H.valid([root, ...middle]) : H.valid([root, ...middle, last]),
-  //             file: isFileItem(last) ? O.some(last) : O.none,
-  //           })
-  //         }),
-  //       )
-  //     }
-  //     else {
-  //       return E.right({
-  //         valid: true,
-  //         path: H.valid([root]),
-  //         file: O.none,
-  //       })
-  //     }
-  //   }
-
-  //   const mapInvalid = (invalid: PartialValidPathInvalid): E.Either<Error, GetByPathVEResult> => {
-  //     logger.debug(`mapInvalid: ${JSON.stringify(invalid)}`)
-
-  //     if (!A.isNonEmpty(invalid.validPart)) {
-  //       return E.left(err(`missing root`))
-  //     }
-  //     const details = pipe(invalid.validPart, NA.map(_ => _.content))
-
-  //     const [root, ...rest] = details
-
-  //     if (!isRootDetails(root)) {
-  //       return E.left(err(`first item is not root`))
-  //     }
-
-  //     if (A.isNonEmpty(rest)) {
-  //       if (!verifyMiddle(rest)) {
-  //         return E.left(err(`middle contains invalid elements`))
-  //       }
-
-  //       return E.right({ valid: false, path: H.partial([root, ...rest], invalid.rest), error: err(`some`) })
-  //     }
-  //     else {
-  //       return E.right({ valid: false, path: H.partial([root], invalid.rest), error: err(`some`) })
-  //     }
-  //   }
-
-  //   return pipe(
-  //     this.getByPathVE(path),
-  //     E.chain(
-  //       p => p.valid ? mapValid(p) : mapInvalid(p),
-  //     ),
-  //   )
-  // }
-
   getByPathV2 = (
     path: NormalizedPath,
   ):
@@ -445,70 +374,6 @@ export class Cache {
           : { validPart: _.validPart, rest: _.rest },
     )
   }
-
-  // getByPathV3 = (
-  //   path: NormalizedPath,
-  // ): MaybeValidPath => {
-  //   const validateValid = (
-  //     entities: NA.NonEmptyArray<CacheEntityDetails | CacheEntityFile>,
-  //   ): FullyCached | PartialyCached => {
-  //     const initPath = NA.init(entities)
-  //     const target = NA.last(entities)
-
-  //     const validPath = pipe(initPath, A.takeLeftWhile(isDetailsCacheEntity))
-
-  //     if (A.isNonEmpty(validPath) && validPath.length == initPath.length) {
-  //       return {
-  //         tag: 'full',
-  //         path: pipe(validPath, NA.map(_ => _.content)),
-  //         target: target.content,
-  //       }
-  //     }
-  //     else {
-  //       return pipe(
-  //         validPath,
-  //         A.matchW(
-  //           () =>
-  //             partialPath(
-  //               ItemIsNotFolder.create(`item is not folder or mising details`),
-  //               [],
-  //               pipe(entities, NA.map(_ => fileName(_.content))),
-  //             ),
-  //           (validPath) =>
-  //             partialPath(
-  //               ItemIsNotFolder.create(`item is not folder or mising details`),
-  //               pipe(validPath, A.map(_ => _.content)),
-  //               pipe(entities, A.dropLeft(validPath.length), A.map(_ => fileName(_.content))) as NA.NonEmptyArray<
-  //                 string
-  //               >,
-  //             ),
-  //         ),
-  //       )
-  //     }
-  //   }
-
-  //   const validate = (p: PartialValidPath) => {
-  //     if (p.valid) {
-  //       return validateValid(p.entities)
-  //     }
-
-  //     return partialPath(err(`doesnt matter`), pipe(p.validPart, A.map(_ => _.content)), p.rest)
-  //   }
-
-  //   return pipe(
-  //     this.getByPathV(path),
-  //     validate,
-  //     p =>
-  //       p.tag === 'full'
-  //         ? {
-  //           tag: 'full' as const,
-  //           path: p.target.type === 'FILE' ? p.path : NA.concat(p.path, NA.of(p.target)),
-  //           file: p.target.type === 'FILE' ? O.some(p.target) : O.none,
-  //         }
-  //         : p,
-  //     _ => _.tag === 'full' ? fromPartAndRest(_.path, []) : fromPartAndRest(_.path, _.rest),
-  //   )
-  // }
 
   getByPath = (path: string): O.Option<CacheEntity> => {
     return pipe(

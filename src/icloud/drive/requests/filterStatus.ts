@@ -73,6 +73,7 @@ export const applyToSession = <R>(
       })),
     )
   }
+
 export const withResponse = (httpResponse: HttpResponse) =>
   pipe(
     TE.Do,

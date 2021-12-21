@@ -15,12 +15,12 @@ import {
   DetailsRoot,
   DriveChildrenItem,
   Hierarchy,
+  isCloudDocsRootDetails,
   isDetails,
   isFolderLike,
   isHierarchyItemRoot,
   isHierarchyItemTrash,
   isInvalidId,
-  isRootDetails,
   MaybeNotFound,
 } from './types'
 import { rootDrivewsid, trashDrivewsid } from './types-io'

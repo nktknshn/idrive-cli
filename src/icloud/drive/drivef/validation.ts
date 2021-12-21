@@ -13,19 +13,19 @@ import {
   DetailsTrash,
   fileName,
   hasName,
+  isCloudDocsRootDetails,
   isRegularDetails,
-  isRootDetails,
   isTrashDetails,
   RegularDetails,
   Root,
 } from '../types'
 
 // export type Hierarchy = [DetailsRoot, ...Details[]]
-export type Hierarchy = [DetailsRoot, ...Details[]]
+export type Hierarchy<R extends Root> = [R, ...RegularDetails[]]
 // export type TrashHierarchy = [DetailsTrash, ...Details[]]
 
-export const isHierarchy = (details: NEA<Details>): details is Hierarchy =>
-  isRootDetails(details[0]) || isTrashDetails(details[0])
+export const isHierarchy = <R extends Root>(details: NEA<Details>): details is Hierarchy<R> =>
+  isCloudDocsRootDetails(details[0]) || isTrashDetails(details[0])
 
 const same = (a: Details, b: Details) => {
   if (a.drivewsid !== b.drivewsid) {
@@ -47,10 +47,10 @@ const same = (a: Details, b: Details) => {
 
 // export type MaybeValidPath = T.These<Hierarchy, NEA<string>>
 
-export const getValidHierarchyPart = (
-  actualDetails: [DetailsRoot, ...O.Option<Details>[]],
-  cachedHierarchy: Hierarchy,
-): WithDetails => {
+export const getValidHierarchyPart = <R extends Root>(
+  actualDetails: [R, ...O.Option<RegularDetails>[]],
+  cachedHierarchy: Hierarchy<R>,
+): WithDetails<Hierarchy<R>> => {
   const [actualRoot, ...actualPath] = actualDetails
   const [cachedroot, ...cachedPath] = cachedHierarchy
 
@@ -81,13 +81,13 @@ export const getValidHierarchyPart = (
   )
 }
 
-export type MaybeValidPath<H = Hierarchy> = Valid<H> | Partial<H> | Invalid
+export type MaybeValidPath<H> = Valid<H> | Partial<H> | Invalid
 
-export type WithRest<H = Hierarchy> = Partial<H> | Invalid
-export type WithDetails<H = Hierarchy> = Partial<H> | Valid<H>
+export type WithRest<H> = Partial<H> | Invalid
+export type WithDetails<H> = Partial<H> | Valid<H>
 
-export type Valid<H = Hierarchy> = { tag: 'Valid'; details: H }
-export type Partial<H = Hierarchy> = { tag: 'Partial'; details: H; rest: NEA<string> }
+export type Valid<H> = { tag: 'Valid'; details: H }
+export type Partial<H> = { tag: 'Partial'; details: H; rest: NEA<string> }
 export type Invalid = { tag: 'Invalid'; rest: NEA<string> }
 
 // export type Partial<H = Hierarchy> = T.Both<H, NEA<string>>
@@ -107,9 +107,10 @@ export const isValid = <H>(p: MaybeValidPath<H>): p is Valid<H> => p.tag === 'Va
 export const isPartialyValid = <H>(p: MaybeValidPath<H>): p is Partial<H> => p.tag === 'Partial'
 export const isFullyInvalid = <H>(p: MaybeValidPath<H>): p is Valid<H> => p.tag === 'Invalid'
 
-export const isWithRest = (vh: MaybeValidPath): vh is WithRest => vh.tag === 'Invalid' || vh.tag === 'Partial'
+export const isWithRest = <H>(vh: MaybeValidPath<H>): vh is WithRest<H> => vh.tag === 'Invalid' || vh.tag === 'Partial'
 
-export const isWithDetails = (vh: MaybeValidPath): vh is WithDetails => vh.tag === 'Valid' || vh.tag === 'Partial'
+export const isWithDetails = <H>(vh: MaybeValidPath<H>): vh is WithDetails<H> =>
+  vh.tag === 'Valid' || vh.tag === 'Partial'
 
 export const partialPath = <H>(validPart: H, rest: NEA<string>): Partial<H> => ({
   tag: 'Partial',
@@ -122,9 +123,10 @@ export const validPath = <H>(validPart: H): Valid<H> => ({
   details: validPart,
 })
 
-export const concat = (h: Hierarchy, details: NEA<Details>): Hierarchy => NA.concat(h, details) as Hierarchy
+export const concat = <R extends Root>(h: Hierarchy<R>, details: NEA<Details>): Hierarchy<R> =>
+  NA.concat(h, details) as Hierarchy<R>
 
-export const eq: Eq<Hierarchy> = {
+export const eq = <R extends Root>(): Eq<Hierarchy<R>> => ({
   equals: (a, b) => {
     if (a.length !== b.length) {
       return false
@@ -135,18 +137,18 @@ export const eq: Eq<Hierarchy> = {
       A.every(([a, b]) => same(a, b)),
     )
   },
-}
+})
 
 const showDetails = (ds: (Details | DetailsTrash)[]) => {
   return `${ds.map(d => isRegularDetails(d) ? fileName(d) : isTrashDetails(d) ? 'Trash' : '/').join(' → ')}`
 }
 
-export const match = <H, R>(
-  onValid: (h: H) => R,
-  onInvalid: (rest: NEA<string>) => R,
-  onPartial: (h: H, rest: NEA<string>) => R,
+export const match = <H, Result>(
+  onValid: (h: H) => Result,
+  onInvalid: (rest: NEA<string>) => Result,
+  onPartial: (h: H, rest: NEA<string>) => Result,
 ) =>
-  (p: MaybeValidPath<H>): R => {
+  (p: MaybeValidPath<H>): Result => {
     if (isValid(p)) {
       return onValid(p.details)
     }
@@ -156,7 +158,7 @@ export const match = <H, R>(
     return onInvalid(p.rest)
   }
 
-export const showMaybeValidPath = (p: MaybeValidPath): string => {
+export const showMaybeValidPath = <R extends Root>(p: MaybeValidPath<Hierarchy<R>>): string => {
   return pipe(
     p,
     match(

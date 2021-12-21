@@ -28,10 +28,11 @@ import {
   isFolderLikeItem,
   isHierarchyItemRoot,
   isHierarchyItemTrash,
+  RegularDetails,
 } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
-import { Path } from '../../../lib/util'
+import { hasOwnProperties, hasOwnProperty, Path } from '../../../lib/util'
 
 export const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
   logger.debug(JSON.stringify({ cached, actual }))
@@ -102,14 +103,24 @@ export const compareDriveDetailsWithHierarchy = (
   cached: DriveDetailsWithHierarchy,
   actual: DriveDetailsWithHierarchy,
 ) => {
-  return {
-    etag: cached.etag !== actual.etag,
-    name: cached.name !== actual.name,
+  const res = {
+    etag: false,
+    name: false,
     hierarchy: compareHierarchies(cached.hierarchy, actual.hierarchy),
     items: compareItems(cached.items, actual.items),
     oldPath: Path.join(hierarchyToPath(cached.hierarchy), fileName(cached)),
     newPath: Path.join(hierarchyToPath(actual.hierarchy), fileName(actual)),
   }
+
+  if (hasOwnProperties(cached, 'etag', 'name') && hasOwnProperties(actual, 'etag', 'name')) {
+    return {
+      ...res,
+      etag: cached.etag !== actual.etag,
+      name: cached.name !== actual.name,
+    }
+  }
+
+  return res
 }
 
 export const compareItemWithHierarchy = (
@@ -177,7 +188,7 @@ export const groupByTypeTuple = (items: [DriveChildrenItem, DriveChildrenItem][]
     }),
   )
 
-export const compareDetails = (cached: Details, actual: Details) => {
+export const compareDetails = (cached: DetailsRoot | RegularDetails, actual: DetailsRoot | RegularDetails) => {
   const items = compareItems(cached.items, actual.items)
 
   const cachedByZone = pipe(
