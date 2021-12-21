@@ -106,6 +106,7 @@ export const hierarchyEntry = t.union([
 ])
 
 export const hierarchy = t.array(hierarchyEntry)
+// export const hierarchy = t.tuple([t.union([hierarchyRoot, hierarchyTrash]), hierarchyItem])
 
 export const detailsItem = t.union([
   itemFolder,

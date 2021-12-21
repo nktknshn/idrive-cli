@@ -3,6 +3,7 @@ import {
   DetailsAppLibrary,
   DetailsFolder,
   DetailsRoot,
+  DetailsTrash,
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
@@ -15,12 +16,14 @@ export interface CacheF {
 }
 
 export type CacheEntityDetails =
+  | CacheEntityFolderTrashDetails
   | CacheEntityFolderRootDetails
   | CacheEntityFolderDetails
   | CacheEntityAppLibraryDetails
 
 export type CacheEntityFolderLike =
   | CacheEntityFolderRootDetails
+  | CacheEntityFolderTrashDetails
   | CacheEntityFolderDetails
   | CacheEntityFolderItem
   | CacheEntityAppLibraryDetails
@@ -34,6 +37,8 @@ export type CacheEntity =
   | CacheEntityFolderLike
   | CacheEntityFile
 
+export type CacheEntityWithParentId = Exclude<CacheEntity, CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails>
+
 export type ICloudDriveCacheEntityType = CacheEntity['type']
 
 // interface CacheEntityC {
@@ -45,6 +50,12 @@ export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
   constructor(public readonly content: DetailsRoot) {}
+}
+
+export class CacheEntityFolderTrashDetails {
+  readonly type = 'TRASH_ROOT'
+  readonly hasDetails = true
+  constructor(public readonly content: DetailsTrash) {}
 }
 
 export class CacheEntityFolderDetails {

@@ -33,6 +33,8 @@ export type GetByPathResult<H> =
   | GetByPathResultValid<H>
   | GetByPathResultInvalid<H>
 
+export type HierarchyResult<R extends Root> = GetByPathResult<H.Hierarchy<R>>
+
 export const target = <R extends Root>(
   res: GetByPathResultValid<H.Hierarchy<R>>,
 ): R | DetailsFolder | DetailsAppLibrary | DriveChildrenItemFile => {

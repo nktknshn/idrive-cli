@@ -6,7 +6,7 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DF from '../../icloud/drive/fdrive'
 
-/** modify subset of input which is `refinement` keeping the order*/
+/** keeping the order modify subset of input which is true when `refinement` applied */
 export const modifySubsetDF = <A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,

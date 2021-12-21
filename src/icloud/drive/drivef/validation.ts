@@ -11,6 +11,7 @@ import {
   Details,
   DetailsRoot,
   DetailsTrash,
+  DriveDetailsWithHierarchy,
   fileName,
   hasName,
   isCloudDocsRootDetails,
@@ -23,6 +24,8 @@ import {
 // export type Hierarchy = [DetailsRoot, ...Details[]]
 export type Hierarchy<R extends Root> = [R, ...RegularDetails[]]
 // export type TrashHierarchy = [DetailsTrash, ...Details[]]
+
+export const tail = <R extends Root>([, ...tail]: Hierarchy<R>) => tail
 
 export const isHierarchy = <R extends Root>(details: NEA<Details>): details is Hierarchy<R> =>
   isCloudDocsRootDetails(details[0]) || isTrashDetails(details[0])
@@ -48,8 +51,8 @@ const same = (a: Details, b: Details) => {
 // export type MaybeValidPath = T.These<Hierarchy, NEA<string>>
 
 export const getValidHierarchyPart = <R extends Root>(
-  actualDetails: [R, ...O.Option<RegularDetails>[]],
   cachedHierarchy: Hierarchy<R>,
+  actualDetails: [R, ...O.Option<RegularDetails>[]],
 ): WithDetails<Hierarchy<R>> => {
   const [actualRoot, ...actualPath] = actualDetails
   const [cachedroot, ...cachedPath] = cachedHierarchy

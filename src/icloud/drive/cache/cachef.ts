@@ -32,6 +32,7 @@ import {
   isDetails,
   isFolderLike,
   isFolderLikeItem,
+  isTrashDetailsG,
 } from '../types'
 import { hierarchyRoot, hierarchyTrash, rootDrivewsid, trashDrivewsid } from '../types-io'
 import { MissingParentError } from './errors'
@@ -45,6 +46,8 @@ import {
   CacheEntityFolderItem,
   CacheEntityFolderLike as CacheEntityFolderLike,
   CacheEntityFolderRootDetails,
+  CacheEntityFolderTrashDetails,
+  CacheEntityWithParentId,
   CacheF,
 } from './types'
 
@@ -101,7 +104,7 @@ export const getItemWithParentsById = (drivewsid: string) =>
     let result = NA.of(item.value)
 
     while (
-      !isRootCacheEntity(item.value)
+      hasParentId(item.value)
       // && !isTrash
     ) {
       item = pipe(
@@ -159,6 +162,10 @@ export const getHierarchyById = (drivewsid: string) =>
     while (O.isSome(item)) {
       if (isRootCacheEntity(item.value)) {
         h.push({ drivewsid: rootDrivewsid })
+        return E.right(A.reverse(h))
+      }
+      else if (isTrashCacheEntity(item.value)) {
+        h.push({ drivewsid: trashDrivewsid })
         return E.right(A.reverse(h))
       }
       else {
@@ -369,9 +376,16 @@ export const getByPath = (path: string) =>
     )
   }
 
+export const hasParentId = (entity: CacheEntity): entity is CacheEntityWithParentId =>
+  !isRootCacheEntity(entity) && !isTrashCacheEntity(entity)
+
 export const isRootCacheEntity = (
   entity: CacheEntity,
 ): entity is CacheEntityFolderRootDetails => entity.type === 'ROOT'
+
+export const isTrashCacheEntity = (
+  entity: CacheEntity,
+): entity is CacheEntityFolderTrashDetails => entity.type === 'ROOT'
 
 export const isFolderLikeCacheEntity = (
   entity: CacheEntity,
@@ -393,6 +407,8 @@ export const cacheEntityFromDetails = (
 ): CacheEntity =>
   isCloudDocsRootDetails(details)
     ? new CacheEntityFolderRootDetails(details)
+    : isTrashDetailsG(details)
+    ? new CacheEntityFolderTrashDetails(details)
     : details.type === 'FOLDER'
     ? new CacheEntityFolderDetails(details)
     : new CacheEntityAppLibraryDetails(details)
@@ -410,6 +426,15 @@ const cacheEntityFromItem = (
 export const getById = (drivewsid: string) =>
   (cache: CacheF): O.Option<CacheEntity> => {
     return pipe(cache.byDrivewsid, R.lookup(drivewsid))
+  }
+
+export const getItemById = (drivewsid: string) =>
+  (cache: CacheF): E.Either<Error, O.Option<CacheEntityWithParentId>> => {
+    return pipe(
+      cache.byDrivewsid,
+      R.lookup(drivewsid),
+      O.fold(() => E.right(O.none), v => hasParentId(v) ? E.right(O.some(v)) : E.left(err(`item is not a`))),
+    )
   }
 
 export const getByIdE = (drivewsid: string) =>
@@ -489,7 +514,9 @@ export const putDetails = (
   details: Details,
 ): ((cache: CacheF) => E.Either<Error, CacheF>) => {
   cacheLogger.debug(
-    `putting ${details.drivewsid} ${fileName(details)} ${details.etag} (${details.items.map(fileName)})`,
+    `putting ${details.drivewsid} ${fileName(details)} etag: ${isTrashDetailsG(details) ? 'trash' : details.etag} (${
+      details.items.map(fileName)
+    })`,
   )
 
   return (cache) =>
@@ -510,24 +537,26 @@ export const putDetails = (
 export const putItem = (
   item: DriveChildrenItem,
 ): ((cache: CacheF) => E.Either<Error, CacheF>) => {
-  return (cache) =>
+  const shouldBeUpdated = (cached: O.Option<CacheEntityWithParentId>, actual: DriveChildrenItem) => {
+    return O.isNone(cached)
+      || cached.value.content.etag !== item.etag
+      || !cached.value.hasDetails
+  }
+
+  const res = (cache: CacheF) =>
     pipe(
       E.Do,
       E.bind('parentPath', () =>
         pipe(
           cache,
-          // logReturnAs('cache'),
           getCachedPathForId(item.parentId),
           E.mapLeft(() => MissingParentError.create(`putItem: missing parent ${item.parentId} in cache`)),
         )),
-      E.bind('cachedEntity', () => E.of(pipe(cache, getById(item.drivewsid)))),
-      E.bind('needsUpdate', ({ cachedEntity }) =>
-        E.of(
-          O.isNone(cachedEntity)
-            || cachedEntity.value.content.etag !== item.etag
-            || !cachedEntity.value.hasDetails,
-        )),
-      // E.map(logReturn(_ => cacheLogger.debug({ ..._, item }))),
+      E.bind('cachedEntity', () => pipe(cache, getItemById(item.drivewsid))),
+      E.bind(
+        'needsUpdate',
+        ({ cachedEntity }) => E.of(shouldBeUpdated(cachedEntity, item)),
+      ),
       E.map(({ needsUpdate }) =>
         needsUpdate
           ? pipe(
@@ -545,6 +574,8 @@ export const putItem = (
           : cache
       ),
     )
+
+  return res
 }
 
 export const validateCacheJson = (json: unknown): json is CacheF => {

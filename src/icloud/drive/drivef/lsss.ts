@@ -7,7 +7,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
+import { NonRootDrivewsid, NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../../lib/errors'
 import { modifySubsetDF } from '../../../lib/helpers/projectIndexes'
 import { logg, logger } from '../../../lib/logging'
@@ -26,12 +26,14 @@ import {
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
   DriveDetailsWithHierarchy,
+  DriveDetailsWithHierarchyRegular,
   fileName,
   isCloudDocsRootDetails,
   isFileItem,
   isFolderLikeItem,
   isTrashDetails,
   isTrashDetailsG,
+  RegularDetails,
   Root,
 } from '../types'
 import { rootDrivewsid } from '../types-io'
@@ -40,12 +42,11 @@ import * as H from './validation'
 const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
 
 const toActual = (
-  cachedPath: Details[],
-  actualsRecord: Record<string, O.Option<Details>>,
-): O.Option<Details>[] => {
+  cachedPath: RegularDetails[],
+  actualsRecord: Record<string, O.Option<DriveDetailsWithHierarchyRegular>>,
+): O.Option<DriveDetailsWithHierarchyRegular>[] => {
   return pipe(
     cachedPath,
-    // A.dropLeft(1),
     A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
     A.map(O.flatten),
   )
@@ -58,12 +59,14 @@ const showHierarchiy = (h: H.Hierarchy<Root>): string => {
 }
 
 export const validateHierarchies = <R extends Root>(
+  root: R,
   cachedHierarchies: NEA<H.Hierarchy<R>>,
 ): DF.DriveM<NEA<H.WithDetails<H.Hierarchy<R>>>> => {
-  const cachedRoot = cachedHierarchies[0][0]
+  const cachedRoot = root
+
   const cachedPaths = pipe(
     cachedHierarchies,
-    NA.map(A.dropLeft(1)),
+    NA.map(H.tail),
   )
 
   const drivewsids = pipe(
@@ -80,19 +83,20 @@ export const validateHierarchies = <R extends Root>(
         DF.Do,
         SRTE.bind(
           'validation',
-          () => DF.retrieveItemDetailsInFoldersSavingNEA([rootDrivewsid, ...drivewsids]),
+          () => DF.retrieveItemDetailsInFoldersSavingNEA([cachedRoot.drivewsid, ...(drivewsids as NonRootDrivewsid[])]),
         ),
       ),
-    SRTE.map(({ validation }) => {
+    SRTE.map(({ validation: [actualRoot, ...actualRest] }) => {
       const detailsRecord = recordFromTuples(
-        NA.zip([rootDrivewsid, ...drivewsids], validation),
+        A.zip(drivewsids, actualRest),
       )
+
       return pipe(
         cachedPaths,
         NA.map(cachedPath =>
           H.getValidHierarchyPart<R>(
-            [validation[0].value, ...toActual(cachedPath, detailsRecord)],
             [cachedRoot, ...cachedPath],
+            [actualRoot.value as R, ...toActual(cachedPath, detailsRecord)],
           )
         ),
       )
@@ -180,7 +184,7 @@ export const validateCachedPaths = <R extends Root>(
         SRTE.fromEither(
           pipe(
             paths,
-            NA.map(cache.getByPathVE),
+            NA.map(path => cache.getByPathVER(root, path)),
             E.sequenceArray,
             E.map(_ => _ as NEA<V.GetByPathResult<H.Hierarchy<R>>>),
           ),
@@ -189,7 +193,7 @@ export const validateCachedPaths = <R extends Root>(
     SRTE.chain(({ cached }) =>
       pipe(
         logg(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
-        () => validateHierarchies(pipe(cached, NA.map(_ => _.path.details))),
+        () => validateHierarchies(root, pipe(cached, NA.map(_ => _.path.details))),
         SRTE.map(NA.zip(cached)),
         SRTE.map(NA.map(([validated, cached]): V.GetByPathResult<H.Hierarchy<R>> => {
           return concatCachedWithValidated<R>(cached, validated)
@@ -201,26 +205,6 @@ export const validateCachedPaths = <R extends Root>(
 }
 
 type LssResult<R extends Root> = V.GetByPathResult<H.Hierarchy<R>>
-
-const handleFiles = <R extends Root>(
-  [item, [rest, partial]]: [O.Some<DriveChildrenItemFile>, [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>]],
-): V.GetByPathResult<H.Hierarchy<R>> => {
-  return pipe(
-    rest,
-    A.match(
-      (): V.GetByPathResultValid<H.Hierarchy<R>> => ({
-        valid: true,
-        file: item,
-        path: H.validPath(partial.path.details),
-      }),
-      (rest): V.GetByPathResult<H.Hierarchy<R>> => ({
-        valid: false,
-        error: ItemIsNotFolderError.create(`item is not folder`),
-        path: H.partialPath(partial.path.details, NA.concat([fileName(item.value)], rest)),
-      }),
-    ),
-  )
-}
 
 type DepperFolders<R extends Root> =
   // folders items with empty rest (valid, requires details)
@@ -280,6 +264,29 @@ const handleFolders = <R extends Root>(task: NEA<DepperFolders<R>>): DF.DriveM<N
         },
       )
     }),
+  )
+}
+
+const handleFiles = <R extends Root>(
+  [item, [rest, partial]]: [
+    O.Some<DriveChildrenItemFile>,
+    [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>],
+  ],
+): V.GetByPathResult<H.Hierarchy<R>> => {
+  return pipe(
+    rest,
+    A.match(
+      (): V.GetByPathResultValid<H.Hierarchy<R>> => ({
+        valid: true,
+        file: item,
+        path: H.validPath(partial.path.details),
+      }),
+      (rest): V.GetByPathResult<H.Hierarchy<R>> => ({
+        valid: false,
+        error: ItemIsNotFolderError.create(`item is not folder`),
+        path: H.partialPath(partial.path.details, NA.concat([fileName(item.value)], rest)),
+      }),
+    ),
   )
 }
 
@@ -376,6 +383,7 @@ export const lsss = <R extends Root>(
 }
 
 export const lsssG = <R extends Root>(
+  root: R,
   paths: NEA<NormalizedPath>,
 ): DF.DriveM<NEA<LssResult<R>>> => {
   return getByPaths(root, paths)

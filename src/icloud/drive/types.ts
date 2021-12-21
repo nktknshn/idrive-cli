@@ -20,7 +20,10 @@ export interface TrashItemAppLibrary extends TypeOf<typeof types.trashItemAppLib
 
 export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItemAppLibrary
 
-export type Root = DetailsRoot | DetailsTrash
+export type Root =
+  | DetailsRoot
+  | DetailsTrash
+// | Details
 
 export type Details =
   | DetailsTrash
@@ -53,6 +56,10 @@ export const asOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O
 export type DriveDetailsWithHierarchy =
   | DriveDetailsRootWithHierarchy
   | DriveDetailsTrashWithHierarchy
+  | DriveDetailsAppLibraryWithHierarchy
+  | DriveDetailsFolderWithHierarchy
+
+export type DriveDetailsWithHierarchyRegular =
   | DriveDetailsAppLibraryWithHierarchy
   | DriveDetailsFolderWithHierarchy
 

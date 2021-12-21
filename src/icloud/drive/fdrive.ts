@@ -11,7 +11,7 @@ import { Semigroup } from 'fp-ts/lib/Semigroup'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { snd } from 'fp-ts/lib/Tuple'
-import { compareDetails, NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
+import { compareDetails, NonRootDrivewsid, NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { cacheLogger, logg, logger, logReturnAs, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
@@ -38,6 +38,7 @@ import {
   DriveDetailsRootWithHierarchy,
   DriveDetailsTrashWithHierarchy,
   DriveDetailsWithHierarchy,
+  DriveDetailsWithHierarchyRegular,
   DriveFolderLike,
   fileName,
   FolderLikeItem,
@@ -67,13 +68,13 @@ export const Do = SRTE.of<Cache, DriveMEnv, Error, {}>({})
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<FolderLikeItem>()
 
-export const lssPartial = (paths: NEA<NormalizedPath>) => {
-  return lsss(paths)
+export const lssPartial = <R extends Root>(root: R, paths: NEA<NormalizedPath>) => {
+  return lsss(root, paths)
 }
 
-export const lsPartial = <R extends Root>(path: NormalizedPath, root: R): DriveM<GetByPathResult<Hierarchy<R>>> => {
+export const lsPartial = <R extends Root>(root: R, path: NormalizedPath): DriveM<GetByPathResult<Hierarchy<R>>> => {
   return pipe(
-    lsss([path]),
+    lsss(root, [path]),
     map(NA.head),
   )
 }
@@ -209,12 +210,23 @@ export const retrieveItemDetailsInFoldersSaving = (
       )
     ),
   )
+
+export function retrieveItemDetailsInFoldersSavingNEA<R extends Root>(
+  drivewsids: [R['drivewsid'], ...NonRootDrivewsid[]],
+): DriveM<[O.Some<R>, ...O.Option<DriveDetailsWithHierarchyRegular>[]]>
+
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof rootDrivewsid, ...string[]],
 ): DriveM<[O.Some<DriveDetailsRootWithHierarchy>, ...O.Option<DriveDetailsWithHierarchy>[]]>
+
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof trashDrivewsid, ...string[]],
 ): DriveM<[O.Some<DriveDetailsTrashWithHierarchy>, ...O.Option<DriveDetailsWithHierarchy>[]]>
+
+export function retrieveItemDetailsInFoldersSavingNEA<R extends Root>(
+  drivewsids: [R['drivewsid'], ...string[]],
+): DriveM<[O.Some<R>, ...O.Option<DriveDetailsWithHierarchy>[]]>
+
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: NEA<string>,
 ): DriveM<NEA<O.Option<DriveDetailsWithHierarchy>>>

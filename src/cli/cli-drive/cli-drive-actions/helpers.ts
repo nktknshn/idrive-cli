@@ -30,6 +30,7 @@ import {
   isHierarchyItemTrash,
   RegularDetails,
 } from '../../../icloud/drive/types'
+import { rootDrivewsid, trashDrivewsid } from '../../../icloud/drive/types-io'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
 import { hasOwnProperties, hasOwnProperty, Path } from '../../../lib/util'
@@ -272,20 +273,30 @@ export interface NormalizedPathBrand {
   readonly NormalizedPath: unique symbol
 }
 
+export interface NonRootDrivewsidBrand {
+  readonly NonRootDrivewsid: unique symbol
+}
+
 export type Branded<A, B> = A & Brand<B>
 
 /**
  * NormalizedPath has Path.normalize applied and no trailing slash
  */
 export type NormalizedPath = Branded<string, NormalizedPathBrand>
+export type NonRootDrivewsid = Branded<string, NonRootDrivewsidBrand>
+
+export const isNonRootDrivewsid = (drivewsid: string): drivewsid is NonRootDrivewsid => {
+  return drivewsid !== rootDrivewsid && drivewsid !== trashDrivewsid
+}
 
 const stripSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
+const addSlash = (s: string) => s.startsWith('/') ? s : `/${s}`
 
 /**
  * NormalizedPath has Path.normalize applied and no trailing slash
  */
 export const normalizePath = (path: string): NormalizedPath => {
-  return pipe(Path.normalize(path), stripSlash) as NormalizedPath
+  return pipe(Path.normalize(path), stripSlash, addSlash) as NormalizedPath
 }
 
 export const itemWithHierarchyToPath = (item: HasName & { hierarchy: Hierarchy }) => {

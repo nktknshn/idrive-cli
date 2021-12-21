@@ -6,31 +6,25 @@ import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { partial } from 'io-ts'
 import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logger, logReturn } from '../../../lib/logging'
-import { ItemIsNotFolderError, MissinRootError } from '../errors'
+import { MissinRootError } from '../errors'
 import { parsePath } from '../helpers'
 import {
   asOption,
   Details,
-  DetailsAppLibrary,
-  DetailsFolder,
   DetailsRoot,
-  DetailsTrash,
   DriveChildrenItem,
   fileName,
   Hierarchy,
   invalidId,
-  isCloudDocsRootDetails,
-  isDetails,
-  isFileItem,
   MaybeNotFound,
+  Root,
 } from '../types'
-import { rootDrivewsid } from '../types-io'
+import { rootDrivewsid, trashDrivewsid } from '../types-io'
 import {
   cacheEntityFromDetails,
   cachef,
@@ -41,29 +35,25 @@ import {
   isDetailsCacheEntity,
   isFolderLikeCacheEntity,
   isRootCacheEntity,
+  isTrashCacheEntity,
   PartialValidPath,
-  PartialValidPathInvalid,
-  PartialValidPathValid,
   putDetails,
   putItem,
   putRoot,
   removeById,
   validateCacheJson,
 } from './cachef'
-import { GetByPathResult } from './GetByPathResultValid'
+import { HierarchyResult } from './GetByPathResultValid'
 import {
   CacheEntity,
   CacheEntityAppLibrary,
   CacheEntityAppLibraryDetails,
-  CacheEntityDetails,
-  CacheEntityFile,
   CacheEntityFolderDetails,
   CacheEntityFolderLike as CacheEntityFolderLike,
   CacheEntityFolderRootDetails,
   CacheF,
 } from './types'
 import { getPartialValidPathV2 } from './v2'
-import { FullyCached, partialPath, PartialyCached } from './validatePath'
 
 export class Cache {
   private readonly cache: CacheF
@@ -271,10 +261,11 @@ export class Cache {
       pipe(
         E.Do,
         E.bind('item', () => this.getByIdE(drivewsid)),
-        // E.bind('path', () => this.getCachedPathForIdE(drivewsid)),
         E.bind('result', ({ item }) =>
           isRootCacheEntity(item)
             ? E.of<Error, Hierarchy>([{ drivewsid: rootDrivewsid }])
+            : isTrashCacheEntity(item)
+            ? E.of<Error, Hierarchy>([{ drivewsid: trashDrivewsid }])
             : pipe(
               go(item.content.parentId),
               E.map((
@@ -319,10 +310,10 @@ export class Cache {
     )
   }
 
-  getByPathVER = (
-    root: DetailsRoot | DetailsTrash,
+  getByPathVER = <R extends Root>(
+    root: Root,
     path: NormalizedPath,
-  ): E.Either<Error, GetByPathResult> => {
+  ): E.Either<Error, HierarchyResult<R>> => {
     const parts = parsePath(path)
     const rest = pipe(parts, A.dropLeft(1))
 
@@ -333,16 +324,15 @@ export class Cache {
         pipe(
           this.cache,
           getPartialValidPathV2(rest, root),
-          v => v as GetByPathResult,
+          v => v as HierarchyResult<R>,
         )
       ),
-      // E.map(_ => _.)
     )
   }
 
-  getByPathVE = (
+  getByPathVE = <R extends Root>(
     path: NormalizedPath,
-  ): E.Either<Error, GetByPathResult> => {
+  ): E.Either<Error, HierarchyResult<R>> => {
     const parts = parsePath(path)
     const rest = pipe(parts, A.dropLeft(1))
 
@@ -353,10 +343,9 @@ export class Cache {
         pipe(
           this.cache,
           getPartialValidPathV2(rest, root.content),
-          v => v as GetByPathResult,
+          v => v as HierarchyResult<R>,
         )
       ),
-      // E.map(_ => _.)
     )
   }
 
