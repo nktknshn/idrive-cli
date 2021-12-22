@@ -26,7 +26,7 @@ type Output = string
 type ErrorOutput = Error
 
 type Change = 'ParentChanged'
-
+/*
 export const checkForUpdates = ({
   sessionFile,
   cacheFile,
@@ -62,8 +62,8 @@ export const checkForUpdates = ({
     //     )),
     // ),
   )
-}
-
+} */
+/*
 export const update = (
   { sessionFile, cacheFile, path, raw, noCache, recursive, depth }: Env & {
     recursive: boolean
@@ -126,3 +126,4 @@ export const update = (
       ),
   )
 }
+ */

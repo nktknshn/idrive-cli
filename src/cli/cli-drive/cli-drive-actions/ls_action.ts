@@ -1,46 +1,35 @@
 import assert from 'assert'
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
-import * as B from 'fp-ts/lib/boolean'
-import * as E from 'fp-ts/lib/Either'
 import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
-import { not, Refinement } from 'fp-ts/lib/Refinement'
+import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { fst, snd } from 'fp-ts/lib/Tuple'
+import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { Cache } from '../../../icloud/drive/cache/Cache'
-import { isFolderLikeCacheEntity, isFolderLikeType } from '../../../icloud/drive/cache/cachef'
-import { showGetByPathResult, target } from '../../../icloud/drive/cache/GetByPathResultValid'
-import { CacheEntity, CacheEntityFile, CacheEntityFolderLike } from '../../../icloud/drive/cache/types'
-import { DriveApi } from '../../../icloud/drive/drive-api'
-import { lss } from '../../../icloud/drive/drivef/lss'
+import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/GetByPathResultValid'
 import { lsss } from '../../../icloud/drive/drivef/lsss'
 import * as DF from '../../../icloud/drive/fdrive'
 import {
   Details,
+  DetailsRoot,
+  DetailsTrash,
   DriveChildrenItem,
   DriveChildrenItemFile,
   fileName,
   isCloudDocsRootDetails,
   isDetails,
   isFileItem,
-  isFolderLike,
-  isTrashDetails,
   isTrashDetailsG,
   RecursiveFolder,
 } from '../../../icloud/drive/types'
-import { logger, logReturn, logReturnAs } from '../../../lib/logging'
+import { NEA } from '../../../lib/types'
 import { cliAction } from '../../cli-action'
 import { Env } from '../../types'
-import {
-  compareDriveDetailsWithHierarchy,
-  compareHierarchies,
-  compareItemWithHierarchy,
-  normalizePath,
-} from './helpers'
+import { normalizePath } from './helpers'
 
 type Output = string
 type ErrorOutput = Error
@@ -233,12 +222,13 @@ const conditional = <A, B, R>(
   }
 
 export const listUnixPath = (
-  { sessionFile, cacheFile, paths, raw, noCache, fullPath, recursive, depth, listInfo, update }: Env & {
+  { sessionFile, cacheFile, paths, raw, noCache, fullPath, recursive, depth, listInfo, trash }: Env & {
     recursive: boolean
     paths: string[]
     fullPath: boolean
     listInfo: boolean
     update: boolean
+    trash: boolean
     depth: number
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
@@ -265,7 +255,12 @@ export const listUnixPath = (
     { sessionFile, cacheFile, noCache },
     ({ cache, api }) => {
       const res = pipe(
-        lsss(npaths),
+        DF.readEnv,
+        DF.chain((): DF.DriveM<NEA<HierarchyResult<DetailsTrash | DetailsRoot>>> =>
+          trash
+            ? DF.chainTrash(trash => lsss(trash, npaths))
+            : DF.chainRoot(root => lsss(root, npaths))
+        ),
         DF.saveCacheFirst(cacheFile),
         SRTE.map(
           flow(

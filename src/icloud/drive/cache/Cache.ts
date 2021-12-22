@@ -51,6 +51,7 @@ import {
   CacheEntityFolderDetails,
   CacheEntityFolderLike as CacheEntityFolderLike,
   CacheEntityFolderRootDetails,
+  CacheEntityFolderTrashDetails,
   CacheF,
 } from './types'
 import { getPartialValidPathV2 } from './v2'
@@ -137,6 +138,15 @@ export class Cache {
       this.getRoot(),
       E.fromOption(() => MissinRootError.create(`missing root entity in cache`)),
       E.flatten,
+    )
+  }
+
+  getTrashE = (): E.Either<Error, CacheEntityFolderTrashDetails> => {
+    return pipe(
+      this.getByIdE(trashDrivewsid),
+      E.filterOrElse(isTrashCacheEntity, () => err(`invalid trash details`)),
+      // E.fromOption(() => MissinRootError.create(`missing root entity in cache`)),
+      // E.flatten,
     )
   }
 

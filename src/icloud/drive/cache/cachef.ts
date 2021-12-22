@@ -385,7 +385,7 @@ export const isRootCacheEntity = (
 
 export const isTrashCacheEntity = (
   entity: CacheEntity,
-): entity is CacheEntityFolderTrashDetails => entity.type === 'ROOT'
+): entity is CacheEntityFolderTrashDetails => entity.type === 'TRASH_ROOT'
 
 export const isFolderLikeCacheEntity = (
   entity: CacheEntity,
@@ -550,7 +550,11 @@ export const putItem = (
         pipe(
           cache,
           getCachedPathForId(item.parentId),
-          E.mapLeft(() => MissingParentError.create(`putItem: missing parent ${item.parentId} in cache`)),
+          E.mapLeft(() =>
+            MissingParentError.create(
+              `putItem: missing parent ${item.parentId} in cache while putting ${fileName(item)}`,
+            )
+          ),
         )),
       E.bind('cachedEntity', () => pipe(cache, getItemById(item.drivewsid))),
       E.bind(

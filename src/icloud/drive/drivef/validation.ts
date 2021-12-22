@@ -21,9 +21,7 @@ import {
   Root,
 } from '../types'
 
-// export type Hierarchy = [DetailsRoot, ...Details[]]
 export type Hierarchy<R extends Root> = [R, ...RegularDetails[]]
-// export type TrashHierarchy = [DetailsTrash, ...Details[]]
 
 export const tail = <R extends Root>([, ...tail]: Hierarchy<R>) => tail
 
@@ -47,8 +45,6 @@ const same = (a: Details, b: Details) => {
 
   return true
 }
-
-// export type MaybeValidPath = T.These<Hierarchy, NEA<string>>
 
 export const getValidHierarchyPart = <R extends Root>(
   cachedHierarchy: Hierarchy<R>,
@@ -92,19 +88,6 @@ export type WithDetails<H> = Partial<H> | Valid<H>
 export type Valid<H> = { tag: 'Valid'; details: H }
 export type Partial<H> = { tag: 'Partial'; details: H; rest: NEA<string> }
 export type Invalid = { tag: 'Invalid'; rest: NEA<string> }
-
-// export type Partial<H = Hierarchy> = T.Both<H, NEA<string>>
-// export type WithRest<H = Hierarchy> = T.Both<H, NEA<string>> | E.Right<NEA<string>>
-// export type WithDetails<H = Hierarchy> = T.Both<H, NEA<string>> | E.Left<Hierarchy>
-// export type Valid<H = Hierarchy> = E.Left<H>
-// export const isWithDetails = (vh: MaybeValidPath): vh is WithDetails => T.isBoth(vh) || T.isLeft(vh)
-// export const isPartial = (vh: MaybeValidPath): vh is Partial => T.isBoth(vh)
-// export const partialPath = <H>(validPart: H, rest: NEA<string>): Partial<H> => T.both(validPart, rest) as Partial<H>
-// export const validPath = <H>(validPart: H): Valid<H> => T.left(validPart) as Valid<H>
-
-// export const isValid = T.isLeft
-// export const isPartialyValid = T.isBoth
-// export const isFullyInvalid = T.isRight
 
 export const isValid = <H>(p: MaybeValidPath<H>): p is Valid<H> => p.tag === 'Valid'
 export const isPartialyValid = <H>(p: MaybeValidPath<H>): p is Partial<H> => p.tag === 'Partial'

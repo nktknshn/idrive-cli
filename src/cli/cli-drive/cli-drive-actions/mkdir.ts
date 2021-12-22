@@ -41,38 +41,42 @@ export const mkdir = ({
       const nparentPath = normalizePath(Path.dirname(path))
 
       const res = pipe(
-        DF.Do,
-        SRTE.bind('parent', () => DF.lsdir(nparentPath)),
-        SRTE.bind('result', ({ parent }) =>
+        DF.chainRoot(root =>
           pipe(
-            api.createFolders(parent.drivewsid, [name]),
-            DF.fromTaskEither,
-            DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
-          )),
-        SRTE.chain(({ result, parent }) =>
-          pipe(
-            result.folders,
-            A.matchLeft(
-              () => SRTE.left(err(`createFolders returned empty result`)),
-              (head) =>
-                DF.retrieveItemDetailsInFoldersSaving([
-                  head.drivewsid,
-                  parent.drivewsid,
-                ]),
+            DF.Do,
+            SRTE.bind('parent', () => DF.lsdir(root, nparentPath)),
+            SRTE.bind('result', ({ parent }) =>
+              pipe(
+                api.createFolders(parent.drivewsid, [name]),
+                DF.fromTaskEither,
+                DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
+              )),
+            SRTE.chain(({ result, parent }) =>
+              pipe(
+                result.folders,
+                A.matchLeft(
+                  () => SRTE.left(err(`createFolders returned empty result`)),
+                  (head) =>
+                    DF.retrieveItemDetailsInFoldersSaving([
+                      head.drivewsid,
+                      parent.drivewsid,
+                    ]),
+                ),
+              )
             ),
+            SRTE.map(flow(A.lookup(1), O.flatten)),
+            SRTE.map(
+              O.fold(
+                () => `missing created folder`,
+                showDetailsInfo({
+                  fullPath: false,
+                  path: '',
+                }),
+              ),
+            ),
+            DF.saveCacheFirst(cacheFile),
           )
         ),
-        SRTE.map(flow(A.lookup(1), O.flatten)),
-        SRTE.map(
-          O.fold(
-            () => `missing created folder`,
-            showDetailsInfo({
-              fullPath: false,
-              path: '',
-            }),
-          ),
-        ),
-        DF.saveCacheFirst(cacheFile),
       )
 
       return pipe(res(cache)({ api }), TE.map(fst))

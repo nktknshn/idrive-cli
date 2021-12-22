@@ -120,17 +120,6 @@ export type RecursiveFolder =
     readonly deep: false
   }
 
-// export type DriveChildrenItem =
-//   | DriveChildrenItemFile
-//   | DriveChildrenItemFolder
-//   | DriveChildrenItemAppLibrary
-
-export type DriveObject = {
-  name: string
-  extension?: string
-  drivewsid: string
-}
-
 export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
 export const isRegularDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is

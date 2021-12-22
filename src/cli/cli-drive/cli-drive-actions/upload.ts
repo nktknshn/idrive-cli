@@ -42,13 +42,17 @@ export const upload = (
     { sessionFile, cacheFile, noCache },
     ({ cache, api }) => {
       const res = pipe(
-        DF.Do,
-        SRTE.bind('src', () => DF.of(srcpath)),
-        SRTE.bind('overwright', () => DF.of(overwright)),
-        SRTE.bind('dst', () => DF.lsPartial(normalizePath(dstpath))),
-        SRTE.chain(handle),
-        DF.saveCacheFirst(cacheFile),
-        DF.map(() => `Success.`),
+        DF.chainRoot(root =>
+          pipe(
+            DF.Do,
+            SRTE.bind('src', () => DF.of(srcpath)),
+            SRTE.bind('overwright', () => DF.of(overwright)),
+            SRTE.bind('dst', () => DF.lsPartial(root, normalizePath(dstpath))),
+            SRTE.chain(handle),
+            DF.saveCacheFirst(cacheFile),
+            DF.map(() => `Success.`),
+          )
+        ),
       )
 
       return pipe(
@@ -91,7 +95,7 @@ const uploadOverwrighting = (
 }
 
 const handle = (
-  { src, dst, overwright }: { dst: V.GetByPathResult; src: string; overwright: boolean },
+  { src, dst, overwright }: { dst: V.HierarchyResult<DetailsRoot>; src: string; overwright: boolean },
 ): DF.DriveM<void> => {
   // upload to the directory
   if (dst.valid) {

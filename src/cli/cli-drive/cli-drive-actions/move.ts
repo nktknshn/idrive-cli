@@ -13,7 +13,16 @@ import * as DF from '../../../icloud/drive/fdrive'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemToTrashResponse } from '../../../icloud/drive/requests/moveItems'
 import { RenameResponse } from '../../../icloud/drive/requests/rename'
-import { Details, DetailsTrash, isDetails, isFolderLike } from '../../../icloud/drive/types'
+import {
+  Details,
+  DetailsRoot,
+  DetailsTrash,
+  DriveChildrenItemFile,
+  isDetails,
+  isFolderLike,
+  isNotRootDetails,
+  RegularDetails,
+} from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
 import { cliAction } from '../../cli-action'
@@ -21,7 +30,7 @@ import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
 const caseMove = (
-  src: DetailsOrFile,
+  src: RegularDetails | DriveChildrenItemFile,
   dst: Details,
 ): DF.DriveM<MoveItemToTrashResponse> => {
   return pipe(
@@ -36,7 +45,7 @@ const caseMove = (
 }
 
 const caseRename = (
-  srcitem: DetailsOrFile,
+  srcitem: RegularDetails | DriveChildrenItemFile,
   name: string,
 ): DF.DriveM<RenameResponse> => {
   return pipe(
@@ -53,7 +62,7 @@ const caseRename = (
 }
 
 const caseMoveAndRename = (
-  src: DetailsOrFile,
+  src: RegularDetails | DriveChildrenItemFile,
   dst: (Details | DetailsTrash),
   name: string,
 ): DF.DriveM<RenameResponse> => {
@@ -87,7 +96,7 @@ const caseMoveAndRename = (
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.GetByPathResult>
+    srcdst: NEA<V.GetByPathResult<H.Hierarchy<DetailsRoot>>>
   },
 ): DF.DriveM<MoveItemToTrashResponse | RenameResponse> => {
   if (!srcitem.valid) {
@@ -95,6 +104,10 @@ const handle = (
   }
 
   const src = V.target(srcitem)
+
+  if (!isNotRootDetails(src)) {
+    return DF.errS(`src cant be root`)
+  }
 
   if (dstitem.valid) {
     const dst = V.target(dstitem)
@@ -107,7 +120,7 @@ const handle = (
   }
 
   if (
-    H.eq.equals(dstitem.path.details, srcitem.path.details)
+    H.eq().equals(dstitem.path.details, srcitem.path.details)
     && dstitem.path.rest.length == 1
   ) {
     const fname = NA.head(dstitem.path.rest)
@@ -135,11 +148,15 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
       const ndst = normalizePath(dstpath)
 
       const res = pipe(
-        DF.readEnv,
-        SRTE.bind('srcdst', () => DF.lssPartial([nsrc, ndst])),
-        SRTE.chain(handle),
-        DF.saveCacheFirst(cacheFile),
-        DF.map(() => `Success.`),
+        DF.chainRoot(root =>
+          pipe(
+            DF.Do,
+            SRTE.bind('srcdst', () => DF.lssPartial(root, [nsrc, ndst])),
+            SRTE.chain(handle),
+            DF.saveCacheFirst(cacheFile),
+            DF.map(() => `Success.`),
+          )
+        ),
       )
 
       return pipe(res(cache)({ api }), TE.map(fst))

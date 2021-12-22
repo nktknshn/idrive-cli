@@ -8,24 +8,22 @@ import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers
 import { err } from '../../../lib/errors'
 import * as V from '../cache/GetByPathResultValid'
 import * as DF from '../fdrive'
-import { Details, DriveChildrenItemFile, fileName } from '../types'
+import { Details, DriveChildrenItemFile, fileName, RegularDetails, Root } from '../types'
 import { lsss } from './lsss'
 
-export type DetailsOrFile = (Details | DriveChildrenItemFile)
+export type DetailsOrFile<R> = (R | RegularDetails | DriveChildrenItemFile)
 
-export const lss = (paths: NormalizedPath[]): DF.DriveM<DetailsOrFile[]> => {
-  // return getByPaths(paths)
-
+export const lss = <R extends Root>(root: R, paths: NormalizedPath[]): DF.DriveM<DetailsOrFile<R>[]> => {
   assert(A.isNonEmpty(paths))
 
   return pipe(
-    lsss(paths),
+    lsss(root, paths),
     DF.chain(
       flow(
         NA.map(res =>
           res.valid
             ? DF.of(V.target(res))
-            : DF.left<DetailsOrFile>(
+            : DF.left<DetailsOrFile<R>>(
               err(`error: ${res.error}. validPart=${res.path.details.map(fileName)} rest=[${res.path.rest}]`),
             )
         ),
