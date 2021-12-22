@@ -2,28 +2,8 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as O from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { unknown } from 'io-ts'
-import * as t from 'io-ts'
 import Path from 'path'
-import { logger } from '../../lib/logging'
-import { EmptyObject } from '../../lib/types'
-import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
-import {
-  Details,
-  DetailsRoot,
-  DriveChildrenItem,
-  Hierarchy,
-  isCloudDocsRootDetails,
-  isDetails,
-  isFolderLike,
-  isHierarchyItemRoot,
-  isHierarchyItemTrash,
-  isInvalidId,
-  MaybeNotFound,
-} from './types'
-import { rootDrivewsid, trashDrivewsid } from './types-io'
+import { isInvalidId, MaybeNotFound } from './requests/types/types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)
@@ -35,35 +15,6 @@ export function parsePath(path: string): NA.NonEmptyArray<string> {
     ? ['/']
     : ['/', ...parsedPath]
 }
-
-export function ensureNestedPath(path: string): O.Option<NA.NonEmptyArray<string>> {
-  const parsedPath = parsePath(path)
-
-  if (parsedPath.length == 1) {
-    return O.none
-  }
-
-  return pipe(
-    parsedPath,
-    A.dropLeft(1),
-    NA.fromArray,
-  )
-}
-
-// export const normalizePath = (path: string) => {
-//   const [root, ...rest] = parsePath(path)
-
-//   return `${root}${rest.join('/')}`
-// }
-
-export const splitParent = (path: string) => {
-  const parent = Path.parse(path).dir
-  const name = Path.parse(path).name
-
-  return name === '' ? O.none : O.some([parent, name] as const)
-}
-
-// type Not<A, B, A| B> = asd
 
 export const getMissedFound = <T>(drivewsids: string[], details: MaybeNotFound<T>[]) => {
   return pipe(

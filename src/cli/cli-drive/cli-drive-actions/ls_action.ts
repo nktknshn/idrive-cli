@@ -11,8 +11,8 @@ import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { Cache } from '../../../icloud/drive/cache/Cache'
 import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/GetByPathResultValid'
-import { lsss } from '../../../icloud/drive/drivef/lsss'
 import * as DF from '../../../icloud/drive/fdrive'
+import { lsss } from '../../../icloud/drive/fdrive/lsss'
 import {
   Details,
   DetailsRoot,
@@ -25,7 +25,7 @@ import {
   isFileItem,
   isTrashDetailsG,
   RecursiveFolder,
-} from '../../../icloud/drive/types'
+} from '../../../icloud/drive/requests/types/types'
 import { NEA } from '../../../lib/types'
 import { cliAction } from '../../cli-action'
 import { Env } from '../../types'

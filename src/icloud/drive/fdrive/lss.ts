@@ -8,7 +8,7 @@ import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers
 import { err } from '../../../lib/errors'
 import * as V from '../cache/GetByPathResultValid'
 import * as DF from '../fdrive'
-import { Details, DriveChildrenItemFile, fileName, RegularDetails, Root } from '../types'
+import { Details, DriveChildrenItemFile, fileName, RegularDetails, Root } from '../requests/types/types'
 import { lsss } from './lsss'
 
 export type DetailsOrFile<R> = (R | RegularDetails | DriveChildrenItemFile)

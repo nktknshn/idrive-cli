@@ -17,7 +17,7 @@ import {
   fileName,
   isDetails,
   isFolderLike,
-} from '../types'
+} from '../requests/types/types'
 import * as C from './cachef'
 import { CacheF } from './types'
 

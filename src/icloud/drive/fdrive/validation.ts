@@ -1,17 +1,12 @@
 import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
 import { Eq } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import * as T from 'fp-ts/lib/These'
-import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
 import {
   Details,
-  DetailsRoot,
   DetailsTrash,
-  DriveDetailsWithHierarchy,
   fileName,
   hasName,
   isCloudDocsRootDetails,
@@ -19,7 +14,7 @@ import {
   isTrashDetails,
   RegularDetails,
   Root,
-} from '../types'
+} from '../requests/types/types'
 
 export type Hierarchy<R extends Root> = [R, ...RegularDetails[]]
 

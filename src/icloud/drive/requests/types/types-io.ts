@@ -123,9 +123,6 @@ export const detailsRoot = t.intersection([
     status: t.literal('OK'),
     items: t.array(detailsItem),
   }),
-  // t.partial({
-  //   hierarchy,
-  // }),
 ])
 
 export const detailsFolder = t.intersection([
@@ -135,9 +132,6 @@ export const detailsFolder = t.intersection([
     status: t.literal('OK'),
     items: t.array(detailsItem),
   }),
-  // t.partial({
-  //   hierarchy,
-  // }),
 ])
 
 export const detailsAppLibrary = t.intersection([
@@ -147,9 +141,6 @@ export const detailsAppLibrary = t.intersection([
     status: t.literal('OK'),
     items: t.array(detailsItem),
   }),
-  // t.partial({
-  //   hierarchy,
-  // }),
 ])
 
 export const invalidIdItem = t.type({ status: t.literal('ID_INVALID') })
@@ -174,19 +165,8 @@ export const trashItem = t.union([
   trashItemFile,
 ])
 
-// export const trashItemDetails = t.union([
-//   t.intersection([detailsFolder, t.type({ 'restorePath': t.string })]),
-//   t.intersection([detailsAppLibrary, t.type({ 'restorePath': t.string })]),
-//   // t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })]),
-// ])
-
 export const detailsTrash = t.type({
   items: t.array(trashItem),
-  // items: t.array(t.type({
-  //   drivewsid: t.string,
-  //   docwsid: t.string,
-  //   etag: t.string,
-  // })),
   numberOfItems: t.number,
   drivewsid: t.literal(trashDrivewsid),
 })

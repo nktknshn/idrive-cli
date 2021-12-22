@@ -7,9 +7,9 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import * as V from '../../../icloud/drive/cache/GetByPathResultValid'
 import { DriveApi } from '../../../icloud/drive/drive-api'
-import { DetailsOrFile } from '../../../icloud/drive/drivef/lss'
-import * as H from '../../../icloud/drive/drivef/validation'
 import * as DF from '../../../icloud/drive/fdrive'
+import { DetailsOrFile } from '../../../icloud/drive/fdrive/lss'
+import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemToTrashResponse } from '../../../icloud/drive/requests/moveItems'
 import { RenameResponse } from '../../../icloud/drive/requests/rename'
@@ -22,7 +22,7 @@ import {
   isFolderLike,
   isNotRootDetails,
   RegularDetails,
-} from '../../../icloud/drive/types'
+} from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
 import { cliAction } from '../../cli-action'

@@ -4,14 +4,13 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib/response-reducer'
-import { isObjectWithOwnProperty } from '../../../lib/util'
+import { applyCookies, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DetailsTrash, DriveChildrenItem, DriveItemDetails } from '../types'
-import { detailsItem, detailsTrash, itemDetails, trashItem } from '../types-io'
 import { applyToSession, decodeJson, expectJson, filterStatus, withResponse } from './filterStatus'
 import { retrieveItemDetailsInFoldersGeneric } from './retrieveItemDetailsInFolders'
+import { DetailsTrash, DriveChildrenItem } from './types/types'
+import { detailsItem, detailsTrash } from './types/types-io'
 
 export const scheme = t.tuple(
   [detailsTrash],

@@ -25,12 +25,6 @@ interface ResponseBody {
   }
   double_etag: string
 }
-/*
-interface ResponseBodySafe {
-  data_token: {
-    url: string
-  }
-} */
 
 export function download(
   client: FetchClientEither,
@@ -67,7 +61,6 @@ export function getUrlStream(
 }
 
 export function consumeStream(readable: Readable): TE.TaskEither<Error, string> {
-  // readable.setEncoding('utf8');
   return TE.fromTask<string, Error>(async () => {
     let data = ''
     for await (const chunk of readable) {

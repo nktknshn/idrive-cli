@@ -4,18 +4,16 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
 import { applyCookies, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { DriveDetailsPartialWithHierarchy } from '../types'
-import { driveDetailsWithHierarchyPartial, hierarchy } from '../types-io'
 import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
 import { retrieveItemDetailsInFoldersGeneric } from './retrieveItemDetailsInFolders'
-
+import { DriveDetailsPartialWithHierarchy } from './types/types'
+import { driveDetailsWithHierarchyPartial, hierarchy } from './types/types-io'
 
 export function retrieveHierarchy(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
   { drivewsids }: { drivewsids: string[] },
 ): TE.TaskEither<Error, ResponseWithSession<DriveDetailsPartialWithHierarchy[]>> {
-
   const res = retrieveItemDetailsInFoldersGeneric(
     client,
     { accountData, session },

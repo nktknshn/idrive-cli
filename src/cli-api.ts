@@ -3,64 +3,15 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import { hideBin } from 'yargs/helpers'
-import yargs from 'yargs/yargs'
 import { apiAction, apiActionM } from './cli/cli-actionF'
 import { hierarchyToPath } from './cli/cli-drive/cli-drive-actions/helpers'
-import { defaultSessionFile } from './config'
+import { parseArgs } from './cli/cli-trash/cli-trash-args'
 import { parseName } from './icloud/drive/helpers'
 import { retrieveHierarchy } from './icloud/drive/requests'
 import { ensureError, err } from './lib/errors'
 import { fetchClient } from './lib/fetch-client'
 import { apiLogger, cacheLogger, initLoggers, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
 import { isKeyOf, Path } from './lib/util'
-
-// const actionsNames = ['retrieveHierarchy', 'retrieveItemDetails', 'retrieveItemDetailsInFolders', 'rename'] as const
-
-// type Action = (typeof actionsNames)[number]
-
-// const validateAction = (action: string): action is Action => (actionsNames as readonly string[]).includes(action)
-
-function parseArgs() {
-  return yargs(hideBin(process.argv))
-    // .parserConfiguration({})
-    .options({
-      sessionFile: { alias: ['s', 'session'], default: defaultSessionFile },
-      raw: { alias: 'r', default: false, type: 'boolean' },
-      debug: { alias: 'd', default: false, type: 'boolean' },
-    })
-    .command('retrieveHierarchy [drivewsids..]', 'get h for drivewsids', _ =>
-      _
-        .positional('drivewsids', { type: 'string', array: true, demandOption: true })
-        .options({}))
-    .command('retrieveItemDetails [drivewsids..]', 'get h for drivewsids', _ =>
-      _
-        .positional('drivewsids', { type: 'string', array: true, demandOption: true })
-        .options({}))
-    .command('retrieveItemDetailsInFolders [drivewsids..]', 'get h for drivewsids', _ =>
-      _
-        .positional('drivewsids', { type: 'string', array: true, demandOption: true })
-        .options({
-          h: { type: 'boolean', default: false },
-        }))
-    .command('retrieveTrashDetails', 'retrieveTrashDetails', _ => _ // .positional('drivewsids', { type: 'string', array: true, demandOption: true })
-      // .options({
-      //   h: { type: 'boolean', default: false },
-      // })
-    )
-    .command('rename [drivewsid] [name] [etag]', 'get h for drivewsids', _ =>
-      _
-        .positional('drivewsid', { type: 'string', demandOption: true })
-        .positional('name', { type: 'string', demandOption: true })
-        .positional('etag', { type: 'string', default: '12::34' /* demandOption: true */ })
-        .options({}))
-    .command('putBackItemsFromTrash [drivewsid] [etag]', 'putBackItemsFromTrash', _ =>
-      _
-        .positional('drivewsid', { type: 'string', demandOption: true })
-        .positional('etag', { type: 'string', default: '12::34' /* demandOption: true */ })
-        .options({}))
-    .help()
-}
 
 const retrieveTrashDetails = (argv: {
   sessionFile: string

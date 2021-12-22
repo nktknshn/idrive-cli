@@ -4,12 +4,10 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { ResponseWithSession } from '../../../lib/response-reducer'
-import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveChildrenItem, DriveChildrenItemFile } from '../types'
-import { childrenItem } from '../types-io'
 import { expectJson } from './filterStatus'
+import { childrenItem } from './types/types-io'
 
 const renameResponse = t.type({ items: t.array(childrenItem) })
 

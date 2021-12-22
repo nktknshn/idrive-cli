@@ -9,9 +9,9 @@ import { apiLogger } from '../../../lib/logging'
 import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from '../types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../types-io'
 import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 
 export const decode: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
   t.array(

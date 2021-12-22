@@ -1,5 +1,3 @@
-import { hierarchy } from '../types-io'
-
 export { createFolders } from './createFolders'
 export { download } from './download'
 export { moveItemsToTrash } from './moveItemsToTrash'

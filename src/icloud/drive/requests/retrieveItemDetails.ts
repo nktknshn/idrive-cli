@@ -1,22 +1,15 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { FetchClientEither, HttpResponse } from '../../../lib/fetch-client'
+import { FetchClientEither } from '../../../lib/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import {
-  applyCookies,
-  basicGetResponse1,
-  expectJson,
-  ResponseHandler,
-  ResponseWithSession,
-} from '../../../lib/response-reducer'
-import { isObjectWithOwnProperty } from '../../../lib/util'
+import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { ICloudSession } from '../../session/session'
 import { buildRequest } from '../../session/session-http'
-import { Details, DetailsFolder, DriveDetailsPartialWithHierarchy, DriveItemDetails } from '../types'
-import { invalidIdItem, itemDetails } from '../types-io'
 import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
+import { DriveItemDetails } from './types/types'
+import { itemDetails } from './types/types-io'
 
 interface RetrieveOpts {
   drivewsids: string[]

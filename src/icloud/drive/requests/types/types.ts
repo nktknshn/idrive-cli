@@ -5,7 +5,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/Tree'
 import { TypeOf } from 'io-ts'
 import * as t from 'io-ts'
-import { hasOwnProperty, isObjectWithOwnProperty } from '../../lib/util'
+import { hasOwnProperty, isObjectWithOwnProperty } from '../../../../lib/util'
 import * as types from './types-io'
 
 export interface DetailsTrash extends TypeOf<typeof types.detailsTrash> {}

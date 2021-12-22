@@ -7,7 +7,7 @@ import {
   DriveChildrenItemAppLibrary,
   DriveChildrenItemFile,
   DriveChildrenItemFolder,
-} from '../types'
+} from '../requests/types/types'
 
 export interface CacheF {
   readonly byDrivewsid: { readonly [drivewsid: string]: CacheEntity }
@@ -92,3 +92,27 @@ export class CacheEntityFile {
 
   constructor(public readonly content: DriveChildrenItemFile) {}
 }
+
+export const hasParentId = (entity: CacheEntity): entity is CacheEntityWithParentId =>
+  !isRootCacheEntity(entity) && !isTrashCacheEntity(entity)
+
+export const isRootCacheEntity = (
+  entity: CacheEntity,
+): entity is CacheEntityFolderRootDetails => entity.type === 'ROOT'
+
+export const isTrashCacheEntity = (
+  entity: CacheEntity,
+): entity is CacheEntityFolderTrashDetails => entity.type === 'TRASH_ROOT'
+
+export const isFolderLikeCacheEntity = (
+  entity: CacheEntity,
+): entity is CacheEntityFolderLike => isFolderLikeType(entity.type)
+
+export const isDetailsCacheEntity = (
+  entity: CacheEntity,
+): entity is CacheEntityFolderRootDetails | CacheEntityFolderDetails | CacheEntityAppLibraryDetails =>
+  isFolderLikeCacheEntity(entity) && entity.hasDetails
+
+export const isFolderLikeType = (
+  type: CacheEntity['type'],
+): type is (CacheEntityFolderLike | CacheEntityAppLibrary)['type'] => type !== 'FILE'

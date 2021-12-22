@@ -6,10 +6,17 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import * as V from '../../../icloud/drive/cache/GetByPathResultValid'
-import * as H from '../../../icloud/drive/drivef/validation'
 import * as DF from '../../../icloud/drive/fdrive'
+import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
-import { DetailsRoot, fileName, isDetails, isFile, isFolderLike, isFolderLikeItem } from '../../../icloud/drive/types'
+import {
+  DetailsRoot,
+  fileName,
+  isDetails,
+  isFile,
+  isFolderLike,
+  isFolderLikeItem,
+} from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { cliAction } from '../../cli-actionF'
 import { normalizePath } from './helpers'

@@ -1,29 +1,14 @@
 import assert from 'assert'
-import * as B from 'fp-ts/boolean'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, identity, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import { Option } from 'fp-ts/lib/Option'
 import * as O from 'fp-ts/lib/Option'
-import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { cacheLogger, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
-import * as H from '../drivef/validation'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import * as DF from '../fdrive'
-import {
-  Details,
-  DetailsRoot,
-  DetailsTrash,
-  DriveChildrenItem,
-  DriveChildrenItemFile,
-  fileName,
-  isDetails,
-  isFolderLike,
-  isTrashDetails,
-} from '../types'
-import { trashDrivewsid } from '../types-io'
+import * as H from '../fdrive/validation'
+import { Details, DriveChildrenItemFile, fileName, isTrashDetails } from '../requests/types/types'
 import * as C from './cachef'
 import { CacheF } from './types'
 import { findInParent } from './validatePath'
@@ -38,7 +23,7 @@ const showDetails = (d: Details): string => {
   return isTrashDetails(d) ? 'TRASH' : `${d.type}: ${fileName(d)}`
 }
 
-export const getPartialValidPathV2 = (
+export const getPartialValidPath = (
   path: string[],
   parentEntity: Details,
 ) =>
@@ -102,7 +87,7 @@ export const getPartialValidPathV2 = (
             }),
             ({ content }): GetByPathVEResult =>
               pipe(
-                getPartialValidPathV2(rest, content)(cache),
+                getPartialValidPath(rest, content)(cache),
                 (result): GetByPathVEResult =>
                   result.valid
                     ? ({

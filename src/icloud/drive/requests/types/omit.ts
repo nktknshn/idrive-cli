@@ -2,10 +2,7 @@ import * as E from 'fp-ts/lib/Either'
 import * as R from 'fp-ts/lib/Record'
 import * as t from 'io-ts'
 
-type HasProps = t.HasProps
-// | OmitType<any, any, any>)
-
-export function omit<C extends HasProps, K extends keyof t.OutputOf<C>>(key: K, codec: C): OmitC<C, K> {
+export function omit<C extends t.HasProps, K extends keyof t.OutputOf<C>>(key: K, codec: C): OmitC<C, K> {
   const props: t.Props = getProps(codec)
   const keys = Object.getOwnPropertyNames(props)
   const types = keys.map((key) => props[key])
@@ -78,7 +75,7 @@ export function omit<C extends HasProps, K extends keyof t.OutputOf<C>>(key: K, 
 }
 
 export class OmitType<
-  C extends HasProps,
+  C extends t.HasProps,
   K extends keyof t.OutputOf<C>,
   A = any,
   O = A,
@@ -102,7 +99,7 @@ export class OmitType<
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface OmitC<
-  C extends HasProps,
+  C extends t.HasProps,
   K extends keyof t.OutputOf<C>,
 > extends
   OmitType<
@@ -114,7 +111,7 @@ export interface OmitC<
   >
 {}
 
-function getProps(codec: HasProps): t.Props {
+function getProps(codec: t.HasProps): t.Props {
   switch (codec._tag) {
     case 'RefinementType':
     case 'ReadonlyType':

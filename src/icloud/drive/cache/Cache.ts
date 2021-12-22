@@ -1,7 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
@@ -23,49 +22,23 @@ import {
   invalidId,
   MaybeNotFound,
   Root,
-} from '../types'
-import { rootDrivewsid, trashDrivewsid } from '../types-io'
-import {
-  cacheEntityFromDetails,
-  cachef,
-  getByPath,
-  getCachedPathForId,
-  getPartialValidPath,
-  getRoot,
-  isDetailsCacheEntity,
-  isFolderLikeCacheEntity,
-  isRootCacheEntity,
-  isTrashCacheEntity,
-  PartialValidPath,
-  putDetails,
-  putItem,
-  putRoot,
-  removeById,
-  validateCacheJson,
-} from './cachef'
+} from '../requests/types/types'
+import { rootDrivewsid, trashDrivewsid } from '../requests/types/types-io'
+import * as C from './cachef'
 import { HierarchyResult } from './GetByPathResultValid'
-import {
-  CacheEntity,
-  CacheEntityAppLibrary,
-  CacheEntityAppLibraryDetails,
-  CacheEntityFolderDetails,
-  CacheEntityFolderLike as CacheEntityFolderLike,
-  CacheEntityFolderRootDetails,
-  CacheEntityFolderTrashDetails,
-  CacheF,
-} from './types'
-import { getPartialValidPathV2 } from './v2'
+import * as T from './types'
+import { getPartialValidPath } from './v2'
 
 export class Cache {
-  private readonly cache: CacheF
+  private readonly cache: T.CacheF
 
   static tryReadFromFile = (
     accountDataFilePath: string,
-  ): TE.TaskEither<Error, CacheF> => {
+  ): TE.TaskEither<Error, T.CacheF> => {
     return pipe(
       tryReadJsonFile(accountDataFilePath),
       TE.filterOrElseW(
-        validateCacheJson,
+        C.validateCacheJson,
         () => TypeDecodingError.create([], 'wrong ICloudDriveCache json'),
       ),
     )
@@ -84,7 +57,7 @@ export class Cache {
     return (cache: Cache) => pipe(cache.cache, saveJson(cacheFilePath))
   }
 
-  constructor(cache: CacheF = cachef()) {
+  constructor(cache: T.CacheF = C.cachef()) {
     this.cache = cache
   }
 
@@ -92,11 +65,11 @@ export class Cache {
   public get = () => this.cache
 
   putDetails = (details: Details): E.Either<Error, Cache> => {
-    return pipe(this.cache, putDetails(details), E.map(Cache.create))
+    return pipe(this.cache, C.putDetails(details), E.map(Cache.create))
   }
 
   putRoot = (details: DetailsRoot): E.Either<Error, Cache> => {
-    return pipe(this.cache, putRoot(details), E.map(Cache.create))
+    return pipe(this.cache, C.putRoot(details), E.map(Cache.create))
   }
 
   putDetailss = <D extends Details>(detailss: D[]): E.Either<Error, Cache> => {
@@ -110,7 +83,7 @@ export class Cache {
   }
 
   putItem = (item: DriveChildrenItem): E.Either<Error, Cache> => {
-    return pipe(this.cache, putItem(item), E.map(Cache.create))
+    return pipe(this.cache, C.putItem(item), E.map(Cache.create))
   }
 
   putItems = (items: DriveChildrenItem[]): E.Either<Error, Cache> => {
@@ -123,17 +96,17 @@ export class Cache {
     )
   }
 
-  getRoot = (): O.Option<E.Either<Error, CacheEntityFolderRootDetails>> => {
+  getRoot = (): O.Option<E.Either<Error, T.CacheEntityFolderRootDetails>> => {
     return pipe(
       this.cache.byDrivewsid,
       R.lookup(rootDrivewsid),
       O.map(
-        flow(E.fromPredicate(isRootCacheEntity, () => err('invalid root cache entity'))),
+        flow(E.fromPredicate(T.isRootCacheEntity, () => err('invalid root cache entity'))),
       ),
     )
   }
 
-  getRootE = (): E.Either<Error, CacheEntityFolderRootDetails> => {
+  getRootE = (): E.Either<Error, T.CacheEntityFolderRootDetails> => {
     return pipe(
       this.getRoot(),
       E.fromOption(() => MissinRootError.create(`missing root entity in cache`)),
@@ -141,16 +114,14 @@ export class Cache {
     )
   }
 
-  getTrashE = (): E.Either<Error, CacheEntityFolderTrashDetails> => {
+  getTrashE = (): E.Either<Error, T.CacheEntityFolderTrashDetails> => {
     return pipe(
       this.getByIdE(trashDrivewsid),
-      E.filterOrElse(isTrashCacheEntity, () => err(`invalid trash details`)),
-      // E.fromOption(() => MissinRootError.create(`missing root entity in cache`)),
-      // E.flatten,
+      E.filterOrElse(T.isTrashCacheEntity, () => err(`invalid trash details`)),
     )
   }
 
-  getById = (drivewsid: string): O.Option<CacheEntity> => {
+  getById = (drivewsid: string): O.Option<T.CacheEntity> => {
     return pipe(
       pipe(this.cache.byDrivewsid, R.lookup(drivewsid)),
       logReturn(
@@ -162,18 +133,18 @@ export class Cache {
     )
   }
 
-  getByIds = (drivewsids: string[]): O.Option<CacheEntity>[] => {
+  getByIds = (drivewsids: string[]): O.Option<T.CacheEntity>[] => {
     return pipe(drivewsids, A.map(this.getById))
   }
 
-  getByIdE = (drivewsid: string): E.Either<Error, CacheEntity> => {
+  getByIdE = (drivewsid: string): E.Either<Error, T.CacheEntity> => {
     return pipe(
       this.getById(drivewsid),
       E.fromOption(() => err(`missing ${drivewsid} in cache`)),
     )
   }
 
-  getByIdWithPath = (drivewsid: string): O.Option<{ entity: CacheEntity; path: string }> => {
+  getByIdWithPath = (drivewsid: string): O.Option<{ entity: T.CacheEntity; path: string }> => {
     return pipe(
       O.Do,
       O.bind('entity', () => this.getById(drivewsid)),
@@ -186,25 +157,17 @@ export class Cache {
       this.getById(drivewsid),
       O.map(
         flow(
-          E.fromPredicate(isFolderLikeCacheEntity, () => err(`getFolderById: ${drivewsid} is not a folder`)),
+          E.fromPredicate(T.isFolderLikeCacheEntity, () => err(`getFolderById: ${drivewsid} is not a folder`)),
         ),
       ),
     )
   }
 
-  getFolderByPathE = (
-    path: NormalizedPath,
-  ): E.Either<Error, CacheEntityFolderLike | CacheEntityAppLibrary> =>
-    pipe(
-      this.getByPathE(path),
-      E.filterOrElse(isFolderLikeCacheEntity, () => err(`getFolderByPathE: ${path} is not a folder`)),
-    )
-
   getFolderByIdE = (drivewsid: string) => {
     return pipe(
       this.getByIdE(drivewsid),
       E.chain(flow(
-        E.fromPredicate(isFolderLikeCacheEntity, () => err(`getFolderByIdE: ${drivewsid} is not a folder`)),
+        E.fromPredicate(T.isFolderLikeCacheEntity, () => err(`getFolderByIdE: ${drivewsid} is not a folder`)),
       )),
     )
   }
@@ -212,14 +175,14 @@ export class Cache {
   getFolderDetailsById = (
     drivewsid: string,
   ): O.Option<
-    E.Either<Error, CacheEntityFolderRootDetails | CacheEntityFolderDetails | CacheEntityAppLibraryDetails>
+    E.Either<Error, T.CacheEntityFolderRootDetails | T.CacheEntityFolderDetails | T.CacheEntityAppLibraryDetails>
   > =>
     pipe(
       this.getFolderById(drivewsid),
       O.chain(
         flow(E.fold(
           err => O.some(E.left(err)),
-          flow(O.fromPredicate(isDetailsCacheEntity), O.map(E.of)),
+          flow(O.fromPredicate(T.isDetailsCacheEntity), O.map(E.of)),
         )),
       ),
     )
@@ -250,7 +213,7 @@ export class Cache {
     Error,
     {
       missed: string[]
-      cached: readonly (CacheEntityFolderRootDetails | CacheEntityFolderDetails | CacheEntityAppLibraryDetails)[]
+      cached: readonly (T.CacheEntityFolderRootDetails | T.CacheEntityFolderDetails | T.CacheEntityAppLibraryDetails)[]
     }
   > =>
     pipe(
@@ -272,9 +235,9 @@ export class Cache {
         E.Do,
         E.bind('item', () => this.getByIdE(drivewsid)),
         E.bind('result', ({ item }) =>
-          isRootCacheEntity(item)
+          T.isRootCacheEntity(item)
             ? E.of<Error, Hierarchy>([{ drivewsid: rootDrivewsid }])
-            : isTrashCacheEntity(item)
+            : T.isTrashCacheEntity(item)
             ? E.of<Error, Hierarchy>([{ drivewsid: trashDrivewsid }])
             : pipe(
               go(item.content.parentId),
@@ -295,31 +258,6 @@ export class Cache {
     )
   }
 
-  getByPathE = (path: NormalizedPath): E.Either<Error, CacheEntity> => {
-    return pipe(
-      this.getByPath(path),
-      E.fromOption(() => err(`missing ${path} in cache`)),
-    )
-  }
-
-  getByPathV = (path: NormalizedPath): PartialValidPath => {
-    const parts = parsePath(path)
-    const rest = pipe(parts, A.dropLeft(1))
-
-    return pipe(
-      E.Do,
-      E.bind('root', () => pipe(this.cache, getRoot())),
-      E.fold(
-        (e): PartialValidPath => ({ valid: false, error: e, rest: parts, validPart: [] }),
-        ({ root }) =>
-          pipe(
-            this.cache,
-            getPartialValidPath(rest, root),
-          ),
-      ),
-    )
-  }
-
   getByPathVER = <R extends Root>(
     root: Root,
     path: NormalizedPath,
@@ -333,7 +271,7 @@ export class Cache {
       E.map(({ root }) =>
         pipe(
           this.cache,
-          getPartialValidPathV2(rest, root),
+          getPartialValidPath(rest, root),
           v => v as HierarchyResult<R>,
         )
       ),
@@ -348,41 +286,24 @@ export class Cache {
 
     return pipe(
       E.Do,
-      E.bind('root', () => pipe(this.cache, getRoot())),
+      E.bind('root', () => pipe(this.cache, C.getRoot())),
       E.map(({ root }) =>
         pipe(
           this.cache,
-          getPartialValidPathV2(rest, root.content),
+          getPartialValidPath(rest, root.content),
           v => v as HierarchyResult<R>,
         )
       ),
     )
   }
 
-  getByPathV2 = (
-    path: NormalizedPath,
-  ):
-    | { validPart: CacheEntityFolderLike[]; rest: NA.NonEmptyArray<string> }
-    | { validPart: NA.NonEmptyArray<CacheEntity>; rest: [] } =>
-  {
-    return pipe(
-      this.getByPathV(path),
-      _ =>
-        _.valid
-          ? { validPart: _.entities, rest: [] }
-          : { validPart: _.validPart, rest: _.rest },
-    )
-  }
-
-  getByPath = (path: string): O.Option<CacheEntity> => {
+  getByPath = (path: string): O.Option<T.CacheEntity> => {
     return pipe(
       this.cache,
       logReturn(() => logger.debug('getByPath')),
-      getByPath(path),
-      // E.fold(e => NotFoundError.is(e) ? O.none:)
+      C.getByPath(path),
       logReturn((v) => logger.debug(v._tag)),
       O.getRight,
-      // this.cache.byPath,
       // R.lookup(normalizePath(path)),
       logReturn(
         O.fold(
@@ -393,30 +314,30 @@ export class Cache {
     )
   }
 
-  getByIdU = (drivewsid: string): CacheEntity | undefined => {
+  getByIdU = (drivewsid: string): T.CacheEntity | undefined => {
     return pipe(this.getById(drivewsid), O.toUndefined)
   }
 
-  getByPathU = (path: string): CacheEntity | undefined => {
+  getByPathU = (path: string): T.CacheEntity | undefined => {
     return pipe(this.getByPath(path), O.toUndefined)
   }
 
   getCachedPathForId = (drivewsid: string): O.Option<string> => {
-    return pipe(getCachedPathForId(drivewsid)(this.cache), O.fromEither)
+    return pipe(C.getCachedPathForId(drivewsid)(this.cache), O.fromEither)
   }
 
   getCachedPathForIdE = (drivewsid: string): E.Either<Error, string> => {
     return pipe(
-      getCachedPathForId(drivewsid)(this.cache),
+      C.getCachedPathForId(drivewsid)(this.cache),
     )
   }
 
-  removeById = (drivewsid: string): Cache => pipe(this.cache, removeById(drivewsid), Cache.create)
+  removeById = (drivewsid: string): Cache => pipe(this.cache, C.removeById(drivewsid), Cache.create)
 
   removeByIds = (drivewsids: string[]): Cache =>
     pipe(
       drivewsids,
-      A.reduce(this.cache, (cache, cur) => removeById(cur)(cache)),
+      A.reduce(this.cache, (cache, cur) => C.removeById(cur)(cache)),
       Cache.create,
     )
 
@@ -443,7 +364,7 @@ export class Cache {
   //     Cache.create,
   //   )
   // }
-  static create(cache: CacheF = cachef()): Cache {
+  static create(cache: T.CacheF = C.cachef()): Cache {
     return new Cache(cache)
   }
 
@@ -451,7 +372,7 @@ export class Cache {
     return new Cache({
       // root: O.some(rootDetails),
       byDrivewsid: {
-        [rootDetails.drivewsid as string]: cacheEntityFromDetails(rootDetails),
+        [rootDetails.drivewsid as string]: C.cacheEntityFromDetails(rootDetails),
       },
       // byPath: {
       //   '/': cacheEntityFromDetails(rootDetails),
@@ -460,7 +381,7 @@ export class Cache {
   }
 
   static concat(a: Cache, b: Cache): Cache {
-    const M = R.getMonoid({ concat: (a: CacheEntity, b: CacheEntity) => b })
+    const M = R.getMonoid({ concat: (a: T.CacheEntity, b: T.CacheEntity) => b })
 
     // cacheLogger.debug(`concat ${JSON.stringify(a.get())}`)
     // cacheLogger.debug(`concat ${JSON.stringify(b.get())}`)

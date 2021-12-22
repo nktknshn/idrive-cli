@@ -9,7 +9,7 @@ import * as R from 'fp-ts/lib/Record'
 import path from 'path'
 import { isDeepStrictEqual } from 'util'
 import { Cache } from '../../../icloud/drive/cache/Cache'
-import { isDetailsCacheEntity } from '../../../icloud/drive/cache/cachef'
+import { isDetailsCacheEntity } from '../../../icloud/drive/cache/types'
 import {
   Details,
   DetailsRoot,
@@ -29,8 +29,8 @@ import {
   isHierarchyItemRoot,
   isHierarchyItemTrash,
   RegularDetails,
-} from '../../../icloud/drive/types'
-import { rootDrivewsid, trashDrivewsid } from '../../../icloud/drive/types-io'
+} from '../../../icloud/drive/requests/types/types'
+import { rootDrivewsid, trashDrivewsid } from '../../../icloud/drive/requests/types/types-io'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
 import { hasOwnProperties, hasOwnProperty, Path } from '../../../lib/util'

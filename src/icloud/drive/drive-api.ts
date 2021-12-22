@@ -23,7 +23,6 @@ import {
   retrieveItemDetailsInFoldersHierarchy,
 } from './requests/retrieveItemDetailsInFolders'
 import { putBackItemsFromTrash, RetrieveTrashDetailsResponse } from './requests/retrieveTrashDetails'
-import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 import {
   asOption,
   Details,
@@ -37,8 +36,9 @@ import {
   isCloudDocsRootDetails,
   isNotInvalidId,
   MaybeNotFound,
-} from './types'
-import { rootDrivewsid } from './types-io'
+} from './requests/types/types'
+import { rootDrivewsid } from './requests/types/types-io'
+import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 
 const getContentType = (extension: string): string => {
   if (extension === '') {
@@ -194,8 +194,6 @@ export class DriveApi {
   }
 
   public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (Details | InvalidId)[]> => {
-    // logger.debug(`retrieveItemDetailsInFolders: ${drivewsids}`)
-
     return pipe(
       this.retryingWithSession(
         () => retrieveItemDetailsInFolders(this.client, this.session, { drivewsids }),

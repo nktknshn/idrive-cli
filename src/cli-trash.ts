@@ -8,7 +8,7 @@ import { cliAction, cliActionM } from './cli/cli-action'
 import * as AS from './cli/cli-drive/cli-drive-actions'
 import { normalizePath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile, defaultSessionFile } from './config'
-import { DetailsTrash, fileName } from './icloud/drive/types'
+import { DetailsTrash, fileName } from './icloud/drive/requests/types/types'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 

@@ -1,16 +1,13 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/fetch-client'
+import { apiLogger, logf } from '../../../lib/logging'
 import { ResponseWithSession } from '../../../lib/response-reducer'
-import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { DriveChildrenItemFolder } from '../types'
-
-import * as t from 'io-ts'
-import { apiLogger, logf } from '../../../lib/logging'
-import { childrenItem, itemFolder } from '../types-io'
 import { expectJson } from './filterStatus'
+import { itemFolder } from './types/types-io'
 
 const createFolderResponse = t.type({
   destinationDrivewsId: t.string,
