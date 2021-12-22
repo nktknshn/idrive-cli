@@ -25,27 +25,4 @@ export const getSetCookie = getHeader('Set-Cookie')
 
 // export const getHeaderOption = (header: string) => flow(getHeader(header), A.head)
 
-export const [
-  getScnt,
-  getSessionId,
-  getSessionToken,
-  getAccountCountry,
-  getAuthAttributes,
-  getTwoSVTrustEligible,
-  getAKAuthType,
-  getOauthGrantCode,
-  getTrustToken,
-] = [
-  'scnt',
-  'X-Apple-ID-Session-Id',
-  'X-Apple-Session-Token',
-  'X-Apple-ID-Account-Country',
-  'X-Apple-Auth-Attributes',
-  'X-Apple-TwoSV-Trust-Eligible',
-  'X-Apple-AK-Auth-Type',
-  'X-Apple-OAuth-Grant-Code',
-  'X-Apple-TwoSV-Trust-Token',
-]
-  .map(getHeader)
-  .map(f => flow(f, A.head))
 // TODO

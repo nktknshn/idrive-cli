@@ -5,7 +5,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import { err, JsonParsingError, MissingResponseBody } from './errors'
-import { HttpResponse } from './fetch-client'
+import { HttpResponse } from './http/fetch-client'
 
 export function tryParseJson(
   input: string,
@@ -13,15 +13,6 @@ export function tryParseJson(
   return E.tryCatch(
     () => JSON.parse(input),
     (e) => new JsonParsingError(input, e),
-  )
-}
-
-export function tryJsonFromResponse(
-  response: HttpResponse,
-): TE.TaskEither<MissingResponseBody, unknown> {
-  return pipe(
-    O.fromNullable(response.data),
-    TE.fromOption(() => new MissingResponseBody(response, {})),
   )
 }
 

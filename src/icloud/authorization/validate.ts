@@ -2,6 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
+import * as t from 'io-ts'
 import {
   BufferDecodingError,
   FileReadingError,
@@ -9,10 +10,10 @@ import {
   JsonParsingError,
   TypeDecodingError,
 } from '../../lib/errors'
-import { FetchClientEither } from '../../lib/fetch-client'
 import { tryReadJsonFile } from '../../lib/files'
-import { expectJson } from '../../lib/response-reducer'
+import { FetchClientEither } from '../../lib/http/fetch-client'
 import { isObjectWithOwnProperty } from '../../lib/util'
+import { expectJson } from '../drive/requests/filterStatus'
 import { ICloudSessionWithSessionToken } from '../session/session'
 import { buildRequest } from '../session/session-http'
 import { ICloudSessionValidated } from './authorize'
@@ -30,7 +31,7 @@ export function validateSession(
   },
 ): TE.TaskEither<Error, O.Option<ICloudSessionValidated>> {
   const applyResponse = expectJson(
-    validateResponseJson,
+    v => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>,
   )
 
   return pipe(

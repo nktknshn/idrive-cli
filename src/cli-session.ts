@@ -11,7 +11,7 @@ import { saveAccountData, validateSession } from './icloud/authorization/validat
 import { hasSessionToken, ICloudSession, ICloudSignInCredentials, session } from './icloud/session/session'
 import { readSessionFile, saveSession } from './icloud/session/session-file'
 import { err } from './lib/errors'
-import { fetchClient } from './lib/fetch-client'
+import { fetchClient } from './lib/http/fetch-client'
 import { input } from './lib/input'
 import { logger } from './lib/logging'
 

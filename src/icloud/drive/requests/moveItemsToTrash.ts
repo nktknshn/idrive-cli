@@ -1,11 +1,12 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { FetchClientEither } from '../../../lib/fetch-client'
+import * as t from 'io-ts'
+import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import { expectJson, ResponseWithSession } from '../../../lib/response-reducer'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
+import { expectJson, ResponseWithSession } from './filterStatus'
 
 export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
@@ -19,8 +20,10 @@ export function moveItemsToTrash(
     trash?: boolean
   },
 ): TE.TaskEither<Error, ResponseWithSession<MoveItemToTrashResponse>> {
-  const applyHttpResponseToSession = expectJson((json: unknown): json is MoveItemToTrashResponse =>
-    isObjectWithOwnProperty(json, 'items')
+  const applyHttpResponseToSession = expectJson(
+    v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
+    // (json: unknown): json is MoveItemToTrashResponse =>
+    // isObjectWithOwnProperty(json, 'items')
   )
 
   const endpoint = trash ? 'moveItemsToTrash' : 'deleteItems'

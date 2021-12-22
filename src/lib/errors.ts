@@ -1,6 +1,6 @@
 import * as E from 'fp-ts/lib/Either'
 import * as t from 'io-ts'
-import { HttpResponse } from './fetch-client'
+import { HttpResponse } from './http/fetch-client'
 import { isObjectWithOwnProperty } from './util'
 
 export class InvalidGlobalSessionResponse extends Error {
@@ -47,10 +47,6 @@ export class UnexpectedResponse extends Error {
   static create(httpResponse: HttpResponse, json: E.Either<unknown, unknown>): UnexpectedResponse {
     return new UnexpectedResponse(httpResponse, json)
   }
-
-  // [Symbol.toString()]() {
-  //   return `UnexpectedResponse(${this.httpResponse.status}, ${JSON.stringify(this.json)})`
-  // }
 }
 
 export class FileReadingError extends Error {

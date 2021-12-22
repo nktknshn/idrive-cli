@@ -4,13 +4,11 @@ import * as fs from 'fs/promises'
 import * as t from 'io-ts'
 import Path from 'path'
 import { err } from '../../../lib/errors'
-import { FetchClientEither, uploadFileRequest } from '../../../lib/fetch-client'
+import { FetchClientEither, uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
-import { ResponseWithSession } from '../../../lib/response-reducer'
-import { hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { expectJson } from './filterStatus'
+import { expectJson, ResponseWithSession } from './filterStatus'
 
 const uploadResponse = t.array(t.type({
   document_id: t.string,

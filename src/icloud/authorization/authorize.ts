@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { FetchClientEither } from '../../lib/fetch-client'
+import { FetchClientEither } from '../../lib/http/fetch-client'
 import { logger } from '../../lib/logging'
 import { arrayFromOption } from '../../lib/util'
 import { ICloudSession } from '../session/session'
@@ -47,5 +47,6 @@ export function authorizeSession(
         : TE.of(session)
     ),
     TE.chainW((session) => requestAccoutLogin(client, session)),
+    TE.map(({ response, session }) => ({ session, accountData: response.body })),
   )
 }

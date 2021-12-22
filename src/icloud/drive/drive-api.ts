@@ -1,5 +1,5 @@
 import * as A from 'fp-ts/lib/Array'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -7,14 +7,14 @@ import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import Path from 'path'
 import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
-import { fetchClient, FetchClientEither } from '../../lib/fetch-client'
+import { fetchClient, FetchClientEither } from '../../lib/http/fetch-client'
 import { input } from '../../lib/input'
-import { apiLogger, logger, logReturnAs } from '../../lib/logging'
-import { ResponseWithSession } from '../../lib/response-reducer'
+import { logger } from '../../lib/logging'
 import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
 import { download, retrieveHierarchy, retrieveItemDetails, retrieveTrashDetails } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
+import { ResponseWithSession } from './requests/filterStatus'
 import { moveItems } from './requests/moveItems'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
 import { renameItems, RenameResponse } from './requests/rename'
@@ -22,21 +22,8 @@ import {
   retrieveItemDetailsInFolders,
   retrieveItemDetailsInFoldersHierarchy,
 } from './requests/retrieveItemDetailsInFolders'
-import { putBackItemsFromTrash, RetrieveTrashDetailsResponse } from './requests/retrieveTrashDetails'
-import {
-  asOption,
-  Details,
-  DetailsRoot,
-  DetailsTrash,
-  DriveChildrenItem,
-  DriveDetailsPartialWithHierarchy,
-  DriveDetailsWithHierarchy,
-  DriveItemDetails,
-  InvalidId,
-  isCloudDocsRootDetails,
-  isNotInvalidId,
-  MaybeNotFound,
-} from './requests/types/types'
+import { putBackItemsFromTrash } from './requests/retrieveTrashDetails'
+import * as T from './requests/types/types'
 import { rootDrivewsid } from './requests/types/types-io'
 import { singleFileUpload, updateDocuments, upload } from './requests/upload'
 
@@ -70,11 +57,11 @@ export class DriveApi {
     public client: FetchClientEither = fetchClient,
   ) {}
 
-  public getRoot = (): TE.TaskEither<Error, DetailsRoot> => {
+  public getRoot = (): TE.TaskEither<Error, T.DetailsRoot> => {
     return pipe(
       this.retrieveItemDetailsInFolder(rootDrivewsid),
-      TE.filterOrElse(isNotInvalidId, () => err(`not found for root details`)),
-      TE.filterOrElseW(isCloudDocsRootDetails, () => err(`invalid root details`)),
+      TE.filterOrElse(T.isNotInvalidId, () => err(`not found for root details`)),
+      TE.filterOrElseW(T.isCloudDocsRootDetails, () => err(`invalid root details`)),
     )
   }
 
@@ -175,7 +162,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveTrashDetails = (): TE.TaskEither<Error, DetailsTrash> => {
+  public retrieveTrashDetails = (): TE.TaskEither<Error, T.DetailsTrash> => {
     return pipe(
       this.retryingWithSession(
         () => retrieveTrashDetails(this.client, this.session),
@@ -185,7 +172,7 @@ export class DriveApi {
 
   public putBackItemsFromTrash = (
     items: [{ drivewsid: string; etag: string }],
-  ): TE.TaskEither<Error, { items: DriveChildrenItem[] }> => {
+  ): TE.TaskEither<Error, { items: T.DriveChildrenItem[] }> => {
     return pipe(
       this.retryingWithSession(
         () => putBackItemsFromTrash(this.client, this.session, items),
@@ -193,7 +180,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (Details | InvalidId)[]> => {
+  public retrieveItemDetailsInFolders = (drivewsids: string[]): TE.TaskEither<Error, (T.Details | T.InvalidId)[]> => {
     return pipe(
       this.retryingWithSession(
         () => retrieveItemDetailsInFolders(this.client, this.session, { drivewsids }),
@@ -202,7 +189,7 @@ export class DriveApi {
   }
 
   public retrieveItemDetailsInFoldersS = (drivewsids: string[]): TE.TaskEither<Error, {
-    found: Details[]
+    found: T.Details[]
     missed: string[]
   }> => {
     return pipe(
@@ -213,7 +200,7 @@ export class DriveApi {
 
   public retrieveItemDetailsInFolderHierarchy = (
     drivewsid: string,
-  ): TE.TaskEither<Error, MaybeNotFound<DriveDetailsWithHierarchy>> => {
+  ): TE.TaskEither<Error, T.MaybeNotFound<T.DriveDetailsWithHierarchy>> => {
     return pipe(
       this.retrieveItemDetailsInFoldersHierarchies([drivewsid]),
       TE.chainOptionK(() => err(`invalid response (empty array)`))(A.lookup(0)),
@@ -222,17 +209,17 @@ export class DriveApi {
 
   public retrieveItemDetailsInFolderHierarchyO = (
     drivewsid: string,
-  ): TE.TaskEither<Error, O.Option<DriveDetailsWithHierarchy>> => {
+  ): TE.TaskEither<Error, O.Option<T.DriveDetailsWithHierarchy>> => {
     return pipe(
       this.retrieveItemDetailsInFoldersHierarchies([drivewsid]),
       TE.chainOptionK(() => err(`invalid response (empty array)`))(A.lookup(0)),
-      TE.map(asOption),
+      TE.map(T.asOption),
     )
   }
 
   public retrieveItemDetailsInFolderHierarchyE = (
     drivewsid: string,
-  ): TE.TaskEither<Error, DriveDetailsWithHierarchy> => {
+  ): TE.TaskEither<Error, T.DriveDetailsWithHierarchy> => {
     return pipe(
       this.retrieveItemDetailsInFolderHierarchyO(drivewsid),
       TE.chain(TE.fromOption(() => err(`${drivewsid} wasn't found`))),
@@ -241,7 +228,7 @@ export class DriveApi {
 
   public retrieveItemDetailsInFoldersHierarchies = (
     drivewsids: string[],
-  ): TE.TaskEither<Error, (DriveDetailsWithHierarchy | InvalidId)[]> => {
+  ): TE.TaskEither<Error, (T.DriveDetailsWithHierarchy | T.InvalidId)[]> => {
     logger.debug(`retrieveItemDetailsInFoldersHierarchy: [${drivewsids}]`)
 
     return pipe(
@@ -251,7 +238,7 @@ export class DriveApi {
 
   public retrieveItemDetailsInFoldersHierarchiesO = flow(
     this.retrieveItemDetailsInFoldersHierarchies,
-    TE.map(A.map(asOption)),
+    TE.map(A.map(T.asOption)),
   )
 
   public retrieveItemDetailsInFoldersHierarchiesS = (drivewsids: string[]) =>
@@ -267,7 +254,7 @@ export class DriveApi {
     TE.map(RA.toArray),
   )
 
-  public retrieveHierarchy = (drivewsids: string[]): TE.TaskEither<Error, DriveDetailsPartialWithHierarchy[]> => {
+  public retrieveHierarchy = (drivewsids: string[]): TE.TaskEither<Error, T.DriveDetailsPartialWithHierarchy[]> => {
     logger.debug(`retrieveHierarchy`, { drivewsids })
 
     return pipe(
@@ -282,7 +269,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemsDetails = (drivewsids: string[]): TE.TaskEither<Error, { items: DriveItemDetails[] }> => {
+  public retrieveItemsDetails = (drivewsids: string[]): TE.TaskEither<Error, { items: T.DriveItemDetails[] }> => {
     logger.debug(`retrieveItemDetails`, { drivewsids })
 
     return pipe(
@@ -292,7 +279,7 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemsDetailsO = (drivewsids: string[]): TE.TaskEither<Error, O.Option<DriveItemDetails>[]> => {
+  public retrieveItemsDetailsO = (drivewsids: string[]): TE.TaskEither<Error, O.Option<T.DriveItemDetails>[]> => {
     return pipe(
       this.retrieveItemsDetails(drivewsids),
       TE.map(details =>
@@ -309,21 +296,21 @@ export class DriveApi {
     )
   }
 
-  public retrieveItemDetailsO = (drivewsid: string): TE.TaskEither<Error, O.Option<DriveItemDetails>> => {
+  public retrieveItemDetailsO = (drivewsid: string): TE.TaskEither<Error, O.Option<T.DriveItemDetails>> => {
     return pipe(
       this.retrieveItemsDetails([drivewsid]),
       TE.map(_ => A.lookup(0)(_.items)),
     )
   }
 
-  public retrieveItemDetailsE = (drivewsid: string): TE.TaskEither<Error, DriveItemDetails> => {
+  public retrieveItemDetailsE = (drivewsid: string): TE.TaskEither<Error, T.DriveItemDetails> => {
     return pipe(
       this.retrieveItemDetailsO(drivewsid),
       TE.chain(TE.fromOption(() => err(`${drivewsid} wasn't found`))),
     )
   }
 
-  public retrieveItemDetailsInFolder = (drivewsid: string): TE.TaskEither<Error, (Details | InvalidId)> => {
+  public retrieveItemDetailsInFolder = (drivewsid: string): TE.TaskEither<Error, (T.Details | T.InvalidId)> => {
     return pipe(
       this.retrieveItemDetailsInFolders([drivewsid]),
       TE.map(A.lookup(0)),

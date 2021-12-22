@@ -1,16 +1,31 @@
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { constant, flow, hole, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { BadRequestError, err, InvalidGlobalSessionResponse } from '../../../lib/errors'
-import { HttpResponse } from '../../../lib/fetch-client'
-import { tryJsonFromResponse } from '../../../lib/json'
-import { applyCookies, ResponseWithSession } from '../../../lib/response-reducer'
+import {
+  BadRequestError,
+  err,
+  InvalidGlobalSessionResponse,
+  InvalidJsonInResponse,
+  MissingResponseBody,
+} from '../../../lib/errors'
+import { HttpResponse } from '../../../lib/http/fetch-client'
+import { tryJsonFromResponse } from '../../../lib/http/json'
 import { ICloudSession } from '../../session/session'
+import { applyCookies } from '../../session/session-http'
 
-// const applyHttpResponseToSessionHierarchy = expectJson((
-//   json: unknown,
-// ): json is { items: DriveItemDetails[] } => scheme.is(json))
+export type ResponseWithSession<R> = {
+  session: ICloudSession
+  response: {
+    httpResponse: HttpResponse
+    body: R
+  }
+}
+export type ResponseHandler<R, E1 = Error> = (
+  session: ICloudSession,
+) => (
+  ma: TE.TaskEither<E1, HttpResponse>,
+) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
 
 export const filterStatus = (status = 200) =>
   flow(
@@ -24,6 +39,22 @@ export const filterStatus = (status = 200) =>
     ),
     TE.filterOrElseW(
       r => r.httpResponse.status == status,
+      r => err(`invalid status ${r.httpResponse.status}`),
+    ),
+  )
+
+export const filterStatuses = (statuses = [200]) =>
+  flow(
+    TE.filterOrElseW(
+      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
+      r => InvalidGlobalSessionResponse.create(r.httpResponse),
+    ),
+    TE.filterOrElseW(
+      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
+      r => BadRequestError.create(r.httpResponse),
+    ),
+    TE.filterOrElseW(
+      r => statuses.includes(r.httpResponse.status),
       r => err(`invalid status ${r.httpResponse.status}`),
     ),
   )
@@ -55,10 +86,56 @@ export const decodeJson = <R>(decode: (u: unknown) => t.Validation<R>) =>
         )),
     )
 
-export const applyToSession = <R>(
+export const decodeJsonEither = <R>(
+  decode: (u: unknown) => t.Validation<R>,
+): (
+  te: TE.TaskEither<Error, { httpResponse: HttpResponse }>,
+) => TE.TaskEither<
+  Error,
+  {
+    readonly httpResponse: HttpResponse
+    readonly json: E.Either<MissingResponseBody, unknown>
+    readonly decoded: E.Either<Error, R>
+  }
+> =>
+  (te: TE.TaskEither<Error, { httpResponse: HttpResponse }>) =>
+    pipe(
+      te,
+      TE.bindW('json', (r: { httpResponse: HttpResponse }) =>
+        pipe(
+          tryJsonFromResponse(r.httpResponse),
+          TE.fold(
+            e => TE.of(E.left<MissingResponseBody, unknown>(e)),
+            json => TE.of(E.right<MissingResponseBody, unknown>(json)),
+          ),
+        )),
+      TE.bindW('decoded', ({ json }) =>
+        pipe(
+          json,
+          E.chain(json =>
+            pipe(
+              decode(json),
+              E.mapLeft(errors => err(`Error decoding json: ${reporter(E.left(errors))}`)),
+            )
+          ),
+          TE.of,
+        )),
+    )
+
+// export function applyToSession(
+//   f: (a: { httpResponse: HttpResponse }) => ICloudSession,
+// ): (te: TE.TaskEither<Error, { httpResponse: HttpResponse }>) => TE.TaskEither<Error, {
+//   session: ICloudSession
+//   response: {
+//     httpResponse: HttpResponse
+//   }
+// }>
+export function applyToSession<R>(
   f: (a: { decoded: R; httpResponse: HttpResponse }) => ICloudSession,
-) =>
-  (
+): (
+  te: TE.TaskEither<Error, { decoded: R; httpResponse: HttpResponse }>,
+) => TE.TaskEither<Error, ResponseWithSession<R>> {
+  return (
     te: TE.TaskEither<Error, { decoded: R; httpResponse: HttpResponse }>,
   ): TE.TaskEither<Error, ResponseWithSession<R>> => {
     return pipe(
@@ -72,6 +149,68 @@ export const applyToSession = <R>(
       })),
     )
   }
+}
+
+export function applyToSession2<T extends { httpResponse: HttpResponse }>(
+  f: (a: T) => (session: ICloudSession) => ICloudSession,
+): (te: TE.TaskEither<Error, T>) => (session: ICloudSession) => TE.TaskEither<Error, T & { session: ICloudSession }> {
+  return (te: TE.TaskEither<Error, T>) => {
+    return (session: ICloudSession) =>
+      pipe(
+        te,
+        // TE.bind('session', (a) => f(a)(session)),
+        TE.map(a => ({
+          ...a,
+          session: f(a)(session),
+        })),
+      )
+  }
+}
+
+export function result<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
+  ff: (a: T) => R,
+) {
+  return (f: (session: ICloudSession) => TE.TaskEither<Error, T>) =>
+    (session: ICloudSession): TE.TaskEither<Error, ResponseWithSession<R>> =>
+      pipe(
+        f(session),
+        TE.map((a) => ({
+          session: a.session,
+          response: {
+            httpResponse: a.httpResponse,
+            body: ff(a),
+          },
+        })),
+      )
+}
+
+export function resultEither<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
+  ff: (a: T) => E.Either<Error, R>,
+) {
+  return (f: (session: ICloudSession) => TE.TaskEither<Error, T>) =>
+    (session: ICloudSession): TE.TaskEither<Error, ResponseWithSession<R>> =>
+      pipe(
+        f(session),
+        TE.chain((a) =>
+          pipe(
+            ff(a),
+            E.map(body => ({
+              session: a.session,
+              response: {
+                httpResponse: a.httpResponse,
+                body,
+              },
+            })),
+            TE.fromEither,
+          )
+        ),
+      )
+}
+
+export const emptyResult = result(constant({}))
+export const returnJson = <
+  R,
+>() => result<{ httpResponse: HttpResponse; session: ICloudSession; readonly decoded: R }, R>(_ => _.decoded)
 
 export const withResponse = (httpResponse: HttpResponse) =>
   pipe(

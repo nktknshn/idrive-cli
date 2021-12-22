@@ -1,13 +1,9 @@
-import { Format, TransformableInfo, TransformFunction } from 'logform'
-import * as winston from 'winston'
-import { hasOwnProperty, isObjectWithOwnProperty } from './util'
-const { combine, timestamp, label, prettyPrint, json } = winston.format
 import chalk from 'chalk'
-import { identity, pipe } from 'fp-ts/function'
-import { IO } from 'fp-ts/lib/IO'
+import { pipe } from 'fp-ts/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import fs from 'fs'
-import { InvalidJsonInResponse } from './errors'
+import * as winston from 'winston'
+import { isObjectWithOwnProperty } from './util'
+const { combine, timestamp, label, prettyPrint, json } = winston.format
 
 // const jsonError = winston.format((info, opts) => {
 

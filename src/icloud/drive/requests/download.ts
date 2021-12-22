@@ -1,12 +1,13 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as t from 'io-ts'
 import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
-import { expectResponse, FetchClientEither } from '../../../lib/fetch-client'
-import { expectJson, ResponseWithSession } from '../../../lib/response-reducer'
+import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { buildRequest } from '../../session/session-http'
+import { applyCookies, buildRequest } from '../../session/session-http'
+import { applyToSession, expectJson, ResponseWithSession } from './filterStatus'
 
 type RetrieveOpts = {
   documentId: string
@@ -31,9 +32,8 @@ export function download(
   { session, accountData }: ICloudSessionValidated,
   { documentId, zone }: RetrieveOpts,
 ): TE.TaskEither<Error, ResponseWithSession<ResponseBody>> {
-  const applyHttpResponseToSession = expectJson((json: unknown): json is ResponseBody =>
-    isObjectWithOwnProperty(json, 'data_token')
-    && isObjectWithOwnProperty(json.data_token, 'url')
+  const applyHttpResponseToSession = expectJson(
+    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
   )
 
   return pipe(

@@ -1,28 +1,25 @@
 import { Method } from 'axios'
 import * as A from 'fp-ts/lib/Array'
-import { Lazy, pipe } from 'fp-ts/lib/function'
+import { flow, Lazy, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { HttpRequest, HttpResponse } from '../../lib/fetch-client'
-import { getAccountCountry, getAuthAttributes, getScnt, getSessionId, getSessionToken } from '../../lib/http-headers'
+import * as R from 'fp-ts/lib/Reader'
+import { applyCookieToCookies, getCookies } from '../../lib/http/cookie'
+import { HttpRequest, HttpResponse } from '../../lib/http/fetch-client'
+import { getHeader } from '../../lib/http/http-headers'
+import { logger } from '../../lib/logging'
 import { buildRecord } from '../../lib/util'
-import { ICloudSession } from './session'
+import { ICloudSession, SessionLens } from './session'
 import { Header, headers as _headers } from './session-http-headers'
 
-const fallback = <A>(
-  onNone: Lazy<O.Option<A>>,
-): ((v: O.Option<A>) => O.Option<A>) => O.fold(onNone, O.some)
-
-export const buildRequest = (
+/** using session build a request to api */
+export function buildRequest(
   method: Method,
   url: string,
-  {
-    data = undefined,
-    headers = [_headers.default],
-  }: {
+  { data = undefined, headers = [_headers.default] }: {
     data?: unknown
     headers?: ((session: ICloudSession) => Header[])[]
   } = {},
-): ((session: ICloudSession) => HttpRequest) => {
+): ((session: ICloudSession) => HttpRequest) {
   return (session) => ({
     url,
     method,
@@ -37,31 +34,23 @@ export const buildRequest = (
   })
 }
 
-export function applyAuthorizationResponse(
-  httpResponse: HttpResponse,
-) {
-  return (session: ICloudSession): ICloudSession => {
-    const newSession = Object.assign({}, session)
+export const applyCookies = (httpResponse: HttpResponse) =>
+  (session: ICloudSession): ICloudSession => {
+    const [errors, setCookies] = getCookies(httpResponse)
 
-    newSession.scnt = pipe(
-      getScnt(httpResponse),
-      fallback(() => newSession.scnt),
-    )
-    newSession.sessionId = fallback(() => newSession.sessionId)(
-      getSessionId(httpResponse),
-    )
+    if (errors.length > 0) {
+      logger.error(
+        errors,
+      )
+    }
 
-    newSession.sessionToken = fallback(() => newSession.sessionToken)(
-      getSessionToken(httpResponse),
+    return pipe(
+      session,
+      SessionLens.cookies.set({
+        cookies: applyCookieToCookies(
+          session.cookies,
+          setCookies,
+        ),
+      }),
     )
-
-    newSession.accountCountry = fallback(() => newSession.accountCountry)(
-      getAccountCountry(httpResponse),
-    )
-    newSession.authAttributes = fallback(() => newSession.authAttributes)(
-      getAuthAttributes(httpResponse),
-    )
-
-    return newSession
   }
-}

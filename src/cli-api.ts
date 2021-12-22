@@ -9,7 +9,7 @@ import { parseArgs } from './cli/cli-trash/cli-trash-args'
 import { parseName } from './icloud/drive/helpers'
 import { retrieveHierarchy } from './icloud/drive/requests'
 import { ensureError, err } from './lib/errors'
-import { fetchClient } from './lib/fetch-client'
+import { fetchClient } from './lib/http/fetch-client'
 import { apiLogger, cacheLogger, initLoggers, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
 import { isKeyOf, Path } from './lib/util'
 

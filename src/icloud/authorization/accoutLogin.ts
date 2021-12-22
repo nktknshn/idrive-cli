@@ -1,25 +1,37 @@
 import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as t from 'io-ts'
 import { defaultCountryCode } from '../../config'
 import { err } from '../../lib/errors'
-import { FetchClientEither } from '../../lib/fetch-client'
+import { FetchClientEither } from '../../lib/http/fetch-client'
 import { logger } from '../../lib/logging'
-import { expectJson } from '../../lib/response-reducer'
-import { isObjectWithOwnProperty } from '../../lib/util'
+import {
+  applyToSession,
+  applyToSession2,
+  decodeJson,
+  filterStatus,
+  ResponseWithSession,
+  result,
+  returnJson,
+  withResponse,
+} from '../drive/requests/filterStatus'
 import { ICloudSession } from '../session/session'
-import { buildRequest } from '../session/session-http'
-import { ICloudSessionValidated } from './authorize'
+import { applyCookies, buildRequest } from '../session/session-http'
 import { AccountLoginResponseBody } from './types'
 
 export function requestAccoutLogin(
   client: FetchClientEither,
   session: ICloudSession,
-): TE.TaskEither<Error, ICloudSessionValidated> {
+): TE.TaskEither<Error, ResponseWithSession<AccountLoginResponseBody>> {
   logger.debug('requestAccoutLogin')
 
-  const applyResponse = expectJson(
-    (json): json is AccountLoginResponseBody => isObjectWithOwnProperty(json, 'appsOrder'),
+  const applyResponse = flow(
+    withResponse,
+    filterStatus(),
+    decodeJson(v => t.type({ appsOrder: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>),
+    applyToSession2(({ httpResponse }) => applyCookies(httpResponse)),
+    returnJson(),
   )
 
   return pipe(
@@ -43,7 +55,7 @@ export function requestAccoutLogin(
       )
     ),
     TE.chainW(flow(apply(session), client)),
-    applyResponse(session),
-    TE.map(({ session, response }) => ({ session, accountData: response.body })),
+    TE.map(applyResponse),
+    TE.chain(apply(session)),
   )
 }

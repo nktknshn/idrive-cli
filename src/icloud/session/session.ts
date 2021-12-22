@@ -4,7 +4,7 @@ import * as t from 'io-ts'
 import { DateFromISOString } from 'io-ts-types'
 import { option } from 'io-ts-types/lib/option'
 import * as m from 'monocle-ts'
-import { Cookie } from '../../lib/cookie'
+import { Cookie } from '../../lib/http/cookie'
 
 const optionalString = option(t.string)
 

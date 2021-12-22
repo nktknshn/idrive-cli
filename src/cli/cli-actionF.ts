@@ -80,7 +80,6 @@ export function apiAction<T>(
 import * as R from 'fp-ts/lib/Reader'
 
 export function apiActionM<T>(
-  // cfg: R.Reader<{ sessionFile: string }, T>,
   action: (
     deps: { api: DriveApi.DriveApi; session: ICloudSession; accountData: AccountLoginResponseBody },
   ) => TE.TaskEither<Error, T>,
@@ -108,13 +107,3 @@ export function apiActionM<T>(
     ),
   )
 }
-
-// type CliAction2Deps = {}
-
-// type Dep<R, A> = RTE.ReaderTaskEither<R, Error, A>
-
-// export function cliAction2<R>(): TE.TaskEither<Error, R> {
-//   return pipe(
-//     TE.Do,
-//   )
-// }

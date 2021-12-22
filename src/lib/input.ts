@@ -9,6 +9,7 @@ import { tryDecodeBuffer } from './files'
 const write: (a: string | Uint8Array) => TE.TaskEither<Error, unknown> = TE.taskify(
   process.stdout.write.bind(process.stdout),
 )
+
 const read: (size?: number | undefined) => TE.TaskEither<Error, unknown> = TE.taskify((size?: number | undefined) =>
   process.stdin.read(size)
 )

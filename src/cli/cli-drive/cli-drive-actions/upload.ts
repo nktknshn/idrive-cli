@@ -20,7 +20,7 @@ import {
 import { err } from '../../../lib/errors'
 import { cliAction } from '../../cli-actionF'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls_action'
+import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls'
 
 type Env = {
   srcpath: string

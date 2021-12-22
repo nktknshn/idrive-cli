@@ -3,9 +3,11 @@ import * as E from 'fp-ts/lib/Either'
 // import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { SessionCookies } from '../icloud/session/session'
+import { SessionCookies } from '../../icloud/session/session'
 // import { Cookie } from '../icloud/types'
-import { splitPair } from './util'
+import { separateEithers, splitPair } from '../util'
+import { HttpResponse } from './fetch-client'
+import { getSetCookie } from './http-headers'
 
 export interface Cookie {
   /** Name of the cookie. */
@@ -151,3 +153,10 @@ export function applyCookieToCookies(cookies: SessionCookies, add: Cookie[]): Se
 
   return newCookies
 }
+
+export const getCookies = (httpResponse: HttpResponse) =>
+  pipe(
+    getSetCookie(httpResponse),
+    A.map(parseSetCookie),
+    separateEithers,
+  )

@@ -1,14 +1,8 @@
-import { AxiosRequestConfig, AxiosResponse, Method, ResponseType } from 'axios'
-import axios from 'axios'
+import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 import FormData from 'form-data'
-import * as E from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
-import { Option } from 'fp-ts/lib/Option'
-import * as O from 'fp-ts/lib/Option'
 import { Predicate } from 'fp-ts/lib/Predicate'
-import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { httplogger, logger } from './logging'
+import { httplogger } from '../logging'
 
 export interface HttpRequest extends AxiosRequestConfig {
   data: unknown

@@ -4,12 +4,18 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { FetchClientEither } from '../../../lib/fetch-client'
+import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import { applyCookies, ResponseHandler, ResponseWithSession } from '../../../lib/response-reducer'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { buildRequest } from '../../session/session-http'
-import { applyToSession, decodeJson, filterStatus, withResponse } from './filterStatus'
+import { applyCookies, buildRequest } from '../../session/session-http'
+import {
+  applyToSession,
+  decodeJson,
+  filterStatus,
+  ResponseHandler,
+  ResponseWithSession,
+  withResponse,
+} from './filterStatus'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 

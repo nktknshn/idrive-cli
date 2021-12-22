@@ -12,7 +12,7 @@ import { err } from '../../../lib/errors'
 import { Path } from '../../../lib/util'
 import { cliAction } from '../../cli-actionF'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFolderInfo } from './ls_action'
+import { showDetailsInfo, showFolderInfo } from './ls'
 
 export const rm = (
   { sessionFile, cacheFile, paths, noCache, trash }: {

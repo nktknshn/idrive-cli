@@ -1,17 +1,30 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
+import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as t from 'io-ts'
 import { err, InvalidJsonInResponse, MissingResponseBody, UnexpectedResponse } from '../../lib/errors'
-import { FetchClientEither, HttpResponse } from '../../lib/fetch-client'
-import { getHeader } from '../../lib/http-headers'
+import { FetchClientEither, HttpResponse } from '../../lib/http/fetch-client'
+import { getHeader } from '../../lib/http/http-headers'
 import { logger } from '../../lib/logging'
-import { applyCookies, createHttpResponseReducer1, ResponseWithSession } from '../../lib/response-reducer'
+// import { applyCookies, createHttpResponseReducer1, ResponseWithSession } from '../../lib/response-reducer'
+import {
+  applyToSession2,
+  decodeJsonEither,
+  emptyResult,
+  filterStatus,
+  filterStatuses,
+  ResponseWithSession,
+  result,
+  resultEither,
+  withResponse,
+} from '../drive/requests/filterStatus'
 import { ICloudSession } from '../session/session'
-import { applyAuthorizationResponse, buildRequest } from '../session/session-http'
+import { applyCookies, buildRequest } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
 import { authorizationHeaders } from './headers'
+import { applyAuthorizationResponse } from './response'
 
 type SignInResponse = SignInResponse409 | SignInResponse200
 
@@ -37,7 +50,7 @@ export const hsa2Required = (
 
 function getResponse(
   httpResponse: HttpResponse,
-  json: E.Either<MissingResponseBody | InvalidJsonInResponse, unknown>,
+  json: E.Either<Error, unknown>,
 ): E.Either<Error, SignInResponse> {
   if (httpResponse.status == 409) {
     if (E.isLeft(json)) {
@@ -72,6 +85,19 @@ function getResponse(
   return E.left(new UnexpectedResponse(httpResponse, json))
 }
 
+const applyResponse = flow(
+  withResponse,
+  filterStatuses([409, 200]),
+  decodeJsonEither(v => t.partial({ authType: t.string }).decode(v)),
+  applyToSession2(({ httpResponse }) =>
+    flow(
+      applyAuthorizationResponse(httpResponse),
+      applyCookies(httpResponse),
+    )
+  ),
+  resultEither(_ => getResponse(_.httpResponse, _.decoded)),
+)
+
 export function requestSignIn(
   client: FetchClientEither,
   session: ICloudSession,
@@ -94,17 +120,7 @@ export function requestSignIn(
       },
     ),
     client,
-    pipe(
-      session,
-      createHttpResponseReducer1(
-        getResponse,
-        (session, httpResponse) =>
-          pipe(
-            session,
-            applyAuthorizationResponse(httpResponse),
-            applyCookies(httpResponse),
-          ),
-      ),
-    ),
+    TE.map(applyResponse),
+    TE.chain(apply(session)),
   )
 }
