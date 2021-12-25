@@ -23,6 +23,9 @@ export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItem
 export type Root =
   | DetailsRoot
   | DetailsTrash
+  | DetailsFolder
+  | DetailsAppLibrary
+
 // | Details
 
 export type Details =

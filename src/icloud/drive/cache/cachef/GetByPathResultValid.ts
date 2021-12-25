@@ -2,9 +2,9 @@ import * as A from 'fp-ts/lib/Array'
 import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
-import { DetailsAppLibrary, DetailsFolder, DriveChildrenItemFile, fileName, Root } from '../requests/types/types'
-import * as H from './validation'
+import { normalizePath } from '../../../../cli/cli-drive/cli-drive-actions/helpers'
+import * as H from '../../fdrive/validation'
+import { DetailsAppLibrary, DetailsFolder, DriveChildrenItemFile, fileName, Root } from '../../requests/types/types'
 
 export type GetByPathResultValid<H> = {
   valid: true

@@ -9,9 +9,9 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
-import { Cache } from '../../../icloud/drive/cache/Cache'
+import * as C from '../../../icloud/drive/cache/cachef'
+import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cachef/GetByPathResultValid'
 import * as DF from '../../../icloud/drive/fdrive'
-import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/fdrive/GetByPathResultValid'
 import { lsss } from '../../../icloud/drive/fdrive/lsss'
 import {
   Details,
@@ -53,49 +53,9 @@ const formatDate = (date: Date | string) =>
       ].join(' '),
   )
 
-const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (item: DriveChildrenItem) =>
-    item.type === 'FILE'
-      ? [
-        item.etag,
-        formatDate(item.dateModified),
-        ...[showDrivewsid ? [item.drivewsid] : []],
-        ...[showDocwsid ? [item.docwsid] : []],
-        item.size,
-        fileName(item),
-      ]
-        .join(`\t`)
-      : [
-        item.etag,
-        formatDate(item.dateCreated),
-        ...[showDrivewsid ? [item.drivewsid] : []],
-        ...[showDocwsid ? [item.docwsid] : []],
-        item.type,
-        fileName(item) + '/',
-      ]
-        .join(`\t`)
-
 const showWithFullPath = (path: string) => flow(fileName, joinWithPath(path))
 
 const showRaw = (result: Details | DriveChildrenItem) => JSON.stringify(result)
-
-export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (result: DriveChildrenItemFile) =>
-    [
-      ['name', fileName(result)],
-      ['size', result.size],
-      ['dateCreated', formatDate(result.dateCreated)],
-      ['dateChanged', formatDate(result.dateChanged)],
-      ['dateModified', formatDate(result.dateModified)],
-      ['drivewsid', result.drivewsid],
-      ['docwsid', result.docwsid],
-      ['etag', result.etag],
-      ['parentId', result.parentId],
-      ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
-      ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
-    ]
-      .map(_ => _.join(':\t'))
-      .join('\n')
 
 type Row = [string, string | number]
 type Element = Row | string | false | Element[]
@@ -120,17 +80,6 @@ const Folder = ({ details }: { details: DetailsRoot | DetailsRegular }): Element
   ]
 }
 
-export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (details: Details) =>
-    pipe(
-      [
-        isTrashDetailsG(details)
-          ? Trash({ details })
-          : Folder({ details }),
-      ],
-      showElements,
-    )
-
 const isRow = (input: Row | Element[]): input is Row => {
   return input.length == 2
     && typeof input[0] === 'string'
@@ -145,6 +94,57 @@ const showElements = (elements: Element[]): string => {
     _ => _.join('\n'),
   )
 }
+
+export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+  (details: Details) =>
+    pipe(
+      [
+        isTrashDetailsG(details)
+          ? Trash({ details })
+          : Folder({ details }),
+      ],
+      showElements,
+    )
+
+export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+  (result: DriveChildrenItemFile) =>
+    [
+      ['name', fileName(result)],
+      ['size', result.size],
+      ['dateCreated', formatDate(result.dateCreated)],
+      ['dateChanged', formatDate(result.dateChanged)],
+      ['dateModified', formatDate(result.dateModified)],
+      ['drivewsid', result.drivewsid],
+      ['docwsid', result.docwsid],
+      ['etag', result.etag],
+      ['parentId', result.parentId],
+      ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
+      ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
+    ]
+      .map(_ => _.join(':\t'))
+      .join('\n')
+
+const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+  (item: DriveChildrenItem) =>
+    item.type === 'FILE'
+      ? [
+        item.etag,
+        formatDate(item.dateModified),
+        ...[showDrivewsid ? [item.drivewsid] : []],
+        ...[showDocwsid ? [item.docwsid] : []],
+        item.size,
+        fileName(item),
+      ]
+        .join(`\t`)
+      : [
+        item.etag,
+        formatDate(item.dateCreated),
+        ...[showDrivewsid ? [item.drivewsid] : []],
+        ...[showDocwsid ? [item.docwsid] : []],
+        item.type,
+        fileName(item) + '/',
+      ]
+        .join(`\t`)
 
 const ordByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
 const ordByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)
@@ -165,11 +165,15 @@ export const showDetailsInfo = (
         O.fromPredicate(() => printFolderInfo),
         O.map(showFolderInfo({ showDrivewsid, showDocwsid })),
         O.fold(constant(string.empty), identity),
-      ),
+      ) + '\n',
       pipe(
         details.items,
         A.sortBy([ordByType, ordByName]),
-        A.map(fullPath ? showWithFullPath(path) : showItemRow({ showDrivewsid, showDocwsid })),
+        A.map(
+          fullPath
+            ? showWithFullPath(path)
+            : showItemRow({ showDrivewsid, showDocwsid }),
+        ),
         _ => _.join('\n'),
       ),
     )
@@ -259,7 +263,7 @@ export const listUnixPath = (
           DF.getFolderRecursive(paths[0], depth)(cache)({ api }),
           noCache
             ? TE.chainFirst(() => TE.of(constVoid()))
-            : TE.chainFirst(([item, cache]) => Cache.trySaveFile(cache, cacheFile)),
+            : TE.chainFirst(([item, cache]) => C.trySaveFile(cache, cacheFile)),
           TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
         ),
     )

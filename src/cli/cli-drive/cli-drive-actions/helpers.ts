@@ -7,7 +7,7 @@ import { groupBy } from 'fp-ts/lib/NonEmptyArray'
 import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
 import { isDeepStrictEqual } from 'util'
-import { Cache } from '../../../icloud/drive/cache/Cache'
+import * as C from '../../../icloud/drive/cache/cachef'
 import { isDetailsCacheEntity } from '../../../icloud/drive/cache/types'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from '../../../icloud/drive/requests/types/types-io'
@@ -41,36 +41,6 @@ export const compareHierarchiesItem = (
       name: actual.name,
       extension: actual.extension,
     }],
-  )
-}
-
-export const getCachedDetailsPartialWithHierarchyById = (
-  cache: Cache,
-  drivewsid: string,
-): E.Either<Error, T.DriveDetailsPartialWithHierarchy> => {
-  return pipe(
-    E.Do,
-    E.bind('details', () =>
-      pipe(
-        cache.getFolderByIdE(drivewsid),
-        E.filterOrElse(isDetailsCacheEntity, () => err(`missing details`)),
-      )),
-    E.bind('hierarchy', () =>
-      pipe(
-        cache.getCachedHierarchyById(drivewsid),
-        E.map(A.dropRight(1)),
-      )),
-    E.bind('items', ({ details }) =>
-      E.of(details.content.items.map(item => ({
-        drivewsid: item.drivewsid,
-        docwsid: item.docwsid,
-        etag: item.etag,
-      })))),
-    E.map(({ details, items, hierarchy }): T.DriveDetailsPartialWithHierarchy => ({
-      ...details.content,
-      items,
-      hierarchy,
-    })),
   )
 }
 

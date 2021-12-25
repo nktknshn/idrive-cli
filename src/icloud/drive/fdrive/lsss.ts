@@ -1,9 +1,11 @@
+import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { fromEquals } from 'fp-ts/lib/Eq'
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
+import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
@@ -11,11 +13,12 @@ import { NonRootDrivewsid, NormalizedPath } from '../../../cli/cli-drive/cli-dri
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
+import * as C from '../cache/cachef'
+import * as V from '../cache/cachef/GetByPathResultValid'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { findInParent, recordFromTuples } from '../helpers'
 import * as T from '../requests/types/types'
-import * as V from './GetByPathResultValid'
 import { modifySubsetDF } from './modifySubsetDF'
 import * as H from './validation'
 
@@ -168,7 +171,7 @@ export const validateCachedPaths = <R extends T.Root>(
         SRTE.fromEither(
           pipe(
             paths,
-            NA.map(path => cache.getByPathVER(root, path)),
+            NA.map(path => pipe(cache, C.getByPath(root, path))),
             E.sequenceArray,
             E.map(_ => _ as NEA<V.GetByPathResult<H.Hierarchy<R>>>),
           ),
@@ -366,4 +369,30 @@ export const lsssG = <R extends T.Root>(
   paths: NEA<NormalizedPath>,
 ): DF.DriveM<NEA<V.HierarchyResult<R>>> => {
   return getByPaths(root, paths)
+}
+
+export const lssE = <R extends T.Root>(
+  root: R,
+  paths: NEA<NormalizedPath>,
+): DF.DriveM<DF.DetailsOrFile<R>[]> => {
+  assert(A.isNonEmpty(paths))
+
+  return pipe(
+    lsss(root, paths),
+    DF.chain(
+      flow(
+        NA.map(res =>
+          res.valid
+            ? DF.of(V.target(res))
+            : DF.left<DF.DetailsOrFile<R>>(
+              err(
+                `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
+              ),
+            )
+        ),
+        SRTE.sequenceArray,
+        SRTE.map(RA.toArray),
+      ),
+    ),
+  )
 }

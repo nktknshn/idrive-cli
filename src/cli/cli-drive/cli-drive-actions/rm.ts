@@ -37,7 +37,7 @@ export const rm = (
       DF.Do,
       SRTE.bind('items', () =>
         pipe(
-          DF.chainRoot(root => DF.lss(root, npaths)),
+          DF.chainRoot(root => DF.lssE(root, npaths)),
           SRTE.filterOrElse(not(A.some(isCloudDocsRootDetails)), () => err(`you cannot remove root`)),
         )),
       SRTE.bind('result', ({ items }) =>

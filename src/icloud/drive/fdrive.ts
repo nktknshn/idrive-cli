@@ -1,3 +1,4 @@
+import assert from 'assert'
 import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
@@ -13,26 +14,28 @@ import { NonRootDrivewsid, NormalizedPath } from '../../cli/cli-drive/cli-drive-
 import { err } from '../../lib/errors'
 import { cacheLogger, logger, logReturnAs, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
-import { Cache } from './cache/Cache'
+// import { Cache } from './cache/Cache
+import * as C from '../drive/cache/cachef'
+import { GetByPathResult } from './cache/cachef/GetByPathResultValid'
 import { DriveApi } from './drive-api'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
-import { GetByPathResult } from './fdrive/GetByPathResultValid'
-import { lss } from './fdrive/lss'
-import { lsss } from './fdrive/lsss'
+import { lssE, lsss } from './fdrive/lsss'
 import { Hierarchy } from './fdrive/validation'
 import { getMissedFound, parsePath } from './helpers'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
-export { lss }
+export { lssE }
+
+export type DetailsOrFile<R> = (R | T.DetailsRegular | T.DriveChildrenItemFile)
 
 export type DriveMEnv = {
   api: DriveApi
 }
 
-export type DriveM<A> = SRTE.StateReaderTaskEither<Cache, DriveMEnv, Error, A>
+export type DriveM<A> = SRTE.StateReaderTaskEither<C.Cache, DriveMEnv, Error, A>
 
-export const Do = SRTE.of<Cache, DriveMEnv, Error, {}>({})
+export const Do = SRTE.of<C.Cache, DriveMEnv, Error, {}>({})
 
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
@@ -50,7 +53,7 @@ export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): Driv
 
 export const ls = <R extends T.Root>(root: R, path: NormalizedPath) =>
   pipe(
-    lss(root, [path]),
+    lssE(root, [path]),
     chain(
       flow(A.lookup(0), fromOption(() => err(`wat`))),
     ),
@@ -58,7 +61,7 @@ export const ls = <R extends T.Root>(root: R, path: NormalizedPath) =>
 
 export const lsdir = <R extends T.Root>(root: R, path: NormalizedPath) =>
   pipe(
-    lss(root, [path]),
+    lssE(root, [path]),
     chain(
       flow(A.lookup(0), fromOption(() => err(`wat`))),
     ),
@@ -81,7 +84,7 @@ export const chainRoot = <R>(
     SRTE.chain(() =>
       pipe(
         readEnv,
-        chain(({ cache }) => SRTE.fromEither(cache.getRootE())),
+        chain(({ cache }) => SRTE.fromEither(C.getRoot()(cache))),
         map(_ => _.content),
         chain(f),
       )
@@ -97,7 +100,7 @@ export const chainTrash = <R>(
     SRTE.chain(() =>
       pipe(
         readEnv,
-        chain(({ cache }) => SRTE.fromEither(cache.getTrashE())),
+        chain(({ cache }) => SRTE.fromEither(C.getTrashE()(cache))),
         map(_ => _.content),
         chain(f),
       )
@@ -106,8 +109,8 @@ export const chainTrash = <R>(
 }
 
 export const readEnv = sequenceS(SRTE.Apply)({
-  cache: SRTE.get<Cache, DriveMEnv>(),
-  env: SRTE.ask<Cache, DriveMEnv>(),
+  cache: SRTE.get<C.Cache, DriveMEnv>(),
+  env: SRTE.ask<C.Cache, DriveMEnv>(),
 })
 
 export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
@@ -189,11 +192,11 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.May
     readEnv,
     SRTE.bind('task', ({ cache }) =>
       SRTE.fromEither(pipe(
-        cache.getFolderDetailsByIdsSeparated(drivewsids),
+        C.getFolderDetailsByIdsSeparated(drivewsids)(cache),
       ))),
     SRTE.chain(({ env, task: { missed } }) =>
       pipe(
-        SRTE.fromTaskEither<Error, { found: T.Details[]; missed: string[] }, Cache, DriveMEnv>(
+        SRTE.fromTaskEither<Error, { found: T.Details[]; missed: string[] }, C.Cache, DriveMEnv>(
           missed.length > 0
             ? env.api.retrieveItemDetailsInFoldersS(missed)
             : TE.of({ missed: [], found: [] }),
@@ -206,7 +209,7 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.May
         readEnv,
         SRTE.chain(({ cache }) =>
           SRTE.fromEither(pipe(
-            cache.getFolderDetailsByIds(drivewsids),
+            C.getFolderDetailsByIds(drivewsids)(cache),
           ))
         ),
       )
@@ -314,7 +317,7 @@ export const ensureDetailsForFolderLike = (
       : SRTE.of(itemOrDetails),
   )
 
-export const withCache = <T>(initialCache: Cache, sg: Semigroup<Cache>) =>
+export const withCache = <T>(initialCache: C.Cache, sg: Semigroup<C.Cache>) =>
   (
     f: () => DriveM<T>,
   ): DriveM<T> =>
@@ -326,8 +329,8 @@ export const withCache = <T>(initialCache: Cache, sg: Semigroup<Cache>) =>
           SRTE.chain(f),
           SRTE.chainW(result =>
             pipe(
-              SRTE.get<Cache, DriveMEnv, Error>(),
-              SRTE.chain((c: Cache) => SRTE.put(sg.concat(cache, c))),
+              SRTE.get<C.Cache, DriveMEnv, Error>(),
+              SRTE.chain((c: C.Cache) => SRTE.put(sg.concat(cache, c))),
               SRTE.map(() => result),
             )
           ),
@@ -335,14 +338,8 @@ export const withCache = <T>(initialCache: Cache, sg: Semigroup<Cache>) =>
       ),
     )
 
-export const withEmptyCache = <T>(sg: Semigroup<Cache>) =>
-  (f: () => DriveM<T>): DriveM<T> => withCache<T>(Cache.create(), sg)(f)
-
-type DetailsOrFile = T.DriveFolderLike | T.DriveChildrenItemFile
-type MaybePartial = E.Either<
-  { validPath: NA.NonEmptyArray<T.Details>; rest: string[] },
-  DetailsOrFile
->
+export const withEmptyCache = <T>(sg: Semigroup<C.Cache>) =>
+  (f: () => DriveM<T>): DriveM<T> => withCache<T>(C.cachef(), sg)(f)
 
 /*
 class NotFoundErrorWithIndex extends Error {
@@ -414,7 +411,7 @@ export const logCache = (msg?: string) =>
   () =>
     pipe(
       readEnv,
-      SRTE.map(_ => _.cache.get()),
+      SRTE.map(_ => _.cache),
       SRTE.map(logReturnAs(`${msg ?? ''} cache`)),
     )
 
@@ -468,7 +465,8 @@ export const putDetailss = (detailss: T.Details[]): DriveM<void> =>
     readEnv,
     SRTE.chainW(({ cache }) =>
       pipe(
-        cache.putDetailss(detailss),
+        cache,
+        C.putDetailss(detailss),
         SRTE.fromEither,
         SRTE.chain(cache => SRTE.put(cache)),
         SRTE.map(constVoid),
@@ -482,7 +480,7 @@ export const removeByIds = (drivewsids: string[]): DriveM<void> =>
     readEnv,
     SRTE.chainW(({ cache }) =>
       pipe(
-        SRTE.put(cache.removeByIds(drivewsids)),
+        SRTE.put(C.removeByIds(drivewsids)(cache)),
         SRTE.map(constVoid),
         // SRTE.map(() => detailss),
       )
@@ -494,7 +492,7 @@ export const putItems = (detailss: T.DriveChildrenItem[]): DriveM<void> =>
     readEnv,
     SRTE.chainW(({ cache }) =>
       pipe(
-        cache.putItems(detailss),
+        C.putItems(detailss)(cache),
         SRTE.fromEither,
         SRTE.chain(cache => SRTE.put(cache)),
         SRTE.map(constVoid),
@@ -517,8 +515,8 @@ export const updateFoldersDetails = (
             getMissedFound(drivewsids, details),
             ({ missed, found }) =>
               pipe(
-                cache.removeByIds(missed),
-                _ => _.putDetailss(found),
+                C.removeByIds(missed)(cache),
+                C.putDetailss(found),
               ),
             SRTE.fromEither,
             SRTE.chain(cache => SRTE.put(cache)),
@@ -534,7 +532,7 @@ export const saveCache = (cacheFile: string) =>
   () =>
     pipe(
       readEnv,
-      SRTE.chain(({ cache }) => SRTE.fromTaskEither(Cache.trySaveFile(cache, cacheFile))),
+      SRTE.chain(({ cache }) => SRTE.fromTaskEither(C.trySaveFile(cache, cacheFile))),
     )
 
 export const saveCacheFirst = <T>(cacheFile: string) =>
@@ -545,7 +543,7 @@ export const saveCacheFirst = <T>(cacheFile: string) =>
         pipe(
           readEnv,
           logS(() => `saving cache`, cacheLogger.debug),
-          SRTE.chain(({ cache }) => SRTE.fromTaskEither(Cache.trySaveFile(cache, cacheFile))),
+          SRTE.chain(({ cache }) => SRTE.fromTaskEither(C.trySaveFile(cache, cacheFile))),
           SRTE.chain(() => of(v)),
         )
       ),

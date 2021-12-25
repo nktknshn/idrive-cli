@@ -5,8 +5,8 @@ import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { normalizePath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile } from './config'
-import * as Cache from './icloud/drive/cache/Cache'
-import * as GetByPathResultValid from './icloud/drive/fdrive/GetByPathResultValid'
+import * as C from './icloud/drive/cache/cachef'
+import * as GetByPathResultValid from './icloud/drive/cache/cachef/GetByPathResultValid'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
 function parseArgs() {
@@ -54,16 +54,16 @@ async function main() {
         TE.Do,
         TE.bind('cache', () =>
           pipe(
-            Cache.Cache.tryReadFromFile(argv.cacheFile),
-            TE.map(Cache.Cache.create),
+            C.tryReadFromFile(argv.cacheFile),
+            TE.map(C.cachef),
           )),
-        TE.map(({ cache }) =>
+        TE.bind('root', ({ cache }) => TE.fromEither(C.getRoot()(cache))),
+        TE.map(({ cache, root }) =>
           pipe(
             isDrivewsid(argv.path)
-              ? cache.getByIdWithPath(argv.path)
+              ? C.getByIdWithPath(argv.path)
               : pipe(
-                normalizePath(argv.path),
-                cache.getByPathVE,
+                C.getByPath(root.content, normalizePath(argv.path))(cache),
                 E.fold((e) => `Error: ${e.message}`, GetByPathResultValid.showGetByPathResult),
                 // logReturnAs('result'),
               ),
