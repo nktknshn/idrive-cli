@@ -5,10 +5,21 @@ export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 export const cloudDocsZone = 'com.apple.CloudDocs'
 export const trashDrivewsid = 'TRASH_ROOT'
 
+export interface NonRootDrivewsidBrand {
+  readonly NonRootDrivewsid: unique symbol
+}
+
+export const nonRootDrivewsid = t.brand(
+  t.string,
+  (drivewsid: string): drivewsid is t.Branded<string, NonRootDrivewsidBrand> => {
+    return drivewsid !== rootDrivewsid && drivewsid !== trashDrivewsid
+  },
+  'NonRootDrivewsid',
+)
+
 export const genericItem = t.intersection([
   t.type({
     dateCreated: t.string,
-    drivewsid: t.string,
     docwsid: t.string,
     zone: t.string,
     name: t.string,
@@ -21,7 +32,8 @@ export const genericItem = t.intersection([
 ])
 
 export const itemRoot = t.intersection([
-  omit('drivewsid', genericItem),
+  // omit('drivewsid', genericItem),
+  genericItem,
   t.type({
     drivewsid: t.literal(rootDrivewsid),
   }),
@@ -30,6 +42,7 @@ export const itemRoot = t.intersection([
 export const itemFolder = t.intersection([
   genericItem,
   t.type({
+    drivewsid: nonRootDrivewsid,
     parentId: t.string,
     type: t.literal('FOLDER'),
     assetQuota: t.number,
@@ -47,6 +60,7 @@ export const itemFile = t.intersection([
   genericItem,
   t.intersection([
     t.type({
+      drivewsid: nonRootDrivewsid,
       parentId: t.string,
       type: t.literal('FILE'),
       size: t.number,
@@ -65,6 +79,7 @@ export const icon = t.type({ url: t.string, type: t.string, size: t.number })
 export const itemAppLibrary = t.intersection([
   genericItem,
   t.type({
+    drivewsid: nonRootDrivewsid,
     parentId: t.string,
     type: t.literal('APP_LIBRARY'),
     maxDepth: t.string,
@@ -106,7 +121,6 @@ export const hierarchyEntry = t.union([
 ])
 
 export const hierarchy = t.array(hierarchyEntry)
-// export const hierarchy = t.tuple([t.union([hierarchyRoot, hierarchyTrash]), hierarchyItem])
 
 export const detailsItem = t.union([
   itemFolder,
@@ -115,7 +129,7 @@ export const detailsItem = t.union([
 ])
 
 export const detailsRoot = t.intersection([
-  omit('parentId', itemFolder),
+  omit('drivewsid', omit('parentId', itemFolder)),
   t.type({
     drivewsid: t.literal(rootDrivewsid),
     name: t.literal(''),

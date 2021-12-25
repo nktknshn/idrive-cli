@@ -8,7 +8,7 @@ import * as DF from '../../../icloud/drive/fdrive'
 import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { DetailsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
-import { cliAction } from '../../cli-actionF'
+import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 // type Env = {
@@ -34,9 +34,9 @@ export const upload = (
     overwright: boolean
   },
 ) => {
-  return cliAction(
+  return pipe(
     { sessionFile, cacheFile, noCache },
-    ({ cache, api }) => {
+    cliActionM(({ cache, api }) => {
       const res = pipe(
         DF.chainRoot(root =>
           pipe(
@@ -55,7 +55,7 @@ export const upload = (
         res(cache)({ api }),
         TE.map(fst),
       )
-    },
+    }),
   )
 }
 

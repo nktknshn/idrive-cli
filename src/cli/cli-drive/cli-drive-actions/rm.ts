@@ -7,12 +7,10 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import * as DF from '../../../icloud/drive/fdrive'
-import { isCloudDocsRootDetails, isNotRootDetails } from '../../../icloud/drive/requests/types/types'
+import { isCloudDocsRootDetails } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
-import { Path } from '../../../lib/util'
-import { cliAction } from '../../cli-actionF'
+import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFolderInfo } from './ls'
 
 export const rm = (
   { sessionFile, cacheFile, paths, noCache, trash }: {
@@ -23,40 +21,43 @@ export const rm = (
     trash: boolean
   },
 ) => {
-  return cliAction({
-    sessionFile,
-    cacheFile,
-    noCache,
-    dontSaveCache: true,
-  }, ({ cache, api }) => {
-    assert(A.isNonEmpty(paths))
+  return pipe(
+    {
+      sessionFile,
+      cacheFile,
+      noCache,
+      dontSaveCache: true,
+    },
+    cliActionM(({ cache, api }) => {
+      assert(A.isNonEmpty(paths))
 
-    const npaths = pipe(paths, NA.map(normalizePath))
+      const npaths = pipe(paths, NA.map(normalizePath))
 
-    const res = pipe(
-      DF.Do,
-      SRTE.bind('items', () =>
-        pipe(
-          DF.chainRoot(root => DF.lssE(root, npaths)),
-          SRTE.filterOrElse(not(A.some(isCloudDocsRootDetails)), () => err(`you cannot remove root`)),
-        )),
-      SRTE.bind('result', ({ items }) =>
-        pipe(
-          api.moveItemsToTrash(items, trash),
-          SRTE.fromTaskEither,
-          SRTE.chain(
-            resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
-          ),
-        )),
-      // SRTE.chain(() => DF.lsdir(parentPath)),
-      DF.saveCacheFirst(cacheFile),
-      DF.map(() => `Success.`),
-      // SRTE.map(showDetailsInfo({
-      //   fullPath: false,
-      //   path: '',
-      // })),
-    )
+      const res = pipe(
+        DF.Do,
+        SRTE.bind('items', () =>
+          pipe(
+            DF.chainRoot(root => DF.lssE(root, npaths)),
+            SRTE.filterOrElse(not(A.some(isCloudDocsRootDetails)), () => err(`you cannot remove root`)),
+          )),
+        SRTE.bind('result', ({ items }) =>
+          pipe(
+            api.moveItemsToTrash(items, trash),
+            SRTE.fromTaskEither,
+            SRTE.chain(
+              resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
+            ),
+          )),
+        // SRTE.chain(() => DF.lsdir(parentPath)),
+        DF.saveCacheFirst(cacheFile),
+        DF.map(() => `Success.`),
+        // SRTE.map(showDetailsInfo({
+        //   fullPath: false,
+        //   path: '',
+        // })),
+      )
 
-    return pipe(res(cache)({ api }), TE.map(fst))
-  })
+      return pipe(res(cache)({ api }), TE.map(fst))
+    }),
+  )
 }

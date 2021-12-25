@@ -10,7 +10,7 @@ import * as R from 'fp-ts/lib/Record'
 import { Semigroup } from 'fp-ts/lib/Semigroup'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { NonRootDrivewsid, NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
+import { NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { cacheLogger, logger, logReturnAs, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
@@ -153,7 +153,7 @@ export const retrieveItemDetailsInFoldersSaving = (
   )
 
 export function retrieveItemDetailsInFoldersSavingNEA<R extends T.Root>(
-  drivewsids: [R['drivewsid'], ...NonRootDrivewsid[]],
+  drivewsids: [R['drivewsid'], ...T.NonRootDrivewsid[]],
 ): DriveM<[O.Some<R>, ...O.Option<T.DetailsRegular>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof rootDrivewsid, ...string[]],

@@ -4,7 +4,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
 import yargs, { Options } from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { cliAction, cliActionM } from './cli/cli-action'
+import { cliActionM } from './cli/cli-action'
 import * as AS from './cli/cli-drive/cli-drive-actions'
 import { normalizePath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile, defaultSessionFile } from './config'
@@ -70,15 +70,14 @@ const ls = (
 const recover = (
   argv: { sessionFile: string; cacheFile: string; noCache: boolean; path: string },
 ) => {
-  return cliAction(
-    argv,
+  return cliActionM(
     ({ cache, api }) => {
       return pipe(
         api.retrieveTrashDetails(),
         TE.map(_ => _.items.map(fileName).join('\n')),
       )
     },
-  )
+  )(argv)
 }
 
 const commands = { ls, recover }

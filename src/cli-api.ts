@@ -1,25 +1,21 @@
-import assert from 'assert'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import { apiAction, apiActionM } from './cli/cli-actionF'
+import { apiActionM } from './cli/api-action'
 import { hierarchyToPath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { parseArgs } from './cli/cli-trash/cli-trash-args'
 import { parseName } from './icloud/drive/helpers'
-import { retrieveHierarchy } from './icloud/drive/requests'
-import { ensureError, err } from './lib/errors'
-import { fetchClient } from './lib/http/fetch-client'
-import { apiLogger, cacheLogger, initLoggers, logger, loggingLevels, printer, stderrLogger } from './lib/logging'
-import { isKeyOf, Path } from './lib/util'
+import { ensureError } from './lib/errors'
+import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
+import { isKeyOf } from './lib/util'
 
 const retrieveTrashDetails = (argv: {
   sessionFile: string
 }) => {
-  return apiAction(
-    { sessionFile: argv.sessionFile },
+  return apiActionM(
     ({ api }) => pipe(api.retrieveTrashDetails()),
-  )
+  )({ sessionFile: argv.sessionFile })
 }
 
 const putBackItemsFromTrash = (argv: {
@@ -39,82 +35,72 @@ const putBackItemsFromTrash = (argv: {
   )
 }
 
+const rename = (argv: {
+  sessionFile: string
+  raw: boolean
+  debug: boolean
+  drivewsid: string
+  name: string
+  etag: string
+}) =>
+  apiActionM(
+    ({ api }) =>
+      pipe(
+        api.renameItems([
+          { drivewsid: argv.drivewsid, ...parseName(argv.name), etag: argv.etag },
+        ]),
+      ),
+  )({ sessionFile: argv.sessionFile })
+
+const retrieveItemDetailsInFolders = (argv: {
+  sessionFile: string
+  raw: boolean
+  debug: boolean
+  drivewsids: string[]
+  h: boolean
+}) =>
+  apiActionM(
+    ({ api }) =>
+      pipe(
+        (argv.h
+          ? api.retrieveItemDetailsInFoldersHierarchies
+          : api.retrieveItemDetailsInFolders)(argv.drivewsids),
+      ),
+  )({ sessionFile: argv.sessionFile })
+
+const retrieveItemDetails = (argv: {
+  sessionFile: string
+  raw: boolean
+  debug: boolean
+  drivewsids: string[]
+}) =>
+  apiActionM(
+    ({ api }) =>
+      pipe(
+        api.retrieveItemsDetails(argv.drivewsids),
+      ),
+  )({ sessionFile: argv.sessionFile })
+
+const retrieveHierarchy = (argv: {
+  sessionFile: string
+  raw: boolean
+  debug: boolean
+  drivewsids: string[]
+}) =>
+  apiActionM(
+    ({ api, session, accountData }) =>
+      pipe(
+        TE.Do,
+        TE.bind('hierarchy', () => api.retrieveHierarchy(argv.drivewsids)),
+        TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
+      ),
+  )({ sessionFile: argv.sessionFile })
+
 const actions = {
-  retrieveHierarchy: (argv: {
-    sessionFile: string
-    raw: boolean
-    debug: boolean
-    drivewsids: string[]
-  }) =>
-    apiAction(
-      { sessionFile: argv.sessionFile },
-      ({ api, session, accountData }) =>
-        pipe(
-          TE.Do,
-          TE.bind('hierarchy', () => api.retrieveHierarchy(argv.drivewsids)),
-          TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
-        ),
-    ),
-  retrieveItemDetails: (argv: {
-    sessionFile: string
-    raw: boolean
-    debug: boolean
-    drivewsids: string[]
-  }) =>
-    apiAction(
-      { sessionFile: argv.sessionFile },
-      ({ api }) =>
-        pipe(
-          TE.Do,
-          TE.bind('details', () => api.retrieveItemsDetails(argv.drivewsids)),
-          // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
-        ),
-    ),
-  retrieveItemDetailsInFolders: (argv: {
-    sessionFile: string
-    raw: boolean
-    debug: boolean
-    drivewsids: string[]
-    h: boolean
-  }) =>
-    apiAction(
-      { sessionFile: argv.sessionFile },
-      ({ api }) =>
-        pipe(
-          TE.Do,
-          TE.bind(
-            'details',
-            () =>
-              (argv.h
-                ? api.retrieveItemDetailsInFoldersHierarchies
-                : api.retrieveItemDetailsInFolders)(argv.drivewsids),
-          ),
-          // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
-        ),
-    ),
-  rename: (argv: {
-    sessionFile: string
-    raw: boolean
-    debug: boolean
-    drivewsid: string
-    name: string
-    etag: string
-  }) =>
-    apiAction(
-      { sessionFile: argv.sessionFile },
-      ({ api }) =>
-        pipe(
-          TE.Do,
-          TE.bind(
-            'result',
-            () =>
-              api.renameItems([
-                { drivewsid: argv.drivewsid, ...parseName(argv.name), etag: argv.etag },
-              ]),
-          ),
-          // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
-        ),
-    ),
+  retrieveHierarchy,
+  retrieveItemDetails,
+  retrieveItemDetailsInFolders,
+  rename,
   retrieveTrashDetails,
   putBackItemsFromTrash,
 }
@@ -130,7 +116,6 @@ async function main() {
     sys.exit(1)
     return
   }
-  // assert(typeof command === 'string' && validateAction(command))
 
   const te: TE.TaskEither<Error, unknown> = actions[command](argv)
 
@@ -140,9 +125,6 @@ async function main() {
     TE.mapLeft(ensureError),
     TE.fold(printer.errorTask, printer.printTask),
   )()
-  // logger.debug(argv)
-
-  // const [command] = argv._
 }
 
 main()

@@ -29,7 +29,7 @@ import {
   RecursiveFolder,
 } from '../../../icloud/drive/requests/types/types'
 import { NEA } from '../../../lib/types'
-import { cliAction } from '../../cli-action'
+import { cliActionM } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
@@ -256,16 +256,18 @@ export const listUnixPath = (
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
   if (recursive) {
-    return cliAction(
+    return pipe(
       { sessionFile, cacheFile, noCache },
-      ({ cache, api }) =>
-        pipe(
-          DF.getFolderRecursive(paths[0], depth)(cache)({ api }),
-          noCache
-            ? TE.chainFirst(() => TE.of(constVoid()))
-            : TE.chainFirst(([item, cache]) => C.trySaveFile(cache, cacheFile)),
-          TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
-        ),
+      cliActionM(
+        ({ cache, api }) =>
+          pipe(
+            DF.getFolderRecursive(paths[0], depth)(cache)({ api }),
+            noCache
+              ? TE.chainFirst(() => TE.of(constVoid()))
+              : TE.chainFirst(([item, cache]) => C.trySaveFile(cache, cacheFile)),
+            TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
+          ),
+      ),
     )
   }
 
@@ -274,9 +276,9 @@ export const listUnixPath = (
 
   assert(A.isNonEmpty(npaths))
 
-  return cliAction(
+  return pipe(
     { sessionFile, cacheFile, noCache },
-    ({ cache, api }) => {
+    cliActionM(({ cache, api }) => {
       const res = pipe(
         DF.readEnv,
         DF.chain((): DF.DriveM<NEA<HierarchyResult<DetailsTrash | DetailsRoot>>> =>
@@ -310,6 +312,6 @@ export const listUnixPath = (
       )
 
       return res
-    },
+    }),
   )
 }

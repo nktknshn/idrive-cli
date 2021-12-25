@@ -8,6 +8,8 @@ import * as t from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../../lib/util'
 import * as types from './types-io'
 
+export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>
+
 export interface DetailsTrash extends TypeOf<typeof types.detailsTrash> {}
 
 export interface DetailsRoot extends TypeOf<typeof types.detailsRoot> {}
@@ -23,8 +25,8 @@ export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItem
 export type Root =
   | DetailsRoot
   | DetailsTrash
-  | DetailsFolder
-  | DetailsAppLibrary
+// | DetailsFolder
+// | DetailsAppLibrary
 
 // | Details
 

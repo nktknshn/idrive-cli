@@ -20,7 +20,7 @@ import {
 } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
-import { cliAction } from '../../cli-action'
+import { cliActionM } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
@@ -136,9 +136,9 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
   srcpath: string
   dstpath: string
 }) => {
-  return cliAction(
+  return pipe(
     { sessionFile, cacheFile, noCache },
-    ({ cache, api }) => {
+    cliActionM(({ cache, api }) => {
       const nsrc = normalizePath(srcpath)
       const ndst = normalizePath(dstpath)
 
@@ -155,6 +155,6 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
       )
 
       return pipe(res(cache)({ api }), TE.map(fst))
-    },
+    }),
   )
 }

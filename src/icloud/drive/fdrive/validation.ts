@@ -16,7 +16,7 @@ import {
   Root,
 } from '../requests/types/types'
 
-export type Hierarchy<R extends Root> = [R, ...DetailsRegular[]]
+export type Hierarchy<R> = [R, ...DetailsRegular[]]
 
 export const tail = <R extends Root>([, ...tail]: Hierarchy<R>) => tail
 
@@ -104,8 +104,7 @@ export const validPath = <H>(validPart: H): Valid<H> => ({
   details: validPart,
 })
 
-export const concat = <R extends Root>(h: Hierarchy<R>, details: NEA<Details>): Hierarchy<R> =>
-  NA.concat(h, details) as Hierarchy<R>
+export const concat = <R>(h: Hierarchy<R>, details: NEA<Details>): Hierarchy<R> => [...h, ...details] as Hierarchy<R>
 
 export const eq = <R extends Root>(): Eq<Hierarchy<R>> => ({
   equals: (a, b) => {

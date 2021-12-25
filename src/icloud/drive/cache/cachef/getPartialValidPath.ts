@@ -8,7 +8,14 @@ import { NEA } from '../../../../lib/types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../../errors'
 import * as H from '../../fdrive/validation'
 import { findInParent } from '../../helpers'
-import { Details, DriveChildrenItemFile, fileName, isTrashDetails, Root } from '../../requests/types/types'
+import {
+  Details,
+  DetailsRegular,
+  DriveChildrenItemFile,
+  fileName,
+  isTrashDetails,
+  Root,
+} from '../../requests/types/types'
 import * as C from '../cachef'
 import { CacheF } from '../types'
 import { GetByPathResult } from './GetByPathResultValid'
@@ -20,7 +27,7 @@ const showDetails = (d: Details): string => {
 /**
  * Tries to get starting from `parentEntity`
  */
-export const getFromCacheByPath = <R extends Root>(
+export const getFromCacheByPath = <R extends Root | DetailsRegular>(
   path: string[],
   parentEntity: R,
 ) =>

@@ -1,4 +1,5 @@
 import assert from 'assert'
+import { string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { fromEquals } from 'fp-ts/lib/Eq'
@@ -9,7 +10,7 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import { NonRootDrivewsid, NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
+import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
@@ -22,18 +23,8 @@ import * as T from '../requests/types/types'
 import { modifySubsetDF } from './modifySubsetDF'
 import * as H from './validation'
 
-const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
-
-const toActual = (
-  cachedPath: T.DetailsRegular[],
-  actualsRecord: Record<string, O.Option<T.DetailsRegular>>,
-): O.Option<T.DetailsRegular>[] => {
-  return pipe(
-    cachedPath,
-    A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
-    A.map(O.flatten),
-  )
-}
+const equalsDrivewsId = <T extends string>() =>
+  fromEquals((a: { drivewsid: T }, b: { drivewsid: T }) => a.drivewsid == b.drivewsid)
 
 const showHierarchiy = (h: H.Hierarchy<T.Root>): string => {
   const [root, ...rest] = h
@@ -41,21 +32,38 @@ const showHierarchiy = (h: H.Hierarchy<T.Root>): string => {
   return `${T.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(T.fileName).join('/')}`
 }
 
+const showDetails = (details: T.Details) => {
+  return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
+    details.items.map(T.fileName)
+  }]`
+}
+
 export const validateHierarchies = <R extends T.Root>(
   root: R,
   cachedHierarchies: NEA<H.Hierarchy<R>>,
 ): DF.DriveM<NEA<H.WithDetails<H.Hierarchy<R>>>> => {
+  const toActual = (
+    cachedPath: T.DetailsRegular[],
+    actualsRecord: Record<string, O.Option<T.DetailsRegular>>,
+  ): O.Option<T.DetailsRegular>[] => {
+    return pipe(
+      cachedPath,
+      A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
+      A.map(O.flatten),
+    )
+  }
+
   const cachedRoot = root
 
-  const cachedPaths = pipe(
+  const cachedRests = pipe(
     cachedHierarchies,
     NA.map(H.tail),
   )
 
   const drivewsids = pipe(
-    cachedPaths,
+    cachedRests,
     A.flatten,
-    A.uniq(equalsDrivewsId),
+    A.uniq(equalsDrivewsId()),
     A.map(_ => _.drivewsid),
   )
 
@@ -69,7 +77,7 @@ export const validateHierarchies = <R extends T.Root>(
           () =>
             DF.retrieveItemDetailsInFoldersSavingNEA<R>([
               cachedRoot.drivewsid,
-              ...(drivewsids as NonRootDrivewsid[]),
+              ...drivewsids,
             ]),
         ),
       ),
@@ -79,7 +87,7 @@ export const validateHierarchies = <R extends T.Root>(
       )
 
       return pipe(
-        cachedPaths,
+        cachedRests,
         NA.map(cachedPath =>
           H.getValidHierarchyPart<R>(
             [cachedRoot, ...cachedPath],
@@ -91,12 +99,6 @@ export const validateHierarchies = <R extends T.Root>(
   )
 
   return res
-}
-
-const showDetails = (details: T.Details) => {
-  return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
-    details.items.map(T.fileName)
-  }]`
 }
 
 const concatCachedWithValidated = <R extends T.Root>(

@@ -10,7 +10,7 @@ import { isDetails, isNotRootDetails } from '../../../icloud/drive/requests/type
 import { err } from '../../../lib/errors'
 import { logger, logReturn, logReturnS } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
-import { cliAction } from '../../cli-actionF'
+import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo, showFolderInfo } from './ls'
 
@@ -30,14 +30,14 @@ export const mkdir = ({
 
   logger.debug(`mkdir(${name} in ${parentPath})`)
 
-  return cliAction(
+  return pipe(
     {
       sessionFile,
       cacheFile,
       noCache,
       dontSaveCache: true,
     },
-    ({ cache, api }) => {
+    cliActionM(({ cache, api }) => {
       const nparentPath = normalizePath(Path.dirname(path))
 
       const res = pipe(
@@ -80,6 +80,6 @@ export const mkdir = ({
       )
 
       return pipe(res(cache)({ api }), TE.map(fst))
-    },
+    }),
   )
 }
