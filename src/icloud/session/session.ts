@@ -84,7 +84,7 @@ export function hasSessionToken(
   return isSome(session.sessionToken)
 }
 
-export const SessionLens = {
+export const sessionLens = {
   cookies: m.Lens.fromProps<ICloudSession>()(['cookies']),
   trustToken: m.Lens.fromProp<ICloudSession>()('trustToken'),
 }

@@ -12,16 +12,16 @@ import { logger } from '../../lib/logging'
 import {
   applyToSession2,
   decodeJsonEither,
-  emptyResult,
   filterStatus,
   filterStatuses,
   ResponseWithSession,
-  result,
-  resultEither,
+  returnEither,
+  returnEmpty,
+  returnS,
   withResponse,
 } from '../drive/requests/filterStatus'
 import { ICloudSession } from '../session/session'
-import { applyCookies, buildRequest } from '../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
 import { authorizationHeaders } from './headers'
 import { applyAuthorizationResponse } from './response'
@@ -92,10 +92,10 @@ const applyResponse = flow(
   applyToSession2(({ httpResponse }) =>
     flow(
       applyAuthorizationResponse(httpResponse),
-      applyCookies(httpResponse),
+      applyCookiesToSession(httpResponse),
     )
   ),
-  resultEither(_ => getResponse(_.httpResponse, _.decoded)),
+  returnEither(_ => getResponse(_.httpResponse, _.decoded)),
 )
 
 export function requestSignIn(
@@ -115,6 +115,7 @@ export function requestSignIn(
       'POST',
       'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
       {
+        addClientInfo: false,
         headers: [headers.default, authorizationHeaders],
         data: { accountName, password, trustTokens, rememberMe: true },
       },

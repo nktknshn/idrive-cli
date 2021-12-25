@@ -6,7 +6,6 @@ import { HttpHeaders, HttpResponse } from './fetch-client'
 
 export const headersToArray = (headers: HttpHeaders) => {
   const hs: (readonly [string, string | string[]])[] = []
-  // .forEach((value, key) => hs.push([key, value] as const))
   Object.entries(headers).forEach(([key, value]) => hs.push([key, value] as const))
 
   return hs
@@ -22,7 +21,3 @@ export const getHeader = (header: string) =>
     )
 
 export const getSetCookie = getHeader('Set-Cookie')
-
-// export const getHeaderOption = (header: string) => flow(getHeader(header), A.head)
-
-// TODO

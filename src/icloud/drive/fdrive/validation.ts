@@ -6,17 +6,17 @@ import * as O from 'fp-ts/lib/Option'
 import { NEA } from '../../../lib/types'
 import {
   Details,
+  DetailsRegular,
   DetailsTrash,
   fileName,
   hasName,
   isCloudDocsRootDetails,
   isRegularDetails,
   isTrashDetails,
-  RegularDetails,
   Root,
 } from '../requests/types/types'
 
-export type Hierarchy<R extends Root> = [R, ...RegularDetails[]]
+export type Hierarchy<R extends Root> = [R, ...DetailsRegular[]]
 
 export const tail = <R extends Root>([, ...tail]: Hierarchy<R>) => tail
 
@@ -43,7 +43,7 @@ const same = (a: Details, b: Details) => {
 
 export const getValidHierarchyPart = <R extends Root>(
   cachedHierarchy: Hierarchy<R>,
-  actualDetails: [R, ...O.Option<RegularDetails>[]],
+  actualDetails: [R, ...O.Option<DetailsRegular>[]],
 ): WithDetails<Hierarchy<R>> => {
   const [actualRoot, ...actualPath] = actualDetails
   const [cachedroot, ...cachedPath] = cachedHierarchy

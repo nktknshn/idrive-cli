@@ -5,7 +5,7 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { applyCookies, buildRequest } from '../../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import { applyToSession, decodeJson, expectJson, filterStatus, ResponseWithSession, withResponse } from './filterStatus'
 import { retrieveItemDetailsInFoldersGeneric } from './retrieveItemDetailsInFolders'
 import { DetailsTrash, DriveChildrenItem } from './types/types'
@@ -34,7 +34,7 @@ export function retrieveTrashDetails(
           withResponse,
           filterStatus(),
           decodeJson(flow(scheme.decode, E.map(_ => _[0]))),
-          applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
+          applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
         ),
       )
     },
@@ -48,16 +48,17 @@ export function putBackItemsFromTrash(
 ): TE.TaskEither<Error, ResponseWithSession<{ items: DriveChildrenItem[] }>> {
   apiLogger.debug('putBackItemsFromTrash')
 
-  return pipe(
+  const request = pipe(
     session,
     buildRequest(
       'POST',
-      `${accountData.webservices.drivews.url}/putBackItemsFromTrash?dsid=${accountData.dsInfo.dsid}&appIdentifier=iclouddrive&reqIdentifier=9d4788f6-fc48-47e1-8d38-13c46d8d85db&clientBuildNumber=2116Project37&clientMasteringNumber=2116B28&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e`,
-      {
-        data: { items },
-      },
+      `${accountData.webservices.drivews.url}/putBackItemsFromTrash?dsid=${accountData.dsInfo.dsid}`,
+      { addClientInfo: true, data: { items } },
     ),
-    client,
+  )
+
+  return pipe(
+    client(request),
     expectJson(t.type({ items: t.array(detailsItem) }).decode)(session),
   )
 }

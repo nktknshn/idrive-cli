@@ -22,8 +22,6 @@ export function moveItemsToTrash(
 ): TE.TaskEither<Error, ResponseWithSession<MoveItemToTrashResponse>> {
   const applyHttpResponseToSession = expectJson(
     v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
-    // (json: unknown): json is MoveItemToTrashResponse =>
-    // isObjectWithOwnProperty(json, 'items')
   )
 
   const endpoint = trash ? 'moveItemsToTrash' : 'deleteItems'
@@ -34,8 +32,9 @@ export function moveItemsToTrash(
     session,
     buildRequest(
       'POST',
-      `${accountData.webservices.drivews.url}/${endpoint}?dsid=${accountData.dsInfo.dsid}&appIdentifier=iclouddrive&reqIdentifier=9d4788f6-fc48-47e1-8d38-13c46d8d85db&clientBuildNumber=2116Project37&clientMasteringNumber=2116B28&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e`,
+      `${accountData.webservices.drivews.url}/${endpoint}?dsid=${accountData.dsInfo.dsid}`,
       {
+        addClientInfo: true,
         data: {
           items: items.map((item) => ({
             drivewsid: item.drivewsid,

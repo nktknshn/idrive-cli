@@ -6,12 +6,12 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../../lib/errors'
-import * as V from '../cache/GetByPathResultValid'
 import * as DF from '../fdrive'
-import { Details, DriveChildrenItemFile, fileName, RegularDetails, Root } from '../requests/types/types'
+import { Details, DetailsRegular, DriveChildrenItemFile, fileName, Root } from '../requests/types/types'
+import * as V from './GetByPathResultValid'
 import { lsss } from './lsss'
 
-export type DetailsOrFile<R> = (R | RegularDetails | DriveChildrenItemFile)
+export type DetailsOrFile<R> = (R | DetailsRegular | DriveChildrenItemFile)
 
 export const lss = <R extends Root>(root: R, paths: NormalizedPath[]): DF.DriveM<DetailsOrFile<R>[]> => {
   assert(A.isNonEmpty(paths))

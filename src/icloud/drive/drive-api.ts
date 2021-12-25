@@ -188,6 +188,13 @@ export class DriveApi {
     )
   }
 
+  public retrieveItemDetailsInFoldersO = (drivewsids: string[]): TE.TaskEither<Error, (O.Option<T.Details>)[]> => {
+    return pipe(
+      this.retrieveItemDetailsInFolders(drivewsids),
+      TE.map(A.map(T.asOption)),
+    )
+  }
+
   public retrieveItemDetailsInFoldersS = (drivewsids: string[]): TE.TaskEither<Error, {
     found: T.Details[]
     missed: string[]

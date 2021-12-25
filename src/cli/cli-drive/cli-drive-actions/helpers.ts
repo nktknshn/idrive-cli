@@ -6,36 +6,16 @@ import { pipe } from 'fp-ts/lib/function'
 import { groupBy } from 'fp-ts/lib/NonEmptyArray'
 import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
-import path from 'path'
 import { isDeepStrictEqual } from 'util'
 import { Cache } from '../../../icloud/drive/cache/Cache'
 import { isDetailsCacheEntity } from '../../../icloud/drive/cache/types'
-import {
-  Details,
-  DetailsRoot,
-  DriveChildrenItem,
-  DriveChildrenItemFile,
-  DriveDetailsPartialWithHierarchy,
-  DriveDetailsWithHierarchy,
-  fileName,
-  FolderLikeItem,
-  HasName,
-  Hierarchy,
-  HierarchyItem,
-  HierarchyRoot,
-  HierarchyTrash,
-  isAppLibraryItem,
-  isFolderLikeItem,
-  isHierarchyItemRoot,
-  isHierarchyItemTrash,
-  RegularDetails,
-} from '../../../icloud/drive/requests/types/types'
+import * as T from '../../../icloud/drive/requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from '../../../icloud/drive/requests/types/types-io'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
-import { hasOwnProperties, hasOwnProperty, Path } from '../../../lib/util'
+import { hasOwnProperties, Path } from '../../../lib/util'
 
-export const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
+export const compareHierarchies = (cached: T.Hierarchy, actual: T.Hierarchy) => {
   logger.debug(JSON.stringify({ cached, actual }))
   return {
     same: isDeepStrictEqual(cached, actual),
@@ -50,8 +30,8 @@ export const compareHierarchies = (cached: Hierarchy, actual: Hierarchy) => {
 }
 
 export const compareHierarchiesItem = (
-  cached: Hierarchy,
-  actual: { hierarchy: Hierarchy; extension?: string; name: string; drivewsid: string; etag: string },
+  cached: T.Hierarchy,
+  actual: { hierarchy: T.Hierarchy; extension?: string; name: string; drivewsid: string; etag: string },
 ) => {
   return compareHierarchies(
     cached,
@@ -67,7 +47,7 @@ export const compareHierarchiesItem = (
 export const getCachedDetailsPartialWithHierarchyById = (
   cache: Cache,
   drivewsid: string,
-): E.Either<Error, DriveDetailsPartialWithHierarchy> => {
+): E.Either<Error, T.DriveDetailsPartialWithHierarchy> => {
   return pipe(
     E.Do,
     E.bind('details', () =>
@@ -86,7 +66,7 @@ export const getCachedDetailsPartialWithHierarchyById = (
         docwsid: item.docwsid,
         etag: item.etag,
       })))),
-    E.map(({ details, items, hierarchy }): DriveDetailsPartialWithHierarchy => ({
+    E.map(({ details, items, hierarchy }): T.DriveDetailsPartialWithHierarchy => ({
       ...details.content,
       items,
       hierarchy,
@@ -101,16 +81,16 @@ export const ordByDrivewsid = <T extends { drivewsid: string; etag: string }>() 
   Ord.contramap((a: T) => a.drivewsid)(string.Ord)
 
 export const compareDriveDetailsWithHierarchy = (
-  cached: DriveDetailsWithHierarchy,
-  actual: DriveDetailsWithHierarchy,
+  cached: T.DriveDetailsWithHierarchy,
+  actual: T.DriveDetailsWithHierarchy,
 ) => {
   const res = {
     etag: false,
     name: false,
     hierarchy: compareHierarchies(cached.hierarchy, actual.hierarchy),
     items: compareItems(cached.items, actual.items),
-    oldPath: Path.join(hierarchyToPath(cached.hierarchy), fileName(cached)),
-    newPath: Path.join(hierarchyToPath(actual.hierarchy), fileName(actual)),
+    oldPath: Path.join(hierarchyToPath(cached.hierarchy), T.fileName(cached)),
+    newPath: Path.join(hierarchyToPath(actual.hierarchy), T.fileName(actual)),
   }
 
   if (hasOwnProperties(cached, 'etag', 'name') && hasOwnProperties(actual, 'etag', 'name')) {
@@ -128,34 +108,34 @@ export const compareItemWithHierarchy = (
   cached: {
     etag: string
     name: string
-    hierarchy: Hierarchy
+    hierarchy: T.Hierarchy
     drivewsid: string
     extension?: string
   },
-  actual: { etag: string; name: string; hierarchy: Hierarchy; drivewsid: string; extension?: string },
+  actual: { etag: string; name: string; hierarchy: T.Hierarchy; drivewsid: string; extension?: string },
 ) => {
   return {
     etag: cached.etag !== actual.etag,
     name: cached.name !== actual.name,
     hierarchy: compareHierarchies(cached.hierarchy, actual.hierarchy),
-    oldPath: Path.join(hierarchyToPath(cached.hierarchy), fileName(cached)),
-    newPath: Path.join(hierarchyToPath(actual.hierarchy), fileName(actual)),
+    oldPath: Path.join(hierarchyToPath(cached.hierarchy), T.fileName(cached)),
+    newPath: Path.join(hierarchyToPath(actual.hierarchy), T.fileName(actual)),
   }
 }
 
-export const getAppLibraries = (root: DetailsRoot) =>
+export const getAppLibraries = (root: T.DetailsRoot) =>
   pipe(
     root.items,
-    A.filter(isAppLibraryItem),
+    A.filter(T.isAppLibraryItem),
   )
 
-export const groupByType = (items: DriveChildrenItem[]) =>
+export const groupByType = (items: T.DriveChildrenItem[]) =>
   pipe(
     items,
-    A.partition(isFolderLikeItem),
+    A.partition(T.isFolderLikeItem),
     ({ left, right }) => ({
       folders: right,
-      files: left as DriveChildrenItemFile[],
+      files: left as T.DriveChildrenItemFile[],
       items,
     }),
   )
@@ -179,17 +159,17 @@ export const compareItems = <T extends { drivewsid: string; etag: string }>(cach
   }
 }
 
-export const groupByTypeTuple = (items: [DriveChildrenItem, DriveChildrenItem][]) =>
+export const groupByTypeTuple = (items: [T.DriveChildrenItem, T.DriveChildrenItem][]) =>
   pipe(
     items,
-    A.partition(([a, b]) => isFolderLikeItem(a)),
+    A.partition(([a, b]) => T.isFolderLikeItem(a)),
     ({ left, right }) => ({
-      folders: right as [FolderLikeItem, FolderLikeItem][],
-      files: left as [DriveChildrenItemFile, DriveChildrenItemFile][],
+      folders: right as [T.FolderLikeItem, T.FolderLikeItem][],
+      files: left as [T.DriveChildrenItemFile, T.DriveChildrenItemFile][],
     }),
   )
 
-export const compareDetails = (cached: DetailsRoot | RegularDetails, actual: DetailsRoot | RegularDetails) => {
+export const compareDetails = (cached: T.DetailsRoot | T.DetailsRegular, actual: T.DetailsRoot | T.DetailsRegular) => {
   const items = compareItems(cached.items, actual.items)
 
   const cachedByZone = pipe(
@@ -231,15 +211,15 @@ export const compareDetails = (cached: DetailsRoot | RegularDetails, actual: Det
 }
 
 interface ParsedHierarchy {
-  root: HierarchyRoot | HierarchyTrash
-  path: HierarchyItem[]
+  root: T.HierarchyRoot | T.HierarchyTrash
+  path: T.HierarchyItem[]
 }
 
 export const parsedHierarchyToPath = ({ root, path }: ParsedHierarchy): NormalizedPath => {
-  let result = isHierarchyItemRoot(root) ? '/' : 'TRASH_ROOT/'
+  let result = T.isHierarchyItemRoot(root) ? '/' : 'TRASH_ROOT/'
 
   for (const e of path) {
-    result += fileName(e) + '/'
+    result += T.fileName(e) + '/'
   }
 
   return normalizePath(result)
@@ -248,15 +228,15 @@ export const parsedHierarchyToPath = ({ root, path }: ParsedHierarchy): Normaliz
 /*
 
 */
-export const hierarchyToPath = (hierarchy: Hierarchy): NormalizedPath => {
+export const hierarchyToPath = (hierarchy: T.Hierarchy): NormalizedPath => {
   return pipe(
     hierarchy,
     A.map(hitem =>
-      isHierarchyItemRoot(hitem)
+      T.isHierarchyItemRoot(hitem)
         ? '/'
-        : isHierarchyItemTrash(hitem)
+        : T.isHierarchyItemTrash(hitem)
         ? 'TRASH_ROOT/'
-        : fileName(hitem)
+        : T.fileName(hitem)
     ),
     _ => _.length > 0 ? _.join('/') : '/',
     normalizePath,
@@ -299,10 +279,10 @@ export const normalizePath = (path: string): NormalizedPath => {
   return pipe(Path.normalize(path), stripSlash, addSlash) as NormalizedPath
 }
 
-export const itemWithHierarchyToPath = (item: HasName & { hierarchy: Hierarchy }) => {
+export const itemWithHierarchyToPath = (item: T.HasName & { hierarchy: T.Hierarchy }) => {
   return pipe(
     hierarchyToPath(item.hierarchy),
-    _ => Path.join(_, fileName(item)),
+    _ => Path.join(_, T.fileName(item)),
     normalizePath,
   )
 }

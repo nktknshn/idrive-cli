@@ -101,8 +101,8 @@ export function upload(
     logf(`upload.`, apiLogger.debug),
     buildRequest(
       'POST',
-      `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${token}&clientBuildNumber=2118Project41&clientMasteringNumber=2118B32&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e`,
-      { data: { filename, content_type: contentType, size, type } },
+      `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${token}`,
+      { addClientInfo: true, data: { filename, content_type: contentType, size, type } },
     ),
     client,
     expectJson(uploadResponse.decode)(session),
@@ -138,8 +138,8 @@ export function updateDocuments(
     logf(`updateDocuments.`, apiLogger.debug),
     buildRequest(
       'POST',
-      `${accountData.webservices.docws.url}/ws/${zone}/update/documents?clientBuildNumber=2118Project41&clientMasteringNumber=2118B32&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e&appIdentifier=iclouddrive&errorBreakdown=true`,
-      { data },
+      `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
+      { addClientInfo: true, data },
     ),
     client,
     expectJson(updateDocumentsResponse.decode)(session),

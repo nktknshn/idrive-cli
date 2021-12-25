@@ -3,24 +3,39 @@ import * as A from 'fp-ts/lib/Array'
 import { flow, Lazy, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Reader'
+import { cli } from 'winston/lib/winston/config'
+import { ClientInfo, defaultClientInfo } from '../../config'
 import { applyCookieToCookies, getCookies } from '../../lib/http/cookie'
 import { HttpRequest, HttpResponse } from '../../lib/http/fetch-client'
 import { getHeader } from '../../lib/http/http-headers'
 import { logger } from '../../lib/logging'
 import { buildRecord } from '../../lib/util'
-import { ICloudSession, SessionLens } from './session'
+import { ICloudSession, sessionLens } from './session'
 import { Header, headers as _headers } from './session-http-headers'
 
-/** using session build a request to api */
 export function buildRequest(
   method: Method,
   url: string,
-  { data = undefined, headers = [_headers.default] }: {
+  { data = undefined, headers = [_headers.default], clientInfo = defaultClientInfo, addClientInfo }: {
     data?: unknown
     headers?: ((session: ICloudSession) => Header[])[]
-  } = {},
+    addClientInfo: boolean
+    clientInfo?: ClientInfo
+  },
 ): ((session: ICloudSession) => HttpRequest) {
-  return (session) => ({
+  if (addClientInfo) {
+    const clientInfoString =
+      `appIdentifier=${clientInfo.appIdentifier}&reqIdentifier=${clientInfo.reqIdentifier}&clientBuildNumber=${clientInfo.clientBuildNumber}&clientMasteringNumber=${clientInfo.clientMasteringNumber}&clientId=${clientInfo.clientId}`
+
+    if (url.includes('?')) {
+      url = `${url}&${clientInfoString}`
+    }
+    else {
+      url = `${url}?${clientInfoString}`
+    }
+  }
+
+  return (session: ICloudSession) => ({
     url,
     method,
     headers: buildRecord(
@@ -34,7 +49,7 @@ export function buildRequest(
   })
 }
 
-export const applyCookies = (httpResponse: HttpResponse) =>
+export const applyCookiesToSession = (httpResponse: HttpResponse) =>
   (session: ICloudSession): ICloudSession => {
     const [errors, setCookies] = getCookies(httpResponse)
 
@@ -46,7 +61,7 @@ export const applyCookies = (httpResponse: HttpResponse) =>
 
     return pipe(
       session,
-      SessionLens.cookies.set({
+      sessionLens.cookies.set({
         cookies: applyCookieToCookies(
           session.cookies,
           setCookies,

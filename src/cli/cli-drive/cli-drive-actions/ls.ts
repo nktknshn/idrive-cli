@@ -10,11 +10,12 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { Cache } from '../../../icloud/drive/cache/Cache'
-import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/GetByPathResultValid'
 import * as DF from '../../../icloud/drive/fdrive'
+import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/fdrive/GetByPathResultValid'
 import { lsss } from '../../../icloud/drive/fdrive/lsss'
 import {
   Details,
+  DetailsRegular,
   DetailsRoot,
   DetailsTrash,
   DriveChildrenItem,
@@ -23,6 +24,7 @@ import {
   isCloudDocsRootDetails,
   isDetails,
   isFileItem,
+  isTrashDetails,
   isTrashDetailsG,
   RecursiveFolder,
 } from '../../../icloud/drive/requests/types/types'
@@ -41,15 +43,6 @@ const joinWithPath = (path: string) =>
       Path.normalize,
     )
 
-const showFilename = (item: DriveChildrenItem | Details) =>
-  isTrashDetailsG(item)
-    ? 'TRASH'
-    : item.type === 'FILE'
-    ? fileName(item)
-    : isDetails(item) && isCloudDocsRootDetails(item)
-    ? '/'
-    : `${fileName(item)}/`
-
 const formatDate = (date: Date | string) =>
   pipe(
     typeof date === 'string' ? new Date(date) : date,
@@ -59,8 +52,6 @@ const formatDate = (date: Date | string) =>
         date.toTimeString().substr(0, 5),
       ].join(' '),
   )
-
-type OutputGenerator = Generator<string, void, unknown>
 
 const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (item: DriveChildrenItem) =>
@@ -84,14 +75,14 @@ const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
       ]
         .join(`\t`)
 
-const showWithFullPath = (path: string) => flow(showFilename, joinWithPath(path))
+const showWithFullPath = (path: string) => flow(fileName, joinWithPath(path))
 
 const showRaw = (result: Details | DriveChildrenItem) => JSON.stringify(result)
 
 export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
   (result: DriveChildrenItemFile) =>
     [
-      ['name', showFilename(result)],
+      ['name', fileName(result)],
       ['size', result.size],
       ['dateCreated', formatDate(result.dateCreated)],
       ['dateChanged', formatDate(result.dateChanged)],
@@ -106,26 +97,54 @@ export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}
       .map(_ => _.join(':\t'))
       .join('\n')
 
+type Row = [string, string | number]
+type Element = Row | string | false | Element[]
+// type Component<P> = (props: P) => (Element | string | false)[]
+
+const Trash = ({ details }: { details: DetailsTrash }): Element[] => {
+  return [
+    ['name', fileName(details)],
+    ['numberOfItems', details.numberOfItems],
+  ]
+}
+
+const Folder = ({ details }: { details: DetailsRoot | DetailsRegular }): Element[] => {
+  return [
+    ['name', fileName(details)],
+    ['dateCreated', formatDate(details.dateCreated)],
+    ['drivewsid', details.drivewsid],
+    ['docwsid', details.docwsid],
+    ['etag', details.etag],
+    !!details.extension && ['extension', details.extension],
+    !isCloudDocsRootDetails(details) && ['parentId', details.parentId],
+  ]
+}
+
 export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (result: Details) =>
+  (details: Details) =>
     pipe(
       [
-        ['name', showFilename(result)],
-        ...(isTrashDetailsG(result)
-          ? []
-          : [
-            ['dateCreated', formatDate(result.dateCreated)],
-            ['drivewsid', result.drivewsid],
-            ['docwsid', result.docwsid],
-            ['etag', result.etag],
-            !!result.extension && ['extension', result.extension],
-            !isCloudDocsRootDetails(result) && ['parentId', result.parentId],
-          ]),
-        [],
+        isTrashDetailsG(details)
+          ? Trash({ details })
+          : Folder({ details }),
       ],
-      A.filter(not(<T>(v: T | false): v is false => !v)),
-      A.map(_ => _.join(':\t')),
-    ).join('\n')
+      showElements,
+    )
+
+const isRow = (input: Row | Element[]): input is Row => {
+  return input.length == 2
+    && typeof input[0] === 'string'
+    && (typeof input[1] === 'string' || typeof input[1] === 'number')
+}
+
+const showElements = (elements: Element[]): string => {
+  return pipe(
+    elements,
+    A.filter(not(<T>(v: T | false): v is false => !v)),
+    A.map(_ => Array.isArray(_) ? isRow(_) ? _.join(':\t') : showElements(_) : _),
+    _ => _.join('\n'),
+  )
+}
 
 const ordByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
 const ordByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)
@@ -187,12 +206,12 @@ const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
 
 const showRecursive = ({ ident = 0 }) =>
   (folder: RecursiveFolder): string => {
-    const folderName = showFilename(folder.details)
+    const folderName = fileName(folder.details)
 
     const fileNames = pipe(
       folder.details.items,
       A.filter(isFileItem),
-      A.map(showFilename),
+      A.map(fileName),
     )
 
     const identStr = nSymbols(ident, '  ')
@@ -210,7 +229,7 @@ const showRecursive = ({ ident = 0 }) =>
   }
 
 const conditional = <A, B, R>(
-  ref: (input: A | B) => input is A,
+  ref: <R>(input: A | B) => input is A,
   onTrue: (a: A) => R,
   onFalse: (b: B) => R,
 ) =>

@@ -1,19 +1,13 @@
-import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
-import * as J from 'fp-ts/lib/Json'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as O from 'fp-ts/lib/Option'
+import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { normalizePath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile } from './config'
 import * as Cache from './icloud/drive/cache/Cache'
-import * as C from './icloud/drive/cache/cachef'
-import * as GetByPathResultValid from './icloud/drive/cache/GetByPathResultValid'
-import { ensureError, err } from './lib/errors'
-import { cacheLogger, logger, loggingLevels, logReturnAs, printer } from './lib/logging'
+import * as GetByPathResultValid from './icloud/drive/fdrive/GetByPathResultValid'
+import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
 function parseArgs() {
   return yargs(hideBin(process.argv))

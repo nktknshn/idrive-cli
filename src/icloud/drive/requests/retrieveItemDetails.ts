@@ -1,34 +1,28 @@
-import { flow, pipe } from 'fp-ts/lib/function'
+import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { FetchClientEither } from '../../../lib/http/fetch-client'
+import { FetchClientEither, HttpResponse } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { ICloudSession } from '../../session/session'
-import { applyCookies, buildRequest } from '../../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import {
-  applyToSession,
+  applyCookiesFromResponse,
+  applyToSession2,
   decodeJson,
   filterStatus,
   ResponseHandler,
   ResponseWithSession,
+  returnDecoded,
   withResponse,
 } from './filterStatus'
 import { DriveItemDetails } from './types/types'
 import { itemDetails } from './types/types-io'
 
-interface RetrieveOpts {
-  drivewsids: string[]
-  partialData: boolean
-  includeHierarchy: boolean
-}
-
 function retrieveItemDetailsGeneric<R>(
   client: FetchClientEither,
   { accountData, session }: ICloudSessionValidated,
-  props: {
-    items: { drivewsid: string }[]
-  },
+  props: { items: { drivewsid: string }[] },
   app: ResponseHandler<R>,
 ): TE.TaskEither<Error, ResponseWithSession<R>> {
   apiLogger.debug(`retrieveItemDetails: [${props.items.map(_ => _.drivewsid)}]`)
@@ -37,8 +31,8 @@ function retrieveItemDetailsGeneric<R>(
     session,
     buildRequest(
       'POST',
-      `${accountData.webservices.drivews.url}/retrieveItemDetails?dsid=${accountData.dsInfo.dsid}&appIdentifier=iclouddrive&reqIdentifier=9d4788f6-fc48-47e1-8d38-13c46d8d85db&clientBuildNumber=2116Project37&clientMasteringNumber=2116B28&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e`,
-      { data: props },
+      `${accountData.webservices.drivews.url}/retrieveItemDetails?dsid=${accountData.dsInfo.dsid}`,
+      { addClientInfo: true, data: props },
     ),
     client,
     app(session),
@@ -51,14 +45,18 @@ const scheme = t.type({
   ),
 })
 
-const handleResponse: ResponseHandler<{ items: DriveItemDetails[] }> = (session: ICloudSession) =>
-  TE.chain(
-    flow(
-      withResponse,
-      filterStatus(),
-      decodeJson(scheme.decode),
-      applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
-    ),
+const handleResponse = flow(
+  withResponse,
+  filterStatus(),
+  decodeJson(scheme.decode),
+  applyCookiesFromResponse(),
+  returnDecoded(),
+)
+
+const handle: ResponseHandler<{ items: DriveItemDetails[] }> = (session) =>
+  flow(
+    TE.map(handleResponse),
+    TE.chain(apply(session)),
   )
 
 export function retrieveItemDetails(
@@ -73,7 +71,6 @@ export function retrieveItemDetails(
     client,
     { accountData, session },
     { items: drivewsids.map((drivewsid) => ({ drivewsid, includeHierarchy: true })) },
-    handleResponse,
-    // applyHttpResponseToSessionHierarchy,
+    handle,
   )
 }

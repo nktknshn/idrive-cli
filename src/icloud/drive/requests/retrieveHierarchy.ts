@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { applyCookies } from '../../session/session-http'
+import { applyCookiesToSession } from '../../session/session-http'
 import { applyToSession, decodeJson, filterStatus, ResponseWithSession, withResponse } from './filterStatus'
 import { retrieveItemDetailsInFoldersGeneric } from './retrieveItemDetailsInFolders'
 import { DriveDetailsPartialWithHierarchy } from './types/types'
@@ -24,7 +24,7 @@ export function retrieveHierarchy(
           withResponse,
           filterStatus(),
           decodeJson(v => t.array(driveDetailsWithHierarchyPartial).decode(v)),
-          applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
+          applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
         ),
       ),
   )

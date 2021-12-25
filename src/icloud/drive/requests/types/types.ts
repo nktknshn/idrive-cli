@@ -28,9 +28,9 @@ export type Root =
 export type Details =
   | DetailsTrash
   | DetailsRoot
-  | RegularDetails
+  | DetailsRegular
 
-export type RegularDetails =
+export type DetailsRegular =
   | DetailsFolder
   | DetailsAppLibrary
 
@@ -226,7 +226,7 @@ export const hasName = <
 
 export const fileName = (item: HasName | DetailsTrash) => {
   if (isTrashDetailsG(item)) {
-    return 'TRASH'
+    return 'TRASH_ROOT'
   }
 
   return (item.drivewsid === types.rootDrivewsid)

@@ -42,18 +42,6 @@ export class HttpRequest implements HttpRequest {
   }
 }
 
-export class FetchError extends Error {
-  readonly tag = 'FetchError'
-
-  public static is(a: unknown): a is FetchError {
-    return a instanceof FetchError
-  }
-
-  public static create(message: string): FetchError {
-    return new FetchError(message)
-  }
-}
-
 export const fetchClient: FetchClientEither = (config) =>
   TE.tryCatch(
     async () => {
@@ -78,7 +66,7 @@ export const fetchClient: FetchClientEither = (config) =>
       if (axios.isAxiosError(error)) {
         httplogger.debug(error.response)
       }
-      return new FetchError(`Error fetching: ${String(error)}`)
+      return FetchError.create(`Error fetching: ${String(error)}`)
     },
   )
 
@@ -103,5 +91,17 @@ export const uploadFileRequest = (
     method: 'POST',
     headers: formData.getHeaders(),
     data: formData.getBuffer(),
+  }
+}
+
+export class FetchError extends Error {
+  readonly tag = 'FetchError'
+
+  public static is(a: unknown): a is FetchError {
+    return a instanceof FetchError
+  }
+
+  public static create(message: string): FetchError {
+    return new FetchError(message)
   }
 }

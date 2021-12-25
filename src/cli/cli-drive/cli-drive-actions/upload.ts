@@ -1,31 +1,20 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import { isSome } from 'fp-ts/lib/Option'
-import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as V from '../../../icloud/drive/cache/GetByPathResultValid'
 import * as DF from '../../../icloud/drive/fdrive'
+import * as V from '../../../icloud/drive/fdrive/GetByPathResultValid'
 import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
-import {
-  DetailsRoot,
-  fileName,
-  isDetails,
-  isFile,
-  isFolderLike,
-  isFolderLikeItem,
-} from '../../../icloud/drive/requests/types/types'
-import { err } from '../../../lib/errors'
+import { DetailsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
 import { cliAction } from '../../cli-actionF'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFileInfo, showFolderInfo } from './ls'
 
-type Env = {
-  srcpath: string
-  dstpath: string
-}
+// type Env = {
+//   srcpath: string
+//   dstpath: string
+// }
 
 // export const uploadReader = () => {
 //   return pipe(

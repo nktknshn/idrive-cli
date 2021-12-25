@@ -1,4 +1,7 @@
+import * as A from 'fp-ts/lib/Array'
+import { flow } from 'fp-ts/lib/function'
 import { isSome } from 'fp-ts/lib/Option'
+import { getHeader } from '../../lib/http/http-headers'
 import { ICloudSession } from '../session/session'
 import { Header } from '../session/session-http-headers'
 
@@ -45,3 +48,27 @@ export const authorizationHeaders = (
 
   return headers
 }
+
+export const [
+  getScnt,
+  getSessionId,
+  getSessionToken,
+  getAccountCountry,
+  getAuthAttributes,
+  getTwoSVTrustEligible,
+  getAKAuthType,
+  getOauthGrantCode,
+  getTrustToken,
+] = [
+  'scnt',
+  'X-Apple-ID-Session-Id',
+  'X-Apple-Session-Token',
+  'X-Apple-ID-Account-Country',
+  'X-Apple-Auth-Attributes',
+  'X-Apple-TwoSV-Trust-Eligible',
+  'X-Apple-AK-Auth-Type',
+  'X-Apple-OAuth-Grant-Code',
+  'X-Apple-TwoSV-Trust-Token',
+]
+  .map(getHeader)
+  .map(f => flow(f, A.head))

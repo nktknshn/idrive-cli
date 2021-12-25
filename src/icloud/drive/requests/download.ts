@@ -6,7 +6,7 @@ import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { applyCookies, buildRequest } from '../../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import { applyToSession, expectJson, ResponseWithSession } from './filterStatus'
 
 type RetrieveOpts = {
@@ -41,6 +41,7 @@ export function download(
     buildRequest(
       'GET',
       `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
+      { addClientInfo: false },
     ),
     client,
     applyHttpResponseToSession(session),

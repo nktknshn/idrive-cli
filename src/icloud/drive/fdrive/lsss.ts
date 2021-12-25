@@ -11,21 +11,20 @@ import { NonRootDrivewsid, NormalizedPath } from '../../../cli/cli-drive/cli-dri
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
-import * as V from '../cache/GetByPathResultValid'
-import { findInParent } from '../cache/validatePath'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
-import { recordFromTuples } from '../helpers'
+import { findInParent, recordFromTuples } from '../helpers'
 import * as T from '../requests/types/types'
+import * as V from './GetByPathResultValid'
 import { modifySubsetDF } from './modifySubsetDF'
 import * as H from './validation'
 
 const equalsDrivewsId = fromEquals((a: { drivewsid: string }, b: { drivewsid: string }) => a.drivewsid == b.drivewsid)
 
 const toActual = (
-  cachedPath: T.RegularDetails[],
-  actualsRecord: Record<string, O.Option<T.DriveDetailsWithHierarchyRegular>>,
-): O.Option<T.DriveDetailsWithHierarchyRegular>[] => {
+  cachedPath: T.DetailsRegular[],
+  actualsRecord: Record<string, O.Option<T.DetailsRegular>>,
+): O.Option<T.DetailsRegular>[] => {
   return pipe(
     cachedPath,
     A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
@@ -36,7 +35,7 @@ const toActual = (
 const showHierarchiy = (h: H.Hierarchy<T.Root>): string => {
   const [root, ...rest] = h
 
-  return `${T.isCloudDocsRootDetails(root) ? 'root' : '<!not root!>'}/${rest.map(T.fileName).join('/')}`
+  return `${T.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(T.fileName).join('/')}`
 }
 
 export const validateHierarchies = <R extends T.Root>(
@@ -64,7 +63,11 @@ export const validateHierarchies = <R extends T.Root>(
         DF.Do,
         SRTE.bind(
           'validation',
-          () => DF.retrieveItemDetailsInFoldersSavingNEA([cachedRoot.drivewsid, ...(drivewsids as NonRootDrivewsid[])]),
+          () =>
+            DF.retrieveItemDetailsInFoldersSavingNEA<R>([
+              cachedRoot.drivewsid,
+              ...(drivewsids as NonRootDrivewsid[]),
+            ]),
         ),
       ),
     SRTE.map(({ validation: [actualRoot, ...actualRest] }) => {
@@ -77,7 +80,7 @@ export const validateHierarchies = <R extends T.Root>(
         NA.map(cachedPath =>
           H.getValidHierarchyPart<R>(
             [cachedRoot, ...cachedPath],
-            [actualRoot.value as R, ...toActual(cachedPath, detailsRecord)],
+            [actualRoot.value, ...toActual(cachedPath, detailsRecord)],
           )
         ),
       )
@@ -88,7 +91,7 @@ export const validateHierarchies = <R extends T.Root>(
 }
 
 const showDetails = (details: T.Details) => {
-  return `${T.isTrashDetailsG(details) ? 'TRASH' : details.type} ${T.fileName(details)}. items: [${
+  return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
     details.items.map(T.fileName)
   }]`
 }

@@ -7,7 +7,7 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
-import { applyCookies, buildRequest } from '../../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import {
   applyToSession,
   decodeJson,
@@ -18,30 +18,6 @@ import {
 } from './filterStatus'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
-
-export const decode: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
-  t.array(
-    t.UnknownRecord,
-  ).decode,
-  E.chain(flow(
-    A.chunksOf(2),
-    A.map(
-      t.tuple([
-        t.union([driveDetails, invalidIdItem]),
-        t.union([driveDetailsWithHierarchyPartial, invalidIdItem]),
-      ]).decode,
-    ),
-    E.sequenceArray,
-  )),
-  E.map(flow(
-    RA.map(([a, b]) =>
-      (invalidIdItem.is(a) || invalidIdItem.is(b))
-        ? { status: 'ID_INVALID' as const }
-        : ({ ...a, hierarchy: b.hierarchy })
-    ),
-    RA.toArray,
-  )),
-)
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,
@@ -55,36 +31,11 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
     session,
     buildRequest(
       'POST',
-      `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}&appIdentifier=iclouddrive&reqIdentifier=9d4788f6-fc48-47e1-8d38-13c46d8d85db&clientBuildNumber=2116Project37&clientMasteringNumber=2116B28&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e`,
-      { data },
+      `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
+      { addClientInfo: true, data },
     ),
     client,
     handleResponse(session),
-  )
-}
-
-export function retrieveItemDetailsInFoldersHierarchy(
-  client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
-  props: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<(DriveDetailsWithHierarchy | InvalidId)[]>> {
-  return retrieveItemDetailsInFoldersGeneric(
-    client,
-    { accountData, session },
-    pipe(
-      props.drivewsids.map((drivewsid) => [
-        { drivewsid, partialData: false, includeHierarchy: false },
-        { drivewsid, partialData: true, includeHierarchy: true },
-      ]),
-      A.flatten,
-    ),
-    session =>
-      TE.chain(flow(
-        withResponse,
-        filterStatus(),
-        decodeJson(decode),
-        applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
-      )),
   )
 }
 
@@ -105,8 +56,55 @@ export function retrieveItemDetailsInFolders(
           withResponse,
           filterStatus(),
           decodeJson(t.array(t.union([driveDetails, invalidIdItem])).decode),
-          applyToSession(({ httpResponse }) => applyCookies(httpResponse)(session)),
+          applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
         ),
       ),
+  )
+}
+
+export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
+  t.array(t.UnknownRecord).decode,
+  E.chain(flow(
+    A.chunksOf(2),
+    A.map(
+      t.tuple([
+        t.union([driveDetails, invalidIdItem]),
+        t.union([driveDetailsWithHierarchyPartial, invalidIdItem]),
+      ]).decode,
+    ),
+    E.sequenceArray,
+  )),
+  E.map(flow(
+    RA.map(([a, b]) =>
+      (invalidIdItem.is(a) || invalidIdItem.is(b))
+        ? { status: 'ID_INVALID' as const }
+        : ({ ...a, hierarchy: b.hierarchy })
+    ),
+    RA.toArray,
+  )),
+)
+
+export function retrieveItemDetailsInFoldersHierarchy(
+  client: FetchClientEither,
+  { accountData, session }: ICloudSessionValidated,
+  props: { drivewsids: string[] },
+): TE.TaskEither<Error, ResponseWithSession<(DriveDetailsWithHierarchy | InvalidId)[]>> {
+  return retrieveItemDetailsInFoldersGeneric(
+    client,
+    { accountData, session },
+    pipe(
+      props.drivewsids.map((drivewsid) => [
+        { drivewsid, partialData: false, includeHierarchy: false },
+        { drivewsid, partialData: true, includeHierarchy: true },
+      ]),
+      A.flatten,
+    ),
+    session =>
+      TE.chain(flow(
+        withResponse,
+        filterStatus(),
+        decodeJson(decodeWithHierarchy),
+        applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
+      )),
   )
 }

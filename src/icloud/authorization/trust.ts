@@ -10,33 +10,18 @@ import {
   filterStatus,
   filterStatuses,
   ResponseWithSession,
-  result,
+  returnS,
   withResponse,
 } from '../drive/requests/filterStatus'
-import { ICloudSession, SessionLens } from '../session/session'
-import { applyCookies, buildRequest } from '../session/session-http'
+import { ICloudSession, sessionLens } from '../session/session'
+import { applyCookiesToSession, buildRequest } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
-import { authorizationHeaders } from './headers'
-import { applyAuthorizationResponse, getTrustToken } from './response'
+import { authorizationHeaders, getTrustToken } from './headers'
+import { applyAuthorizationResponse } from './response'
 
 export interface TrustResponse204 {
   trustToken: string
 }
-
-// export function getResponse(
-//   httpResponse: HttpResponse,
-//   json: E.Either<Error, unknown>,
-// ): E.Either<Error, TrustResponse204> {
-//   if (httpResponse.status == 204) {
-//     return pipe(
-//       O.Do,
-//       O.bind('trustToken', () => getTrustToken(httpResponse)),
-//       E.fromOption(() => err('Missing trust token')),
-//     )
-//   }
-
-//   return E.left(UnexpectedResponse.create(httpResponse, json))
-// }
 
 const applyHttpResponseToSession = flow(
   withResponse,
@@ -50,11 +35,11 @@ const applyHttpResponseToSession = flow(
     ({ httpResponse, trustToken }) =>
       flow(
         applyAuthorizationResponse(httpResponse),
-        applyCookies(httpResponse),
-        SessionLens.trustToken.set(O.some(trustToken)),
+        applyCookiesToSession(httpResponse),
+        sessionLens.trustToken.set(O.some(trustToken)),
       ),
   ),
-  result(({ trustToken }): TrustResponse204 => ({ trustToken })),
+  returnS(({ trustToken }): TrustResponse204 => ({ trustToken })),
 )
 
 export function requestTrustDevice(
@@ -68,7 +53,7 @@ export function requestTrustDevice(
     buildRequest(
       'GET',
       'https://idmsa.apple.com/appleauth/auth/2sv/trust',
-      { headers: [headers.default, authorizationHeaders] },
+      { addClientInfo: false, headers: [headers.default, authorizationHeaders] },
     ),
     client,
     TE.map(applyHttpResponseToSession),

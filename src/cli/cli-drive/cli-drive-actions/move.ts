@@ -1,27 +1,22 @@
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { constVoid, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as V from '../../../icloud/drive/cache/GetByPathResultValid'
-import { DriveApi } from '../../../icloud/drive/drive-api'
 import * as DF from '../../../icloud/drive/fdrive'
-import { DetailsOrFile } from '../../../icloud/drive/fdrive/lss'
+import * as V from '../../../icloud/drive/fdrive/GetByPathResultValid'
 import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemToTrashResponse } from '../../../icloud/drive/requests/moveItems'
 import { RenameResponse } from '../../../icloud/drive/requests/rename'
 import {
   Details,
+  DetailsRegular,
   DetailsRoot,
   DetailsTrash,
   DriveChildrenItemFile,
   isDetails,
-  isFolderLike,
   isNotRootDetails,
-  RegularDetails,
 } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
@@ -30,7 +25,7 @@ import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
 const caseMove = (
-  src: RegularDetails | DriveChildrenItemFile,
+  src: DetailsRegular | DriveChildrenItemFile,
   dst: Details,
 ): DF.DriveM<MoveItemToTrashResponse> => {
   return pipe(
@@ -45,7 +40,7 @@ const caseMove = (
 }
 
 const caseRename = (
-  srcitem: RegularDetails | DriveChildrenItemFile,
+  srcitem: DetailsRegular | DriveChildrenItemFile,
   name: string,
 ): DF.DriveM<RenameResponse> => {
   return pipe(
@@ -62,7 +57,7 @@ const caseRename = (
 }
 
 const caseMoveAndRename = (
-  src: RegularDetails | DriveChildrenItemFile,
+  src: DetailsRegular | DriveChildrenItemFile,
   dst: (Details | DetailsTrash),
   name: string,
 ): DF.DriveM<RenameResponse> => {

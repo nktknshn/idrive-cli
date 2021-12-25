@@ -14,9 +14,9 @@ import { err } from '../../lib/errors'
 import { cacheLogger, logger, logReturnAs, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 import { Cache } from './cache/Cache'
-import { GetByPathResult } from './cache/GetByPathResultValid'
 import { DriveApi } from './drive-api'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
+import { GetByPathResult } from './fdrive/GetByPathResultValid'
 import { lss } from './fdrive/lss'
 import { lsss } from './fdrive/lsss'
 import { Hierarchy } from './fdrive/validation'
@@ -132,13 +132,13 @@ const putFoundMissed = ({ found, missed }: {
 
 export const retrieveItemDetailsInFoldersSaving = (
   drivewsids: string[],
-): DriveM<O.Option<T.DriveDetailsWithHierarchy>[]> =>
+): DriveM<O.Option<T.Details>[]> =>
   pipe(
     readEnv,
     SRTE.bind('details', ({ env }) =>
       pipe(
         fromTaskEither(
-          env.api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
+          env.api.retrieveItemDetailsInFolders(drivewsids),
         ),
       )),
     SRTE.chain(({ details }) =>
@@ -151,35 +151,35 @@ export const retrieveItemDetailsInFoldersSaving = (
 
 export function retrieveItemDetailsInFoldersSavingNEA<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...NonRootDrivewsid[]],
-): DriveM<[O.Some<R>, ...O.Option<T.DriveDetailsWithHierarchyRegular>[]]>
+): DriveM<[O.Some<R>, ...O.Option<T.DetailsRegular>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof rootDrivewsid, ...string[]],
-): DriveM<[O.Some<T.DriveDetailsRootWithHierarchy>, ...O.Option<T.DriveDetailsWithHierarchy>[]]>
+): DriveM<[O.Some<T.DetailsRoot>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof trashDrivewsid, ...string[]],
-): DriveM<[O.Some<T.DriveDetailsTrashWithHierarchy>, ...O.Option<T.DriveDetailsWithHierarchy>[]]>
+): DriveM<[O.Some<T.DetailsTrash>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...string[]],
-): DriveM<[O.Some<R>, ...O.Option<T.DriveDetailsWithHierarchy>[]]>
+): DriveM<[O.Some<R>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: NEA<string>,
-): DriveM<NEA<O.Option<T.DriveDetailsWithHierarchy>>>
+): DriveM<NEA<O.Option<T.Details>>>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: NEA<string>,
-): DriveM<NEA<O.Option<T.DriveDetailsWithHierarchy>>> {
-  return retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<T.DriveDetailsWithHierarchy>>>
+): DriveM<NEA<O.Option<T.Details>>> {
+  return retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<T.Details>>>
 }
 
 export const retrieveItemDetailsInFoldersSavingE = (
   drivewsids: NEA<string>,
-): DriveM<NEA<T.DriveDetailsWithHierarchy>> =>
+): DriveM<NEA<T.Details>> =>
   pipe(
     retrieveItemDetailsInFoldersSavingNEA(drivewsids),
     chain(details =>
       pipe(
         O.sequenceArray(details),
         fromOption(() => err(`some of the ids was not found`)),
-        SRTE.map(v => v as NEA<T.DriveDetailsWithHierarchy>),
+        SRTE.map(v => v as NEA<T.Details>),
       )
     ),
   )

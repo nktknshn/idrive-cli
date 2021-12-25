@@ -11,6 +11,7 @@ import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logger, logReturn } from '../../../lib/logging'
 import { MissinRootError } from '../errors'
+import { HierarchyResult } from '../fdrive/GetByPathResultValid'
 import { parsePath } from '../helpers'
 import {
   asOption,
@@ -25,9 +26,8 @@ import {
 } from '../requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from '../requests/types/types-io'
 import * as C from './cachef'
-import { HierarchyResult } from './GetByPathResultValid'
+import { getFromCacheByPath } from './getPartialValidPath'
 import * as T from './types'
-import { getPartialValidPath } from './v2'
 
 export class Cache {
   private readonly cache: T.CacheF
@@ -271,7 +271,7 @@ export class Cache {
       E.map(({ root }) =>
         pipe(
           this.cache,
-          getPartialValidPath(rest, root),
+          getFromCacheByPath(rest, root),
           v => v as HierarchyResult<R>,
         )
       ),
@@ -290,7 +290,7 @@ export class Cache {
       E.map(({ root }) =>
         pipe(
           this.cache,
-          getPartialValidPath(rest, root.content),
+          getFromCacheByPath(rest, root.content),
           v => v as HierarchyResult<R>,
         )
       ),

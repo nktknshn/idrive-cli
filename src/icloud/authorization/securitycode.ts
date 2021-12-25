@@ -5,13 +5,13 @@ import { logger } from '../../lib/logging'
 import { EmptyObject } from '../../lib/types'
 import {
   applyToSession2,
-  emptyResult,
   filterStatus,
   ResponseWithSession,
+  returnEmpty,
   withResponse,
 } from '../drive/requests/filterStatus'
 import { ICloudSession } from '../session/session'
-import { applyCookies, buildRequest } from '../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
 import { authorizationHeaders } from './headers'
 import { applyAuthorizationResponse } from './response'
@@ -43,10 +43,10 @@ export function requestSecurityCode(
     applyToSession2(({ httpResponse }) =>
       flow(
         applyAuthorizationResponse(httpResponse),
-        applyCookies(httpResponse),
+        applyCookiesToSession(httpResponse),
       )
     ),
-    emptyResult,
+    returnEmpty,
   )
 
   return pipe(
@@ -55,6 +55,7 @@ export function requestSecurityCode(
       'POST',
       'https://idmsa.apple.com/appleauth/auth/verify/trusteddevice/securitycode',
       {
+        addClientInfo: false,
         data: { securityCode: { code } },
         headers: [headers.default, authorizationHeaders],
       },

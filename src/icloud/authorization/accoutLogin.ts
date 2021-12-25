@@ -12,12 +12,12 @@ import {
   decodeJson,
   filterStatus,
   ResponseWithSession,
-  result,
-  returnJson,
+  returnDecoded,
+  returnS,
   withResponse,
 } from '../drive/requests/filterStatus'
 import { ICloudSession } from '../session/session'
-import { applyCookies, buildRequest } from '../session/session-http'
+import { applyCookiesToSession, buildRequest } from '../session/session-http'
 import { AccountLoginResponseBody } from './types'
 
 export function requestAccoutLogin(
@@ -30,8 +30,8 @@ export function requestAccoutLogin(
     withResponse,
     filterStatus(),
     decodeJson(v => t.type({ appsOrder: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>),
-    applyToSession2(({ httpResponse }) => applyCookies(httpResponse)),
-    returnJson(),
+    applyToSession2(({ httpResponse }) => applyCookiesToSession(httpResponse)),
+    returnDecoded(),
   )
 
   return pipe(
@@ -40,8 +40,9 @@ export function requestAccoutLogin(
     TE.map((sessionToken) =>
       buildRequest(
         'POST',
-        'https://setup.icloud.com/setup/ws/1/accountLogin?clientBuildNumber=2114Project37&clientMasteringNumber=2114B28&clientId=f4058d20-0430-4cd5-bb85-7eb9b47fc94e',
+        'https://setup.icloud.com/setup/ws/1/accountLogin',
         {
+          addClientInfo: true,
           data: {
             dsWebAuthToken: sessionToken,
             trustToken: O.toUndefined(session.trustToken),

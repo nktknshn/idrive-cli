@@ -11,8 +11,6 @@ import {
 
 export interface CacheF {
   readonly byDrivewsid: { readonly [drivewsid: string]: CacheEntity }
-  // readonly byPath: { readonly [path: string]: ICloudDriveCacheEntity }
-  // readonly root: O.Option<DriveDetailsRoot>
 }
 
 export type CacheEntityDetails =
@@ -40,11 +38,6 @@ export type CacheEntity =
 export type CacheEntityWithParentId = Exclude<CacheEntity, CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails>
 
 export type ICloudDriveCacheEntityType = CacheEntity['type']
-
-// interface CacheEntityC {
-//   isFile(): this is CacheEntityFile
-//   isFolderLike(): this is CacheEntityFolderLike
-// }
 
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'

@@ -2,8 +2,9 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as O from 'fp-ts/lib/Option'
 import Path from 'path'
-import { isInvalidId, MaybeNotFound } from './requests/types/types'
+import * as T from './requests/types/types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)
@@ -16,10 +17,10 @@ export function parsePath(path: string): NA.NonEmptyArray<string> {
     : ['/', ...parsedPath]
 }
 
-export const getMissedFound = <T>(drivewsids: string[], details: MaybeNotFound<T>[]) => {
+export const getMissedFound = <T>(drivewsids: string[], details: T.MaybeNotFound<T>[]) => {
   return pipe(
     A.zip(drivewsids, details),
-    A.partitionMap(([dwid, d]) => isInvalidId(d) ? E.left(dwid) : E.right(d)),
+    A.partitionMap(([dwid, d]) => T.isInvalidId(d) ? E.left(dwid) : E.right(d)),
     ({ left: missed, right: found }) => ({ missed, found }),
   )
 }
@@ -44,4 +45,14 @@ export const parseName = (fileName: string): { name: string; extension?: string 
     name: extension ? fileName.slice(0, fileName.length - extension.length) : fileName,
     extension: extension ? extension.slice(1) : undefined,
   }
+}
+
+export const findInParent = (
+  parent: T.Details,
+  itemName: string,
+): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> => {
+  return pipe(
+    parent.items,
+    A.findFirst((item: T.DriveChildrenItem | T.DriveChildrenTrashItem) => T.fileName(item) == itemName),
+  )
 }

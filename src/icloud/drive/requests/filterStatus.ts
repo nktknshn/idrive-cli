@@ -12,7 +12,7 @@ import {
 import { HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
 import { ICloudSession } from '../../session/session'
-import { applyCookies } from '../../session/session-http'
+import { applyCookiesToSession } from '../../session/session-http'
 
 export type ResponseWithSession<R> = {
   session: ICloudSession
@@ -122,14 +122,6 @@ export const decodeJsonEither = <R>(
         )),
     )
 
-// export function applyToSession(
-//   f: (a: { httpResponse: HttpResponse }) => ICloudSession,
-// ): (te: TE.TaskEither<Error, { httpResponse: HttpResponse }>) => TE.TaskEither<Error, {
-//   session: ICloudSession
-//   response: {
-//     httpResponse: HttpResponse
-//   }
-// }>
 export function applyToSession<R>(
   f: (a: { decoded: R; httpResponse: HttpResponse }) => ICloudSession,
 ): (
@@ -167,7 +159,10 @@ export function applyToSession2<T extends { httpResponse: HttpResponse }>(
   }
 }
 
-export function result<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
+export const applyCookiesFromResponse = <T extends { httpResponse: HttpResponse }>() =>
+  applyToSession2<T>(({ httpResponse }) => applyCookiesToSession(httpResponse))
+
+export function returnS<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
   ff: (a: T) => R,
 ) {
   return (f: (session: ICloudSession) => TE.TaskEither<Error, T>) =>
@@ -184,7 +179,7 @@ export function result<T extends { httpResponse: HttpResponse; session: ICloudSe
       )
 }
 
-export function resultEither<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
+export function returnEither<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
   ff: (a: T) => E.Either<Error, R>,
 ) {
   return (f: (session: ICloudSession) => TE.TaskEither<Error, T>) =>
@@ -207,10 +202,10 @@ export function resultEither<T extends { httpResponse: HttpResponse; session: IC
       )
 }
 
-export const emptyResult = result(constant({}))
-export const returnJson = <
+export const returnEmpty = returnS(constant({}))
+export const returnDecoded = <
   R,
->() => result<{ httpResponse: HttpResponse; session: ICloudSession; readonly decoded: R }, R>(_ => _.decoded)
+>() => returnS<{ httpResponse: HttpResponse; session: ICloudSession; readonly decoded: R }, R>(_ => _.decoded)
 
 export const withResponse = (httpResponse: HttpResponse) =>
   pipe(
@@ -224,7 +219,7 @@ export const expectJson = <T>(
     session: ICloudSession,
   ) => (a: { decoded: T; httpResponse: HttpResponse }) => ICloudSession = (
     session: ICloudSession,
-  ) => (({ httpResponse }) => applyCookies(httpResponse)(session)),
+  ) => (({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
 ) =>
   (session: ICloudSession) =>
     TE.chain<Error, HttpResponse, ResponseWithSession<T>>(
