@@ -3,13 +3,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { FetchClientEither } from '../../lib/http/fetch-client'
 import { logger } from '../../lib/logging'
 import { EmptyObject } from '../../lib/types'
-import {
-  applyToSession2,
-  filterStatus,
-  ResponseWithSession,
-  returnEmpty,
-  withResponse,
-} from '../drive/requests/filterStatus'
+import { applyToSession2, filterStatus, ResponseWithSession, returnEmpty, withResponse } from '../drive/requests/http'
 import { ICloudSession } from '../session/session'
 import { applyCookiesToSession, buildRequest } from '../session/session-http'
 import { headers } from '../session/session-http-headers'

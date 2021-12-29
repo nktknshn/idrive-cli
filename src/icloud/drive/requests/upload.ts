@@ -8,7 +8,7 @@ import { FetchClientEither, uploadFileRequest } from '../../../lib/http/fetch-cl
 import { apiLogger, logf } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { expectJson, ResponseWithSession } from './filterStatus'
+import { expectJson, ResponseWithSession } from './http'
 
 const uploadResponse = t.array(t.type({
   document_id: t.string,

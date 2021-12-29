@@ -27,21 +27,7 @@ export type ResponseHandler<R, E1 = Error> = (
   ma: TE.TaskEither<E1, HttpResponse>,
 ) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
 
-export const filterStatus = (status = 200) =>
-  flow(
-    TE.filterOrElseW(
-      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
-      r => InvalidGlobalSessionResponse.create(r.httpResponse),
-    ),
-    TE.filterOrElseW(
-      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
-      r => BadRequestError.create(r.httpResponse),
-    ),
-    TE.filterOrElseW(
-      r => r.httpResponse.status == status,
-      r => err(`invalid status ${r.httpResponse.status}`),
-    ),
-  )
+export const filterStatus = (status = 200) => filterStatuses([status])
 
 export const filterStatuses = (statuses = [200]) =>
   flow(

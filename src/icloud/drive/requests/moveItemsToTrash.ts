@@ -6,7 +6,7 @@ import { apiLogger } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { expectJson, ResponseWithSession } from './filterStatus'
+import { expectJson, ResponseWithSession } from './http'
 
 export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]

@@ -7,7 +7,7 @@ import * as t from 'io-ts'
 import { err, InvalidJsonInResponse, MissingResponseBody, UnexpectedResponse } from '../../lib/errors'
 import { FetchClientEither, HttpResponse } from '../../lib/http/fetch-client'
 import { getHeader } from '../../lib/http/http-headers'
-import { logger } from '../../lib/logging'
+import { authLogger, logger } from '../../lib/logging'
 // import { applyCookies, createHttpResponseReducer1, ResponseWithSession } from '../../lib/response-reducer'
 import {
   applyToSession2,
@@ -19,7 +19,7 @@ import {
   returnEmpty,
   returnS,
   withResponse,
-} from '../drive/requests/filterStatus'
+} from '../drive/requests/http'
 import { ICloudSession } from '../session/session'
 import { applyCookiesToSession, buildRequest } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
@@ -107,7 +107,7 @@ export function requestSignIn(
     trustTokens: string[]
   },
 ): TE.TaskEither<Error, ResponseWithSession<SignInResponse>> {
-  logger.debug('requestSignIn')
+  authLogger.debug('requestSignIn')
 
   return pipe(
     session,

@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios'
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 import FormData from 'form-data'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -19,7 +19,8 @@ export type HttpHeaders = Record<string, string | string[]>
 const _client = (config: HttpRequest) =>
   axios.request({
     ...config,
-    validateStatus: (code) => code < 500,
+    validateStatus: () => true,
+    // (code) => code < 500,
   })
 
 export type FetchClient = typeof _client
@@ -65,6 +66,7 @@ export const fetchClient: FetchClientEither = (config) =>
       httplogger.debug('error')
       if (axios.isAxiosError(error)) {
         httplogger.debug(error.response)
+        return FetchError.create(`Error fetching: ${String(error)}`, error)
       }
       return FetchError.create(`Error fetching: ${String(error)}`)
     },
@@ -95,13 +97,25 @@ export const uploadFileRequest = (
 }
 
 export class FetchError extends Error {
-  readonly tag = 'FetchError'
+  constructor(message: string, public readonly axiosError?: AxiosError) {
+    super(message)
+  }
 
   public static is(a: unknown): a is FetchError {
     return a instanceof FetchError
   }
 
-  public static create(message: string): FetchError {
-    return new FetchError(message)
+  public static create(message: string, axiosError?: AxiosError): FetchError {
+    return new FetchError(message, axiosError)
   }
 }
+
+// export class FetchErrorAxios extends Error {
+//   public static is(a: unknown): a is FetchErrorAxios {
+//     return a instanceof FetchErrorAxios
+//   }
+
+//   public static create(message: string, axiosError?: AxiosError): FetchErrorAxios {
+//     return new FetchErrorAxios(message, axiosError?: AxiosError)
+//   }
+// }

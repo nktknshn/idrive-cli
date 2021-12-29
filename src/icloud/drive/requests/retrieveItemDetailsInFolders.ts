@@ -8,14 +8,7 @@ import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import {
-  applyToSession,
-  decodeJson,
-  filterStatus,
-  ResponseHandler,
-  ResponseWithSession,
-  withResponse,
-} from './filterStatus'
+import { applyToSession, decodeJson, filterStatus, ResponseHandler, ResponseWithSession, withResponse } from './http'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 

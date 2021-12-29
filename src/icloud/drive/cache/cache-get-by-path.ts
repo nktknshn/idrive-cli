@@ -1,24 +1,15 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { cacheLogger, logger } from '../../../../lib/logging'
-import { NEA } from '../../../../lib/types'
-import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../../errors'
-import * as H from '../../fdrive/validation'
-import { findInParent } from '../../helpers'
-import {
-  Details,
-  DetailsRegular,
-  DriveChildrenItemFile,
-  fileName,
-  isTrashDetails,
-  Root,
-} from '../../requests/types/types'
-import * as C from '../cachef'
-import { CacheF } from '../types'
-import { GetByPathResult } from './GetByPathResultValid'
+import { cacheLogger, logger } from '../../../lib/logging'
+import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
+import * as H from '../fdrive/validation'
+import { findInParent } from '../helpers'
+import { Details, DetailsRegular, fileName, isTrashDetails, Root } from '../requests/types/types'
+import * as C from './cache'
+import { Result } from './cache-get-by-path-types'
+import { CacheF } from './types'
 
 const showDetails = (d: Details): string => {
   return isTrashDetails(d) ? 'TRASH' : `${d.type}: ${fileName(d)}`
@@ -31,7 +22,7 @@ export const getFromCacheByPath = <R extends Root | DetailsRegular>(
   path: string[],
   parentEntity: R,
 ) =>
-  (cache: CacheF): GetByPathResult<H.Hierarchy<R>> => {
+  (cache: CacheF): Result<H.Hierarchy<R>> => {
     cacheLogger.debug(`getPartialValidPathV2: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {
@@ -77,19 +68,18 @@ export const getFromCacheByPath = <R extends Root | DetailsRegular>(
       // sub item is a folder and we need to go deeper
 
       return pipe(
-        cache,
         // BUG
-        C.getFolderDetailsByIdE(subitem.value.drivewsid),
+        C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (): GetByPathResult<H.Hierarchy<R>> => ({
+          (): Result<H.Hierarchy<R>> => ({
             valid: false,
             path: H.partialPath<H.Hierarchy<R>>(result, path),
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
           }),
-          ({ content }): GetByPathResult<H.Hierarchy<R>> =>
+          ({ content }): Result<H.Hierarchy<R>> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
-              (result): GetByPathResult<H.Hierarchy<R>> =>
+              (result): Result<H.Hierarchy<R>> =>
                 result.valid
                   ? ({
                     valid: true,
@@ -115,12 +105,12 @@ export const getFromCacheByPath = <R extends Root | DetailsRegular>(
         cache,
         C.getFolderDetailsByIdE(subitem.value.drivewsid),
         E.fold(
-          (): GetByPathResult<H.Hierarchy<R>> => ({
+          (): Result<H.Hierarchy<R>> => ({
             valid: false,
             path: H.partialPath<H.Hierarchy<R>>(result, path),
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
           }),
-          ({ content }): GetByPathResult<H.Hierarchy<R>> => ({
+          ({ content }): Result<H.Hierarchy<R>> => ({
             valid: true,
             path: H.validPath<H.Hierarchy<R>>(H.concat([parentEntity], [content])),
             file: O.none,

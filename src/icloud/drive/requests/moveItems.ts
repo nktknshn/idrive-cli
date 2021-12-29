@@ -5,7 +5,7 @@ import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { expectJson, ResponseWithSession } from './filterStatus'
+import { expectJson, ResponseWithSession } from './http'
 import { childrenItem } from './types/types-io'
 
 const moveItemToTrashResponse = t.type({ items: t.array(childrenItem) })

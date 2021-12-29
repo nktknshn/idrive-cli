@@ -3,7 +3,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as V from '../../../icloud/drive/cache/cachef/GetByPathResultValid'
+import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/fdrive'
 import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
@@ -91,7 +91,7 @@ const caseMoveAndRename = (
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.GetByPathResult<H.Hierarchy<DetailsRoot>>>
+    srcdst: NEA<V.Result<H.Hierarchy<DetailsRoot>>>
   },
 ): DF.DriveM<MoveItemToTrashResponse | RenameResponse> => {
   if (!srcitem.valid) {

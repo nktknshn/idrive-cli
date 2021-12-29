@@ -6,7 +6,7 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DF from '../fdrive'
 
-/** keeping the order modify subset of input which is true when `refinement` applied */
+/** modify subset of input which is true when `refinement` applied */
 export const modifySubsetDF = <A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
@@ -24,11 +24,11 @@ export const modifySubsetDF = <A, B extends A, C, D extends A>(
     pipe(subset.map(_ => _.a), A.match(() => DF.of([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
-    SRTE.map(res => projectIndexes2(input as NA.NonEmptyArray<D>, res, fac)),
+    SRTE.map(res => projectIndexes(input as NA.NonEmptyArray<D>, res, fac)),
   )
 }
 
-export const projectIndexes2 = <A, B>(
+export const projectIndexes = <A, B>(
   as: NA.NonEmptyArray<A>,
   values: { index: number; a: B }[],
   f: (a: A) => B,

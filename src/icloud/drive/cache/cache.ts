@@ -11,7 +11,7 @@ import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger } from '../../../lib/logging'
-import { cast, isObjectWithOwnProperty } from '../../../lib/util'
+import { isObjectWithOwnProperty } from '../../../lib/util'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { parsePath } from '../helpers'
 import {
@@ -27,8 +27,8 @@ import {
   Root,
 } from '../requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from '../requests/types/types-io'
-import { HierarchyResult } from './cachef/GetByPathResultValid'
-import { getFromCacheByPath } from './cachef/getPartialValidPath'
+import { getFromCacheByPath } from './cache-get-by-path'
+import { HierarchyResult } from './cache-get-by-path-types'
 import { MissingParentError } from './errors'
 import * as T from './types'
 

@@ -1,7 +1,5 @@
-import assert from 'assert'
 import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
 import { apply, constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
@@ -15,17 +13,17 @@ import { err } from '../../lib/errors'
 import { cacheLogger, logger, logReturnAs, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 // import { Cache } from './cache/Cache
-import * as C from '../drive/cache/cachef'
-import { GetByPathResult } from './cache/cachef/GetByPathResultValid'
+import * as C from './cache/cache'
+import { Result } from './cache/cache-get-by-path-types'
 import { DriveApi } from './drive-api'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from './errors'
-import { lssE, lsss } from './fdrive/lsss'
+import { getByPaths, getByPathsE } from './fdrive/get-by-paths'
 import { Hierarchy } from './fdrive/validation'
 import { getMissedFound, parsePath } from './helpers'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
-export { lssE }
+export { getByPathsE }
 
 export type DetailsOrFile<R> = (R | T.DetailsRegular | T.DriveChildrenItemFile)
 
@@ -40,20 +38,36 @@ export const Do = SRTE.of<C.Cache, DriveMEnv, Error, {}>({})
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
+export const readEnv = sequenceS(SRTE.Apply)({
+  cache: SRTE.get<C.Cache, DriveMEnv>(),
+  env: SRTE.ask<C.Cache, DriveMEnv>(),
+})
+
+export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
+export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
+export const left = <A>(e: Error): DriveM<A> => SRTE.left(e)
+export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> => SRTE.fromTaskEither(te)
+export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => SRTE.fromOption(f)(opt)
+export const errS = <A>(s: string): DriveM<A> => SRTE.left(err(s))
+
+export const map = SRTE.map
+
+export const logS = flow(logReturnS, SRTE.map)
+
 export const lssPartial = <R extends T.Root>(root: R, paths: NEA<NormalizedPath>) => {
-  return lsss(root, paths)
+  return getByPaths(root, paths)
 }
 
-export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<GetByPathResult<Hierarchy<R>>> => {
+export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<Result<Hierarchy<R>>> => {
   return pipe(
-    lsss(root, [path]),
+    getByPaths(root, [path]),
     map(NA.head),
   )
 }
 
 export const ls = <R extends T.Root>(root: R, path: NormalizedPath) =>
   pipe(
-    lssE(root, [path]),
+    getByPathsE(root, [path]),
     chain(
       flow(A.lookup(0), fromOption(() => err(`wat`))),
     ),
@@ -61,7 +75,7 @@ export const ls = <R extends T.Root>(root: R, path: NormalizedPath) =>
 
 export const lsdir = <R extends T.Root>(root: R, path: NormalizedPath) =>
   pipe(
-    lssE(root, [path]),
+    getByPathsE(root, [path]),
     chain(
       flow(A.lookup(0), fromOption(() => err(`wat`))),
     ),
@@ -108,22 +122,6 @@ export const chainTrash = <R>(
   )
 }
 
-export const readEnv = sequenceS(SRTE.Apply)({
-  cache: SRTE.get<C.Cache, DriveMEnv>(),
-  env: SRTE.ask<C.Cache, DriveMEnv>(),
-})
-
-export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
-export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
-export const left = <A>(e: Error): DriveM<A> => SRTE.left(e)
-export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> => SRTE.fromTaskEither(te)
-export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => SRTE.fromOption(f)(opt)
-export const errS = <A>(s: string): DriveM<A> => SRTE.left(err(s))
-
-export const map = SRTE.map
-
-export const logS = flow(logReturnS, SRTE.map)
-
 const putFoundMissed = ({ found, missed }: {
   found: T.Details[]
   missed: string[]
@@ -147,7 +145,7 @@ export const retrieveItemDetailsInFoldersSaving = (
     SRTE.chain(({ details }) =>
       pipe(
         putFoundMissed(getMissedFound(drivewsids, details)),
-        SRTE.chain(() => of(A.map(T.asOption)(details))),
+        SRTE.chain(() => of(A.map(T.invalidIdToOption)(details))),
       )
     ),
   )
@@ -220,7 +218,7 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.May
 export const retrieveItemDetailsInFoldersCachingO = (drivewsids: string[]): DriveM<O.Option<T.Details>[]> => {
   return pipe(
     retrieveItemDetailsInFolders(drivewsids),
-    SRTE.map(A.map(T.asOption)),
+    SRTE.map(A.map(T.invalidIdToOption)),
   )
 }
 
@@ -238,7 +236,7 @@ export const retrieveItemDetailsInFolder = (drivewsid: string): DriveM<O.Option<
   pipe(
     retrieveItemDetailsInFolders([drivewsid]),
     expectSome(A.lookup(0)),
-    SRTE.map(T.asOption),
+    SRTE.map(T.invalidIdToOption),
   )
 
 export const retrieveItemDetailsInFolderCachingE = (drivewsid: string): DriveM<T.Details> =>

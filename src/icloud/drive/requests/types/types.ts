@@ -56,7 +56,7 @@ export type MaybeNotFound<T> = InvalidId | T
 export const isNotInvalidId = <T>(i: T | InvalidId): i is T => !types.invalidIdItem.is(i)
 export const isInvalidId = <T>(i: T | InvalidId): i is InvalidId => types.invalidIdItem.is(i)
 
-export const asOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O.none : O.some(i)
+export const invalidIdToOption = <T>(i: T | InvalidId): O.Option<T> => isInvalidId(i) ? O.none : O.some(i)
 
 export type DriveDetailsWithHierarchy =
   | DriveDetailsRootWithHierarchy

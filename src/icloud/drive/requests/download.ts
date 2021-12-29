@@ -7,7 +7,7 @@ import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-clien
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import { applyToSession, expectJson, ResponseWithSession } from './filterStatus'
+import { applyToSession, expectJson, ResponseWithSession } from './http'
 
 type RetrieveOpts = {
   documentId: string

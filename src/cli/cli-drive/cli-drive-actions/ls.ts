@@ -9,10 +9,10 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
-import * as C from '../../../icloud/drive/cache/cachef'
-import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cachef/GetByPathResultValid'
+import * as C from '../../../icloud/drive/cache/cache'
+import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/fdrive'
-import { lsss } from '../../../icloud/drive/fdrive/lsss'
+import { getByPaths } from '../../../icloud/drive/fdrive/get-by-paths'
 import {
   Details,
   DetailsRegular,
@@ -283,8 +283,8 @@ export const listUnixPath = (
         DF.readEnv,
         DF.chain((): DF.DriveM<NEA<HierarchyResult<DetailsTrash | DetailsRoot>>> =>
           trash
-            ? DF.chainTrash(trash => lsss(trash, npaths))
-            : DF.chainRoot(root => lsss(root, npaths))
+            ? DF.chainTrash(trash => getByPaths(trash, npaths))
+            : DF.chainRoot(root => getByPaths(root, npaths))
         ),
         DF.saveCacheFirst(cacheFile),
         SRTE.map(

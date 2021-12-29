@@ -23,7 +23,7 @@ export const tail = <R extends Root>([, ...tail]: Hierarchy<R>) => tail
 export const isHierarchy = <R extends Root>(details: NEA<Details>): details is Hierarchy<R> =>
   isCloudDocsRootDetails(details[0]) || isTrashDetails(details[0])
 
-const same = (a: Details, b: Details) => {
+const isSameDetails = (a: Details, b: Details) => {
   if (a.drivewsid !== b.drivewsid) {
     return false
   }
@@ -56,7 +56,7 @@ export const getValidHierarchyPart = <R extends Root>(
 
   return pipe(
     A.zip(actualPathDetails, cachedPath),
-    A.takeLeftWhile(([a, b]) => same(a, b)),
+    A.takeLeftWhile(([a, b]) => isSameDetails(a, b)),
     _ => ({
       validPart: A.takeLeft(_.length)(actualPathDetails),
       rest: pipe(
@@ -114,7 +114,7 @@ export const eq = <R extends Root>(): Eq<Hierarchy<R>> => ({
 
     return pipe(
       A.zip(a, b),
-      A.every(([a, b]) => same(a, b)),
+      A.every(([a, b]) => isSameDetails(a, b)),
     )
   },
 })

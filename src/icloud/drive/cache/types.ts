@@ -1,13 +1,4 @@
-import * as O from 'fp-ts/lib/Option'
-import {
-  DetailsAppLibrary,
-  DetailsFolder,
-  DetailsRoot,
-  DetailsTrash,
-  DriveChildrenItemAppLibrary,
-  DriveChildrenItemFile,
-  DriveChildrenItemFolder,
-} from '../requests/types/types'
+import * as T from '../requests/types/types'
 
 export interface CacheF {
   readonly byDrivewsid: { readonly [drivewsid: string]: CacheEntity }
@@ -42,54 +33,54 @@ export type ICloudDriveCacheEntityType = CacheEntity['type']
 export interface CacheEntityFolderRootDetails {
   readonly type: 'ROOT'
   readonly hasDetails: true
-  readonly content: DetailsRoot
+  readonly content: T.DetailsRoot
 }
 
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
-  constructor(public readonly content: DetailsRoot) {}
+  constructor(public readonly content: T.DetailsRoot) {}
 }
 
 export class CacheEntityFolderTrashDetails {
   readonly type = 'TRASH_ROOT'
   readonly hasDetails = true
-  constructor(public readonly content: DetailsTrash) {}
+  constructor(public readonly content: T.DetailsTrash) {}
 }
 
 export class CacheEntityFolderDetails {
   readonly type = 'FOLDER'
   readonly hasDetails = true
 
-  constructor(public readonly content: DetailsFolder) {}
+  constructor(public readonly content: T.DetailsFolder) {}
 }
 
 export class CacheEntityFolderItem {
   readonly type = 'FOLDER'
   readonly hasDetails = false
 
-  constructor(public readonly content: DriveChildrenItemFolder) {}
+  constructor(public readonly content: T.DriveChildrenItemFolder) {}
 }
 
 export class CacheEntityAppLibraryDetails {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = true
 
-  constructor(public readonly content: DetailsAppLibrary) {}
+  constructor(public readonly content: T.DetailsAppLibrary) {}
 }
 
 export class CacheEntityAppLibraryItem {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = false
 
-  constructor(public readonly content: DriveChildrenItemAppLibrary) {}
+  constructor(public readonly content: T.DriveChildrenItemAppLibrary) {}
 }
 
 export class CacheEntityFile {
   readonly type = 'FILE'
   readonly hasDetails = false
 
-  constructor(public readonly content: DriveChildrenItemFile) {}
+  constructor(public readonly content: T.DriveChildrenItemFile) {}
 }
 
 export const hasParentId = (entity: CacheEntity): entity is CacheEntityWithParentId =>

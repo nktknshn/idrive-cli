@@ -1,18 +1,16 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import * as DF from '../../../icloud/drive/fdrive'
-import { isDetails, isNotRootDetails } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
-import { logger, logReturn, logReturnS } from '../../../lib/logging'
+import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
 import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFolderInfo } from './ls'
+import { showDetailsInfo } from './ls'
 
 export const mkdir = ({
   sessionFile,

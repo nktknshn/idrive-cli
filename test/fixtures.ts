@@ -154,6 +154,11 @@ export const validAccountdata: AccountLoginResponseBody = {
   },
 }
 
+export const validatedSession: ICloudSessionValidated = {
+  session: validSession,
+  accountData: validAccountdata,
+}
+
 export const retrieveHierarchy1 = {
   dateCreated: '2021-09-25T20:39:45Z',
   drivewsid: 'FOLDER::F3LWYJ7GM7.com.apple.mobilegarageband::documents',

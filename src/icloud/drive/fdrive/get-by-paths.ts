@@ -1,4 +1,3 @@
-import assert from 'assert'
 import { string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
@@ -14,14 +13,23 @@ import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
-import * as C from '../cache/cachef'
-import * as V from '../cache/cachef/GetByPathResultValid'
+import * as C from '../cache/cache'
+import * as V from '../cache/cache-get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as DF from '../fdrive'
 import { findInParent, recordFromTuples } from '../helpers'
 import * as T from '../requests/types/types'
-import { modifySubsetDF } from './modifySubsetDF'
+import { modifySubsetDF } from './modify-subset'
 import * as H from './validation'
+
+type DepperFolders<R extends T.Root> =
+  // folders items with empty rest (valid, requires details)
+  | [O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>, [[], V.ResultInvalid<H.Hierarchy<R>>]]
+  // folders items with non empty rest (incomplete paths)
+  | [
+    O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
+    [NEA<string>, V.ResultInvalid<H.Hierarchy<R>>],
+  ]
 
 const equalsDrivewsId = <T extends string>() =>
   fromEquals((a: { drivewsid: T }, b: { drivewsid: T }) => a.drivewsid == b.drivewsid)
@@ -102,9 +110,9 @@ export const validateHierarchies = <R extends T.Root>(
 }
 
 const concatCachedWithValidated = <R extends T.Root>(
-  cached: V.GetByPathResult<H.Hierarchy<R>>,
+  cached: V.Result<H.Hierarchy<R>>,
   validated: H.WithDetails<H.Hierarchy<R>>,
-): V.GetByPathResult<H.Hierarchy<R>> => {
+): V.Result<H.Hierarchy<R>> => {
   if (cached.valid) {
     if (H.isValid(validated)) {
       if (O.isSome(cached.file)) {
@@ -164,7 +172,7 @@ const concatCachedWithValidated = <R extends T.Root>(
 export const validateCachedPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<V.GetByPathResult<H.Hierarchy<R>>>> => {
+): DF.DriveM<NEA<V.Result<H.Hierarchy<R>>>> => {
   return pipe(
     logg(`validateCachedPaths: ${paths}`),
     () => DF.readEnv,
@@ -175,7 +183,7 @@ export const validateCachedPaths = <R extends T.Root>(
             paths,
             NA.map(path => pipe(cache, C.getByPath(root, path))),
             E.sequenceArray,
-            E.map(_ => _ as NEA<V.GetByPathResult<H.Hierarchy<R>>>),
+            E.map(_ => _ as NEA<V.Result<H.Hierarchy<R>>>),
           ),
         ),
       )),
@@ -184,7 +192,7 @@ export const validateCachedPaths = <R extends T.Root>(
         logg(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
         () => validateHierarchies(root, pipe(cached, NA.map(_ => _.path.details))),
         SRTE.map(NA.zip(cached)),
-        SRTE.map(NA.map(([validated, cached]): V.GetByPathResult<H.Hierarchy<R>> => {
+        SRTE.map(NA.map(([validated, cached]): V.Result<H.Hierarchy<R>> => {
           return concatCachedWithValidated<R>(cached, validated)
         })),
       )
@@ -192,15 +200,6 @@ export const validateCachedPaths = <R extends T.Root>(
     DF.logS(paths => `result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
   )
 }
-
-type DepperFolders<R extends T.Root> =
-  // folders items with empty rest (valid, requires details)
-  | [O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>, [[], V.GetByPathResultInvalid<H.Hierarchy<R>>]]
-  // folders items with non empty rest (incomplete paths)
-  | [
-    O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
-    [NEA<string>, V.GetByPathResultInvalid<H.Hierarchy<R>>],
-  ]
 
 const handleFolders = <R extends T.Root>(task: NEA<DepperFolders<R>>): DF.DriveM<NEA<V.HierarchyResult<R>>> => {
   logger.debug(`handleFolders: ${
@@ -224,13 +223,13 @@ const handleFolders = <R extends T.Root>(task: NEA<DepperFolders<R>>): DF.DriveM
           T.DriveDetailsWithHierarchy,
           [
             O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
-            [NEA<string>, V.GetByPathResultInvalid<H.Hierarchy<R>>],
+            [NEA<string>, V.ResultInvalid<H.Hierarchy<R>>],
           ],
         ] => pipe(v, ([details, [item, [rest, partial]]]) => A.isNonEmpty(rest)),
         (task) => {
           return pipe(
             task,
-            NA.map(([details, [item, [rest, partial]]]): V.GetByPathResultInvalid<H.Hierarchy<R>> =>
+            NA.map(([details, [item, [rest, partial]]]): V.ResultInvalid<H.Hierarchy<R>> =>
               V.invalidResult(
                 H.partialPath(
                   H.concat(partial.path.details, [details]),
@@ -242,7 +241,7 @@ const handleFolders = <R extends T.Root>(task: NEA<DepperFolders<R>>): DF.DriveM
             retrivePartials,
           )
         },
-        ([details, [item, [rest, partial]]]): V.GetByPathResultValid<H.Hierarchy<R>> => {
+        ([details, [item, [rest, partial]]]): V.ResultValid<H.Hierarchy<R>> => {
           return {
             valid: true,
             path: H.validPath(H.concat(partial.path.details, [details])),
@@ -258,18 +257,18 @@ const handleFiles = <R extends T.Root>() =>
   (
     [item, [rest, partial]]: [
       O.Some<T.DriveChildrenItemFile>,
-      [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>],
+      [string[], V.ResultInvalid<H.Hierarchy<R>>],
     ],
-  ): V.GetByPathResult<H.Hierarchy<R>> => {
+  ): V.Result<H.Hierarchy<R>> => {
     return pipe(
       rest,
       A.match(
-        (): V.GetByPathResultValid<H.Hierarchy<R>> => ({
+        (): V.ResultValid<H.Hierarchy<R>> => ({
           valid: true,
           file: item,
           path: H.validPath(partial.path.details),
         }),
-        (rest): V.GetByPathResult<H.Hierarchy<R>> => ({
+        (rest): V.Result<H.Hierarchy<R>> => ({
           valid: false,
           error: ItemIsNotFolderError.create(`item is not folder`),
           path: H.partialPath(partial.path.details, NA.concat([T.fileName(item.value)], rest)),
@@ -279,7 +278,7 @@ const handleFiles = <R extends T.Root>() =>
   }
 
 const handleItems = <R extends T.Root>(
-  found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>]]>,
+  found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.ResultInvalid<H.Hierarchy<R>>]]>,
 ): DF.DriveM<V.HierarchyResult<R>[]> => {
   logger.debug(`handleItems. ${
     found.map(([item, [rest, partial]]) => {
@@ -288,7 +287,7 @@ const handleItems = <R extends T.Root>(
   }`)
 
   const filterFolders = (
-    v: [O.Some<T.DriveChildrenItem>, [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>]],
+    v: [O.Some<T.DriveChildrenItem>, [string[], V.ResultInvalid<H.Hierarchy<R>>]],
   ): v is DepperFolders<R> => {
     return T.isFolderLikeItem(v[0].value)
   }
@@ -301,8 +300,8 @@ const handleItems = <R extends T.Root>(
 }
 
 const retrivePartials = <R extends T.Root>(
-  partialPaths: NEA<V.GetByPathResultInvalid<H.Hierarchy<R>>>,
-): DF.DriveM<NEA<V.GetByPathResult<H.Hierarchy<R>>>> => {
+  partialPaths: NEA<V.ResultInvalid<H.Hierarchy<R>>>,
+): DF.DriveM<NEA<V.Result<H.Hierarchy<R>>>> => {
   logger.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)
 
   const subItems = pipe(
@@ -313,10 +312,9 @@ const retrivePartials = <R extends T.Root>(
 
   return modifySubsetDF(
     subItems,
-    (v): v is [O.Some<T.DriveChildrenItem>, [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>]] =>
-      pipe(v, fst, O.isSome),
+    (v): v is [O.Some<T.DriveChildrenItem>, [string[], V.ResultInvalid<H.Hierarchy<R>>]] => pipe(v, fst, O.isSome),
     handleItems,
-    ([item, [rest, partial]]: [O.None, [string[], V.GetByPathResultInvalid<H.Hierarchy<R>>]]): V.HierarchyResult<R> => {
+    ([item, [rest, partial]]: [O.None, [string[], V.ResultInvalid<H.Hierarchy<R>>]]): V.HierarchyResult<R> => {
       return {
         valid: false,
         error: NotFoundError.createTemplate(
@@ -330,18 +328,17 @@ const retrivePartials = <R extends T.Root>(
 }
 
 const getActuals = <R extends T.Root>(
-  results: NEA<[V.GetByPathResult<H.Hierarchy<R>>, NormalizedPath]>,
-): DF.DriveM<NEA<V.GetByPathResult<H.Hierarchy<R>>>> => {
+  results: NEA<[V.Result<H.Hierarchy<R>>, NormalizedPath]>,
+): DF.DriveM<NEA<V.Result<H.Hierarchy<R>>>> => {
   logger.debug(
     `getActuals: ${results.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )
   return pipe(
     modifySubsetDF(
       results,
-      (res): res is [V.GetByPathResultInvalid<H.Hierarchy<R>>, NormalizedPath] => !res[0].valid,
-      (subset: NEA<[V.GetByPathResultInvalid<H.Hierarchy<R>>, NormalizedPath]>) =>
-        pipe(subset, NA.map(fst), retrivePartials),
-      ([h, p]: [V.GetByPathResultValid<H.Hierarchy<R>>, NormalizedPath]): V.HierarchyResult<R> => h,
+      (res): res is [V.ResultInvalid<H.Hierarchy<R>>, NormalizedPath] => !res[0].valid,
+      (subset: NEA<[V.ResultInvalid<H.Hierarchy<R>>, NormalizedPath]>) => pipe(subset, NA.map(fst), retrivePartials),
+      ([h, p]: [V.ResultValid<H.Hierarchy<R>>, NormalizedPath]): V.HierarchyResult<R> => h,
     ),
   )
 }
@@ -359,28 +356,12 @@ export const getByPaths = <R extends T.Root>(
   return res
 }
 
-export const lsss = <R extends T.Root>(
-  root: R,
-  paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<V.HierarchyResult<R>>> => {
-  return getByPaths(root, paths)
-}
-
-export const lsssG = <R extends T.Root>(
-  root: R,
-  paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<V.HierarchyResult<R>>> => {
-  return getByPaths(root, paths)
-}
-
-export const lssE = <R extends T.Root>(
+export const getByPathsE = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
 ): DF.DriveM<DF.DetailsOrFile<R>[]> => {
-  assert(A.isNonEmpty(paths))
-
   return pipe(
-    lsss(root, paths),
+    getByPaths(root, paths),
     DF.chain(
       flow(
         NA.map(res =>

@@ -95,6 +95,14 @@ const logger = winston.createLogger({
   ),
 })
 
+export const authLogger = winston.createLogger({
+  level: 'debug',
+  format: combine(
+    plain('auth', chalk.green),
+  ),
+  transports: [loggingLevels.infoToStderr],
+})
+
 export const apiLogger = winston.createLogger({
   level: 'debug',
   format: combine(

@@ -3,7 +3,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as V from '../../../icloud/drive/cache/cachef/GetByPathResultValid'
+import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/fdrive'
 import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
@@ -64,7 +64,7 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
 }
 
 const uploadOverwrighting = (
-  { src, dst }: { dst: V.GetByPathResultValidWithFile<H.Hierarchy<DetailsRoot>>; src: string },
+  { src, dst }: { dst: V.ResultValidWithFile<H.Hierarchy<DetailsRoot>>; src: string },
 ) => {
   const dstitem = V.target(dst)
   const parent = NA.last(dst.path.details)

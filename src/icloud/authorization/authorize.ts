@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { FetchClientEither } from '../../lib/http/fetch-client'
-import { logger } from '../../lib/logging'
+import { authLogger, logger } from '../../lib/logging'
 import { arrayFromOption } from '../../lib/util'
 import { ICloudSession } from '../session/session'
 import { requestAccoutLogin } from './accoutLogin'
@@ -24,7 +24,7 @@ export function authorizeSession(
   session: ICloudSession,
   { getCode }: AuthorizeProps,
 ): TE.TaskEither<Error, ICloudSessionValidated> {
-  logger.debug('authorizeSession')
+  authLogger.debug('authorizeSession')
 
   return pipe(
     requestSignIn(client, session, {

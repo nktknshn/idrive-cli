@@ -14,7 +14,7 @@ import { authorizeSession, ICloudSessionValidated } from '../authorization/autho
 import { getMissedFound } from './helpers'
 import { download, retrieveHierarchy, retrieveItemDetails, retrieveTrashDetails } from './requests'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
-import { ResponseWithSession } from './requests/filterStatus'
+import { ResponseWithSession } from './requests/http'
 import { moveItems } from './requests/moveItems'
 import { moveItemsToTrash, MoveItemToTrashResponse } from './requests/moveItemsToTrash'
 import { renameItems, RenameResponse } from './requests/rename'
@@ -191,7 +191,7 @@ export class DriveApi {
   public retrieveItemDetailsInFoldersO = (drivewsids: string[]): TE.TaskEither<Error, (O.Option<T.Details>)[]> => {
     return pipe(
       this.retrieveItemDetailsInFolders(drivewsids),
-      TE.map(A.map(T.asOption)),
+      TE.map(A.map(T.invalidIdToOption)),
     )
   }
 
@@ -220,7 +220,7 @@ export class DriveApi {
     return pipe(
       this.retrieveItemDetailsInFoldersHierarchies([drivewsid]),
       TE.chainOptionK(() => err(`invalid response (empty array)`))(A.lookup(0)),
-      TE.map(T.asOption),
+      TE.map(T.invalidIdToOption),
     )
   }
 
@@ -245,7 +245,7 @@ export class DriveApi {
 
   public retrieveItemDetailsInFoldersHierarchiesO = flow(
     this.retrieveItemDetailsInFoldersHierarchies,
-    TE.map(A.map(T.asOption)),
+    TE.map(A.map(T.invalidIdToOption)),
   )
 
   public retrieveItemDetailsInFoldersHierarchiesS = (drivewsids: string[]) =>

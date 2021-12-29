@@ -5,8 +5,8 @@ import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { normalizePath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile } from './config'
-import * as C from './icloud/drive/cache/cachef'
-import * as GetByPathResultValid from './icloud/drive/cache/cachef/GetByPathResultValid'
+import * as C from './icloud/drive/cache/cache'
+import * as GetByPathResultValid from './icloud/drive/cache/cache-get-by-path-types'
 import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
 
 function parseArgs() {
