@@ -7,10 +7,10 @@ import { capDelay, exponentialBackoff, limitRetries, Monoid, RetryStatus } from 
 import { retrying } from 'retry-ts/Task'
 import { InvalidGlobalSessionResponse } from '../../lib/errors'
 import { FetchClientEither, FetchError, HttpResponse } from '../../lib/http/fetch-client'
-import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
-import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
 import * as RQ from './requests'
+import { authorizeSession, ICloudSessionValidated } from './requests/authorization/authorize'
+import { AccountLoginResponseBody } from './requests/authorization/types'
 import * as T from './requests/types/types'
 
 export const retrieveItemDetailsInFolders = (drivewsids: string[]): ApiM<(T.Details | T.InvalidId)[]> => {
@@ -123,7 +123,6 @@ const catchFetchErrors = (triesLeft: number) =>
         return FetchError.is(e) && triesLeft > 0
           ? catchFetchErrors(triesLeft - 1)(m)
           : SRTE.left(e)
-        // : SRTE.left(e)
       }),
     )
   }

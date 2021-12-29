@@ -2,10 +2,12 @@ import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { defaultCountryCode } from '../../config'
-import { err } from '../../lib/errors'
-import { FetchClientEither } from '../../lib/http/fetch-client'
-import { logger } from '../../lib/logging'
+import { defaultCountryCode } from '../../../../config'
+import { err } from '../../../../lib/errors'
+import { FetchClientEither } from '../../../../lib/http/fetch-client'
+import { logger } from '../../../../lib/logging'
+import { ICloudSession } from '../../../session/session'
+import { applyCookiesToSession, buildRequest } from '../../../session/session-http'
 import {
   applyToSession,
   applyToSession2,
@@ -15,9 +17,7 @@ import {
   returnDecoded,
   returnS,
   withResponse,
-} from '../drive/requests/http'
-import { ICloudSession } from '../session/session'
-import { applyCookiesToSession, buildRequest } from '../session/session-http'
+} from '../http'
 import { AccountLoginResponseBody } from './types'
 
 export function requestAccoutLogin(

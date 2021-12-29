@@ -1,4 +1,4 @@
-import { EmptyObject } from '../../lib/types'
+import { EmptyObject } from '../../../../lib/types'
 
 export interface AccountLoginResponseBody {
   dsInfo: DsInfo

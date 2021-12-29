@@ -4,11 +4,14 @@ import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { err, InvalidJsonInResponse, MissingResponseBody, UnexpectedResponse } from '../../lib/errors'
-import { FetchClientEither, HttpResponse } from '../../lib/http/fetch-client'
-import { getHeader } from '../../lib/http/http-headers'
-import { authLogger, logger } from '../../lib/logging'
+import { err, InvalidJsonInResponse, MissingResponseBody, UnexpectedResponse } from '../../../../lib/errors'
+import { FetchClientEither, HttpResponse } from '../../../../lib/http/fetch-client'
+import { getHeader } from '../../../../lib/http/http-headers'
+import { authLogger, logger } from '../../../../lib/logging'
 // import { applyCookies, createHttpResponseReducer1, ResponseWithSession } from '../../lib/response-reducer'
+import { ICloudSession } from '../../../session/session'
+import { applyCookiesToSession, buildRequest } from '../../../session/session-http'
+import { headers } from '../../../session/session-http-headers'
 import {
   applyToSession2,
   decodeJsonEither,
@@ -19,10 +22,7 @@ import {
   returnEmpty,
   returnS,
   withResponse,
-} from '../drive/requests/http'
-import { ICloudSession } from '../session/session'
-import { applyCookiesToSession, buildRequest } from '../session/session-http'
-import { headers } from '../session/session-http-headers'
+} from '../http'
 import { authorizationHeaders } from './headers'
 import { applyAuthorizationResponse } from './response'
 

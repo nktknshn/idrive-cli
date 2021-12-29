@@ -2,20 +2,13 @@ import * as E from 'fp-ts/lib/Either'
 import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { err, UnexpectedResponse } from '../../lib/errors'
-import { FetchClientEither, HttpResponse } from '../../lib/http/fetch-client'
-import { logger } from '../../lib/logging'
-import {
-  applyToSession2,
-  filterStatus,
-  filterStatuses,
-  ResponseWithSession,
-  returnS,
-  withResponse,
-} from '../drive/requests/http'
-import { ICloudSession, sessionLens } from '../session/session'
-import { applyCookiesToSession, buildRequest } from '../session/session-http'
-import { headers } from '../session/session-http-headers'
+import { err, UnexpectedResponse } from '../../../../lib/errors'
+import { FetchClientEither, HttpResponse } from '../../../../lib/http/fetch-client'
+import { logger } from '../../../../lib/logging'
+import { ICloudSession, sessionLens } from '../../../session/session'
+import { applyCookiesToSession, buildRequest } from '../../../session/session-http'
+import { headers } from '../../../session/session-http-headers'
+import { applyToSession2, filterStatus, filterStatuses, ResponseWithSession, returnS, withResponse } from '../http'
 import { authorizationHeaders, getTrustToken } from './headers'
 import { applyAuthorizationResponse } from './response'
 

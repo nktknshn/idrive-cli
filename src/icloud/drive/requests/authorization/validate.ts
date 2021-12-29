@@ -9,13 +9,13 @@ import {
   InvalidGlobalSessionResponse,
   JsonParsingError,
   TypeDecodingError,
-} from '../../lib/errors'
-import { tryReadJsonFile } from '../../lib/files'
-import { FetchClientEither } from '../../lib/http/fetch-client'
-import { isObjectWithOwnProperty } from '../../lib/util'
-import { expectJson } from '../drive/requests/http'
-import { ICloudSessionWithSessionToken } from '../session/session'
-import { buildRequest } from '../session/session-http'
+} from '../../../../lib/errors'
+import { tryReadJsonFile } from '../../../../lib/files'
+import { FetchClientEither } from '../../../../lib/http/fetch-client'
+import { isObjectWithOwnProperty } from '../../../../lib/util'
+import { ICloudSessionWithSessionToken } from '../../../session/session'
+import { buildRequest } from '../../../session/session-http'
+import { expectJson } from '../http'
 import { ICloudSessionValidated } from './authorize'
 import { AccountLoginResponseBody } from './types'
 

@@ -6,8 +6,8 @@ import Path from 'path'
 import { err } from '../../../lib/errors'
 import { FetchClientEither, uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
-import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
+import { ICloudSessionValidated } from './authorization/authorize'
 import { expectJson, ResponseWithSession } from './http'
 
 const uploadResponse = t.array(t.type({

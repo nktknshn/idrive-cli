@@ -4,8 +4,8 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
-import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
+import { ICloudSessionValidated } from './authorization/authorize'
 import { expectJson, ResponseWithSession } from './http'
 
 export interface MoveItemToTrashResponse {

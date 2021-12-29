@@ -5,8 +5,8 @@ import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
 import { isObjectWithOwnProperty } from '../../../lib/util'
-import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
+import { ICloudSessionValidated } from './authorization/authorize'
 import { applyToSession, expectJson, ResponseWithSession } from './http'
 
 type RetrieveOpts = {
