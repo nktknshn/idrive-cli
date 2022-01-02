@@ -5,9 +5,10 @@ import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
 import { isObjectWithOwnProperty } from '../../../lib/util'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import { ICloudSessionValidated } from './authorization/authorize'
 import { applyToSession, expectJson, ResponseWithSession } from './http'
+import * as AR from './reader'
 
 type RetrieveOpts = {
   documentId: string
@@ -45,6 +46,20 @@ export function download(
     ),
     client,
     applyHttpResponseToSession(session),
+  )
+}
+
+export function downloadM(
+  { documentId, zone }: RetrieveOpts,
+) {
+  return AR.basicDriveJsonRequest(
+    ({ state: { accountData } }) => ({
+      method: 'GET',
+      url:
+        `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
+      options: { addClientInfo: false },
+    }),
+    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
   )
 }
 

@@ -57,7 +57,7 @@ export const rm = (
         // })),
       )
 
-      return pipe(res(cache)({ api }), TE.map(fst))
+      return pipe(res({ cache })({ api }), TE.map(fst))
     }),
   )
 }

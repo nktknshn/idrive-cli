@@ -11,6 +11,7 @@ import {
 } from '../../../lib/errors'
 import { HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import { ICloudSession } from '../../session/session'
 import { applyCookiesToSession } from '../../session/session-http'
 
@@ -29,21 +30,45 @@ export type ResponseHandler<R, E1 = Error> = (
 
 export const filterStatus = (status = 200) => filterStatuses([status])
 
-export const filterStatuses = (statuses = [200]) =>
-  flow(
-    TE.filterOrElseW(
-      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
-      r => InvalidGlobalSessionResponse.create(r.httpResponse),
-    ),
-    TE.filterOrElseW(
-      (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
-      r => BadRequestError.create(r.httpResponse),
-    ),
-    TE.filterOrElseW(
-      r => statuses.includes(r.httpResponse.status),
-      r => err(`invalid status ${r.httpResponse.status}`),
-    ),
-  )
+export const filterStatuses = <B extends { httpResponse: HttpResponse }>(
+  statuses = [200],
+) =>
+  (mb: TE.TaskEither<Error, B>): TE.TaskEither<Error, B> =>
+    pipe(
+      mb,
+      TE.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
+        r => InvalidGlobalSessionResponse.create(r.httpResponse),
+      ),
+      TE.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
+        r => BadRequestError.create(r.httpResponse),
+      ),
+      TE.filterOrElseW(
+        r => statuses.includes(r.httpResponse.status),
+        r => err(`invalid status ${r.httpResponse.status}`),
+      ),
+    )
+
+export const filterStatusesE = <B extends { httpResponse: HttpResponse }>(
+  statuses = [200],
+) =>
+  (mb: B): E.Either<Error, B> =>
+    pipe(
+      E.of(mb),
+      E.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
+        r => InvalidGlobalSessionResponse.create(r.httpResponse),
+      ),
+      E.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
+        r => BadRequestError.create(r.httpResponse),
+      ),
+      E.filterOrElseW(
+        r => statuses.includes(r.httpResponse.status),
+        r => err(`invalid status ${r.httpResponse.status}`),
+      ),
+    )
 
 const errorMessage = (err: t.ValidationError) => {
   const path = err.context.map((e) => `${e.key}`).join('/')
@@ -51,7 +76,7 @@ const errorMessage = (err: t.ValidationError) => {
   return `invalid value ${err.value} in ${path}`
 }
 
-const reporter = (validation: t.Validation<any>): string => {
+export const reporter = (validation: t.Validation<any>): string => {
   return pipe(
     validation,
     E.fold((errors) => errors.map(errorMessage).join('\n'), () => 'ok'),
@@ -189,7 +214,7 @@ export function returnEither<T extends { httpResponse: HttpResponse; session: IC
 }
 
 export const returnEmpty = returnS(constant({}))
-export const returnDecoded = <
+export const returnDecodedJson = <
   R,
 >() => returnS<{ httpResponse: HttpResponse; session: ICloudSession; readonly decoded: R }, R>(_ => _.decoded)
 
@@ -215,4 +240,14 @@ export const expectJson = <T>(
         decodeJson(decode),
         applyToSession(ap(session)),
       ),
+    )
+
+export const withResponse2 = <R extends { httpResponse: HttpResponse }>(
+  f: (te: TE.TaskEither<Error, { httpResponse: HttpResponse }>) => (session: ICloudSession) => TE.TaskEither<Error, R>,
+) =>
+  (te: TE.TaskEither<Error, HttpResponse>): (session: ICloudSession) => TE.TaskEither<Error, R> =>
+    pipe(
+      TE.Do,
+      TE.bind('httpResponse', () => te),
+      f,
     )

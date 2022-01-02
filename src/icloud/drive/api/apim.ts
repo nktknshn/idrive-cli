@@ -1,24 +1,13 @@
 import { sequenceS } from 'fp-ts/lib/Apply'
-import { constant, constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { constant, constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { capDelay, exponentialBackoff, limitRetries, Monoid, RetryStatus } from 'retry-ts'
-import { retrying } from 'retry-ts/Task'
-import { InvalidGlobalSessionResponse } from '../../lib/errors'
-import { FetchClientEither, FetchError, HttpResponse } from '../../lib/http/fetch-client'
-import { ICloudSession } from '../session/session'
-import * as RQ from './requests'
-import { authorizeSession, ICloudSessionValidated } from './requests/authorization/authorize'
-import { AccountLoginResponseBody } from './requests/authorization/types'
-import * as T from './requests/types/types'
-
-export const retrieveItemDetailsInFolders = (drivewsids: string[]): ApiM<(T.Details | T.InvalidId)[]> => {
-  return pipe(
-    executeRequest(RQ.retrieveItemDetailsInFolders)({ drivewsids }),
-    storeSessionAndReturnBody(),
-  )
-}
+import { InvalidGlobalSessionResponse } from '../../../lib/errors'
+import { FetchClientEither, FetchError, HttpResponse } from '../../../lib/http/fetch-client'
+import { authorizeSession, ICloudSessionValidated } from '../../authorization/authorize'
+import { AccountLoginResponseBody } from '../../authorization/types'
+import { ICloudSession } from '../../session/session'
 
 export const executeRequest = <TArgs extends any[], R>(
   f: (client: FetchClientEither, session: ICloudSessionValidated, ...args: TArgs) => TE.TaskEither<Error, R>,
@@ -36,21 +25,20 @@ export const executeRequest = <TArgs extends any[], R>(
           f => catchInvalidSession(() => catchFetchErrors(5)(f)),
         )
       ),
-      // storeSessionAndReturnBody(),
     )
 }
-
 const ado = sequenceS(SRTE.Apply)
-
-type State = { session: ICloudSessionValidated }
+type State<S = ICloudSessionValidated> = { session: S }
 type Env = {
   client: FetchClientEither
   getCode: () => TE.TaskEither<Error, string>
 }
 
-export type ApiM<T> = SRTE.StateReaderTaskEither<State, Env, Error, T>
+export type ApiM<T, S = ICloudSessionValidated> = SRTE.StateReaderTaskEither<State<S>, Env, Error, T>
+
 export const map = SRTE.map
 export const chain = <A, B>(f: (a: A) => ApiM<B>) => SRTE.chain(f)
+
 export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): ApiM<A> => SRTE.fromTaskEither(te)
 
 export const readEnv = ado({
@@ -75,11 +63,9 @@ const orElseTaskEitherW = <T1, T2>(
         ),
       )
   }
-
 const orElseW = <T1, T2>(
   f: (e: Error) => ApiM<T2>,
 ) => (m: ApiM<T1>): ApiM<T1 | T2> => (s) => pipe(m(s), RTE.orElseW((e) => f(e)(s)))
-
 const catchErrors = <T>(
   m: () => ApiM<T>,
 ): ApiM<T> => {
@@ -96,7 +82,6 @@ const catchErrors = <T>(
     }),
   )
 }
-
 const catchInvalidSession = <T>(
   m: () => ApiM<T>,
 ): ApiM<T> => {
@@ -112,7 +97,6 @@ const catchInvalidSession = <T>(
     }),
   )
 }
-
 const catchFetchErrors = (triesLeft: number) =>
   <T>(
     m: () => ApiM<T>,
@@ -126,7 +110,6 @@ const catchFetchErrors = (triesLeft: number) =>
       }),
     )
   }
-
 /**
  * tries to authorize the session storing the updated one
  */
@@ -142,7 +125,6 @@ const onInvalidSession = (): ApiM<void> => {
     storeSessionAndReturn(constVoid),
   )
 }
-
 const storeSessionAndReturn = <
   T extends {
     session: ICloudSession
@@ -173,8 +155,7 @@ const storeSessionAndReturn = <
       ),
     )
   }
-
-const storeSessionAndReturnBody = <
+export const storeSessionAndReturnBody = <
   T extends {
     session: ICloudSession
     accountData?: AccountLoginResponseBody

@@ -4,9 +4,10 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { ICloudSessionValidated } from './authorization/authorize'
 import { expectJson, ResponseWithSession } from './http'
+import * as AR from './reader'
 
 export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
@@ -48,3 +49,27 @@ export function moveItemsToTrash(
     applyHttpResponseToSession(session),
   )
 }
+
+export const moveItemsToTrashM = ({ items, trash = false }: {
+  items: { drivewsid: string; etag: string }[]
+  trash?: boolean
+}): AR.DriveApiRequest<MoveItemToTrashResponse> =>
+  AR.basicDriveJsonRequest(
+    ({ state: { accountData } }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.drivews.url}/${
+        trash ? 'moveItemsToTrash' : 'deleteItems'
+      }?dsid=${accountData.dsInfo.dsid}`,
+      options: {
+        addClientInfo: true,
+        data: {
+          items: items.map((item) => ({
+            drivewsid: item.drivewsid,
+            clientId: item.drivewsid,
+            etag: item.etag,
+          })),
+        },
+      },
+    }),
+    v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
+  )

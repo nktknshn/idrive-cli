@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { AccountLoginResponseBody } from '../icloud/authorization/types'
+import { readAccountData } from '../icloud/authorization/validate'
 import * as DriveApi from '../icloud/drive/drive-api'
-import { AccountLoginResponseBody } from '../icloud/drive/requests/authorization/types'
-import { readAccountData } from '../icloud/drive/requests/authorization/validate'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession } from '../icloud/session/session-file'
 

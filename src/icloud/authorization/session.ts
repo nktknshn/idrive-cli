@@ -1,9 +1,9 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, Lazy, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { HttpResponse } from '../../../../lib/http/fetch-client'
-import { getHeader } from '../../../../lib/http/http-headers'
-import { ICloudSession } from '../../../session/session'
+import { HttpResponse } from '../../lib/http/fetch-client'
+import { getHeader } from '../../lib/http/http-headers'
+import { ICloudSession } from '../session/session'
 import { getAccountCountry, getAuthAttributes, getScnt, getSessionId, getSessionToken } from './headers'
 
 const fallback = <A>(

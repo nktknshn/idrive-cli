@@ -7,8 +7,8 @@ import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/fdrive'
 import * as H from '../../../icloud/drive/fdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
-import { MoveItemToTrashResponse } from '../../../icloud/drive/requests/moveItems'
-import { RenameResponse } from '../../../icloud/drive/requests/rename'
+import { MoveItemToTrashResponse } from '../../../icloud/drive/requests'
+import { RenameResponse } from '../../../icloud/drive/requests'
 import {
   Details,
   DetailsRegular,
@@ -154,7 +154,7 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
         ),
       )
 
-      return pipe(res(cache)({ api }), TE.map(fst))
+      return pipe(res({ cache })({ api }), TE.map(fst))
     }),
   )
 }

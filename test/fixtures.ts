@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option'
-import { ICloudSessionValidated } from '../src/icloud/drive/requests/authorization/authorize'
-import { AccountLoginResponseBody } from '../src/icloud/drive/requests/authorization/types'
+import { ICloudSessionValidated } from '../src/icloud/authorization/authorize'
+import { AccountLoginResponseBody } from '../src/icloud/authorization/types'
 import { ICloudSession } from '../src/icloud/session/session'
 
 export const validSession: ICloudSession = {

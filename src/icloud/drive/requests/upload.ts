@@ -6,9 +6,10 @@ import Path from 'path'
 import { err } from '../../../lib/errors'
 import { FetchClientEither, uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import { ICloudSessionValidated } from './authorization/authorize'
 import { expectJson, ResponseWithSession } from './http'
+import * as AR from './reader'
 
 const uploadResponse = t.array(t.type({
   document_id: t.string,
@@ -109,6 +110,26 @@ export function upload(
   )
 }
 
+export const uploadM = (
+  { zone = 'com.apple.CloudDocs', contentType, filename, size, type }: {
+    zone?: string
+    contentType: string
+    filename: string
+    size: number
+    type: 'FILE'
+  },
+): AR.DriveApiRequest<UploadResponse> =>
+  AR.basicDriveJsonRequest(
+    ({ state: { accountData, session } }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
+        session.cookies['X-APPLE-WEBAUTH-TOKEN'] ?? ''
+      }`,
+      options: { addClientInfo: true, data: { filename, content_type: contentType, size, type } },
+    }),
+    uploadResponse.decode,
+  )
+
 export function singleFileUpload(
   client: FetchClientEither,
   { session }: ICloudSessionValidated,
@@ -125,6 +146,23 @@ export function singleFileUpload(
     TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
     TE.chainW(client),
     expectJson(singleFileResponse.decode)(session),
+  )
+}
+
+export const singleFileUploadM = (
+  { filePath, url }: { filePath: string; url: string },
+): AR.DriveApiRequest<SingleFileResponse> => {
+  const filename = Path.parse(filePath).base
+
+  return pipe(
+    TE.tryCatch(
+      () => fs.readFile(filePath),
+      (e) => err(`error opening file ${String(e)}`),
+    ),
+    logf(`singleFileUpload.`, apiLogger.debug),
+    TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
+    AR.fromTaskEither,
+    AR.handleResponse(AR.basicJsonResponse(singleFileResponse.decode)),
   )
 }
 
@@ -145,3 +183,15 @@ export function updateDocuments(
     expectJson(updateDocumentsResponse.decode)(session),
   )
 }
+
+export const updateDocumentsM = (
+  { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
+): AR.DriveApiRequest<UpdateDocumentsResponse> =>
+  AR.basicDriveJsonRequest(
+    ({ state: { accountData } }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
+      options: { addClientInfo: true, data },
+    }),
+    updateDocumentsResponse.decode,
+  )

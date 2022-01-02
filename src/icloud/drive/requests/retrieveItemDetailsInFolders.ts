@@ -6,9 +6,10 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import { ICloudSessionValidated } from './authorization/authorize'
 import { applyToSession, decodeJson, filterStatus, ResponseHandler, ResponseWithSession, withResponse } from './http'
+import * as AR from './reader'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 
@@ -101,3 +102,48 @@ export function retrieveItemDetailsInFoldersHierarchy(
       )),
   )
 }
+
+export const retrieveItemDetailsInFoldersRequest = (
+  data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
+) => {
+  return pipe(
+    AR.buildRequestC<ICloudSessionValidated>(({ state: { accountData } }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
+      options: { addClientInfo: true, data },
+    })),
+  )
+}
+
+export function retrieveItemDetailsInFoldersM(
+  { drivewsids }: { drivewsids: string[] },
+): AR.DriveApiRequest<(Details | InvalidId)[]> {
+  return pipe(
+    retrieveItemDetailsInFoldersRequest(
+      drivewsids.map(
+        (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
+      ),
+    ),
+    AR.handleResponse(AR.basicJsonResponse(
+      t.array(t.union([driveDetails, invalidIdItem])).decode,
+    )),
+  )
+}
+
+export const retrieveItemDetailsInFoldersHierarchyM = (
+  { drivewsids }: { drivewsids: string[] },
+): AR.DriveApiRequest<(DriveDetailsWithHierarchy | InvalidId)[]> =>
+  pipe(
+    retrieveItemDetailsInFoldersRequest(
+      pipe(
+        drivewsids.map((drivewsid) => [
+          { drivewsid, partialData: false, includeHierarchy: false },
+          { drivewsid, partialData: true, includeHierarchy: true },
+        ]),
+        A.flatten,
+      ),
+    ),
+    AR.handleResponse(AR.basicJsonResponse(
+      decodeWithHierarchy,
+    )),
+  )

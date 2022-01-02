@@ -9,7 +9,7 @@ import { findInParent } from '../helpers'
 import { Details, DetailsRegular, fileName, isTrashDetails, Root } from '../requests/types/types'
 import * as C from './cache'
 import { Result } from './cache-get-by-path-types'
-import { CacheF } from './types'
+import { CacheF } from './cache-types'
 
 const showDetails = (d: Details): string => {
   return isTrashDetails(d) ? 'TRASH' : `${d.type}: ${fileName(d)}`

@@ -52,7 +52,7 @@ export const upload = (
       )
 
       return pipe(
-        res(cache)({ api }),
+        res({ cache })({ api }),
         TE.map(fst),
       )
     }),

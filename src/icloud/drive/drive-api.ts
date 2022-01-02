@@ -10,9 +10,9 @@ import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
 import { fetchClient, FetchClientEither } from '../../lib/http/fetch-client'
 import { input } from '../../lib/input'
 import { logger } from '../../lib/logging'
+import { authorizeSession, ICloudSessionValidated } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
 import { download, retrieveHierarchy, retrieveItemDetails, retrieveTrashDetails } from './requests'
-import { authorizeSession, ICloudSessionValidated } from './requests/authorization/authorize'
 import { createFolders, CreateFoldersResponse } from './requests/createFolders'
 import { ResponseWithSession } from './requests/http'
 import { moveItems } from './requests/moveItems'
@@ -57,13 +57,13 @@ export class DriveApi {
     public client: FetchClientEither = fetchClient,
   ) {}
 
-  public getRoot = (): TE.TaskEither<Error, T.DetailsRoot> => {
-    return pipe(
-      this.retrieveItemDetailsInFolder(rootDrivewsid),
-      TE.filterOrElse(T.isNotInvalidId, () => err(`not found for root details`)),
-      TE.filterOrElseW(T.isCloudDocsRootDetails, () => err(`invalid root details`)),
-    )
-  }
+  // public getRoot = (): TE.TaskEither<Error, T.DetailsRoot> => {
+  //   return pipe(
+  //     this.retrieveItemDetailsInFolder(rootDrivewsid),
+  //     TE.filterOrElse(T.isNotInvalidId, () => err(`not found for root details`)),
+  //     TE.filterOrElseW(T.isCloudDocsRootDetails, () => err(`invalid root details`)),
+  //   )
+  // }
 
   public upload = (
     sourceFilePath: string,

@@ -261,10 +261,10 @@ export const listUnixPath = (
       cliActionM(
         ({ cache, api }) =>
           pipe(
-            DF.getFolderRecursive(paths[0], depth)(cache)({ api }),
+            DF.getFolderRecursive(paths[0], depth)({ cache })({ api }),
             noCache
               ? TE.chainFirst(() => TE.of(constVoid()))
-              : TE.chainFirst(([item, cache]) => C.trySaveFile(cache, cacheFile)),
+              : TE.chainFirst(([item, { cache }]) => C.trySaveFile(cache, cacheFile)),
             TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
           ),
       ),
@@ -306,7 +306,7 @@ export const listUnixPath = (
             _ => _.join('\n\n'),
           ),
         ),
-        apply(cache),
+        apply({ cache }),
         apply({ api }),
         TE.map(fst),
       )

@@ -176,7 +176,7 @@ export const validateCachedPaths = <R extends T.Root>(
   return pipe(
     logg(`validateCachedPaths: ${paths}`),
     () => DF.readEnv,
-    SRTE.bind('cached', ({ cache }) =>
+    SRTE.bind('cached', ({ state: { cache } }) =>
       pipe(
         SRTE.fromEither(
           pipe(

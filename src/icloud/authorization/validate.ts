@@ -1,5 +1,6 @@
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import * as t from 'io-ts'
@@ -9,13 +10,14 @@ import {
   InvalidGlobalSessionResponse,
   JsonParsingError,
   TypeDecodingError,
-} from '../../../../lib/errors'
-import { tryReadJsonFile } from '../../../../lib/files'
-import { FetchClientEither } from '../../../../lib/http/fetch-client'
-import { isObjectWithOwnProperty } from '../../../../lib/util'
-import { ICloudSessionWithSessionToken } from '../../../session/session'
-import { buildRequest } from '../../../session/session-http'
-import { expectJson } from '../http'
+} from '../../lib/errors'
+import { tryReadJsonFile } from '../../lib/files'
+import { FetchClientEither } from '../../lib/http/fetch-client'
+import { isObjectWithOwnProperty } from '../../lib/util'
+import { expectJson } from '../drive/requests/http'
+import * as AR from '../drive/requests/reader'
+import { ICloudSessionWithSessionToken } from '../session/session'
+import { buildRequest } from '../session/session-http'
 import { ICloudSessionValidated } from './authorize'
 import { AccountLoginResponseBody } from './types'
 
@@ -50,6 +52,29 @@ export function validateSession(
       })
     ),
     TE.orElse((e) => InvalidGlobalSessionResponse.is(e) ? TE.of(O.none) : TE.left(e)),
+  )
+}
+
+export function validateSessionM(): AR.ApiSessionRequest<O.Option<AccountLoginResponseBody>, {
+  session: ICloudSessionWithSessionToken
+}> {
+  return pipe(
+    AR.buildRequestC<{ session: ICloudSessionWithSessionToken }>(() => ({
+      method: 'POST',
+      url: 'https://setup.icloud.com/setup/ws/1/validate',
+      options: { addClientInfo: true },
+    })),
+    AR.handleResponse(flow(
+      AR.basicJsonResponse(
+        v => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>,
+      ),
+    )),
+    AR.map(O.some),
+    AR.orElse((e) =>
+      InvalidGlobalSessionResponse.is(e)
+        ? AR.of(O.none)
+        : AR.left(e)
+    ),
   )
 }
 

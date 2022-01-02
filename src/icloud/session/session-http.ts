@@ -22,7 +22,7 @@ export function buildRequest(
     addClientInfo: boolean
     clientInfo?: ClientInfo
   },
-): ((session: ICloudSession) => HttpRequest) {
+): R.Reader<ICloudSession, HttpRequest> {
   if (addClientInfo) {
     const clientInfoString =
       `appIdentifier=${clientInfo.appIdentifier}&reqIdentifier=${clientInfo.reqIdentifier}&clientBuildNumber=${clientInfo.clientBuildNumber}&clientMasteringNumber=${clientInfo.clientMasteringNumber}&clientId=${clientInfo.clientId}`
@@ -47,6 +47,50 @@ export function buildRequest(
     ),
     data,
   })
+}
+
+export type HttpRequestConfig = {
+  method: Method
+  url: string
+  options: {
+    data?: unknown
+    headers?: ((session: ICloudSession) => Header[])[]
+    /** add appIdentifier etc to the url */
+    addClientInfo: boolean
+    clientInfo?: ClientInfo
+  }
+}
+
+export function apiHttpRequest(
+  method: Method,
+  url: string,
+  { data = undefined, headers = [_headers.default], clientInfo = defaultClientInfo, addClientInfo }: {
+    data?: unknown
+    headers?: ((session: ICloudSession) => Header[])[]
+    /** add appIdentifier etc to the url */
+    addClientInfo: boolean
+    clientInfo?: ClientInfo
+  },
+): R.Reader<{ session: ICloudSession }, HttpRequest> {
+  return pipe(
+    R.asks(({ session }) => buildRequest(method, url, { data, headers, clientInfo, addClientInfo })(session)),
+  )
+}
+
+export function buildRequestR2(
+  method: Method,
+  url: string,
+  { data = undefined, headers = [_headers.default], clientInfo = defaultClientInfo, addClientInfo }: {
+    data?: unknown
+    headers?: ((session: ICloudSession) => Header[])[]
+    /** add appIdentifier etc to the url */
+    addClientInfo: boolean
+    clientInfo?: ClientInfo
+  },
+): R.Reader<{ session: ICloudSession }, HttpRequest> {
+  return pipe(
+    R.asks(({ session }) => buildRequest(method, url, { data, headers, clientInfo, addClientInfo })(session)),
+  )
 }
 
 export const applyCookiesToSession = (httpResponse: HttpResponse) =>

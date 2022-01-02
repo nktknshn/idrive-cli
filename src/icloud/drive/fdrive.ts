@@ -31,16 +31,20 @@ export type DriveMEnv = {
   api: DriveApi
 }
 
-export type DriveM<A> = SRTE.StateReaderTaskEither<C.Cache, DriveMEnv, Error, A>
+export type DriveMState = {
+  cache: C.Cache
+}
 
-export const Do = SRTE.of<C.Cache, DriveMEnv, Error, {}>({})
+export type DriveM<A> = SRTE.StateReaderTaskEither<DriveMState, DriveMEnv, Error, A>
+
+export const Do = SRTE.of<DriveMState, DriveMEnv, Error, {}>({})
 
 const ado = sequenceS(SRTE.Apply)
 const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
-  cache: SRTE.get<C.Cache, DriveMEnv>(),
-  env: SRTE.ask<C.Cache, DriveMEnv>(),
+  state: SRTE.get<DriveMState, DriveMEnv, Error>(),
+  env: SRTE.ask<DriveMState, DriveMEnv, Error>(),
 })
 
 export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
@@ -98,7 +102,7 @@ export const chainRoot = <R>(
     SRTE.chain(() =>
       pipe(
         readEnv,
-        chain(({ cache }) => SRTE.fromEither(C.getRoot()(cache))),
+        chain(({ state: { cache } }) => SRTE.fromEither(C.getRoot()(cache))),
         map(_ => _.content),
         chain(f),
       )
@@ -114,7 +118,7 @@ export const chainTrash = <R>(
     SRTE.chain(() =>
       pipe(
         readEnv,
-        chain(({ cache }) => SRTE.fromEither(C.getTrashE()(cache))),
+        chain(({ state: { cache } }) => SRTE.fromEither(C.getTrashE()(cache))),
         map(_ => _.content),
         chain(f),
       )
@@ -188,13 +192,13 @@ export const retrieveItemDetailsInFoldersSavingE = (
 export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
     readEnv,
-    SRTE.bind('task', ({ cache }) =>
+    SRTE.bind('task', ({ state: { cache } }) =>
       SRTE.fromEither(pipe(
         C.getFolderDetailsByIdsSeparated(drivewsids)(cache),
       ))),
-    SRTE.chain(({ env, task: { missed } }) =>
+    SRTE.chain(({ env, task: { missed }, state }) =>
       pipe(
-        SRTE.fromTaskEither<Error, { found: T.Details[]; missed: string[] }, C.Cache, DriveMEnv>(
+        fromTaskEither(
           missed.length > 0
             ? env.api.retrieveItemDetailsInFoldersS(missed)
             : TE.of({ missed: [], found: [] }),
@@ -205,7 +209,7 @@ export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.May
     SRTE.chain(() =>
       pipe(
         readEnv,
-        SRTE.chain(({ cache }) =>
+        SRTE.chain(({ state: { cache } }) =>
           SRTE.fromEither(pipe(
             C.getFolderDetailsByIds(drivewsids)(cache),
           ))
@@ -321,15 +325,15 @@ export const withCache = <T>(initialCache: C.Cache, sg: Semigroup<C.Cache>) =>
   ): DriveM<T> =>
     pipe(
       readEnv,
-      SRTE.chain(({ cache }) =>
+      chain(({ state: { cache } }) =>
         pipe(
-          SRTE.put(initialCache),
-          SRTE.chain(f),
+          SRTE.put({ cache: initialCache }),
+          chain(f),
           SRTE.chainW(result =>
             pipe(
-              SRTE.get<C.Cache, DriveMEnv, Error>(),
-              SRTE.chain((c: C.Cache) => SRTE.put(sg.concat(cache, c))),
-              SRTE.map(() => result),
+              SRTE.get<DriveMState, DriveMEnv, Error>(),
+              chain((s) => SRTE.put({ cache: sg.concat(cache, s.cache) })),
+              map(() => result),
             )
           ),
         )
@@ -409,7 +413,7 @@ export const logCache = (msg?: string) =>
   () =>
     pipe(
       readEnv,
-      SRTE.map(_ => _.cache),
+      SRTE.map(_ => _.state),
       SRTE.map(logReturnAs(`${msg ?? ''} cache`)),
     )
 
@@ -461,12 +465,12 @@ export const getFoldersRecursively = (drivewsids: string[], depth: number): Driv
 export const putDetailss = (detailss: T.Details[]): DriveM<void> =>
   pipe(
     readEnv,
-    SRTE.chainW(({ cache }) =>
+    SRTE.chainW(({ state: { cache } }) =>
       pipe(
         cache,
         C.putDetailss(detailss),
         SRTE.fromEither,
-        SRTE.chain(cache => SRTE.put(cache)),
+        SRTE.chain(cache => SRTE.put({ cache })),
         SRTE.map(constVoid),
         // SRTE.map(() => detailss),
       )
@@ -476,9 +480,9 @@ export const putDetailss = (detailss: T.Details[]): DriveM<void> =>
 export const removeByIds = (drivewsids: string[]): DriveM<void> =>
   pipe(
     readEnv,
-    SRTE.chainW(({ cache }) =>
+    SRTE.chainW(({ state: { cache } }) =>
       pipe(
-        SRTE.put(C.removeByIds(drivewsids)(cache)),
+        SRTE.put({ cache: C.removeByIds(drivewsids)(cache) }),
         SRTE.map(constVoid),
         // SRTE.map(() => detailss),
       )
@@ -488,11 +492,11 @@ export const removeByIds = (drivewsids: string[]): DriveM<void> =>
 export const putItems = (detailss: T.DriveChildrenItem[]): DriveM<void> =>
   pipe(
     readEnv,
-    SRTE.chainW(({ cache }) =>
+    SRTE.chainW(({ state: { cache } }) =>
       pipe(
         C.putItems(detailss)(cache),
         SRTE.fromEither,
-        SRTE.chain(cache => SRTE.put(cache)),
+        SRTE.chain(cache => SRTE.put({ cache })),
         SRTE.map(constVoid),
         // SRTE.map(() => detailss),
       )
@@ -504,7 +508,7 @@ export const updateFoldersDetails = (
 ): DriveM<(T.MaybeNotFound<T.DriveDetailsWithHierarchy>)[]> => {
   return pipe(
     readEnv,
-    SRTE.chainW(({ env, cache }) =>
+    SRTE.chainW(({ env, state: { cache } }) =>
       pipe(
         env.api.retrieveItemDetailsInFoldersHierarchies(drivewsids),
         SRTE.fromTaskEither,
@@ -517,7 +521,7 @@ export const updateFoldersDetails = (
                 C.putDetailss(found),
               ),
             SRTE.fromEither,
-            SRTE.chain(cache => SRTE.put(cache)),
+            SRTE.chain(cache => SRTE.put({ cache })),
             SRTE.map(() => details),
           )
         ),
@@ -530,7 +534,7 @@ export const saveCache = (cacheFile: string) =>
   () =>
     pipe(
       readEnv,
-      SRTE.chain(({ cache }) => SRTE.fromTaskEither(C.trySaveFile(cache, cacheFile))),
+      SRTE.chain(({ state: { cache } }) => SRTE.fromTaskEither(C.trySaveFile(cache, cacheFile))),
     )
 
 export const saveCacheFirst = <T>(cacheFile: string) =>
@@ -541,7 +545,7 @@ export const saveCacheFirst = <T>(cacheFile: string) =>
         pipe(
           readEnv,
           logS(() => `saving cache`, cacheLogger.debug),
-          SRTE.chain(({ cache }) => SRTE.fromTaskEither(C.trySaveFile(cache, cacheFile))),
+          SRTE.chain(({ state: { cache } }) => SRTE.fromTaskEither(C.trySaveFile(cache, cacheFile))),
           SRTE.chain(() => of(v)),
         )
       ),
