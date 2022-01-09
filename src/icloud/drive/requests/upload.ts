@@ -4,13 +4,16 @@ import * as fs from 'fs/promises'
 import * as t from 'io-ts'
 import Path from 'path'
 import { err } from '../../../lib/errors'
-import { FetchClientEither, uploadFileRequest } from '../../../lib/http/fetch-client'
+import { uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
-import { ICloudSessionValidated } from '../../authorization/authorize'
-import { buildRequest } from '../../session/session-http'
 import * as ARR from './api-rte'
-import { expectJson, ResponseWithSession } from './http'
 import * as AR from './reader'
+
+export type UpdateDocumentsRequest = t.TypeOf<typeof updateDocumentsRequest>
+export type UpdateDocumentsResponse = t.TypeOf<typeof updateDocumentsResponse>
+export type SingleFileResponse = t.TypeOf<typeof singleFileResponse>
+export type UploadResponse = t.TypeOf<typeof uploadResponse>
+export type UploadResponseItem = t.TypeOf<typeof uploadResponseItem>
 
 const uploadResponseItem = t.type({
   document_id: t.string,
@@ -81,12 +84,6 @@ const updateDocumentsRequest = t.type({
     size: t.number,
   }),
 })
-
-export type UpdateDocumentsRequest = t.TypeOf<typeof updateDocumentsRequest>
-export type UpdateDocumentsResponse = t.TypeOf<typeof updateDocumentsResponse>
-export type SingleFileResponse = t.TypeOf<typeof singleFileResponse>
-export type UploadResponse = t.TypeOf<typeof uploadResponse>
-export type UploadResponseItem = t.TypeOf<typeof uploadResponseItem>
 
 export const uploadM = (
   { zone = 'com.apple.CloudDocs', contentType, filename, size, type }: {

@@ -7,7 +7,7 @@ import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import * as H from '../../../icloud/drive/ffdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
-import { DetailsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
+import { DetailsDocwsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
 import { normalizePath } from './helpers'
 
 export const upload = (
@@ -45,24 +45,24 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
 }
 
 const uploadOverwrighting = (
-  { src, dst }: { dst: V.ResultValidWithFile<H.Hierarchy<DetailsRoot>>; src: string },
+  { src, dst }: { dst: V.ResultValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
 ) => {
   const dstitem = V.target(dst)
   const parent = NA.last(dst.path.details)
 
   return pipe(
-    DF.readEnv,
+    DF.Do,
     SRTE.bind(
       'uploadResult',
-      ({ env }) => DF.fromApiRequest(AM.upload({ sourceFilePath: src, docwsid: parent.docwsid })),
+      () => DF.fromApiRequest(AM.upload({ sourceFilePath: src, docwsid: parent.docwsid })),
     ),
-    SRTE.bind('removeResult', ({ env }) => {
+    SRTE.bind('removeResult', () => {
       return DF.fromApiRequest(AM.moveItemsToTrash({
         items: [dstitem],
         trash: true,
       }))
     }),
-    DF.chain(({ env, uploadResult, removeResult }) => {
+    DF.chain(({ uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
         AM.renameItems({
@@ -80,7 +80,7 @@ const uploadOverwrighting = (
 }
 
 const handle = (
-  { src, dst, overwright }: { dst: V.HierarchyResult<DetailsRoot>; src: string; overwright: boolean },
+  { src, dst, overwright }: { dst: V.HierarchyResult<DetailsDocwsRoot>; src: string; overwright: boolean },
 ): DF.DriveM<void> => {
   // upload to the directory
   if (dst.valid) {
@@ -105,6 +105,7 @@ const handle = (
     // upload and rename
     const dstitem = NA.last(dst.path.details)
     const fname = NA.head(dst.path.rest)
+
     if (isFolderLike(dstitem)) {
       return pipe(
         AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname }),

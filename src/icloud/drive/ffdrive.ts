@@ -2,7 +2,7 @@ import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { filterOrElse as filterOrElse_ } from 'fp-ts/lib/FromEither'
-import { apply, constant, constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Predicate } from 'fp-ts/lib/Predicate'
@@ -26,12 +26,14 @@ import { Hierarchy } from './ffdrive/validation'
 import { getMissedFound } from './helpers'
 import * as AR from './requests/reader'
 
+import * as ESRTE from './ffdrive/m'
+
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
 export { getByPathsE }
 
-export type DetailsOrFile<R> = (R | T.DetailsRegular | T.DriveChildrenItemFile)
+export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
 export type DriveMEnv = {} & API.ApiEnv & AR.Env
 
@@ -40,49 +42,51 @@ export type DriveMState = {
   session: ICloudSessionValidated
 }
 
-type Err = {
-  error: Error
-  state: DriveMState
-}
+// type Err = {
+//   error: Error
+//   state: DriveMState
+// }
 
-export type DriveM<A> = SRTE.StateReaderTaskEither<DriveMState, DriveMEnv, Err, A>
+export const {
+  Do,
+  chain,
+  fromEither,
+  fromOption,
+  fromTaskEither,
+  get,
+  left,
+  map,
+  of,
+  fromTaskEitherE,
+  filterOrElse,
+} = ESRTE.get<DriveMState, DriveMEnv, Error>()
 
-export const Do = SRTE.of<DriveMState, DriveMEnv, Err, {}>({})
+export type DriveM<A> = ESRTE.ESRTE<DriveMState, DriveMEnv, Error, A>
 
-const ado = sequenceS(SRTE.Apply)
-const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
+// const ado = sequenceS(SRTE.Apply)
+// const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
-  state: SRTE.get<DriveMState, DriveMEnv, Err>(),
-  env: SRTE.ask<DriveMState, DriveMEnv, Err>(),
+  state: get(),
+  env: SRTE.ask<DriveMState, DriveMEnv>(),
 })
 
 export const readEnvS = <A>(
-  f: (e: {
-    state: DriveMState
-    env: DriveMEnv
-  }) => DriveM<A>,
+  f: (e: { state: DriveMState; env: DriveMEnv }) => DriveM<A>,
 ) => pipe(readEnv, chain(f))
-
-export const chain = <A, B>(f: (a: A) => DriveM<B>) => SRTE.chain(f)
-export const of = <A>(v: A): DriveM<A> => SRTE.of(v)
-export const left = <A = never>(e: Error): DriveM<A> => readEnvS(({ state }) => SRTE.left({ error: e, state }))
 
 export const logS = flow(logReturnS, SRTE.map)
 
-export const fromTaskEither = <A>(te: TE.TaskEither<Error, A>): DriveM<A> =>
-  (state: DriveMState) =>
-    (env: DriveMEnv) =>
-      pipe(
-        te,
-        TE.bimap(
-          error => ({ error, state }),
-          v => [v, state],
-        ),
-      )
+export const errS = <A>(s: string): DriveM<A> => readEnvS(({ state }) => SRTE.left({ error: err(s), state }))
 
 const executeApiRequest = <A>(ma: API.Api<A>) =>
-  readEnvS(({ env, state }) => fromTaskEither(ma(env)(state.session)(env)))
+  readEnvS(({ env, state }) =>
+    pipe(
+      ma(env)(state.session)(env),
+      fromTaskEither,
+      // fromTaskEither(({ error, state }) => left(error)),
+    )
+  )
 
 export const fromApiRequest = <A>(ma: API.Api<A>): DriveM<A> =>
   pipe(
@@ -98,13 +102,7 @@ export const fromApiRequest = <A>(ma: API.Api<A>): DriveM<A> =>
 const putSession = (session: ICloudSessionValidated): DriveM<void> =>
   readEnvS(({ state }) => SRTE.put({ ...state, session }))
 
-export const fromOption = (f: () => Error) => <A>(opt: O.Option<A>): DriveM<A> => pipe(opt, O.fold(() => left(f()), of))
-
-export const fromEither = <A>(e: E.Either<Error, A>): DriveM<A> => pipe(e, E.match(e => left(e), a => of(a)))
-
-export const errS = <A>(s: string): DriveM<A> => readEnvS(({ state }) => SRTE.left({ error: err(s), state }))
-
-export const map = SRTE.map
+const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
 
 export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
@@ -147,7 +145,7 @@ export const putDetailss = (detailss: T.Details[]): DriveM<void> =>
     pipe(
       C.putDetailss(detailss)(state.cache),
       fromEither,
-      chain(cache => SRTE.put({ ...state, cache })),
+      chain(putCache),
       map(constVoid),
     )
   )
@@ -155,13 +153,13 @@ export const putDetailss = (detailss: T.Details[]): DriveM<void> =>
 export const removeByIds = (drivewsids: string[]): DriveM<void> =>
   readEnvS(({ state }) =>
     pipe(
-      SRTE.put({ ...state, cache: C.removeByIds(drivewsids)(state.cache) }),
+      putCache(C.removeByIds(drivewsids)(state.cache)),
       map(constVoid),
     )
   )
 
 export const chainRoot = <R>(
-  f: (root: T.DetailsRoot) => DriveM<R>,
+  f: (root: T.DetailsDocwsRoot) => DriveM<R>,
 ): DriveM<R> => {
   return pipe(
     retrieveRootAndTrashIfMissing(),
@@ -213,10 +211,10 @@ export const saveCacheFirst = <T>(cacheFile: string) =>
 
 export function retrieveItemDetailsInFoldersSavingNEA<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...T.NonRootDrivewsid[]],
-): DriveM<[O.Some<R>, ...O.Option<T.DetailsRegular>[]]>
+): DriveM<[O.Some<R>, ...O.Option<T.NonRootDetails>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof rootDrivewsid, ...string[]],
-): DriveM<[O.Some<T.DetailsRoot>, ...O.Option<T.Details>[]]>
+): DriveM<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSavingNEA(
   drivewsids: [typeof trashDrivewsid, ...string[]],
 ): DriveM<[O.Some<T.DetailsTrash>, ...O.Option<T.Details>[]]>
@@ -283,26 +281,4 @@ export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): Driv
 
 export const lssPartial = <R extends T.Root>(root: R, paths: NEA<NormalizedPath>) => {
   return getByPaths(root, paths)
-}
-
-const ap = <A>(fa: DriveM<A>) =>
-  <B>(fab: DriveM<(a: A) => B>): DriveM<B> =>
-    pipe(
-      fab,
-      chain(f => pipe(fa, map(a => f(a)))),
-    )
-
-export function filterOrElse<A, B extends A>(
-  refinement: Refinement<A, B>,
-  onFalse: (a: A) => Error,
-): (ma: DriveM<A>) => DriveM<B>
-export function filterOrElse<A>(
-  predicate: Predicate<A>,
-  onFalse: (a: A) => Error,
-): (ma: DriveM<A>) => DriveM<A>
-export function filterOrElse<A>(
-  predicate: Predicate<A>,
-  onFalse: (a: A) => Error,
-): (ma: DriveM<A>) => DriveM<A> {
-  return flow(chain(a => predicate(a) ? of(a) : left(onFalse(a))))
 }

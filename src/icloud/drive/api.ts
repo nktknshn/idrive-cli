@@ -1,13 +1,10 @@
 import * as A from 'fp-ts/lib/Array'
-import { apply, constVoid, flow, pipe } from 'fp-ts/lib/function'
-import * as P from 'fp-ts/lib/pipeable'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import mime from 'mime-types'
-import { capDelay, exponentialBackoff, limitRetries, Monoid, RetryStatus } from 'retry-ts'
-import { retrying } from 'retry-ts/Task'
 import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
 import { FetchClientEither, FetchError } from '../../lib/http/fetch-client'
 import { NEA } from '../../lib/types'
@@ -18,7 +15,7 @@ import * as RQ from './requests'
 // import * as AR from './requests/api-rte'
 import * as AR from './requests/reader'
 import * as T from './requests/types/types'
-import { UploadResponse, UploadResponseItem } from './requests/upload'
+import { UploadResponseItem } from './requests/upload'
 
 export type ApiEnv = {
   retries: number
@@ -28,7 +25,7 @@ export type ApiEnv = {
 
 export type Api<A> = R.Reader<ApiEnv, AR.DriveApiRequest<A>>
 
-export const of = <A>(v: A): Api<A> => () => SRTE.of(v)
+export const of = <A>(v: A): Api<A> => () => AR.of(v)
 
 const onInvalidSession = <S extends AR.State>(): AR.ApiSessionRequest<void, S> => {
   return pipe(
@@ -80,7 +77,7 @@ const executeRequest = <TArgs extends unknown[], R, S extends AR.State>(
       )
     )
 
-const executeRequest2 = (env: ApiEnv) =>
+const executeRequest2 = (env: { retries: number }) =>
   <R, S extends AR.State>(
     ma: AR.ApiSessionRequest<R, S>,
   ) =>
@@ -143,11 +140,13 @@ export const renameItems = flow(
 export const moveItemsToTrash = flow(
   executeRequest(RQ.moveItemsToTrashM),
 )
-// executeRequest
+
+type Z = typeof RQ
+
 export const upload = (
   { sourceFilePath, docwsid, fname }: { sourceFilePath: string; docwsid: string; fname?: string },
 ) =>
-  (env: ApiEnv) => {
+  (env: { retries: number }) => {
     const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
 
     const getContentType = (extension: string): string => {

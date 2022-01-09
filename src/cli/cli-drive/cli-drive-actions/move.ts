@@ -13,20 +13,46 @@ import { MoveItemToTrashResponse } from '../../../icloud/drive/requests'
 import { RenameResponse } from '../../../icloud/drive/requests'
 import {
   Details,
-  DetailsRegular,
-  DetailsRoot,
+  DetailsDocwsRoot,
   DetailsTrash,
   DriveChildrenItemFile,
   isDetails,
   isNotRootDetails,
+  NonRootDetails,
 } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
+/**
+ * move a file or a directory
+ */
+export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env & {
+  srcpath: string
+  dstpath: string
+}) => {
+  return pipe(
+    { sessionFile, cacheFile, noCache },
+    cliActionM2(() => {
+      const nsrc = normalizePath(srcpath)
+      const ndst = normalizePath(dstpath)
+
+      return DF.chainRoot(root =>
+        pipe(
+          DF.Do,
+          SRTE.bind('srcdst', () => DF.lssPartial(root, [nsrc, ndst])),
+          DF.chain(handle),
+          DF.saveCacheFirst(cacheFile),
+          DF.map(() => `Success.`),
+        )
+      )
+    }),
+  )
+}
+
 const caseMove = (
-  src: DetailsRegular | DriveChildrenItemFile,
+  src: NonRootDetails | DriveChildrenItemFile,
   dst: Details,
 ): DF.DriveM<MoveItemToTrashResponse> => {
   return pipe(
@@ -39,7 +65,7 @@ const caseMove = (
 }
 
 const caseRename = (
-  srcitem: DetailsRegular | DriveChildrenItemFile,
+  srcitem: NonRootDetails | DriveChildrenItemFile,
   name: string,
 ): DF.DriveM<RenameResponse> => {
   return pipe(
@@ -53,7 +79,7 @@ const caseRename = (
 }
 
 const caseMoveAndRename = (
-  src: DetailsRegular | DriveChildrenItemFile,
+  src: NonRootDetails | DriveChildrenItemFile,
   dst: (Details | DetailsTrash),
   name: string,
 ): DF.DriveM<RenameResponse> => {
@@ -86,7 +112,7 @@ const caseMoveAndRename = (
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.Result<H.Hierarchy<DetailsRoot>>>
+    srcdst: NEA<V.Result<H.Hierarchy<DetailsDocwsRoot>>>
   },
 ): DF.DriveM<MoveItemToTrashResponse | RenameResponse> => {
   if (!srcitem.valid) {
@@ -125,31 +151,4 @@ const handle = (
   }
 
   return DF.left(err(`invalid dstitem`))
-}
-
-export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env & {
-  srcpath: string
-  dstpath: string
-}) => {
-  return pipe(
-    { sessionFile, cacheFile, noCache },
-    cliActionM2(() => {
-      const nsrc = normalizePath(srcpath)
-      const ndst = normalizePath(dstpath)
-
-      return pipe(
-        DF.chainRoot(root =>
-          pipe(
-            DF.Do,
-            SRTE.bind('srcdst', () => DF.lssPartial(root, [nsrc, ndst])),
-            SRTE.chain(handle),
-            DF.saveCacheFirst(cacheFile),
-            DF.map(() => `Success.`),
-          )
-        ),
-      )
-
-      // return pipe(res({ cache })({ api }), TE.map(fst))
-    }),
-  )
 }

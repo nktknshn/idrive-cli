@@ -1,22 +1,11 @@
-import * as E from 'fp-ts/lib/Either'
-import { apply, flow, pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { err, UnexpectedResponse } from '../../lib/errors'
-import { FetchClientEither, HttpResponse } from '../../lib/http/fetch-client'
+import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import {
-  applyToSession2,
-  filterStatus,
-  filterStatuses,
-  ResponseWithSession,
-  returnS,
-  withResponse,
-} from '../drive/requests/http'
 import * as AR from '../drive/requests/reader'
-import { ICloudSession, sessionLens } from '../session/session'
-import { applyCookiesToSession, buildRequest } from '../session/session-http'
+import { sessionLens } from '../session/session'
+import { applyCookiesToSession } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
 import { authorizationHeaders, getTrustToken } from './headers'
 import { applyAuthorizationResponse } from './session'

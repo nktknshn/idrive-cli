@@ -56,7 +56,7 @@ const Trash = ({ details }: { details: T.DetailsTrash }): Element[] => {
   ]
 }
 
-const Folder = ({ details }: { details: T.DetailsRoot | T.DetailsRegular }): Element[] => {
+const Folder = ({ details }: { details: T.DetailsDocwsRoot | T.NonRootDetails }): Element[] => {
   return [
     ['name', T.fileName(details)],
     ['dateCreated', formatDate(details.dateCreated)],
@@ -269,7 +269,7 @@ export const listUnixPath = (
     cliActionM2(() => {
       const res = pipe(
         DF.readEnv,
-        DF.chain((): DF.DriveM<NEA<HierarchyResult<T.DetailsTrash | T.DetailsRoot>>> =>
+        DF.chain((): DF.DriveM<NEA<HierarchyResult<T.DetailsTrash | T.DetailsDocwsRoot>>> =>
           trash
             ? DF.chainTrash(trash => getByPaths(trash, npaths))
             : DF.chainRoot(root => getByPaths(root, npaths))

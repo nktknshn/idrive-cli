@@ -9,10 +9,6 @@ import { isHsa2Required, requestSignInM } from './signin'
 import { requestTrustDeviceM } from './trust'
 import { AccountLoginResponseBody } from './types'
 
-export interface AuthorizeProps {
-  getCode: () => TE.TaskEither<Error, string>
-}
-
 export interface ICloudSessionValidated {
   session: ICloudSession
   accountData: AccountLoginResponseBody

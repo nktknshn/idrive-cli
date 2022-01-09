@@ -33,13 +33,13 @@ export type ICloudDriveCacheEntityType = CacheEntity['type']
 export interface CacheEntityFolderRootDetails {
   readonly type: 'ROOT'
   readonly hasDetails: true
-  readonly content: T.DetailsRoot
+  readonly content: T.DetailsDocwsRoot
 }
 
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
-  constructor(public readonly content: T.DetailsRoot) {}
+  constructor(public readonly content: T.DetailsDocwsRoot) {}
 }
 
 export class CacheEntityFolderTrashDetails {
@@ -84,9 +84,9 @@ export class CacheEntityFile {
 }
 
 export const hasParentId = (entity: CacheEntity): entity is CacheEntityWithParentId =>
-  !isRootCacheEntity(entity) && !isTrashCacheEntity(entity)
+  !isDocwsRootCacheEntity(entity) && !isTrashCacheEntity(entity)
 
-export const isRootCacheEntity = (
+export const isDocwsRootCacheEntity = (
   entity: CacheEntity,
 ): entity is CacheEntityFolderRootDetails => entity.type === 'ROOT'
 

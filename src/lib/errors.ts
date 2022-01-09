@@ -8,7 +8,7 @@ export class InvalidGlobalSessionResponse extends Error {
   constructor(public readonly httpResponse: HttpResponse) {
     super('InvalidGlobalSessionResponse')
   }
-  public static is(a: unknown): a is InvalidGlobalSessionResponse {
+  public static is(a: Error): a is InvalidGlobalSessionResponse {
     return a instanceof InvalidGlobalSessionResponse
   }
   static create(httpResponse: HttpResponse): InvalidGlobalSessionResponse {
@@ -21,7 +21,7 @@ export class BadRequestError extends Error {
   constructor(public readonly httpResponse: HttpResponse) {
     super('BadRequestError')
   }
-  public static is(a: unknown): a is BadRequestError {
+  public static is(a: Error): a is BadRequestError {
     return a instanceof BadRequestError
   }
   static create(httpResponse: HttpResponse): BadRequestError {
@@ -38,7 +38,7 @@ export class UnexpectedResponse extends Error {
     super('UnexpectedResponse')
   }
 
-  static is(error: unknown): error is UnexpectedResponse {
+  static is(error: Error): error is UnexpectedResponse {
     return (
       isObjectWithOwnProperty(error, 'tag') && error.tag === 'UnexpectedResponse'
     )
@@ -84,7 +84,7 @@ export class InvalidJsonInResponse extends Error {
   }
   readonly tag = 'InvalidJsonInResponse'
 
-  public static is(a: unknown): a is InvalidJsonInResponse {
+  public static is(a: Error): a is InvalidJsonInResponse {
     return a instanceof InvalidJsonInResponse
   }
 
@@ -102,7 +102,7 @@ export class MissingResponseBody extends Error {
   }
   readonly tag = 'ErrorReadingResponseBody'
 
-  public static is(a: unknown): a is MissingResponseBody {
+  public static is(a: Error): a is MissingResponseBody {
     return a instanceof MissingResponseBody
   }
 }

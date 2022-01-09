@@ -6,7 +6,7 @@ import { cacheLogger, logger } from '../../../lib/logging'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as H from '../ffdrive/validation'
 import { findInParent } from '../helpers'
-import { Details, DetailsRegular, fileName, isTrashDetails, Root } from '../requests/types/types'
+import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../requests/types/types'
 import * as C from './cache'
 import { Result } from './cache-get-by-path-types'
 import { CacheF } from './cache-types'
@@ -18,7 +18,7 @@ const showDetails = (d: Details): string => {
 /**
  * Tries to get starting from `parentEntity`
  */
-export const getFromCacheByPath = <R extends Root | DetailsRegular>(
+export const getFromCacheByPath = <R extends Root | NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>

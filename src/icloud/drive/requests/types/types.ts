@@ -12,7 +12,7 @@ export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>
 
 export interface DetailsTrash extends TypeOf<typeof types.detailsTrash> {}
 
-export interface DetailsRoot extends TypeOf<typeof types.detailsRoot> {}
+export interface DetailsDocwsRoot extends TypeOf<typeof types.detailsRoot> {}
 export interface DetailsFolder extends TypeOf<typeof types.detailsFolder> {}
 export interface DetailsAppLibrary extends TypeOf<typeof types.detailsAppLibrary> {}
 
@@ -23,19 +23,14 @@ export interface TrashItemAppLibrary extends TypeOf<typeof types.trashItemAppLib
 export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItemAppLibrary
 
 export type Root =
-  | DetailsRoot
+  | DetailsDocwsRoot
   | DetailsTrash
-// | DetailsFolder
-// | DetailsAppLibrary
-
-// | Details
 
 export type Details =
-  | DetailsTrash
-  | DetailsRoot
-  | DetailsRegular
+  | Root
+  | NonRootDetails
 
-export type DetailsRegular =
+export type NonRootDetails =
   | DetailsFolder
   | DetailsAppLibrary
 
@@ -131,14 +126,15 @@ export const isRegularDetails = (details: Details | DetailsTrash | DriveChildren
   | DetailsFolder
   | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
 
-export const isCloudDocsRootDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is DetailsRoot =>
-  details.drivewsid === types.rootDrivewsid
+export const isCloudDocsRootDetails = (
+  details: Details | DetailsTrash | DriveChildrenItem,
+): details is DetailsDocwsRoot => details.drivewsid === types.rootDrivewsid
 
 export const isCloudDocsRootDetailsG = <T extends { drivewsid: string }>(
-  details: DetailsRoot | T,
-): details is DetailsRoot => details.drivewsid === types.rootDrivewsid
+  details: DetailsDocwsRoot | T,
+): details is DetailsDocwsRoot => details.drivewsid === types.rootDrivewsid
 
-export const isTrashDetails = (details: DetailsTrash | DetailsRoot | DriveChildrenItem): details is DetailsTrash =>
+export const isTrashDetails = (details: DetailsTrash | DetailsDocwsRoot | DriveChildrenItem): details is DetailsTrash =>
   details.drivewsid === types.trashDrivewsid
 
 export const isTrashDetailsG = <T extends { drivewsid: string }>(details: DetailsTrash | T): details is DetailsTrash =>
@@ -151,7 +147,7 @@ export const isNotRootDetails = (details: Details | DriveChildrenItem): details 
 export type DriveFolderLike =
   | DetailsFolder
   | DetailsAppLibrary
-  | DetailsRoot
+  | DetailsDocwsRoot
   | DetailsTrash
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
@@ -186,10 +182,6 @@ export const isFolderLikeItem = (
   entity: DriveChildrenItem,
 ): entity is FolderLikeItem => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
 
-// export const isFolderLikeItem = (
-//   entity: DriveChildrenItem,
-// ): entity is FolderLikeItem => entity.type === 'APP_LIBRARY' || entity.type === 'FOLDER'
-
 export const isAppLibraryItem = (
   entity: DriveChildrenItem,
 ): entity is DriveChildrenItemAppLibrary => entity.type === 'APP_LIBRARY'
@@ -216,12 +208,7 @@ export const isHierarchyItemTrash = (
   item: HierarchyItem | HierarchyRoot | HierarchyTrash,
 ): item is HierarchyTrash => item.drivewsid === types.trashDrivewsid
 
-export type HasName =
-  // | {
-  //   drivewsid: typeof types.trashDrivewsid
-  // }
-  // |
-  { drivewsid: string; name: string; extension?: string }
+export type HasName = { drivewsid: string; name: string; extension?: string }
 
 export const hasName = <
   A extends HasName,
@@ -252,12 +239,3 @@ export const itemType = (item: { type: string } | DetailsTrash) => {
 
   return 'TRASH_ROOT'
 }
-
-// export const itemType = (item: HasName) =>
-// hasOwnProperty(item, 'drivewsid') && item.drivewsid === types.trashDrivewsid
-//   ? 'Trash'
-//   : hasOwnProperty(item, 'drivewsid') && (item.drivewsid === types.rootDrivewsid)
-//   ? '/'
-//   : item.extension
-//   ? `${item.name}${item.extension.length > 0 ? `.${item.extension}` : ''}`
-//   : `${item.name}`

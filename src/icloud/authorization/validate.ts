@@ -1,7 +1,6 @@
 import { isRight } from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import * as t from 'io-ts'
@@ -13,13 +12,8 @@ import {
   TypeDecodingError,
 } from '../../lib/errors'
 import { tryReadJsonFile } from '../../lib/files'
-import { FetchClientEither } from '../../lib/http/fetch-client'
-import { isObjectWithOwnProperty } from '../../lib/util'
-import { expectJson } from '../drive/requests/http'
 import * as AR from '../drive/requests/reader'
 import { ICloudSessionWithSessionToken } from '../session/session'
-import { buildRequest } from '../session/session-http'
-import { ICloudSessionValidated } from './authorize'
 import { AccountLoginResponseBody } from './types'
 
 const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>
@@ -46,7 +40,7 @@ export function validateSessionM(): AR.ApiSessionRequest<O.Option<AccountLoginRe
     AR.orElse((e) =>
       InvalidGlobalSessionResponse.is(e)
         ? AR.of(O.none)
-        : AR.left(e)
+        : AR.leftE(e)
     ),
   )
 }

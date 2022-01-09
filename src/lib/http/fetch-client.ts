@@ -101,7 +101,7 @@ export class FetchError extends Error {
     super(message)
   }
 
-  public static is(a: unknown): a is FetchError {
+  public static is(a: Error): a is FetchError {
     return a instanceof FetchError
   }
 

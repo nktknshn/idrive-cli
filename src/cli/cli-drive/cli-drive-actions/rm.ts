@@ -4,17 +4,10 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
-import * as AM from '../../../icloud/drive/api'
+import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
-import {
-  isCloudDocsRootDetails,
-  isCloudDocsRootDetailsG,
-  isTrashDetails,
-  isTrashDetailsG,
-} from '../../../icloud/drive/requests/types/types'
+import { isCloudDocsRootDetailsG, isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { normalizePath } from './helpers'
 
@@ -28,12 +21,7 @@ export const rm = (
   },
 ) => {
   return pipe(
-    {
-      sessionFile,
-      cacheFile,
-      noCache,
-      dontSaveCache: true,
-    },
+    { sessionFile, cacheFile, noCache },
     cliActionM2(() => {
       assert(A.isNonEmpty(paths))
 
@@ -49,7 +37,7 @@ export const rm = (
           )),
         SRTE.bind('result', ({ items }) =>
           pipe(
-            AM.moveItemsToTrash({ items, trash }),
+            API.moveItemsToTrash({ items, trash }),
             DF.fromApiRequest,
             DF.chain(
               resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),

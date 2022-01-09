@@ -93,7 +93,7 @@ export const compareItemWithHierarchy = (
   }
 }
 
-export const getAppLibraries = (root: T.DetailsRoot) =>
+export const getAppLibraries = (root: T.DetailsDocwsRoot) =>
   pipe(
     root.items,
     A.filter(T.isAppLibraryItem),
@@ -139,7 +139,10 @@ export const groupByTypeTuple = (items: [T.DriveChildrenItem, T.DriveChildrenIte
     }),
   )
 
-export const compareDetails = (cached: T.DetailsRoot | T.DetailsRegular, actual: T.DetailsRoot | T.DetailsRegular) => {
+export const compareDetails = (
+  cached: T.DetailsDocwsRoot | T.NonRootDetails,
+  actual: T.DetailsDocwsRoot | T.NonRootDetails,
+) => {
   const items = compareItems(cached.items, actual.items)
 
   const cachedByZone = pipe(

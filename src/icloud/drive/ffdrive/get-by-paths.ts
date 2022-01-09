@@ -51,9 +51,9 @@ export const validateHierarchies = <R extends T.Root>(
   cachedHierarchies: NEA<H.Hierarchy<R>>,
 ): DF.DriveM<NEA<H.WithDetails<H.Hierarchy<R>>>> => {
   const toActual = (
-    cachedPath: T.DetailsRegular[],
-    actualsRecord: Record<string, O.Option<T.DetailsRegular>>,
-  ): O.Option<T.DetailsRegular>[] => {
+    cachedPath: T.NonRootDetails[],
+    actualsRecord: Record<string, O.Option<T.NonRootDetails>>,
+  ): O.Option<T.NonRootDetails>[] => {
     return pipe(
       cachedPath,
       A.map(h => R.lookup(h.drivewsid)(actualsRecord)),

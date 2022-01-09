@@ -46,7 +46,7 @@ export const getHierarchyById = (drivewsid: string) =>
     )
 
     while (O.isSome(item)) {
-      if (CT.isRootCacheEntity(item.value)) {
+      if (CT.isDocwsRootCacheEntity(item.value)) {
         h.push({ drivewsid: rootDrivewsid })
         return E.right(A.reverse(h))
       }
@@ -86,7 +86,7 @@ export const getRoot = () =>
       cache.byDrivewsid,
       R.lookup(rootDrivewsid),
       E.fromOption(() => MissinRootError.create(`getRoot(): missing root`)),
-      E.filterOrElse(CT.isRootCacheEntity, () => err('getRoot(): invalid root details')),
+      E.filterOrElse(CT.isDocwsRootCacheEntity, () => err('getRoot(): invalid root details')),
     )
 
 export const getTrashE = () =>
@@ -178,7 +178,7 @@ export const addItems = (items: T.DriveChildrenItem[]) =>
   }
 
 export const putRoot = (
-  details: T.DetailsRoot,
+  details: T.DetailsDocwsRoot,
 ): ((s: CT.CacheF) => E.Either<Error, CT.CacheF>) => {
   return flow(
     lens.byDrivewsid.modify(
@@ -289,12 +289,6 @@ export const putItem = (
         needsUpdate
           ? pipe(
             cache,
-            // lens.byPath.modify(
-            //   R.upsertAt(
-            //     Path.join(parentPath, fileName(item)),
-            //     cacheEntityFromItem(item),
-            //   ),
-            // ),
             lens.byDrivewsid.modify(
               R.upsertAt(item.drivewsid, cacheEntityFromItem(item)),
             ),
