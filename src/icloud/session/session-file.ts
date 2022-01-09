@@ -12,8 +12,20 @@ export type SessionFileReadingResult = TE.TaskEither<
   ICloudSession
 >
 
-export const saveSession = (file: string) =>
+export const saveSessionFile = (file: string) =>
   (session: ICloudSession): TE.TaskEither<Error, void> =>
+    pipe(
+      TE.fromEither(J.stringify(session)),
+      TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying session: ${e}`)),
+      TE.chainW((content) =>
+        TE.tryCatch(
+          () => fs.writeFile(file, content),
+          (e) => err(`Error writing session ${String(e)}`),
+        )
+      ),
+    )
+export const saveSession2 = (session: ICloudSession) =>
+  (file: string): TE.TaskEither<Error, void> =>
     pipe(
       TE.fromEither(J.stringify(session)),
       TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying session: ${e}`)),

@@ -4,6 +4,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
+import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
@@ -34,7 +35,7 @@ export const mkdir = ({
       sessionFile,
       cacheFile,
       noCache,
-      dontSaveCache: true,
+      ...defaultApiEnv,
     },
     cliActionM2(() => {
       const nparentPath = normalizePath(Path.dirname(path))

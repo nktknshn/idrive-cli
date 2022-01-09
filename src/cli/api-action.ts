@@ -3,11 +3,12 @@ import { constant, pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { defaultApiEnv } from '../defaults'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData } from '../icloud/authorization/validate'
 import * as AM from '../icloud/drive/requests/reader'
 import { ICloudSession } from '../icloud/session/session'
-import { readSessionFile, saveSession } from '../icloud/session/session-file'
+import { readSessionFile, saveSessionFile } from '../icloud/session/session-file'
 import { fetchClient } from '../lib/http/fetch-client'
 import { input } from '../lib/input'
 
@@ -50,18 +51,11 @@ export function apiActionM<T>(
         TE.Do,
         TE.bind('session', () => readSessionFile(sessionFile)),
         TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
-        TE.chain((session) =>
-          pipe(
-            action()(session)({
-              fetch: fetchClient,
-              getCode: () => input({ prompt: 'code: ' }),
-            }),
-          )
-        ),
+        TE.chain((session) => action()(session)(defaultApiEnv)),
         TE.chain(
           ([result, { session, accountData }]) =>
             pipe(
-              saveSession(sessionFile)(session),
+              saveSessionFile(sessionFile)(session),
               TE.map(constant(result)),
             ),
         ),

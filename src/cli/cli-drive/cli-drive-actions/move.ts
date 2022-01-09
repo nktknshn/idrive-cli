@@ -3,6 +3,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
+import { defaultApiEnv } from '../../../defaults'
 import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/ffdrive'
@@ -33,7 +34,7 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
   dstpath: string
 }) => {
   return pipe(
-    { sessionFile, cacheFile, noCache },
+    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
     cliActionM2(() => {
       const nsrc = normalizePath(srcpath)
       const ndst = normalizePath(dstpath)

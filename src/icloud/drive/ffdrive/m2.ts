@@ -1,6 +1,8 @@
 import * as E from 'fp-ts/lib/Either'
-import { hole, pipe } from 'fp-ts/lib/function'
+import { flow, hole, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
+import { Predicate } from 'fp-ts/lib/Predicate'
+import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -56,6 +58,11 @@ export const get = <S, R, E = never>() => {
 
   const map = SRTE.map
 
+  function filterOrElse<A, B extends A>(refinement: Refinement<A, B>, onFalse: (a: A) => E): (ma: T_<A>) => T_<B>
+  function filterOrElse<A>(predicate: Predicate<A>, onFalse: (a: A) => E): (ma: T_<A>) => T_<A>
+  function filterOrElse<A>(predicate: Predicate<A>, onFalse: (a: A) => E): (ma: T_<A>) => T_<A> {
+    return flow(chain(a => predicate(a) ? of(a) : left(onFalse(a))))
+  }
   return {
     Do,
     chain,
@@ -68,5 +75,6 @@ export const get = <S, R, E = never>() => {
     map,
     fromTaskEitherE,
     leftE,
+    filterOrElse,
   }
 }

@@ -10,6 +10,7 @@ import { BadRequestError, err, InvalidGlobalSessionResponse, MissingResponseBody
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
 import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AccountLoginResponseBody } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
 import * as ESRTE from '../ffdrive/m2'
@@ -19,14 +20,15 @@ export type DriveApiRequest<R> = ApiSessionRequest<R, ICloudSessionValidated>
 
 export type AuthorizationState = {
   session: ICloudSession
+  accountData: AccountLoginResponseBody
 }
 
 export type AuthorizationApiRequest<R> = ApiSessionRequest<R, AuthorizationState>
 
-export type ReaderRequest<T> = R.Reader<
-  { client: FetchClientEither; session: ICloudSessionValidated },
-  TE.TaskEither<Error, H.ResponseWithSession<T>>
->
+// export type ReaderRequest<T> = R.Reader<
+//   { client: FetchClientEither; session: ICloudSessionValidated },
+//   TE.TaskEither<Error, H.ResponseWithSession<T>>
+// >
 
 export type Env = {
   fetch: FetchClientEither

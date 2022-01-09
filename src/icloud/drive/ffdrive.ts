@@ -26,8 +26,10 @@ import { Hierarchy } from './ffdrive/validation'
 import { getMissedFound } from './helpers'
 import * as AR from './requests/reader'
 
-import * as ESRTE from './ffdrive/m'
+import * as ESRTE from './ffdrive/m2'
 
+import { AccountLoginResponseBody } from '../authorization/types'
+import { ICloudSession } from '../session/session'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
@@ -39,13 +41,10 @@ export type DriveMEnv = {} & API.ApiEnv & AR.Env
 
 export type DriveMState = {
   cache: C.Cache
-  session: ICloudSessionValidated
+  // session: ICloudSessionValidated
+  session: ICloudSession
+  accountData: AccountLoginResponseBody
 }
-
-// type Err = {
-//   error: Error
-//   state: DriveMState
-// }
 
 export const {
   Do,
@@ -63,7 +62,7 @@ export const {
 
 export type DriveM<A> = ESRTE.ESRTE<DriveMState, DriveMEnv, Error, A>
 
-// const ado = sequenceS(SRTE.Apply)
+const ado = sequenceS(SRTE.Apply)
 // const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
@@ -77,12 +76,16 @@ export const readEnvS = <A>(
 
 export const logS = flow(logReturnS, SRTE.map)
 
-export const errS = <A>(s: string): DriveM<A> => readEnvS(({ state }) => SRTE.left({ error: err(s), state }))
+export const errS = <A>(s: string): DriveM<A> =>
+  readEnvS(
+    ({ state }) => SRTE.left(err(s)),
+    // ({ state }) => SRTE.left({ error: err(s), state }),
+  )
 
 const executeApiRequest = <A>(ma: API.Api<A>) =>
   readEnvS(({ env, state }) =>
     pipe(
-      ma(env)(state.session)(env),
+      ma(env)(state)(env),
       fromTaskEither,
       // fromTaskEither(({ error, state }) => left(error)),
     )
@@ -100,7 +103,7 @@ export const fromApiRequest = <A>(ma: API.Api<A>): DriveM<A> =>
   )
 
 const putSession = (session: ICloudSessionValidated): DriveM<void> =>
-  readEnvS(({ state }) => SRTE.put({ ...state, session }))
+  readEnvS(({ state }) => SRTE.put({ ...state, ...session }))
 
 const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
 
@@ -193,7 +196,7 @@ export const retrieveRootAndTrashIfMissing = (): DriveM<void> => {
 }
 
 export const saveCache = (cacheFile: string) =>
-  () => readEnvS(({ state: { cache } }) => fromTaskEither(C.trySaveFile(cache, cacheFile)))
+  () => readEnvS(({ state: { cache } }) => fromTaskEither(C.trySaveFile(cache)(cacheFile)))
 
 export const saveCacheFirst = <T>(cacheFile: string) =>
   (df: DriveM<T>): DriveM<T> =>
@@ -203,7 +206,7 @@ export const saveCacheFirst = <T>(cacheFile: string) =>
         pipe(
           readEnv,
           logS(() => `saving cache`, cacheLogger.debug),
-          chain(({ state: { cache } }) => fromTaskEither(C.trySaveFile(cache, cacheFile))),
+          chain(({ state: { cache } }) => fromTaskEither(C.trySaveFile(cache)(cacheFile))),
           chain(() => of(v)),
         )
       ),

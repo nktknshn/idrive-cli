@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
@@ -21,7 +22,7 @@ export const rm = (
   },
 ) => {
   return pipe(
-    { sessionFile, cacheFile, noCache },
+    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
     cliActionM2(() => {
       assert(A.isNonEmpty(paths))
 

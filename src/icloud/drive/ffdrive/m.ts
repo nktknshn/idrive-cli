@@ -9,10 +9,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 
 export type ESRTE<S, R, E, A> = SRTE.StateReaderTaskEither<S, R, Err<S, E>, A>
 
-export type Err<S, E> = {
-  error: E
-  state: S
-}
+export type Err<S, E> = { error: E; state: S }
 
 export const get = <S, R, E = never>() => {
   type T_<A, S_ extends S = S> = ESRTE<S_, R, E, A>
@@ -59,18 +56,9 @@ export const get = <S, R, E = never>() => {
 
   const map = SRTE.map
 
-  function filterOrElse<A, B extends A>(
-    refinement: Refinement<A, B>,
-    onFalse: (a: A) => E,
-  ): (ma: T_<A>) => T_<B>
-  function filterOrElse<A>(
-    predicate: Predicate<A>,
-    onFalse: (a: A) => E,
-  ): (ma: T_<A>) => T_<A>
-  function filterOrElse<A>(
-    predicate: Predicate<A>,
-    onFalse: (a: A) => E,
-  ): (ma: T_<A>) => T_<A> {
+  function filterOrElse<A, B extends A>(refinement: Refinement<A, B>, onFalse: (a: A) => E): (ma: T_<A>) => T_<B>
+  function filterOrElse<A>(predicate: Predicate<A>, onFalse: (a: A) => E): (ma: T_<A>) => T_<A>
+  function filterOrElse<A>(predicate: Predicate<A>, onFalse: (a: A) => E): (ma: T_<A>) => T_<A> {
     return flow(chain(a => predicate(a) ? of(a) : left(onFalse(a))))
   }
 

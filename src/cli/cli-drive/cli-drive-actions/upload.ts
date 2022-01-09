@@ -1,6 +1,7 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { defaultApiEnv } from '../../../defaults'
 import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/ffdrive'
@@ -21,7 +22,7 @@ export const upload = (
   },
 ) => {
   return pipe(
-    { sessionFile, cacheFile, noCache },
+    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
     cliActionM2(() => {
       return pipe(
         DF.chainRoot(root =>

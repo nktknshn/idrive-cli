@@ -416,10 +416,10 @@ export const removeByIds = (drivewsids: string[]) =>
 
 export const trySaveFile = (
   cache: Cache,
-  cacheFilePath: string,
-): TE.TaskEither<Error, void> => {
-  return pipe(cache, saveJson(cacheFilePath))
-}
+) =>
+  (cacheFilePath: string): TE.TaskEither<Error, void> => {
+    return pipe(cache, saveJson(cacheFilePath))
+  }
 
 export const trySaveFileF = (
   cacheFilePath: string,

@@ -30,7 +30,8 @@ async function main() {
   const commandFunction = commands[command]
 
   await pipe(
-    commandFunction(argv),
+    argv,
+    commandFunction,
     TE.fold(printer.errorTask, printer.printTask),
   )()
 }
