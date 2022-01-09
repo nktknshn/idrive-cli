@@ -124,15 +124,15 @@ export function requestSignIn(
   )
 }
 
-export function requestSignInM(
+export const requestSignInM = <S extends AR.State>(
   // { accountName, password, trustTokens }: {
   //   accountName: string
   //   password: string
   //   trustTokens: string[]
   // },
-): AR.AuthorizationApiRequest<SignInResponse> {
+): AR.ApiSessionRequest<SignInResponse, S> => {
   return pipe(
-    AR.buildRequestC(({ state: { session } }) => ({
+    AR.buildRequestC<S>(({ state: { session } }) => ({
       method: 'POST',
       url: 'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
       options: {

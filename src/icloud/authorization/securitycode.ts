@@ -47,11 +47,11 @@ export function requestSecurityCode(
   )
 }
 
-export function requestSecurityCodeM(
+export const requestSecurityCodeM = <S extends AR.State>(
   code: string,
-): AR.AuthorizationApiRequest<{}> {
+): AR.ApiSessionRequest<{}, S> => {
   return pipe(
-    AR.buildRequestC(() => ({
+    AR.buildRequestC<S>(() => ({
       method: 'POST',
       url: 'https://idmsa.apple.com/appleauth/auth/verify/trusteddevice/securitycode',
       options: {

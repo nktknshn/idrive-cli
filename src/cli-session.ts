@@ -68,7 +68,7 @@ const authorize = (sessionFile = defaultSessionFile) => {
     TE.chainW((session) => {
       const auth = (session: ICloudSession) =>
         authorizeSession(fetchClient, session, {
-          getCode: input({ prompt: 'code: ' }),
+          getCode: () => input({ prompt: 'code: ' }),
         })
 
       if (hasSessionToken(session)) {

@@ -389,7 +389,7 @@ export class DriveApi {
       authorizeSession(
         this.client,
         this.session.session,
-        { getCode: input({ prompt: 'code: ' }) },
+        { getCode: () => input({ prompt: 'code: ' }) },
       ),
       TE.chainW(this.setSession),
     )

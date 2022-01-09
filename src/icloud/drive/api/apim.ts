@@ -27,6 +27,7 @@ export const executeRequest = <TArgs extends any[], R>(
       ),
     )
 }
+
 const ado = sequenceS(SRTE.Apply)
 type State<S = ICloudSessionValidated> = { session: S }
 type Env = {
@@ -66,6 +67,7 @@ const orElseTaskEitherW = <T1, T2>(
 const orElseW = <T1, T2>(
   f: (e: Error) => ApiM<T2>,
 ) => (m: ApiM<T1>): ApiM<T1 | T2> => (s) => pipe(m(s), RTE.orElseW((e) => f(e)(s)))
+
 const catchErrors = <T>(
   m: () => ApiM<T>,
 ): ApiM<T> => {
@@ -82,6 +84,7 @@ const catchErrors = <T>(
     }),
   )
 }
+
 const catchInvalidSession = <T>(
   m: () => ApiM<T>,
 ): ApiM<T> => {
@@ -97,6 +100,7 @@ const catchInvalidSession = <T>(
     }),
   )
 }
+
 const catchFetchErrors = (triesLeft: number) =>
   <T>(
     m: () => ApiM<T>,
@@ -118,13 +122,14 @@ const onInvalidSession = (): ApiM<void> => {
     readEnv,
     chain(({ client, session, env }) =>
       pipe(
-        authorizeSession(client, session.session, { getCode: env.getCode() }),
+        authorizeSession(client, session.session, { getCode: env.getCode }),
         fromTaskEither,
       )
     ),
     storeSessionAndReturn(constVoid),
   )
 }
+
 const storeSessionAndReturn = <
   T extends {
     session: ICloudSession
@@ -155,6 +160,7 @@ const storeSessionAndReturn = <
       ),
     )
   }
+
 export const storeSessionAndReturnBody = <
   T extends {
     session: ICloudSession

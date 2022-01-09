@@ -110,6 +110,43 @@ export function upload(
   )
 }
 
+export function singleFileUpload(
+  client: FetchClientEither,
+  { session }: ICloudSessionValidated,
+  { filePath, url }: { filePath: string; url: string },
+): TE.TaskEither<Error, ResponseWithSession<SingleFileResponse>> {
+  const filename = Path.parse(filePath).base
+
+  return pipe(
+    TE.tryCatch(
+      () => fs.readFile(filePath),
+      (e) => err(`error opening file ${String(e)}`),
+    ),
+    logf(`singleFileUpload.`, apiLogger.debug),
+    TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
+    TE.chainW(client),
+    expectJson(singleFileResponse.decode)(session),
+  )
+}
+
+export function updateDocuments(
+  client: FetchClientEither,
+  { session, accountData }: ICloudSessionValidated,
+  { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
+): TE.TaskEither<Error, ResponseWithSession<UpdateDocumentsResponse>> {
+  return pipe(
+    session,
+    logf(`updateDocuments.`, apiLogger.debug),
+    buildRequest(
+      'POST',
+      `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
+      { addClientInfo: true, data },
+    ),
+    client,
+    expectJson(updateDocumentsResponse.decode)(session),
+  )
+}
+
 export const uploadM = (
   { zone = 'com.apple.CloudDocs', contentType, filename, size, type }: {
     zone?: string
@@ -130,25 +167,6 @@ export const uploadM = (
     uploadResponse.decode,
   )
 
-export function singleFileUpload(
-  client: FetchClientEither,
-  { session }: ICloudSessionValidated,
-  { filePath, url }: { filePath: string; url: string },
-): TE.TaskEither<Error, ResponseWithSession<SingleFileResponse>> {
-  const filename = Path.parse(filePath).base
-
-  return pipe(
-    TE.tryCatch(
-      () => fs.readFile(filePath),
-      (e) => err(`error opening file ${String(e)}`),
-    ),
-    logf(`singleFileUpload.`, apiLogger.debug),
-    TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
-    TE.chainW(client),
-    expectJson(singleFileResponse.decode)(session),
-  )
-}
-
 export const singleFileUploadM = (
   { filePath, url }: { filePath: string; url: string },
 ): AR.DriveApiRequest<SingleFileResponse> => {
@@ -163,24 +181,6 @@ export const singleFileUploadM = (
     TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
     AR.fromTaskEither,
     AR.handleResponse(AR.basicJsonResponse(singleFileResponse.decode)),
-  )
-}
-
-export function updateDocuments(
-  client: FetchClientEither,
-  { session, accountData }: ICloudSessionValidated,
-  { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
-): TE.TaskEither<Error, ResponseWithSession<UpdateDocumentsResponse>> {
-  return pipe(
-    session,
-    logf(`updateDocuments.`, apiLogger.debug),
-    buildRequest(
-      'POST',
-      `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
-      { addClientInfo: true, data },
-    ),
-    client,
-    expectJson(updateDocumentsResponse.decode)(session),
   )
 }
 

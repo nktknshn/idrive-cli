@@ -4,11 +4,12 @@ import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as DF from '../../../icloud/drive/fdrive'
+import * as API from '../../../icloud/drive/api-methods'
+import * as DF from '../../../icloud/drive/ffdrive'
+import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
-import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls'
 
@@ -35,7 +36,7 @@ export const mkdir = ({
       noCache,
       dontSaveCache: true,
     },
-    cliActionM(({ cache, api }) => {
+    cliActionM2(() => {
       const nparentPath = normalizePath(Path.dirname(path))
 
       const res = pipe(
@@ -45,8 +46,11 @@ export const mkdir = ({
             SRTE.bind('parent', () => DF.lsdir(root, nparentPath)),
             SRTE.bind('result', ({ parent }) =>
               pipe(
-                api.createFolders(parent.drivewsid, [name]),
-                DF.fromTaskEither,
+                API.createFolders({
+                  destinationDrivewsId: parent.drivewsid,
+                  names: [name],
+                }),
+                DF.fromApiRequest,
                 DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
               )),
             SRTE.chain(({ result, parent }) =>
@@ -77,7 +81,8 @@ export const mkdir = ({
         ),
       )
 
-      return pipe(res({ cache })({ api }), TE.map(fst))
+      return res
+      // return pipe(res({ cache, session: { session, accountData } })({ api }), TE.map(fst))
     }),
   )
 }

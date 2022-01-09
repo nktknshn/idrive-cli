@@ -9,25 +9,12 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
-import * as C from '../../../icloud/drive/cache/cache'
 import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/fdrive'
-import { getByPaths } from '../../../icloud/drive/fdrive/get-by-paths'
-import {
-  Details,
-  DetailsRegular,
-  DetailsRoot,
-  DetailsTrash,
-  DriveChildrenItem,
-  DriveChildrenItemFile,
-  fileName,
-  isCloudDocsRootDetails,
-  isDetails,
-  isFileItem,
-  isTrashDetails,
-  isTrashDetailsG,
-  RecursiveFolder,
-} from '../../../icloud/drive/requests/types/types'
+import * as DF from '../../../icloud/drive/ffdrive'
+import { getByPaths } from '../../../icloud/drive/ffdrive/get-by-paths'
+import * as T from '../../../icloud/drive/requests/types/types'
+import { fetchClient } from '../../../lib/http/fetch-client'
+import { input } from '../../../lib/input'
 import { NEA } from '../../../lib/types'
 import { cliActionM } from '../../cli-action'
 import { Env } from '../../types'
@@ -53,30 +40,30 @@ const formatDate = (date: Date | string) =>
       ].join(' '),
   )
 
-const showWithFullPath = (path: string) => flow(fileName, joinWithPath(path))
+const showWithFullPath = (path: string) => flow(T.fileName, joinWithPath(path))
 
-const showRaw = (result: Details | DriveChildrenItem) => JSON.stringify(result)
+const showRaw = (result: T.Details | T.DriveChildrenItem) => JSON.stringify(result)
 
 type Row = [string, string | number]
 type Element = Row | string | false | Element[]
 // type Component<P> = (props: P) => (Element | string | false)[]
 
-const Trash = ({ details }: { details: DetailsTrash }): Element[] => {
+const Trash = ({ details }: { details: T.DetailsTrash }): Element[] => {
   return [
-    ['name', fileName(details)],
+    ['name', T.fileName(details)],
     ['numberOfItems', details.numberOfItems],
   ]
 }
 
-const Folder = ({ details }: { details: DetailsRoot | DetailsRegular }): Element[] => {
+const Folder = ({ details }: { details: T.DetailsRoot | T.DetailsRegular }): Element[] => {
   return [
-    ['name', fileName(details)],
+    ['name', T.fileName(details)],
     ['dateCreated', formatDate(details.dateCreated)],
     ['drivewsid', details.drivewsid],
     ['docwsid', details.docwsid],
     ['etag', details.etag],
     !!details.extension && ['extension', details.extension],
-    !isCloudDocsRootDetails(details) && ['parentId', details.parentId],
+    !T.isCloudDocsRootDetails(details) && ['parentId', details.parentId],
   ]
 }
 
@@ -96,10 +83,10 @@ const showElements = (elements: Element[]): string => {
 }
 
 export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (details: Details) =>
+  (details: T.Details) =>
     pipe(
       [
-        isTrashDetailsG(details)
+        T.isTrashDetailsG(details)
           ? Trash({ details })
           : Folder({ details }),
       ],
@@ -107,9 +94,9 @@ export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = 
     )
 
 export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (result: DriveChildrenItemFile) =>
+  (result: T.DriveChildrenItemFile) =>
     [
-      ['name', fileName(result)],
+      ['name', T.fileName(result)],
       ['size', result.size],
       ['dateCreated', formatDate(result.dateCreated)],
       ['dateChanged', formatDate(result.dateChanged)],
@@ -125,7 +112,7 @@ export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}
       .join('\n')
 
 const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (item: DriveChildrenItem) =>
+  (item: T.DriveChildrenItem) =>
     item.type === 'FILE'
       ? [
         item.etag,
@@ -133,7 +120,7 @@ const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
         ...[showDrivewsid ? [item.drivewsid] : []],
         ...[showDocwsid ? [item.docwsid] : []],
         item.size,
-        fileName(item),
+        T.fileName(item),
       ]
         .join(`\t`)
       : [
@@ -142,12 +129,12 @@ const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
         ...[showDrivewsid ? [item.drivewsid] : []],
         ...[showDocwsid ? [item.docwsid] : []],
         item.type,
-        fileName(item) + '/',
+        T.fileName(item) + '/',
       ]
         .join(`\t`)
 
-const ordByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
-const ordByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)
+const ordByType = Ord.contramap((d: T.DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
+const ordByName = Ord.contramap((d: T.DriveChildrenItem) => d.name)(string.Ord)
 
 export const showDetailsInfo = (
   { fullPath, path, showDrivewsid = false, showDocwsid = false, printFolderInfo = false }: {
@@ -158,7 +145,7 @@ export const showDetailsInfo = (
     path: string
   },
 ) =>
-  (details: Details) =>
+  (details: T.Details) =>
     string.Monoid.concat(
       pipe(
         details,
@@ -209,13 +196,13 @@ const newLine = '\n'
 const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
 
 const showRecursive = ({ ident = 0 }) =>
-  (folder: RecursiveFolder): string => {
-    const folderName = fileName(folder.details)
+  (folder: T.RecursiveFolder): string => {
+    const folderName = T.fileName(folder.details)
 
     const fileNames = pipe(
       folder.details.items,
-      A.filter(isFileItem),
-      A.map(fileName),
+      A.filter(T.isFileItem),
+      A.map(T.fileName),
     )
 
     const identStr = nSymbols(ident, '  ')
@@ -255,21 +242,21 @@ export const listUnixPath = (
     depth: number
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
-  if (recursive) {
-    return pipe(
-      { sessionFile, cacheFile, noCache },
-      cliActionM(
-        ({ cache, api }) =>
-          pipe(
-            DF.getFolderRecursive(paths[0], depth)({ cache })({ api }),
-            noCache
-              ? TE.chainFirst(() => TE.of(constVoid()))
-              : TE.chainFirst(([item, { cache }]) => C.trySaveFile(cache, cacheFile)),
-            TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
-          ),
-      ),
-    )
-  }
+  // if (recursive) {
+  //   return pipe(
+  //     { sessionFile, cacheFile, noCache },
+  //     cliActionM(
+  //       ({ cache, api }) =>
+  //         pipe(
+  //           DF.getFolderRecursive(paths[0], depth)({ cache })({ api }),
+  //           noCache
+  //             ? TE.chainFirst(() => TE.of(constVoid()))
+  //             : TE.chainFirst(([item, { cache }]) => C.trySaveFile(cache, cacheFile)),
+  //           TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
+  //         ),
+  //     ),
+  //   )
+  // }
 
   const opts = { showDocwsid: false, showDrivewsid: listInfo }
   const npaths = paths.map(normalizePath)
@@ -278,10 +265,10 @@ export const listUnixPath = (
 
   return pipe(
     { sessionFile, cacheFile, noCache },
-    cliActionM(({ cache, api }) => {
+    cliActionM(({ cache, api, session, accountData }) => {
       const res = pipe(
         DF.readEnv,
-        DF.chain((): DF.DriveM<NEA<HierarchyResult<DetailsTrash | DetailsRoot>>> =>
+        DF.chain((): DF.DriveM<NEA<HierarchyResult<T.DetailsTrash | T.DetailsRoot>>> =>
           trash
             ? DF.chainTrash(trash => getByPaths(trash, npaths))
             : DF.chainRoot(root => getByPaths(root, npaths))
@@ -295,7 +282,7 @@ export const listUnixPath = (
                 return pipe(
                   target(result),
                   conditional(
-                    isDetails,
+                    T.isDetails,
                     showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts }),
                     showFileInfo({ ...opts }),
                   ),
@@ -306,8 +293,8 @@ export const listUnixPath = (
             _ => _.join('\n\n'),
           ),
         ),
-        apply({ cache }),
-        apply({ api }),
+        apply({ cache, session: { session, accountData } }),
+        apply({ retries: 3, fetch: fetchClient, getCode: () => input({ prompt: 'code: ' }) }),
         TE.map(fst),
       )
 

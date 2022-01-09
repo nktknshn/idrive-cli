@@ -63,14 +63,14 @@ export function requestAccoutLogin(
   )
 }
 
-export function requestAccoutLoginM(): AR.ApiSessionRequest<
+export function requestAccoutLoginM<S extends AR.State>(): AR.ApiSessionRequest<
   AccountLoginResponseBody,
-  { session: ICloudSession }
+  S
 > {
   logger.debug('requestAccoutLogin')
 
   return pipe(
-    AR.readEnv(),
+    AR.readEnv<S>(),
     AR.chain(_ =>
       pipe(
         _.state.session.sessionToken,
@@ -79,7 +79,7 @@ export function requestAccoutLoginM(): AR.ApiSessionRequest<
     ),
     AR.chain(sessionToken =>
       pipe(
-        AR.buildRequestC<{ session: ICloudSession }>((
+        AR.buildRequestC<S>((
           { state: { session } },
         ) => ({
           method: 'POST',

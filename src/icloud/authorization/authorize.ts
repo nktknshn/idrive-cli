@@ -13,7 +13,7 @@ import { requestTrustDevice, requestTrustDeviceM } from './trust'
 import { AccountLoginResponseBody } from './types'
 
 export interface AuthorizeProps {
-  getCode: TE.TaskEither<Error, string>
+  getCode: () => TE.TaskEither<Error, string>
 }
 
 export interface ICloudSessionValidated {
@@ -41,7 +41,7 @@ export function authorizeSession(
     TE.chainW(({ session, hsa2 }) =>
       hsa2
         ? pipe(
-          getCode,
+          getCode(),
           TE.chainW((code) => requestSecurityCode(client, session, { code })),
           TE.chainW(({ session }) => requestTrustDevice(client, session)),
           TE.map(_ => _.session),
@@ -53,22 +53,21 @@ export function authorizeSession(
   )
 }
 
-export function authorizeSessionM(
-  { getCode }: AuthorizeProps,
-): AR.AuthorizationApiRequest<AccountLoginResponseBody> {
+export function authorizeSessionM<S extends AR.State>(): AR.ApiSessionRequest<AccountLoginResponseBody, S> {
   authLogger.debug('authorizeSession')
 
   return pipe(
-    requestSignInM(),
+    requestSignInM<S>(),
     AR.chain((resp) =>
       isHsa2Required(resp)
         ? pipe(
-          AR.fromTaskEither(getCode),
-          AR.chain(requestSecurityCodeM),
-          AR.chain(requestTrustDeviceM),
+          AR.readEnv<S>(),
+          AR.chain(({ env }) => AR.fromTaskEither(env.getCode())),
+          AR.chain(code => requestSecurityCodeM(code)),
+          AR.chain(() => requestTrustDeviceM()),
         )
         : AR.of({})
     ),
-    AR.chain(requestAccoutLoginM),
+    AR.chain(() => requestAccoutLoginM()),
   )
 }

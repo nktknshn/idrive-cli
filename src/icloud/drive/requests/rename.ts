@@ -44,12 +44,7 @@ export function renameItems(
 
 export const renameItemsM = (
   { items }: {
-    items: {
-      drivewsid: string
-      etag: string
-      name: string
-      extension?: string
-    }[]
+    items: { drivewsid: string; etag: string; name: string; extension?: string }[]
   },
 ): AR.DriveApiRequest<RenameResponse> =>
   AR.basicDriveJsonRequest(
