@@ -1,3 +1,4 @@
+import { isRight } from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
@@ -21,39 +22,11 @@ import { buildRequest } from '../session/session-http'
 import { ICloudSessionValidated } from './authorize'
 import { AccountLoginResponseBody } from './types'
 
-const validateResponseJson = (json: unknown): json is AccountLoginResponseBody =>
-  isObjectWithOwnProperty(json, 'dsInfo')
+const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>
+
+const validateResponseJson = (json: unknown): json is AccountLoginResponseBody => isRight(decode(json))
 
 // export type AccountLoginResponseBodyUnsafe = Partial<AccountLoginResponseBody>
-
-export function validateSession(
-  { client, session }: {
-    client: FetchClientEither
-    session: ICloudSessionWithSessionToken
-  },
-): TE.TaskEither<Error, O.Option<ICloudSessionValidated>> {
-  const applyResponse = expectJson(
-    v => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>,
-  )
-
-  return pipe(
-    session,
-    buildRequest(
-      'POST',
-      'https://setup.icloud.com/setup/ws/1/validate',
-      { addClientInfo: true },
-    ),
-    client,
-    applyResponse(session),
-    TE.map(({ response, session }) =>
-      O.some({
-        session,
-        accountData: response.body,
-      })
-    ),
-    TE.orElse((e) => InvalidGlobalSessionResponse.is(e) ? TE.of(O.none) : TE.left(e)),
-  )
-}
 
 export function validateSessionM(): AR.ApiSessionRequest<O.Option<AccountLoginResponseBody>, {
   session: ICloudSessionWithSessionToken

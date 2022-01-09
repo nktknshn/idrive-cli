@@ -4,10 +4,17 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
 import yargs, { Options } from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { cliActionM } from './cli/cli-action'
 import * as AS from './cli/cli-drive/cli-drive-actions'
 import { normalizePath } from './cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile, defaultSessionFile } from './config'
+import { retrieveTrashDetails } from './icloud/drive/api'
+import * as AR from './icloud/drive/requests/reader'
+// import { map } from './icloud/drive/ffdrive'
+import * as DF from './icloud/drive/ffdrive'
+import { cliActionM2 } from './icloud/drive/ffdrive/cli-action'
+// import { retrieveTrashDetailsM } from './icloud/drive/requests'
+import { apiActionM } from './cli/api-action'
+import { retrieveTrashDetailsM } from './icloud/drive/requests'
 import { DetailsTrash, fileName } from './icloud/drive/requests/types/types'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
@@ -55,26 +62,25 @@ const ls = (
 
   logger.debug(`paths: ${npaths}`)
   return pipe(
-    argv,
-    cliActionM(
-      ({ cache, api }) => {
+    apiActionM(
+      () => {
         return pipe(
-          api.retrieveTrashDetails(),
-          TE.map(_ => _.items.map(fileName).join('\n')),
+          retrieveTrashDetailsM(),
+          AR.map(_ => _.items.map(fileName).join('\n')),
         )
       },
-    ),
+    )(argv),
   )
 }
 
 const recover = (
   argv: { sessionFile: string; cacheFile: string; noCache: boolean; path: string },
 ) => {
-  return cliActionM(
-    ({ cache, api }) => {
+  return apiActionM(
+    () => {
       return pipe(
-        api.retrieveTrashDetails(),
-        TE.map(_ => _.items.map(fileName).join('\n')),
+        retrieveTrashDetailsM(),
+        AR.map(_ => _.items.map(fileName).join('\n')),
       )
     },
   )(argv)

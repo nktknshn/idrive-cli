@@ -17,6 +17,8 @@ import { ICloudSession, session } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
 import * as H from './http'
 
+export const Do = <S extends State>() => SRTE.of<S, Env, Error, {}>({})
+
 export type ReaderRequest<T> = R.Reader<
   { client: FetchClientEither; session: ICloudSessionValidated },
   TE.TaskEither<Error, H.ResponseWithSession<T>>
@@ -154,7 +156,7 @@ interface ValidHttpResponseBrand {
 type ValidHttpResponse<R extends { httpResponse: HttpResponse }> = t.Branded<R, ValidHttpResponseBrand>
 
 export const validateHttpResponse = <R extends { httpResponse: HttpResponse }, S extends State>(
-  { statuses }: { statuses: number[] } = { statuses: [200] },
+  { statuses }: { statuses: number[] } = { statuses: [200, 204] },
 ) =>
   (ma: ApiSessionRequest<R, S>): ApiSessionRequest<ValidHttpResponse<R>, S> =>
     pipe(

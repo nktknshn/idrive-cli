@@ -25,46 +25,8 @@ export interface TrustResponse204 {
   trustToken: string
 }
 
-const applyHttpResponseToSession = flow(
-  withResponse,
-  filterStatus(200),
-  TE.bind('trustToken', ({ httpResponse }) =>
-    pipe(
-      getTrustToken(httpResponse),
-      TE.fromOption(() => err('Missing trust token')),
-    )),
-  applyToSession2(
-    ({ httpResponse, trustToken }) =>
-      flow(
-        applyAuthorizationResponse(httpResponse),
-        applyCookiesToSession(httpResponse),
-        sessionLens.trustToken.set(O.some(trustToken)),
-      ),
-  ),
-  returnS(({ trustToken }): TrustResponse204 => ({ trustToken })),
-)
-
-export function requestTrustDevice(
-  client: FetchClientEither,
-  session: ICloudSession,
-): TE.TaskEither<Error, ResponseWithSession<unknown>> {
-  logger.debug('requestTrustDevice')
-
-  return pipe(
-    session,
-    buildRequest(
-      'GET',
-      'https://idmsa.apple.com/appleauth/auth/2sv/trust',
-      { addClientInfo: false, headers: [headers.default, authorizationHeaders] },
-    ),
-    client,
-    TE.map(applyHttpResponseToSession),
-    TE.chain(apply(session)),
-  )
-}
-
 export const requestTrustDeviceM = <S extends AR.State>(): AR.ApiSessionRequest<TrustResponse204, S> => {
-  logger.debug('requestTrustDevice')
+  logger.debug('requestTrustDeviceM')
 
   return pipe(
     AR.buildRequestC<S>(() => ({
@@ -73,7 +35,7 @@ export const requestTrustDeviceM = <S extends AR.State>(): AR.ApiSessionRequest<
       options: { addClientInfo: false, headers: [headers.default, authorizationHeaders] },
     })),
     AR.handleResponse(flow(
-      AR.validateHttpResponse(),
+      AR.validateHttpResponse({ statuses: [200, 204] }),
       SRTE.bind('trustToken', ({ httpResponse }) =>
         pipe(
           getTrustToken(httpResponse),

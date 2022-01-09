@@ -7,6 +7,7 @@ import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-clien
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
+import * as ARR from './api-rte'
 import { applyToSession, expectJson, ResponseWithSession } from './http'
 import * as AR from './reader'
 
@@ -28,32 +29,25 @@ interface ResponseBody {
   double_etag: string
 }
 
-export function download(
-  client: FetchClientEither,
-  { session, accountData }: ICloudSessionValidated,
-  { documentId, zone }: RetrieveOpts,
-): TE.TaskEither<Error, ResponseWithSession<ResponseBody>> {
-  const applyHttpResponseToSession = expectJson(
-    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
-  )
-
-  return pipe(
-    session,
-    buildRequest(
-      'GET',
-      `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
-      { addClientInfo: false },
-    ),
-    client,
-    applyHttpResponseToSession(session),
-  )
-}
-
 export function downloadM(
   { documentId, zone }: RetrieveOpts,
 ) {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
+      method: 'GET',
+      url:
+        `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
+      options: { addClientInfo: false },
+    }),
+    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
+  )
+}
+
+export function downloadARR(
+  { documentId, zone }: RetrieveOpts,
+) {
+  return ARR.basicDriveJsonRequest(
+    ({ accountData }) => ({
       method: 'GET',
       url:
         `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,

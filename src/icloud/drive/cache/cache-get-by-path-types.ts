@@ -3,7 +3,7 @@ import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
-import * as H from '../fdrive/validation'
+import * as H from '../ffdrive/validation'
 import { DetailsAppLibrary, DetailsFolder, DriveChildrenItemFile, fileName, Root } from '../requests/types/types'
 
 export type ResultValid<H> = {

@@ -11,12 +11,13 @@ import { fst } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/ffdrive'
+import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import { getByPaths } from '../../../icloud/drive/ffdrive/get-by-paths'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { fetchClient } from '../../../lib/http/fetch-client'
 import { input } from '../../../lib/input'
 import { NEA } from '../../../lib/types'
-import { cliActionM } from '../../cli-action'
+// import { cliActionM } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
@@ -265,7 +266,7 @@ export const listUnixPath = (
 
   return pipe(
     { sessionFile, cacheFile, noCache },
-    cliActionM(({ cache, api, session, accountData }) => {
+    cliActionM2(() => {
       const res = pipe(
         DF.readEnv,
         DF.chain((): DF.DriveM<NEA<HierarchyResult<T.DetailsTrash | T.DetailsRoot>>> =>
@@ -293,9 +294,9 @@ export const listUnixPath = (
             _ => _.join('\n\n'),
           ),
         ),
-        apply({ cache, session: { session, accountData } }),
-        apply({ retries: 3, fetch: fetchClient, getCode: () => input({ prompt: 'code: ' }) }),
-        TE.map(fst),
+        // apply({ cache, session: { session, accountData } }),
+        // apply({ retries: 3, fetch: fetchClient, getCode: () => input({ prompt: 'code: ' }) }),
+        // TE.map(fst),
       )
 
       return res

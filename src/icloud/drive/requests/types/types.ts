@@ -134,6 +134,10 @@ export const isRegularDetails = (details: Details | DetailsTrash | DriveChildren
 export const isCloudDocsRootDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is DetailsRoot =>
   details.drivewsid === types.rootDrivewsid
 
+export const isCloudDocsRootDetailsG = <T extends { drivewsid: string }>(
+  details: DetailsRoot | T,
+): details is DetailsRoot => details.drivewsid === types.rootDrivewsid
+
 export const isTrashDetails = (details: DetailsTrash | DetailsRoot | DriveChildrenItem): details is DetailsTrash =>
   details.drivewsid === types.trashDrivewsid
 

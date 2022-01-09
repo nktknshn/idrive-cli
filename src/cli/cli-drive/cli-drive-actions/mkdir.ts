@@ -4,7 +4,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as API from '../../../icloud/drive/api-methods'
+import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import { err } from '../../../lib/errors'
@@ -53,11 +53,11 @@ export const mkdir = ({
                 DF.fromApiRequest,
                 DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
               )),
-            SRTE.chain(({ result, parent }) =>
+            DF.chain(({ result, parent }) =>
               pipe(
                 result.folders,
                 A.matchLeft(
-                  () => SRTE.left(err(`createFolders returned empty result`)),
+                  () => DF.left(err(`createFolders returned empty result`)),
                   (head) =>
                     DF.retrieveItemDetailsInFoldersSaving([
                       head.drivewsid,
@@ -66,8 +66,8 @@ export const mkdir = ({
                 ),
               )
             ),
-            SRTE.map(flow(A.lookup(1), O.flatten)),
-            SRTE.map(
+            DF.map(flow(A.lookup(1), O.flatten)),
+            DF.map(
               O.fold(
                 () => `missing created folder`,
                 showDetailsInfo({

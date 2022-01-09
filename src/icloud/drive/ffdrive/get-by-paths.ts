@@ -178,7 +178,7 @@ export const validateCachedPaths = <R extends T.Root>(
     () => DF.readEnv,
     SRTE.bind('cached', ({ state: { cache } }) =>
       pipe(
-        SRTE.fromEither(
+        DF.fromEither(
           pipe(
             paths,
             NA.map(path => pipe(cache, C.getByPath(root, path))),
@@ -187,7 +187,7 @@ export const validateCachedPaths = <R extends T.Root>(
           ),
         ),
       )),
-    SRTE.chain(({ cached }) =>
+    DF.chain(({ cached }) =>
       pipe(
         logg(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
         () => validateHierarchies(root, pipe(cached, NA.map(_ => _.path.details))),

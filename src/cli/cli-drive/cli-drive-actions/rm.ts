@@ -2,14 +2,20 @@ import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import { not } from 'fp-ts/lib/Predicate'
+import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import * as DF from '../../../icloud/drive/fdrive'
-import { isCloudDocsRootDetails } from '../../../icloud/drive/requests/types/types'
+import * as AM from '../../../icloud/drive/api'
+import * as DF from '../../../icloud/drive/ffdrive'
+import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import {
+  isCloudDocsRootDetails,
+  isCloudDocsRootDetailsG,
+  isTrashDetails,
+  isTrashDetailsG,
+} from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
-import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 export const rm = (
@@ -28,23 +34,24 @@ export const rm = (
       noCache,
       dontSaveCache: true,
     },
-    cliActionM(({ cache, api }) => {
+    cliActionM2(() => {
       assert(A.isNonEmpty(paths))
 
       const npaths = pipe(paths, NA.map(normalizePath))
 
-      const res = pipe(
+      return pipe(
         DF.Do,
         SRTE.bind('items', () =>
           pipe(
             DF.chainRoot(root => DF.getByPathsE(root, npaths)),
-            SRTE.filterOrElse(not(A.some(isCloudDocsRootDetails)), () => err(`you cannot remove root`)),
+            DF.filterOrElse(not(A.some(isTrashDetailsG)), () => err(`you cannot remove root`)),
+            DF.filterOrElse(not(A.some(isCloudDocsRootDetailsG)), () => err(`you cannot remove trash`)),
           )),
         SRTE.bind('result', ({ items }) =>
           pipe(
-            api.moveItemsToTrash(items, trash),
-            SRTE.fromTaskEither,
-            SRTE.chain(
+            AM.moveItemsToTrash({ items, trash }),
+            DF.fromApiRequest,
+            DF.chain(
               resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
             ),
           )),
@@ -56,8 +63,6 @@ export const rm = (
         //   path: '',
         // })),
       )
-
-      return pipe(res({ cache })({ api }), TE.map(fst))
     }),
   )
 }

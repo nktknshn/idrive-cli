@@ -3,9 +3,11 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
+import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/fdrive'
-import * as H from '../../../icloud/drive/fdrive/validation'
+import * as DF from '../../../icloud/drive/ffdrive'
+import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import * as H from '../../../icloud/drive/ffdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemToTrashResponse } from '../../../icloud/drive/requests'
 import { RenameResponse } from '../../../icloud/drive/requests'
@@ -20,7 +22,6 @@ import {
 } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
-import { cliActionM } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
@@ -29,13 +30,11 @@ const caseMove = (
   dst: Details,
 ): DF.DriveM<MoveItemToTrashResponse> => {
   return pipe(
-    DF.readEnv,
-    DF.chain(({ env }) =>
-      pipe(
-        env.api.moveItems(dst.drivewsid, [{ drivewsid: src.drivewsid, etag: src.etag }]),
-        DF.fromTaskEither,
-      )
-    ),
+    AM.moveItems({
+      destinationDrivewsId: dst.drivewsid,
+      items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+    }),
+    DF.fromApiRequest,
   )
 }
 
@@ -44,15 +43,12 @@ const caseRename = (
   name: string,
 ): DF.DriveM<RenameResponse> => {
   return pipe(
-    DF.readEnv,
-    DF.chain(({ env }) =>
-      pipe(
-        env.api.renameItems([
-          { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
-        ]),
-        DF.fromTaskEither,
-      )
-    ),
+    AM.renameItems({
+      items: [
+        { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
+      ],
+    }),
+    DF.fromApiRequest,
   )
 }
 
@@ -62,24 +58,23 @@ const caseMoveAndRename = (
   name: string,
 ): DF.DriveM<RenameResponse> => {
   return pipe(
-    DF.readEnv,
-    DF.chain(({ env }) =>
-      pipe(
-        DF.fromTaskEither(
-          env.api.moveItems(
-            dst.drivewsid,
-            [{ drivewsid: src.drivewsid, etag: src.etag }],
-          ),
-        ),
-        DF.chain(() => {
-          return DF.fromTaskEither(
-            env.api.renameItems([
-              { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
-            ]),
-          )
+    DF.fromApiRequest(
+      AM.moveItems(
+        {
+          destinationDrivewsId: dst.drivewsid,
+          items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+        },
+      ),
+    ),
+    DF.chain(() => {
+      return DF.fromApiRequest(
+        AM.renameItems({
+          items: [
+            { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
+          ],
         }),
       )
-    ),
+    }),
   )
 }
 
@@ -138,11 +133,11 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
 }) => {
   return pipe(
     { sessionFile, cacheFile, noCache },
-    cliActionM(({ cache, api }) => {
+    cliActionM2(() => {
       const nsrc = normalizePath(srcpath)
       const ndst = normalizePath(dstpath)
 
-      const res = pipe(
+      return pipe(
         DF.chainRoot(root =>
           pipe(
             DF.Do,
@@ -154,7 +149,7 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
         ),
       )
 
-      return pipe(res({ cache })({ api }), TE.map(fst))
+      // return pipe(res({ cache })({ api }), TE.map(fst))
     }),
   )
 }

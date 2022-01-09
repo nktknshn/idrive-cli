@@ -1,25 +1,14 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { apply, flow, pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { err, UnexpectedResponse } from '../../lib/errors'
-import { FetchClientEither, HttpResponse } from '../../lib/http/fetch-client'
+import { HttpResponse } from '../../lib/http/fetch-client'
 import { getHeader } from '../../lib/http/http-headers'
-import { authLogger } from '../../lib/logging'
 import { arrayFromOption } from '../../lib/util'
-import {
-  applyToSession2,
-  decodeJsonEither,
-  filterStatuses,
-  ResponseWithSession,
-  returnEither,
-  withResponse,
-} from '../drive/requests/http'
 import * as AR from '../drive/requests/reader'
-import { ICloudSession } from '../session/session'
-import { applyCookiesToSession, buildRequest } from '../session/session-http'
+import { applyCookiesToSession } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
 import { authorizationHeaders } from './headers'
 import { applyAuthorizationResponse } from './session'
@@ -81,47 +70,6 @@ function getResponse(
   }
 
   return E.left(new UnexpectedResponse(httpResponse, json))
-}
-
-const applyResponse = flow(
-  withResponse,
-  filterStatuses([409, 200]),
-  decodeJsonEither(v => t.partial({ authType: t.string }).decode(v)),
-  applyToSession2(({ httpResponse }) =>
-    flow(
-      applyAuthorizationResponse(httpResponse),
-      applyCookiesToSession(httpResponse),
-    )
-  ),
-  returnEither(_ => getResponse(_.httpResponse, _.decoded)),
-)
-
-export function requestSignIn(
-  client: FetchClientEither,
-  session: ICloudSession,
-  { accountName, password, trustTokens }: {
-    accountName: string
-    password: string
-    trustTokens: string[]
-  },
-): TE.TaskEither<Error, ResponseWithSession<SignInResponse>> {
-  authLogger.debug('requestSignIn')
-
-  return pipe(
-    session,
-    buildRequest(
-      'POST',
-      'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
-      {
-        addClientInfo: false,
-        headers: [headers.default, authorizationHeaders],
-        data: { accountName, password, trustTokens, rememberMe: true },
-      },
-    ),
-    client,
-    TE.map(applyResponse),
-    TE.chain(apply(session)),
-  )
 }
 
 export const requestSignInM = <S extends AR.State>(

@@ -6,6 +6,7 @@ import { apiLogger } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
+import * as ARR from './api-rte'
 import { expectJson, ResponseWithSession } from './http'
 import * as AR from './reader'
 
@@ -13,28 +14,17 @@ export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
 }
 
-export function moveItemsToTrash(
-  client: FetchClientEither,
-  { session, accountData }: ICloudSessionValidated,
-  { items, trash = false }: {
-    items: { drivewsid: string; etag: string }[]
-    trash?: boolean
-  },
-): TE.TaskEither<Error, ResponseWithSession<MoveItemToTrashResponse>> {
-  const applyHttpResponseToSession = expectJson(
-    v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
-  )
-
-  const endpoint = trash ? 'moveItemsToTrash' : 'deleteItems'
-
-  apiLogger.debug(`${endpoint}`)
-
-  return pipe(
-    session,
-    buildRequest(
-      'POST',
-      `${accountData.webservices.drivews.url}/${endpoint}?dsid=${accountData.dsInfo.dsid}`,
-      {
+export const moveItemsToTrashM = ({ items, trash = false }: {
+  items: { drivewsid: string; etag: string }[]
+  trash?: boolean
+}): AR.DriveApiRequest<MoveItemToTrashResponse> =>
+  AR.basicDriveJsonRequest(
+    ({ state: { accountData } }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.drivews.url}/${
+        trash ? 'moveItemsToTrash' : 'deleteItems'
+      }?dsid=${accountData.dsInfo.dsid}`,
+      options: {
         addClientInfo: true,
         data: {
           items: items.map((item) => ({
@@ -44,18 +34,16 @@ export function moveItemsToTrash(
           })),
         },
       },
-    ),
-    client,
-    applyHttpResponseToSession(session),
+    }),
+    v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
   )
-}
 
-export const moveItemsToTrashM = ({ items, trash = false }: {
+export const moveItemsToTrashARR = ({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
-}): AR.DriveApiRequest<MoveItemToTrashResponse> =>
-  AR.basicDriveJsonRequest(
-    ({ state: { accountData } }) => ({
+}): ARR.DriveApiRequest<MoveItemToTrashResponse> =>
+  ARR.basicDriveJsonRequest(
+    ({ accountData }) => ({
       method: 'POST',
       url: `${accountData.webservices.drivews.url}/${
         trash ? 'moveItemsToTrash' : 'deleteItems'

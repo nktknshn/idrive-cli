@@ -33,28 +33,28 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
   )
 }
 
-export function retrieveItemDetailsInFolders(
-  client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
-  { drivewsids }: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<(Details | InvalidId)[]>> {
-  return retrieveItemDetailsInFoldersGeneric(
-    client,
-    { accountData, session },
-    drivewsids.map(
-      (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
-    ),
-    (session) =>
-      TE.chain(
-        flow(
-          withResponse,
-          filterStatus(),
-          decodeJson(t.array(t.union([driveDetails, invalidIdItem])).decode),
-          applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
-        ),
-      ),
-  )
-}
+// export function retrieveItemDetailsInFolders(
+//   client: FetchClientEither,
+//   { accountData, session }: ICloudSessionValidated,
+//   { drivewsids }: { drivewsids: string[] },
+// ): TE.TaskEither<Error, ResponseWithSession<(Details | InvalidId)[]>> {
+//   return retrieveItemDetailsInFoldersGeneric(
+//     client,
+//     { accountData, session },
+//     drivewsids.map(
+//       (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
+//     ),
+//     (session) =>
+//       TE.chain(
+//         flow(
+//           withResponse,
+//           filterStatus(),
+//           decodeJson(t.array(t.union([driveDetails, invalidIdItem])).decode),
+//           applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
+//         ),
+//       ),
+//   )
+// }
 
 export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
   t.array(t.UnknownRecord).decode,
@@ -147,3 +147,32 @@ export const retrieveItemDetailsInFoldersHierarchyM = (
       decodeWithHierarchy,
     )),
   )
+
+import * as ARR from './api-rte'
+
+export const retrieveItemDetailsInFoldersRequestARR = (
+  data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
+) => {
+  return pipe(
+    ARR.buildRequestC(({ accountData }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
+      options: { addClientInfo: true, data },
+    })),
+  )
+}
+
+export function retrieveItemDetailsInFoldersARR(
+  { drivewsids }: { drivewsids: string[] },
+): ARR.DriveApiRequest<(Details | InvalidId)[]> {
+  return pipe(
+    retrieveItemDetailsInFoldersRequestARR(
+      drivewsids.map(
+        (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
+      ),
+    ),
+    ARR.handleResponse(ARR.basicJsonResponse(
+      t.array(t.union([driveDetails, invalidIdItem])).decode,
+    )),
+  )
+}

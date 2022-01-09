@@ -11,6 +11,7 @@ import * as AR from './reader'
 import {
   retrieveItemDetailsInFoldersGeneric,
   retrieveItemDetailsInFoldersRequest,
+  retrieveItemDetailsInFoldersRequestARR,
 } from './retrieveItemDetailsInFolders'
 import { DetailsTrash, DriveChildrenItem } from './types/types'
 import { detailsItem, detailsTrash } from './types/types-io'
@@ -20,51 +21,6 @@ export const scheme = t.tuple(
 )
 
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
-}
-
-export function retrieveTrashDetails(
-  client: FetchClientEither,
-  { session, accountData }: ICloudSessionValidated,
-): TE.TaskEither<Error, ResponseWithSession<DetailsTrash>> {
-  apiLogger.debug('retrieveTrashDetails')
-
-  return retrieveItemDetailsInFoldersGeneric(
-    client,
-    { session, accountData },
-    [{ 'drivewsid': 'TRASH_ROOT', 'partialData': false, 'includeHierarchy': true }],
-    session => {
-      return TE.chain(
-        flow(
-          withResponse,
-          filterStatus(),
-          decodeJson(flow(scheme.decode, E.map(_ => _[0]))),
-          applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
-        ),
-      )
-    },
-  )
-}
-
-export function putBackItemsFromTrash(
-  client: FetchClientEither,
-  { session, accountData }: ICloudSessionValidated,
-  items: [{ drivewsid: string; etag: string }],
-): TE.TaskEither<Error, ResponseWithSession<{ items: DriveChildrenItem[] }>> {
-  apiLogger.debug('putBackItemsFromTrash')
-
-  const request = pipe(
-    session,
-    buildRequest(
-      'POST',
-      `${accountData.webservices.drivews.url}/putBackItemsFromTrash?dsid=${accountData.dsInfo.dsid}`,
-      { addClientInfo: true, data: { items } },
-    ),
-  )
-
-  return pipe(
-    client(request),
-    expectJson(t.type({ items: t.array(detailsItem) }).decode)(session),
-  )
 }
 
 export const retrieveTrashDetailsM = (): AR.DriveApiRequest<DetailsTrash> =>
@@ -88,4 +44,29 @@ export const putBackItemsFromTrashM = (
       options: { addClientInfo: true, data: { items } },
     }),
     t.type({ items: t.array(detailsItem) }).decode,
+  )
+
+import * as ARR from './api-rte'
+
+export const putBackItemsFromTrashARR = (
+  items: [{ drivewsid: string; etag: string }],
+): ARR.DriveApiRequest<{ items: DriveChildrenItem[] }> =>
+  ARR.basicDriveJsonRequest(
+    ({ accountData }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.drivews.url}/putBackItemsFromTrash?dsid=${accountData.dsInfo.dsid}`,
+
+      options: { addClientInfo: true, data: { items } },
+    }),
+    t.type({ items: t.array(detailsItem) }).decode,
+  )
+
+export const retrieveTrashDetailsARR = (): ARR.DriveApiRequest<DetailsTrash> =>
+  pipe(
+    retrieveItemDetailsInFoldersRequestARR(
+      [{ 'drivewsid': 'TRASH_ROOT', 'partialData': false, 'includeHierarchy': true }],
+    ),
+    ARR.handleResponse(ARR.basicJsonResponse(
+      flow(scheme.decode, E.map(_ => _[0])),
+    )),
   )
