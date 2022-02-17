@@ -1,5 +1,5 @@
 import { constant, flow, pipe } from 'fp-ts/lib/function'
-import * as AR from '../drive/requests/reader'
+import * as AR from '../drive/requests/request'
 import { applyCookiesToSession } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
 import { authorizationHeaders } from './headers'
@@ -7,7 +7,7 @@ import { applyAuthorizationResponse } from './session'
 
 export const requestSecurityCodeM = <S extends AR.State>(
   code: string,
-): AR.ApiSessionRequest<{}, S> => {
+): AR.ApiRequest<{}, S> => {
   return pipe(
     AR.buildRequestC<S>(() => ({
       method: 'POST',
@@ -19,7 +19,7 @@ export const requestSecurityCodeM = <S extends AR.State>(
       },
     })),
     AR.handleResponse(flow(
-      AR.validateHttpResponse({ statuses: [204] }),
+      AR.validateHttpResponse({ validStatuses: [204] }),
       AR.applyToSession(({ httpResponse }) =>
         flow(
           applyAuthorizationResponse(httpResponse),

@@ -19,12 +19,12 @@ import { NEA } from '../../lib/types'
 import { ICloudSessionValidated } from '../authorization/authorize'
 import * as API from './api'
 import * as C from './cache/cache'
-import { Result } from './cache/cache-get-by-path-types'
+import { PathValidation } from './cache/cache-get-by-path-types'
 import { ItemIsNotFolderError } from './errors'
 import { getByPaths, getByPathsE } from './ffdrive/get-by-paths'
 import { Hierarchy } from './ffdrive/validation'
 import { getMissedFound } from './helpers'
-import * as AR from './requests/reader'
+import * as AR from './requests/request'
 
 import * as ESRTE from './ffdrive/m2'
 
@@ -107,7 +107,7 @@ const putSession = (session: ICloudSessionValidated): DriveM<void> =>
 
 const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
 
-export const retrieveItemDetailsInFolders = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
+export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
     readEnv,
     SRTE.bind('task', ({ state: { cache } }) =>
@@ -161,6 +161,7 @@ export const removeByIds = (drivewsids: string[]): DriveM<void> =>
     )
   )
 
+/** retrieve root from cache or from api if it's missing from cache and chain a computation*/
 export const chainRoot = <R>(
   f: (root: T.DetailsDocwsRoot) => DriveM<R>,
 ): DriveM<R> => {
@@ -192,7 +193,10 @@ export const chainTrash = <R>(
 }
 
 export const retrieveRootAndTrashIfMissing = (): DriveM<void> => {
-  return pipe(retrieveItemDetailsInFolders([rootDrivewsid, trashDrivewsid]), map(constVoid))
+  return pipe(
+    retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
+    map(constVoid),
+  )
 }
 
 export const saveCache = (cacheFile: string) =>
@@ -275,7 +279,7 @@ export const lsdir = <R extends T.Root>(root: R, path: NormalizedPath) =>
     filterOrElse(T.isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
-export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<Result<Hierarchy<R>>> => {
+export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<PathValidation<Hierarchy<R>>> => {
   return pipe(
     getByPaths(root, [path]),
     map(NA.head),

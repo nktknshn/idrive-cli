@@ -2,18 +2,21 @@ import assert from 'assert'
 import { ord, string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
+import { mapFst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
+import { fst, swap } from 'fp-ts/lib/Tuple'
 import Path from 'path'
 import { defaultApiEnv } from '../../../defaults'
 import { HierarchyResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import { getByPaths } from '../../../icloud/drive/ffdrive/get-by-paths'
+import { recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { fetchClient } from '../../../lib/http/fetch-client'
 import { input } from '../../../lib/input'
@@ -242,6 +245,7 @@ export const listUnixPath = (
     update: boolean
     trash: boolean
     depth: number
+    raw: boolean
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
   // if (recursive) {
@@ -269,35 +273,41 @@ export const listUnixPath = (
     { sessionFile, cacheFile, noCache, ...defaultApiEnv },
     cliActionM2(() => {
       const res = pipe(
-        DF.readEnv,
-        DF.chain((): DF.DriveM<NEA<HierarchyResult<T.DetailsTrash | T.DetailsDocwsRoot>>> =>
+        DF.readEnvS((): DF.DriveM<NEA<HierarchyResult<T.DetailsTrash | T.DetailsDocwsRoot>>> =>
           trash
             ? DF.chainTrash(trash => getByPaths(trash, npaths))
             : DF.chainRoot(root => getByPaths(root, npaths))
         ),
-        DF.saveCacheFirst(cacheFile),
         SRTE.map(
-          flow(
-            A.zip(npaths),
-            A.map(([result, path]) => {
-              if (result.valid) {
-                return pipe(
-                  target(result),
-                  conditional(
-                    T.isDetails,
-                    showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts }),
-                    showFileInfo({ ...opts }),
-                  ),
-                )
-              }
-              return showGetByPathResult(result)
-            }),
-            _ => _.join('\n\n'),
-          ),
+          raw
+            ? flow(
+              NA.zip(npaths),
+              NA.map(swap),
+              // NA.map(mapSnd(rec => rec)),
+              recordFromTuples,
+              JSON.stringify,
+            )
+            : flow(
+              NA.zip(npaths),
+              NA.map(([result, path]) => {
+                if (result.valid) {
+                  return pipe(
+                    target(result),
+                    conditional(
+                      T.isDetails,
+                      showDetailsInfo({ path, fullPath, printFolderInfo: true, ...opts }),
+                      showFileInfo({ ...opts }),
+                    ),
+                  )
+                }
+
+                return showGetByPathResult(result)
+              }),
+              NA.zip(npaths),
+              NA.map(([output, path]) => path + '\n' + output),
+              _ => _.join('\n\n'),
+            ),
         ),
-        // apply({ cache, session: { session, accountData } }),
-        // apply({ retries: 3, fetch: fetchClient, getCode: () => input({ prompt: 'code: ' }) }),
-        // TE.map(fst),
       )
 
       return res

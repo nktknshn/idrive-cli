@@ -3,7 +3,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import * as AR from '../drive/requests/reader'
+import * as AR from '../drive/requests/request'
 import { sessionLens } from '../session/session'
 import { applyCookiesToSession } from '../session/session-http'
 import { headers } from '../session/session-http-headers'
@@ -14,7 +14,7 @@ export interface TrustResponse204 {
   trustToken: string
 }
 
-export const requestTrustDeviceM = <S extends AR.State>(): AR.ApiSessionRequest<TrustResponse204, S> => {
+export const requestTrustDeviceM = <S extends AR.State>(): AR.ApiRequest<TrustResponse204, S> => {
   logger.debug('requestTrustDeviceM')
 
   return pipe(
@@ -24,7 +24,7 @@ export const requestTrustDeviceM = <S extends AR.State>(): AR.ApiSessionRequest<
       options: { addClientInfo: false, headers: [headers.default, authorizationHeaders] },
     })),
     AR.handleResponse(flow(
-      AR.validateHttpResponse({ statuses: [200, 204] }),
+      AR.validateHttpResponse({ validStatuses: [200, 204] }),
       SRTE.bind('trustToken', ({ httpResponse }) =>
         pipe(
           getTrustToken(httpResponse),

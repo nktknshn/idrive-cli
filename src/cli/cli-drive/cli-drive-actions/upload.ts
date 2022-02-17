@@ -46,7 +46,7 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
 }
 
 const uploadOverwrighting = (
-  { src, dst }: { dst: V.ResultValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
+  { src, dst }: { dst: V.PathValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
 ) => {
   const dstitem = V.target(dst)
   const parent = NA.last(dst.path.details)

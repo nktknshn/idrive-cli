@@ -1,5 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
+import { fromEquals } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
@@ -25,7 +26,7 @@ export const getMissedFound = <T>(drivewsids: string[], details: T.MaybeNotFound
   )
 }
 
-export const recordFromTuples = <T>(ts: readonly [string, T][]): Record<string, T> => {
+export const recordFromTuples = <T, K extends string>(ts: (readonly [K, T])[]): Record<string, T> => {
   const obj: any = {}
 
   for (const [k, v] of ts) {
@@ -56,3 +57,6 @@ export const findInParent = (
     A.findFirst((item: T.DriveChildrenItem | T.DriveChildrenTrashItem) => T.fileName(item) == itemName),
   )
 }
+
+export const equalsDrivewsId = <T extends string>() =>
+  fromEquals((a: { drivewsid: T }, b: { drivewsid: T }) => a.drivewsid == b.drivewsid)

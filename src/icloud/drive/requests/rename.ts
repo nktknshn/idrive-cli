@@ -1,13 +1,6 @@
-import { pipe } from 'fp-ts/lib/function'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { FetchClientEither } from '../../../lib/http/fetch-client'
-import { apiLogger } from '../../../lib/logging'
-import { ICloudSessionValidated } from '../../authorization/authorize'
-import { buildRequest } from '../../session/session-http'
 import * as ARR from './api-rte'
-import { expectJson, ResponseWithSession } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 import { childrenItem } from './types/types-io'
 
 const renameResponse = t.type({ items: t.array(childrenItem) })
@@ -18,7 +11,7 @@ export const renameItemsM = (
   { items }: {
     items: { drivewsid: string; etag: string; name: string; extension?: string }[]
   },
-): AR.DriveApiRequest<RenameResponse> =>
+): AR.AuthorizedRequest<RenameResponse> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

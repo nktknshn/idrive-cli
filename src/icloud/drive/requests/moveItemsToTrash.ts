@@ -8,7 +8,7 @@ import { ICloudSessionValidated } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
 import * as ARR from './api-rte'
 import { expectJson, ResponseWithSession } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 
 export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
@@ -17,7 +17,7 @@ export interface MoveItemToTrashResponse {
 export const moveItemsToTrashM = ({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
-}): AR.DriveApiRequest<MoveItemToTrashResponse> =>
+}): AR.AuthorizedRequest<MoveItemToTrashResponse> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
@@ -59,5 +59,8 @@ export const moveItemsToTrashARR = ({ items, trash = false }: {
         },
       },
     }),
-    v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
+    v =>
+      t.type({
+        items: t.array(t.type({ drivewsid: t.string })),
+      }).decode(v) as t.Validation<MoveItemToTrashResponse>,
   )

@@ -9,7 +9,7 @@ import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import { capDelay, exponentialBackoff, limitRetries, Monoid, RetryStatus } from 'retry-ts'
 import { retrying } from 'retry-ts/Task'
-import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
+import { err, InvalidGlobalSessionError } from '../../lib/errors'
 import { FetchClientEither, FetchError } from '../../lib/http/fetch-client'
 import { NEA } from '../../lib/types'
 import { Path } from '../../lib/util'
@@ -78,7 +78,7 @@ const catchInvalidSession = <T>(
   return pipe(
     m,
     AR.orElse((e) => {
-      return InvalidGlobalSessionResponse.is(e)
+      return InvalidGlobalSessionError.is(e)
         ? pipe(
           onInvalidSession(),
           AR.chain(([accountData, session]) =>

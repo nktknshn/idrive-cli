@@ -1,3 +1,5 @@
+export { autocomplete } from './autocomplete'
+export { cat } from './cat'
 export { listUnixPath } from './ls'
 export { mkdir } from './mkdir'
 export { move } from './move'

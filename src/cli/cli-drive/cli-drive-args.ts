@@ -9,7 +9,7 @@ export function parseArgs() {
       cacheFile: { alias: ['c', 'cache'], default: defaultCacheFile },
       noCache: { alias: 'n', default: false, type: 'boolean' },
       raw: { alias: 'r', default: false, type: 'boolean' },
-      debug: { alias: 'd', default: true, type: 'boolean' },
+      debug: { alias: 'd', default: false, type: 'boolean' },
       update: { alias: 'u', default: false, type: 'boolean' },
     })
     .command('ls [paths..]', 'list files in a folder', _ =>
@@ -58,6 +58,20 @@ export function parseArgs() {
           .options({
             overwright: { default: false, type: 'boolean' },
           }),
+    )
+    .command(
+      'autocomplete <path>',
+      'autocomplete',
+      (_) =>
+        _.positional('path', { type: 'string', demandOption: true })
+          .options({
+            file: { alias: ['f'], default: false, type: 'boolean' },
+          }),
+    )
+    .command(
+      'ac <path>',
+      'ac',
+      (_) => _.positional('path', { type: 'string', demandOption: true }),
     )
     .help()
 }

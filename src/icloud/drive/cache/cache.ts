@@ -10,7 +10,7 @@ import { hierarchyToPath, NormalizedPath } from '../../../cli/cli-drive/cli-driv
 import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
-import { cacheLogger } from '../../../lib/logging'
+import { cacheLogger, logReturnS } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { parsePath } from '../helpers'
@@ -27,14 +27,14 @@ class lens {
   public static byDrivewsid = m.Lens.fromProp<CT.CacheF>()('byDrivewsid')
 }
 
-export const cachef = (): CT.CacheF => ({
-  byDrivewsid: {},
-})
-
 export type CacheEntityDetails =
   | CT.CacheEntityFolderRootDetails
   | CT.CacheEntityFolderDetails
   | CT.CacheEntityAppLibraryDetails
+
+export const cachef = (): CT.CacheF => ({
+  byDrivewsid: {},
+})
 
 export const getHierarchyById = (drivewsid: string) =>
   (cache: CT.CacheF): E.Either<Error, T.Hierarchy> => {
@@ -418,7 +418,11 @@ export const trySaveFile = (
   cache: Cache,
 ) =>
   (cacheFilePath: string): TE.TaskEither<Error, void> => {
-    return pipe(cache, saveJson(cacheFilePath))
+    return pipe(
+      cache,
+      logReturnS((cache) => `saving cache: ${R.keys(cache.byDrivewsid).length} items`, cacheLogger.debug),
+      saveJson(cacheFilePath),
+    )
   }
 
 export const trySaveFileF = (

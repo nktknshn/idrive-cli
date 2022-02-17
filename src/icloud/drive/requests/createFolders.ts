@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import * as ARR from './api-rte'
-import * as AR from './reader'
+import * as AR from './request'
 import { itemFolder } from './types/types-io'
 
 const createFolderResponse = t.type({
@@ -17,7 +17,7 @@ export function createFoldersM(
     destinationDrivewsId: string
     names: string[]
   },
-): AR.DriveApiRequest<CreateFoldersResponse> {
+): AR.AuthorizedRequest<CreateFoldersResponse> {
   const folders = names.map(name => ({ name, clientId: name }))
 
   return pipe(

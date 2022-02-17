@@ -8,7 +8,7 @@ import * as H from '../ffdrive/validation'
 import { findInParent } from '../helpers'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../requests/types/types'
 import * as C from './cache'
-import { Result } from './cache-get-by-path-types'
+import { PathValidation } from './cache-get-by-path-types'
 import { CacheF } from './cache-types'
 
 const showDetails = (d: Details): string => {
@@ -22,7 +22,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>
-  (cache: CacheF): Result<H.Hierarchy<R>> => {
+  (cache: CacheF): PathValidation<H.Hierarchy<R>> => {
     cacheLogger.debug(`getPartialValidPathV2: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {
@@ -71,15 +71,15 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         // BUG
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (): Result<H.Hierarchy<R>> => ({
+          (): PathValidation<H.Hierarchy<R>> => ({
             valid: false,
             path: H.partialPath<H.Hierarchy<R>>(result, path),
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
           }),
-          ({ content }): Result<H.Hierarchy<R>> =>
+          ({ content }): PathValidation<H.Hierarchy<R>> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
-              (result): Result<H.Hierarchy<R>> =>
+              (result): PathValidation<H.Hierarchy<R>> =>
                 result.valid
                   ? ({
                     valid: true,
@@ -105,12 +105,12 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         cache,
         C.getFolderDetailsByIdE(subitem.value.drivewsid),
         E.fold(
-          (): Result<H.Hierarchy<R>> => ({
+          (): PathValidation<H.Hierarchy<R>> => ({
             valid: false,
             path: H.partialPath<H.Hierarchy<R>>(result, path),
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
           }),
-          ({ content }): Result<H.Hierarchy<R>> => ({
+          ({ content }): PathValidation<H.Hierarchy<R>> => ({
             valid: true,
             path: H.validPath<H.Hierarchy<R>>(H.concat([parentEntity], [content])),
             file: O.none,

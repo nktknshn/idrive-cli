@@ -8,9 +8,7 @@ import { Header } from '../session/session-http-headers'
 export const authorizationHeaders = (
   session: ICloudSession,
 ): Header[] => {
-  // let headers: Header[] = []
   const headers: Header[] = [
-    //     ...basicHeaders,
     ['X-Apple-Domain-Id', '3'],
     //     // X-Apple-Auth-Attributes: 9mTVK8hdwUAzJD8sa/OgsDZOV17uJJpoI3424aRxQOpU47ZwYufYshcjAq6YGP6MCKMwgYUCybogzkYXQ/vmzHDu4VS4Wz1GVBA7l4U/RlRQ1B5hTFN2fysJ7pEE9fdN2W2GnJVzuWP67nwAEPHzyO+dQQ==
     //     // ["X-Apple-Frame-Id", "auth-aph1jmh7-2cjb-g49k-rr06-tbft0b7t"],

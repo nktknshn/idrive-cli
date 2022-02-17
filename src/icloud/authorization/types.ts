@@ -1,7 +1,7 @@
 import { EmptyObject } from '../../lib/types'
 import { ICloudSession } from '../session/session'
 
-import * as AR from '../drive/requests/reader'
+import * as AR from '../drive/requests/request'
 
 export interface AccountLoginResponseBody {
   dsInfo: DsInfo

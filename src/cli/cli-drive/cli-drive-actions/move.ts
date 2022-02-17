@@ -113,7 +113,7 @@ const caseMoveAndRename = (
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.Result<H.Hierarchy<DetailsDocwsRoot>>>
+    srcdst: NEA<V.PathValidation<H.Hierarchy<DetailsDocwsRoot>>>
   },
 ): DF.DriveM<MoveItemToTrashResponse | RenameResponse> => {
   if (!srcitem.valid) {

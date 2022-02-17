@@ -7,7 +7,7 @@ import { err } from '../../../lib/errors'
 import { uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
 import * as ARR from './api-rte'
-import * as AR from './reader'
+import * as AR from './request'
 
 export type UpdateDocumentsRequest = t.TypeOf<typeof updateDocumentsRequest>
 export type UpdateDocumentsResponse = t.TypeOf<typeof updateDocumentsResponse>
@@ -93,7 +93,7 @@ export const uploadM = (
     size: number
     type: 'FILE'
   },
-): AR.DriveApiRequest<UploadResponse> =>
+): AR.AuthorizedRequest<UploadResponse> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData, session } }) => ({
       method: 'POST',
@@ -107,7 +107,7 @@ export const uploadM = (
 
 export const singleFileUploadM = (
   { filePath, url }: { filePath: string; url: string },
-): AR.DriveApiRequest<SingleFileResponse> => {
+): AR.AuthorizedRequest<SingleFileResponse> => {
   const filename = Path.parse(filePath).base
 
   return pipe(
@@ -124,7 +124,7 @@ export const singleFileUploadM = (
 
 export const updateDocumentsM = (
   { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
-): AR.DriveApiRequest<UpdateDocumentsResponse> =>
+): AR.AuthorizedRequest<UpdateDocumentsResponse> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

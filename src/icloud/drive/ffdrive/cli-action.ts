@@ -1,7 +1,9 @@
-import { pipe } from 'fp-ts/lib/function'
+import { log } from 'fp-ts/lib/Console'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import { fromIO } from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { logReturnAs } from '../../../lib/logging'
+import { apiLogger, logReturnAs } from '../../../lib/logging'
 import { readAccountData } from '../../authorization/validate'
 import { ICloudSession } from '../../session/session'
 import { readSessionFile, saveSession2 } from '../../session/session-file'
@@ -27,8 +29,12 @@ const saveSession = <S extends { session: ICloudSession }>(state: S) =>
   (deps: { sessionFile: string }) => saveSession2(state.session)(deps.sessionFile)
 
 const saveCache = <S extends { cache: CacheF }>(state: S) =>
-  (deps: { cacheFile: string }) => C.trySaveFile(state.cache)(deps.cacheFile)
+  (deps: { cacheFile: string; noCache: boolean }) =>
+    deps.noCache
+      ? TE.of(constVoid())
+      : C.trySaveFile(state.cache)(deps.cacheFile)
 
+/** read the state and execute an action in the context */
 export function cliActionM2<T>(
   action: () => DF.DriveM<T>,
 ) {
@@ -38,49 +44,18 @@ export function cliActionM2<T>(
     RTE.bind('accountData', () => getAccountData),
     RTE.bindW('cache', () => getCache),
     RTE.bindW('result', action()),
-    RTE.chainFirstW(
-      ({ result: [, { session }] }) => saveSession({ session }),
+    RTE.chainFirst(({ cache }) =>
+      RTE.fromIO(
+        () => apiLogger.debug(`saving cache: ${Object.keys(cache.byDrivewsid).length} items`),
+      )
     ),
-    RTE.chainFirstW(saveCache),
+    RTE.chainFirstW(({ result: [, result] }) =>
+      pipe(
+        RTE.of(result),
+        RTE.chainFirstW(saveSession),
+        RTE.chainFirstW(saveCache),
+      )
+    ),
     RTE.map(_ => _.result[0]),
   )
 }
-
-// export function cliActionM2<T>(
-//   action: () => DF.DriveM<T>,
-// ): R.Reader<EnvFiles & { noCache: boolean }, TE.TaskEither<Error, T>> {
-//   return (({ sessionFile, cacheFile, noCache }) =>
-//     pipe(
-//       TE.Do,
-//       TE.bind('session', () => readSessionFile(sessionFile)),
-//       TE.bind('accountData', () => readAccountData(`${sessionFile}-accountData`)),
-//       TE.bindW('cache', ({}) =>
-//         pipe(
-//           noCache
-//             ? TE.of(C.cachef())
-//             : pipe(C.tryReadFromFile(cacheFile)),
-//           TE.orElseW((e) => pipe(e, logReturnAs('error'), () => TE.of(C.cachef()))),
-//         )),
-//       TE.chain(({ cache, session, accountData }) =>
-//         pipe(
-//           action()({ cache, session, accountData })(defaultApiEnv),
-//           T.chain(
-//             E.fold(
-//               ({ error, state: { session, cache } }) =>
-//                 pipe(
-//                   saveSession(sessionFile)(session),
-//                   TE.chain(() => C.trySaveFile(cache, cacheFile)),
-//                   () => TE.left(error),
-//                 ),
-//               ([result, { session, cache }]) =>
-//                 pipe(
-//                   saveSession(sessionFile)(session),
-//                   TE.chain(() => C.trySaveFile(cache, cacheFile)),
-//                   TE.map(constant(result)),
-//                 ),
-//             ),
-//           ),
-//         )
-//       ),
-//     ))
-// }

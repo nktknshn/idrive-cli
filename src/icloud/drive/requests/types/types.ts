@@ -232,6 +232,16 @@ export const fileName = (item: HasName | DetailsTrash) => {
     : `${item.name}`
 }
 
+export const fileNameAddSlash = (item: HasName | DetailsTrash) => {
+  const fname = fileName(item)
+
+  if (isFolderDrivewsid(item.drivewsid)) {
+    return `${fname}/`
+  }
+
+  return fname
+}
+
 export const itemType = (item: { type: string } | DetailsTrash) => {
   if ('type' in item) {
     return item.type

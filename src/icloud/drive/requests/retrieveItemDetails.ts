@@ -16,7 +16,7 @@ import {
   returnDecodedJson,
   withResponse,
 } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 import { DriveItemDetails } from './types/types'
 import { itemDetails } from './types/types-io'
 

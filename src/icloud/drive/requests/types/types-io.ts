@@ -31,8 +31,7 @@ export const genericItem = t.intersection([
   }),
 ])
 
-export const itemRoot = t.intersection([
-  // omit('drivewsid', genericItem),
+export const itemDocwsRoot = t.intersection([
   genericItem,
   t.type({
     drivewsid: t.literal(rootDrivewsid),
@@ -165,7 +164,7 @@ export const itemDetails = t.union([
   t.intersection([itemFolder, t.type({ hierarchy })]),
   t.intersection([itemFile, t.type({ hierarchy })]),
   t.intersection([itemAppLibrary, t.type({ hierarchy })]),
-  t.intersection([itemRoot, t.type({ hierarchy })]),
+  t.intersection([itemDocwsRoot, t.type({ hierarchy })]),
   //   invalidIdItem,
 ])
 

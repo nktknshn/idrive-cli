@@ -12,13 +12,19 @@ const commands = {
   rm: Action.rm,
   upload: Action.upload,
   mv: Action.move,
+  autocomplete: Action.autocomplete,
+  ac: Action.autocomplete,
+  cat: Action.cat,
 }
 
 async function main() {
   const { argv, showHelp } = parseArgs()
   const [command] = argv._
 
-  initLoggers({ debug: argv.debug }, [logger, cacheLogger, stderrLogger, apiLogger])
+  initLoggers(
+    { debug: !argv.debug },
+    [logger, cacheLogger, stderrLogger, apiLogger],
+  )
 
   if (!isKeyOf(commands, command)) {
     printer.error(`invalid command ${command}`)
@@ -30,8 +36,7 @@ async function main() {
   const commandFunction = commands[command]
 
   await pipe(
-    argv,
-    commandFunction,
+    commandFunction(argv),
     TE.fold(printer.errorTask, printer.printTask),
   )()
 }

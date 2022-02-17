@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import mime from 'mime-types'
-import { err, InvalidGlobalSessionResponse } from '../../lib/errors'
+import { err, InvalidGlobalSessionError } from '../../lib/errors'
 import { FetchClientEither, FetchError } from '../../lib/http/fetch-client'
 import { NEA } from '../../lib/types'
 import { Path } from '../../lib/util'
@@ -13,7 +13,7 @@ import { authorizeSessionM, ICloudSessionValidated } from '../authorization/auth
 import { getMissedFound } from './helpers'
 import * as RQ from './requests'
 // import * as AR from './requests/api-rte'
-import * as AR from './requests/reader'
+import * as AR from './requests/request'
 import * as T from './requests/types/types'
 import { UploadResponseItem } from './requests/upload'
 
@@ -23,11 +23,11 @@ export type ApiEnv = {
   getCode: () => TE.TaskEither<Error, string>
 }
 
-export type Api<A> = R.Reader<ApiEnv, AR.DriveApiRequest<A>>
+export type Api<A> = R.Reader<ApiEnv, AR.AuthorizedRequest<A>>
 
 export const of = <A>(v: A): Api<A> => () => AR.of(v)
 
-const onInvalidSession = <S extends AR.State>(): AR.ApiSessionRequest<void, S> => {
+const onInvalidSession = <S extends AR.State>(): AR.ApiRequest<void, S> => {
   return pipe(
     authorizeSessionM<S>(),
     AR.chain((accountData) => SRTE.modify(s => ({ ...s, accountData }))),
@@ -37,8 +37,8 @@ const onInvalidSession = <S extends AR.State>(): AR.ApiSessionRequest<void, S> =
 
 const catchFetchErrors = (triesLeft: number) =>
   <T, S extends AR.State>(
-    m: AR.ApiSessionRequest<T, S>,
-  ): AR.ApiSessionRequest<T, S> => {
+    m: AR.ApiRequest<T, S>,
+  ): AR.ApiRequest<T, S> => {
     return pipe(
       m,
       AR.orElse((e) => {
@@ -50,12 +50,12 @@ const catchFetchErrors = (triesLeft: number) =>
   }
 
 const catchInvalidSession = <T, S extends AR.State>(
-  m: AR.ApiSessionRequest<T, S>,
-): AR.ApiSessionRequest<T, S> => {
+  m: AR.ApiRequest<T, S>,
+): AR.ApiRequest<T, S> => {
   return pipe(
     m,
     AR.orElse((e) => {
-      return InvalidGlobalSessionResponse.is(e)
+      return InvalidGlobalSessionError.is(e)
         ? pipe(
           onInvalidSession<S>(),
           AR.chain(() => m),
@@ -66,8 +66,8 @@ const catchInvalidSession = <T, S extends AR.State>(
 }
 
 const executeRequest = <TArgs extends unknown[], R, S extends AR.State>(
-  f: (...args: TArgs) => AR.ApiSessionRequest<R, S>,
-): (...args: TArgs) => R.Reader<ApiEnv, AR.ApiSessionRequest<R, S>> =>
+  f: (...args: TArgs) => AR.ApiRequest<R, S>,
+): (...args: TArgs) => R.Reader<ApiEnv, AR.ApiRequest<R, S>> =>
   (...args: TArgs) =>
     R.asks(({ retries }) =>
       pipe(
@@ -79,7 +79,7 @@ const executeRequest = <TArgs extends unknown[], R, S extends AR.State>(
 
 const executeRequest2 = (env: { retries: number }) =>
   <R, S extends AR.State>(
-    ma: AR.ApiSessionRequest<R, S>,
+    ma: AR.ApiRequest<R, S>,
   ) =>
     pipe(
       ma,

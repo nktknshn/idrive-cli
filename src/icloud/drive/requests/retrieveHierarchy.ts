@@ -6,10 +6,10 @@ import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession } from '../../session/session-http'
 import { applyToSession, decodeJson, filterStatus, ResponseWithSession, withResponse } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 import {
+  getRetrieveItemDetailsInFoldersHttpRequest,
   retrieveItemDetailsInFoldersGeneric,
-  retrieveItemDetailsInFoldersRequest,
 } from './retrieveItemDetailsInFolders'
 import { DriveDetailsPartialWithHierarchy } from './types/types'
 import { driveDetailsWithHierarchyPartial, hierarchy } from './types/types-io'
@@ -39,9 +39,9 @@ export function retrieveHierarchy(
 
 export const retrieveHierarchyM = (
   { drivewsids }: { drivewsids: string[] },
-): AR.DriveApiRequest<DriveDetailsPartialWithHierarchy[]> =>
+): AR.AuthorizedRequest<DriveDetailsPartialWithHierarchy[]> =>
   pipe(
-    retrieveItemDetailsInFoldersRequest(
+    getRetrieveItemDetailsInFoldersHttpRequest(
       drivewsids.map(drivewsid => ({ drivewsid, partialData: true, includeHierarchy: true })),
     ),
     AR.handleResponse(AR.basicJsonResponse(

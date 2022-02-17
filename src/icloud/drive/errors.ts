@@ -4,6 +4,7 @@ export class NotFoundError extends Error {
   static is(e: Error): e is NotFoundError {
     return e instanceof NotFoundError
   }
+
   static create(message?: string): NotFoundError {
     return new NotFoundError(message)
   }

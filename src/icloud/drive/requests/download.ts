@@ -9,10 +9,10 @@ import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import * as ARR from './api-rte'
 import { applyToSession, expectJson, ResponseWithSession } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 
 type RetrieveOpts = {
-  documentId: string
+  docwsid: string
   zone: string
 }
 
@@ -30,7 +30,7 @@ interface ResponseBody {
 }
 
 export function downloadM(
-  { documentId, zone }: RetrieveOpts,
+  { docwsid: documentId, zone }: RetrieveOpts,
 ) {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
@@ -44,7 +44,7 @@ export function downloadM(
 }
 
 export function downloadARR(
-  { documentId, zone }: RetrieveOpts,
+  { docwsid: documentId, zone }: RetrieveOpts,
 ) {
   return ARR.basicDriveJsonRequest(
     ({ accountData }) => ({

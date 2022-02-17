@@ -4,10 +4,10 @@ import * as t from 'io-ts'
 import { defaultCountryCode } from '../../config'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import * as AR from '../drive/requests/reader'
+import * as AR from '../drive/requests/request'
 import { AccountLoginResponseBody } from './types'
 
-export function requestAccoutLoginM<S extends AR.State>(): AR.ApiSessionRequest<
+export function requestAccoutLoginM<S extends AR.State>(): AR.ApiRequest<
   AccountLoginResponseBody,
   S
 > {
@@ -15,9 +15,9 @@ export function requestAccoutLoginM<S extends AR.State>(): AR.ApiSessionRequest<
 
   return pipe(
     AR.readEnv<S>(),
-    AR.chain(_ =>
+    AR.chain(({ state }) =>
       pipe(
-        _.state.session.sessionToken,
+        state.session.sessionToken,
         AR.fromOption(() => err(`session missing sessionToken`)),
       )
     ),

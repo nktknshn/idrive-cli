@@ -9,7 +9,7 @@ import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import { applyToSession, decodeJson, filterStatus, ResponseHandler, ResponseWithSession, withResponse } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 
@@ -33,29 +33,6 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
   )
 }
 
-// export function retrieveItemDetailsInFolders(
-//   client: FetchClientEither,
-//   { accountData, session }: ICloudSessionValidated,
-//   { drivewsids }: { drivewsids: string[] },
-// ): TE.TaskEither<Error, ResponseWithSession<(Details | InvalidId)[]>> {
-//   return retrieveItemDetailsInFoldersGeneric(
-//     client,
-//     { accountData, session },
-//     drivewsids.map(
-//       (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
-//     ),
-//     (session) =>
-//       TE.chain(
-//         flow(
-//           withResponse,
-//           filterStatus(),
-//           decodeJson(t.array(t.union([driveDetails, invalidIdItem])).decode),
-//           applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
-//         ),
-//       ),
-//   )
-// }
-
 export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
   t.array(t.UnknownRecord).decode,
   E.chain(flow(
@@ -78,32 +55,32 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWi
   )),
 )
 
-export function retrieveItemDetailsInFoldersHierarchy(
-  client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
-  props: { drivewsids: string[] },
-): TE.TaskEither<Error, ResponseWithSession<(DriveDetailsWithHierarchy | InvalidId)[]>> {
-  return retrieveItemDetailsInFoldersGeneric(
-    client,
-    { accountData, session },
-    pipe(
-      props.drivewsids.map((drivewsid) => [
-        { drivewsid, partialData: false, includeHierarchy: false },
-        { drivewsid, partialData: true, includeHierarchy: true },
-      ]),
-      A.flatten,
-    ),
-    session =>
-      TE.chain(flow(
-        withResponse,
-        filterStatus(),
-        decodeJson(decodeWithHierarchy),
-        applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
-      )),
-  )
-}
+// export function retrieveItemDetailsInFoldersHierarchy(
+//   client: FetchClientEither,
+//   { accountData, session }: ICloudSessionValidated,
+//   props: { drivewsids: string[] },
+// ): TE.TaskEither<Error, ResponseWithSession<(DriveDetailsWithHierarchy | InvalidId)[]>> {
+//   return retrieveItemDetailsInFoldersGeneric(
+//     client,
+//     { accountData, session },
+//     pipe(
+//       props.drivewsids.map((drivewsid) => [
+//         { drivewsid, partialData: false, includeHierarchy: false },
+//         { drivewsid, partialData: true, includeHierarchy: true },
+//       ]),
+//       A.flatten,
+//     ),
+//     session =>
+//       TE.chain(flow(
+//         withResponse,
+//         filterStatus(),
+//         decodeJson(decodeWithHierarchy),
+//         applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
+//       )),
+//   )
+// }
 
-export const retrieveItemDetailsInFoldersRequest = (
+export const getRetrieveItemDetailsInFoldersHttpRequest = (
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ) => {
   return pipe(
@@ -117,9 +94,9 @@ export const retrieveItemDetailsInFoldersRequest = (
 
 export function retrieveItemDetailsInFoldersM(
   { drivewsids }: { drivewsids: string[] },
-): AR.DriveApiRequest<(Details | InvalidId)[]> {
+): AR.AuthorizedRequest<(Details | InvalidId)[]> {
   return pipe(
-    retrieveItemDetailsInFoldersRequest(
+    getRetrieveItemDetailsInFoldersHttpRequest(
       drivewsids.map(
         (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
       ),
@@ -132,9 +109,9 @@ export function retrieveItemDetailsInFoldersM(
 
 export const retrieveItemDetailsInFoldersHierarchyM = (
   { drivewsids }: { drivewsids: string[] },
-): AR.DriveApiRequest<(DriveDetailsWithHierarchy | InvalidId)[]> =>
+): AR.AuthorizedRequest<(DriveDetailsWithHierarchy | InvalidId)[]> =>
   pipe(
-    retrieveItemDetailsInFoldersRequest(
+    getRetrieveItemDetailsInFoldersHttpRequest(
       pipe(
         drivewsids.map((drivewsid) => [
           { drivewsid, partialData: false, includeHierarchy: false },

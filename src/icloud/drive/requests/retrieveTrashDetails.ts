@@ -7,10 +7,10 @@ import { apiLogger } from '../../../lib/logging'
 import { ICloudSessionValidated } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import { applyToSession, decodeJson, expectJson, filterStatus, ResponseWithSession, withResponse } from './http'
-import * as AR from './reader'
+import * as AR from './request'
 import {
+  getRetrieveItemDetailsInFoldersHttpRequest,
   retrieveItemDetailsInFoldersGeneric,
-  retrieveItemDetailsInFoldersRequest,
   retrieveItemDetailsInFoldersRequestARR,
 } from './retrieveItemDetailsInFolders'
 import { DetailsTrash, DriveChildrenItem } from './types/types'
@@ -23,9 +23,9 @@ export const scheme = t.tuple(
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
 }
 
-export const retrieveTrashDetailsM = (): AR.DriveApiRequest<DetailsTrash> =>
+export const retrieveTrashDetailsM = (): AR.AuthorizedRequest<DetailsTrash> =>
   pipe(
-    retrieveItemDetailsInFoldersRequest(
+    getRetrieveItemDetailsInFoldersHttpRequest(
       [{ 'drivewsid': 'TRASH_ROOT', 'partialData': false, 'includeHierarchy': true }],
     ),
     AR.handleResponse(AR.basicJsonResponse(
@@ -35,7 +35,7 @@ export const retrieveTrashDetailsM = (): AR.DriveApiRequest<DetailsTrash> =>
 
 export const putBackItemsFromTrashM = (
   items: [{ drivewsid: string; etag: string }],
-): AR.DriveApiRequest<{ items: DriveChildrenItem[] }> =>
+): AR.AuthorizedRequest<{ items: DriveChildrenItem[] }> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

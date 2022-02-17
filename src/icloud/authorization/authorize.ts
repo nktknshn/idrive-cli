@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { authLogger } from '../../lib/logging'
-import * as AR from '../drive/requests/reader'
+import * as AR from '../drive/requests/request'
 import { ICloudSession } from '../session/session'
 import { requestAccoutLoginM } from './accoutLogin'
 import { requestSecurityCodeM } from './securitycode'
@@ -14,7 +14,7 @@ export interface ICloudSessionValidated {
   accountData: AccountLoginResponseBody
 }
 
-export function authorizeSessionM<S extends AR.State>(): AR.ApiSessionRequest<AccountLoginResponseBody, S> {
+export function authorizeSessionM<S extends AR.State>(): AR.ApiRequest<AccountLoginResponseBody, S> {
   authLogger.debug('authorizeSession')
 
   return pipe(

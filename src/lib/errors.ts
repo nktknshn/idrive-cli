@@ -3,16 +3,16 @@ import * as t from 'io-ts'
 import { HttpResponse } from './http/fetch-client'
 import { isObjectWithOwnProperty } from './util'
 
-export class InvalidGlobalSessionResponse extends Error {
+export class InvalidGlobalSessionError extends Error {
   readonly tag = 'InvalidGlobalSessionResponse'
   constructor(public readonly httpResponse: HttpResponse) {
     super('InvalidGlobalSessionResponse')
   }
-  public static is(a: Error): a is InvalidGlobalSessionResponse {
-    return a instanceof InvalidGlobalSessionResponse
+  public static is(a: Error): a is InvalidGlobalSessionError {
+    return a instanceof InvalidGlobalSessionError
   }
-  static create(httpResponse: HttpResponse): InvalidGlobalSessionResponse {
-    return new InvalidGlobalSessionResponse(httpResponse)
+  static create(httpResponse: HttpResponse): InvalidGlobalSessionError {
+    return new InvalidGlobalSessionError(httpResponse)
   }
 }
 

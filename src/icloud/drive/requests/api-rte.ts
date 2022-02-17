@@ -8,7 +8,7 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { BadRequestError, err, InvalidGlobalSessionResponse, MissingResponseBody } from '../../../lib/errors'
+import { BadRequestError, err, InvalidGlobalSessionError, MissingResponseBody } from '../../../lib/errors'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
 import { ICloudSessionValidated } from '../../authorization/authorize'
@@ -130,7 +130,7 @@ export const handleInvalidSession = (): Filter =>
   filterHttpResponse(
     (r) =>
       r.httpResponse.status == 421
-        ? E.left(InvalidGlobalSessionResponse.create(r.httpResponse))
+        ? E.left(InvalidGlobalSessionError.create(r.httpResponse))
         : E.of(r),
   )
 export const handleBadRequest = (): Filter =>

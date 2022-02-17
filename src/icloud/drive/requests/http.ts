@@ -5,7 +5,7 @@ import * as t from 'io-ts'
 import {
   BadRequestError,
   err,
-  InvalidGlobalSessionResponse,
+  InvalidGlobalSessionError,
   InvalidJsonInResponse,
   MissingResponseBody,
 } from '../../../lib/errors'
@@ -38,7 +38,7 @@ export const filterStatuses = <B extends { httpResponse: HttpResponse }>(
       mb,
       TE.filterOrElseW(
         (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
-        r => InvalidGlobalSessionResponse.create(r.httpResponse),
+        r => InvalidGlobalSessionError.create(r.httpResponse),
       ),
       TE.filterOrElseW(
         (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
@@ -58,7 +58,7 @@ export const filterStatusesE = <B extends { httpResponse: HttpResponse }>(
       E.of(mb),
       E.filterOrElseW(
         (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
-        r => InvalidGlobalSessionResponse.create(r.httpResponse),
+        r => InvalidGlobalSessionError.create(r.httpResponse),
       ),
       E.filterOrElseW(
         (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,

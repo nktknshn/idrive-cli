@@ -7,12 +7,12 @@ import * as t from 'io-ts'
 import {
   BufferDecodingError,
   FileReadingError,
-  InvalidGlobalSessionResponse,
+  InvalidGlobalSessionError,
   JsonParsingError,
   TypeDecodingError,
 } from '../../lib/errors'
 import { tryReadJsonFile } from '../../lib/files'
-import * as AR from '../drive/requests/reader'
+import * as AR from '../drive/requests/request'
 import { ICloudSessionWithSessionToken } from '../session/session'
 import { AccountLoginResponseBody } from './types'
 
@@ -22,7 +22,7 @@ const validateResponseJson = (json: unknown): json is AccountLoginResponseBody =
 
 // export type AccountLoginResponseBodyUnsafe = Partial<AccountLoginResponseBody>
 
-export function validateSessionM(): AR.ApiSessionRequest<O.Option<AccountLoginResponseBody>, {
+export function validateSessionM(): AR.ApiRequest<O.Option<AccountLoginResponseBody>, {
   session: ICloudSessionWithSessionToken
 }> {
   return pipe(
@@ -38,7 +38,7 @@ export function validateSessionM(): AR.ApiSessionRequest<O.Option<AccountLoginRe
     )),
     AR.map(O.some),
     AR.orElse((e) =>
-      InvalidGlobalSessionResponse.is(e)
+      InvalidGlobalSessionError.is(e)
         ? AR.of(O.none)
         : AR.leftE(e)
     ),

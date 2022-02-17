@@ -6,7 +6,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../defaults'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData } from '../icloud/authorization/validate'
-import * as AM from '../icloud/drive/requests/reader'
+import * as AM from '../icloud/drive/requests/request'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSessionFile } from '../icloud/session/session-file'
 import { fetchClient } from '../lib/http/fetch-client'
@@ -42,7 +42,7 @@ import { input } from '../lib/input'
 // }
 
 export function apiActionM<T>(
-  action: () => AM.DriveApiRequest<T>,
+  action: () => AM.AuthorizedRequest<T>,
 ): R.Reader<{ sessionFile: string }, TE.TaskEither<Error, T>> {
   return pipe(
     R.ask<{ sessionFile: string }>(),

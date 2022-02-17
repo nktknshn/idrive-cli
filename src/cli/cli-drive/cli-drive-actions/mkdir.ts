@@ -83,7 +83,6 @@ export const mkdir = ({
       )
 
       return res
-      // return pipe(res({ cache, session: { session, accountData } })({ api }), TE.map(fst))
     }),
   )
 }
