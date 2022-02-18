@@ -144,7 +144,7 @@ export const moveItemsToTrash = flow(
 type Z = typeof RQ
 
 export const upload = (
-  { sourceFilePath, docwsid, fname }: { sourceFilePath: string; docwsid: string; fname?: string },
+  { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
 ) =>
   (env: { retries: number }) => {
     const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
@@ -179,6 +179,7 @@ export const upload = (
             filename: parsedSource.base,
             size: fstats.size,
             type: 'FILE',
+            zone,
           }),
           SRTE.filterOrElse(
             (_): _ is NEA<UploadResponseItem> => _.length > 0,
@@ -201,6 +202,7 @@ export const upload = (
           retrying(
             RQ.updateDocumentsM(
               {
+                zone,
                 data: {
                   allow_conflict: true,
                   command: 'add_file',

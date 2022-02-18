@@ -116,11 +116,11 @@ export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}
       .map(_ => _.join(':\t'))
       .join('\n')
 
-const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+const showItemRow = ({ showDrivewsid = false, showDocwsid = false, showEtag = false } = {}) =>
   (item: T.DriveChildrenItem) =>
     item.type === 'FILE'
       ? [
-        item.etag,
+        ...[showEtag ? [item.etag] : []],
         formatDate(item.dateModified),
         ...[showDrivewsid ? [item.drivewsid] : []],
         ...[showDocwsid ? [item.docwsid] : []],
@@ -129,7 +129,7 @@ const showItemRow = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
       ]
         .join(`\t`)
       : [
-        item.etag,
+        ...[showEtag ? [item.etag] : []],
         formatDate(item.dateCreated),
         ...[showDrivewsid ? [item.drivewsid] : []],
         ...[showDocwsid ? [item.docwsid] : []],
@@ -142,9 +142,10 @@ const ordByType = Ord.contramap((d: T.DriveChildrenItem) => d.type)(ord.reverse(
 const ordByName = Ord.contramap((d: T.DriveChildrenItem) => d.name)(string.Ord)
 
 export const showDetailsInfo = (
-  { fullPath, path, showDrivewsid = false, showDocwsid = false, printFolderInfo = false }: {
+  { fullPath, path, showDrivewsid = false, showDocwsid = false, printFolderInfo = false, showEtag = false }: {
     showDrivewsid?: boolean
     showDocwsid?: boolean
+    showEtag?: boolean
     printFolderInfo?: boolean
     fullPath: boolean
     path: string
@@ -164,7 +165,7 @@ export const showDetailsInfo = (
         A.map(
           fullPath
             ? showWithFullPath(path)
-            : showItemRow({ showDrivewsid, showDocwsid }),
+            : showItemRow({ showDrivewsid, showDocwsid, showEtag }),
         ),
         _ => _.join('\n'),
       ),
@@ -237,7 +238,7 @@ const conditional = <A, B, R>(
   }
 
 export const listUnixPath = (
-  { sessionFile, cacheFile, paths, raw, noCache, fullPath, recursive, depth, listInfo, trash }: Env & {
+  { sessionFile, cacheFile, paths, raw, noCache, fullPath, recursive, depth, listInfo, trash, etag }: Env & {
     recursive: boolean
     paths: string[]
     fullPath: boolean
@@ -246,6 +247,7 @@ export const listUnixPath = (
     trash: boolean
     depth: number
     raw: boolean
+    etag: boolean
   },
 ): TE.TaskEither<ErrorOutput, Output> => {
   // if (recursive) {
@@ -264,7 +266,7 @@ export const listUnixPath = (
   //   )
   // }
 
-  const opts = { showDocwsid: false, showDrivewsid: listInfo }
+  const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag }
   const npaths = paths.map(normalizePath)
 
   assert(A.isNonEmpty(npaths))

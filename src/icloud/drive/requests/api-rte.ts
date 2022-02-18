@@ -159,7 +159,7 @@ export const validateHttpResponse = <R extends { httpResponse: HttpResponse }>(
         (r) =>
           statuses.includes(r.httpResponse.status)
             ? E.of(r)
-            : E.left(err(`invalid status ${r.httpResponse.status}`)),
+            : E.left(err(`invalid status ${r.httpResponse.status} ${JSON.stringify(r.httpResponse.data)}`)),
       ),
       map(_ => _ as ValidHttpResponse<R>),
     )

@@ -22,6 +22,7 @@ export const autocomplete = ({
   noCache,
   trash,
   file,
+  dir,
 }: {
   path: string
   noCache: boolean
@@ -29,6 +30,7 @@ export const autocomplete = ({
   cacheFile: string
   trash: boolean
   file: boolean
+  dir: boolean
 }): TE.TaskEither<Error, string> => {
   const npath = normalizePath(path)
   const nparentPath = normalizePath(Path.dirname(path))
@@ -48,7 +50,8 @@ export const autocomplete = ({
     },
     cliActionM2(() => {
       const res = pipe(
-        DF.chainRoot(root =>
+        DF.getRoot(trash),
+        DF.chain(root =>
           pipe(
             DF.lsdir(root, lookupDir ? npath : nparentPath),
             DF.map(parent =>
@@ -64,6 +67,7 @@ export const autocomplete = ({
             DF.map((result) =>
               result
                 .filter(item => file ? item.type === 'FILE' : true)
+                .filter(item => dir ? item.type === 'FOLDER' || item.type === 'APP_LIBRARY' : true)
                 .map(fileNameAddSlash)
                 .map(fn => lookupDir ? `/${npath}/${fn}` : `/${nparentPath}/${fn}`)
                 .map(Path.normalize)

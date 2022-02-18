@@ -1,22 +1,45 @@
-function __fish_autocomplete_file_or_dir
+function __fish_autocomplete_path
+  argparse 't/trash' 'f/file' 'd/dir' -- $argv
+  set -l ac_args
+
+  if not test -z "$_flag_trash"
+    set ac_args $ac_args --trash
+  end
+
+  if not test -z "$_flag_file"
+    set ac_args $ac_args --file
+  end
+
+  if not test -z "$_flag_dir"
+    set ac_args $ac_args --dir
+  end
+
   set -l pattern (commandline -ct)
-  set -l comps (idrive autocomplete -d $pattern)
-
-  echo $comps | string replace -a ' ' \n
-
+  idrive autocomplete -d $ac_args $pattern
 end
 
-function __fish_autocomplete_file
-  set -l pattern (commandline -ct)
-  set -l comps (idrive autocomplete -df $pattern)
+function __fish_first_arg
+  set -l tokens (commandline -opc) (commandline -ct)
+  set -l command (commandline -opc)
 
-  echo $comps | string replace -a ' ' \n
+  set -l stipped_args (echo $command | string split ' ' | grep -v -P '^\-')
 
+  test ( count $stipped_args) -eq 2
 end
+
+function __fish_second_arg
+  set -l tokens (commandline -opc) (commandline -ct)
+  set -l command (commandline -opc)
+
+  set -l stipped_args (echo $command | string split ' ' | grep -v -P '^\-')
+
+  test (count $stipped_args) -eq 3
+end
+
 
 complete -c idrive -e
 
-set -l idrive_commands ls cat mkdir rm mv upload 
+set -l idrive_commands ls cat mkdir upload rm mv recover
 
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a ls -d 'list'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a cat -d 'cat'
@@ -25,5 +48,24 @@ complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_comman
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a mv -d 'mv'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a upload -d 'upload'
 
-complete --no-files -c idrive -n "__fish_seen_subcommand_from ls" -a "(__fish_autocomplete_file_or_dir)"
-complete --no-files -c idrive -n "__fish_seen_subcommand_from cat" -a "(__fish_autocomplete_file_or_dir)"
+complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a recover -d 'recover'
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from ls; and not __fish_seen_argument -s t -l trash" -a "(__fish_autocomplete_path)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from ls; and __fish_seen_argument -s t -l trash" -a "(__fish_autocomplete_path --trash)"
+
+# complete --no-files -c idrive -n "__fish_seen_subcommand_from ls; and not __fish_seen_argument t" -a "(__fish_autocomplete_file_or_dir_trash)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from cat" -a "(__fish_autocomplete_path)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from mkdir" -a "(__fish_autocomplete_path -d)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from rm" -a "(__fish_autocomplete_path)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path -t)"
+
+complete -c idrive -n "__fish_seen_subcommand_from upload; and __fish_upload_first_arg"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from upload; and __fish_upload_second_arg" -a "(__fish_autocomplete_path)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_first_arg" -a "(__fish_autocomplete_path)"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_second_arg" -a "(__fish_autocomplete_path -d)"

@@ -166,7 +166,7 @@ const handleStatus = <R extends { httpResponse: HttpResponse }, S extends State 
     (r) =>
       validStatuses.includes(r.httpResponse.status)
         ? E.of(r)
-        : E.left(err(`invalid status ${r.httpResponse.status}`)),
+        : E.left(err(`invalid status ${r.httpResponse.status} ${JSON.stringify(r.httpResponse.data)}`)),
   )
 
 export const validateHttpResponse = <R extends { httpResponse: HttpResponse }, S extends State>(

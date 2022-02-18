@@ -23,10 +23,12 @@ const cookieScheme = t.intersection([
   }),
 ])
 
+const cookies = t.record(t.string, cookieScheme)
+
 export const sessionScheme = t.type({
   username: t.string,
   password: t.string,
-  cookies: t.record(t.string, cookieScheme),
+  cookies,
   sessionId: optionalString,
   sessionToken: optionalString,
   accountCountry: optionalString,
@@ -60,9 +62,11 @@ export const session = (
   sessionToken: O.none,
 })
 
-export interface SessionCookies {
-  [name: string]: Cookie
-}
+// export interface SessionCookies {
+//   [name: string]: Cookie
+// }
+
+export type SessionCookies = t.TypeOf<typeof cookies>
 
 export interface ICloudSessionWithSessionToken extends ICloudSession {
   sessionToken: Some<string>

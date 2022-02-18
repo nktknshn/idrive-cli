@@ -30,6 +30,7 @@ import * as ESRTE from './ffdrive/m2'
 
 import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
+import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
@@ -169,9 +170,27 @@ export const chainRoot = <R>(
     retrieveRootAndTrashIfMissing(),
     chain(() =>
       pipe(
-        readEnvS(({ state: { cache } }) => fromEither(C.getRoot()(cache))),
+        readEnvS(({ state: { cache } }) => fromEither(C.getDocwsRootE()(cache))),
         map(_ => _.content),
         chain(f),
+      )
+    ),
+  )
+}
+
+export const getRoot = (trash: boolean): DriveM<T.DetailsTrash | T.DetailsDocwsRoot> => {
+  return pipe(
+    retrieveRootAndTrashIfMissing(),
+    chain(() =>
+      readEnvS(({ state: { cache } }) =>
+        pipe(
+          trash
+            ? C.getTrashE()(cache)
+            : C.getDocwsRootE()(cache),
+          E.map((_: CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails) => _.content),
+          fromEither,
+          // map(_ => _.content),
+        )
       )
     ),
   )

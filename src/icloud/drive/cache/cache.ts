@@ -80,7 +80,7 @@ export const getCachedPathForId = (drivewsid: string) =>
     )
   }
 
-export const getRoot = () =>
+export const getDocwsRootE = () =>
   (cache: CT.CacheF): E.Either<Error, CT.CacheEntityFolderRootDetails> =>
     pipe(
       cache.byDrivewsid,
@@ -102,7 +102,7 @@ export const getRootO = () =>
   (cache: CT.CacheF): O.Option<CT.CacheEntityFolderRootDetails> =>
     pipe(
       cache,
-      getRoot(),
+      getDocwsRootE(),
       O.fromEither,
     )
 

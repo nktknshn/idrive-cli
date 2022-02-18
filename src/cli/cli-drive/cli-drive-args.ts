@@ -19,6 +19,7 @@ export function parseArgs() {
           fullPath: { alias: ['f'], default: false, type: 'boolean' },
           listInfo: { alias: ['l'], default: false, type: 'boolean' },
           trash: { alias: ['t'], default: false, type: 'boolean' },
+          etag: { alias: ['e'], default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
         }))
@@ -65,12 +66,14 @@ export function parseArgs() {
       (_) =>
         _.positional('path', { type: 'string', demandOption: true })
           .options({
-            file: { alias: ['f'], default: false, type: 'boolean' },
+            file: { default: false, type: 'boolean' },
+            dir: { default: false, type: 'boolean' },
+            trash: { default: false, type: 'boolean' },
           }),
     )
     .command(
-      'ac <path>',
-      'ac',
+      'recover <path>',
+      'recover',
       (_) => _.positional('path', { type: 'string', demandOption: true }),
     )
     .help()

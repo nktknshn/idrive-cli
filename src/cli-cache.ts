@@ -57,7 +57,7 @@ async function main() {
             C.tryReadFromFile(argv.cacheFile),
             TE.map(C.cachef),
           )),
-        TE.bind('root', ({ cache }) => TE.fromEither(C.getRoot()(cache))),
+        TE.bind('root', ({ cache }) => TE.fromEither(C.getDocwsRootE()(cache))),
         TE.map(({ cache, root }) =>
           pipe(
             isDrivewsid(argv.path)

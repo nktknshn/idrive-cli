@@ -6,6 +6,7 @@ import Path from 'path'
 import { err } from '../../../lib/errors'
 import { uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
+import { readWebauthToken } from '../../session/session-cookies'
 import * as ARR from './api-rte'
 import * as AR from './request'
 
@@ -86,8 +87,8 @@ const updateDocumentsRequest = t.type({
 })
 
 export const uploadM = (
-  { zone = 'com.apple.CloudDocs', contentType, filename, size, type }: {
-    zone?: string
+  { zone, contentType, filename, size, type }: {
+    zone: string
     contentType: string
     filename: string
     size: number
@@ -98,7 +99,7 @@ export const uploadM = (
     ({ state: { accountData, session } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
-        session.cookies['X-APPLE-WEBAUTH-TOKEN'] ?? ''
+        encodeURIComponent(readWebauthToken(session.cookies).t ?? '')
       }`,
       options: { addClientInfo: true, data: { filename, content_type: contentType, size, type } },
     }),
@@ -123,7 +124,7 @@ export const singleFileUploadM = (
 }
 
 export const updateDocumentsM = (
-  { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
+  { zone, data }: { zone: string; data: UpdateDocumentsRequest },
 ): AR.AuthorizedRequest<UpdateDocumentsResponse> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({

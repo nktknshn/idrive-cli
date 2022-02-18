@@ -15,6 +15,7 @@ const commands = {
   autocomplete: Action.autocomplete,
   ac: Action.autocomplete,
   cat: Action.cat,
+  recover: Action.recover,
 }
 
 async function main() {

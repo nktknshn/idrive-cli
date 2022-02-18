@@ -45,7 +45,6 @@ export const rm = (
             ),
           )),
         // SRTE.chain(() => DF.lsdir(parentPath)),
-        DF.saveCacheFirst(cacheFile),
         DF.map(() => `Success.`),
         // SRTE.map(showDetailsInfo({
         //   fullPath: false,

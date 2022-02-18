@@ -55,7 +55,7 @@ const uploadOverwrighting = (
     DF.Do,
     SRTE.bind(
       'uploadResult',
-      () => DF.fromApiRequest(AM.upload({ sourceFilePath: src, docwsid: parent.docwsid })),
+      () => DF.fromApiRequest(AM.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
     ),
     SRTE.bind('removeResult', () => {
       return DF.fromApiRequest(AM.moveItemsToTrash({
@@ -83,25 +83,29 @@ const uploadOverwrighting = (
 const handle = (
   { src, dst, overwright }: { dst: V.HierarchyResult<DetailsDocwsRoot>; src: string; overwright: boolean },
 ): DF.DriveM<void> => {
-  // upload to the directory
+  // if the target path is presented on icloud drive
   if (dst.valid) {
     const dstitem = V.target(dst)
 
+    // if it's a folder
     if (isFolderLike(dstitem)) {
       return pipe(
-        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid }),
+        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
         DF.fromApiRequest,
         DF.map(constVoid),
       )
     }
-    //
+    // if it's a file and the overwright flag set
     else if (overwright && V.isValidWithFile(dst)) {
       return uploadOverwrighting({ src, dst })
     }
-
-    return DF.errS(`invalid destination path: ${V.asString(dst)} It's a file`)
+    // otherwise we cancel uploading
+    else {
+      return DF.errS(`invalid destination path: ${V.asString(dst)} It's a file`)
+    }
   }
 
+  // if the path is valid only in its parent folder
   if (dst.path.rest.length == 1) {
     // upload and rename
     const dstitem = NA.last(dst.path.details)
@@ -109,7 +113,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname }),
+        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         DF.fromApiRequest,
         DF.map(constVoid),
       )

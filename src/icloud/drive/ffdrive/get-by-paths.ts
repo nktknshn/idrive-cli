@@ -356,7 +356,7 @@ export const getByPaths = <R extends T.Root>(
 export const getByPathsE = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DF.DriveM<DF.DetailsOrFile<R>[]> => {
+): DF.DriveM<NEA<DF.DetailsOrFile<R>>> => {
   return pipe(
     getByPaths(root, paths),
     DF.chain(
@@ -372,6 +372,12 @@ export const getByPathsE = <R extends T.Root>(
         ),
         SRTE.sequenceArray,
         SRTE.map(RA.toArray),
+        SRTE.chain(
+          flow(
+            NA.fromArray,
+            DF.fromOption(() => err(`mystically returned empty array`)),
+          ),
+        ),
       ),
     ),
   )
