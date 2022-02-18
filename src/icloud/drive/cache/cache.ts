@@ -1,6 +1,7 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
@@ -11,13 +12,14 @@ import { err, TypeDecodingError } from '../../../lib/errors'
 import { tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger, logReturnS } from '../../../lib/logging'
+import { NEA } from '../../../lib/types'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { parsePath } from '../helpers'
 import * as T from '../requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from '../requests/types/types-io'
 import { getFromCacheByPath } from './cache-get-by-path'
-import { HierarchyResult } from './cache-get-by-path-types'
+import { HierarchyResult, target } from './cache-get-by-path-types'
 import * as CT from './cache-types'
 import { MissingParentError } from './errors'
 
@@ -141,7 +143,7 @@ export const getById = (drivewsid: string) =>
     return pipe(cache.byDrivewsid, R.lookup(drivewsid))
   }
 
-export const getItemById = (drivewsid: string) =>
+export const getItemByIdO = (drivewsid: string) =>
   (cache: CT.CacheF): E.Either<Error, O.Option<CT.CacheEntityWithParentId>> => {
     return pipe(
       cache.byDrivewsid,
@@ -280,7 +282,7 @@ export const putItem = (
             )
           ),
         )),
-      E.bind('cachedEntity', () => pipe(cache, getItemById(item.drivewsid))),
+      E.bind('cachedEntity', () => pipe(cache, getItemByIdO(item.drivewsid))),
       E.bind(
         'needsUpdate',
         ({ cachedEntity }) => E.of(shouldBeUpdated(cachedEntity)),
@@ -300,8 +302,8 @@ export const putItem = (
   return res
 }
 
-export const getByPath = <R extends T.Root>(
-  root: T.Root,
+export const getByPathH = <R extends T.Root>(
+  root: R,
   path: NormalizedPath,
 ) =>
   (cache: CT.CacheF): E.Either<Error, HierarchyResult<R>> => {
@@ -316,6 +318,57 @@ export const getByPath = <R extends T.Root>(
           cache,
           getFromCacheByPath(rest, root),
           v => v as HierarchyResult<R>,
+        )
+      ),
+    )
+  }
+
+export const getByPaths = <R extends T.Root>(
+  root: R,
+  paths: NEA<NormalizedPath>,
+) =>
+  (cache: CT.CacheF): E.Either<Error, NEA<HierarchyResult<R>>> => {
+    return pipe(
+      E.Do,
+      E.bind('root', () => E.of(root)),
+      E.chain(({ root }) =>
+        pipe(
+          paths,
+          NA.map(path =>
+            pipe(
+              getByPathH<R>(root, path)(cache),
+            )
+          ),
+          E.sequenceArray,
+          E.chain(
+            flow(
+              RA.toArray,
+              NA.fromArray,
+              E.fromOption(() => err(`mystically returned empty array`)),
+            ),
+          ),
+        )
+      ),
+    )
+  }
+
+export const getByPathE = <R extends T.Root>(
+  root: T.Root,
+  path: NormalizedPath,
+) =>
+  (cache: CT.CacheF): E.Either<Error, T.Details | T.DriveChildrenItem> => {
+    const parts = parsePath(path)
+    const rest = pipe(parts, A.dropLeft(1))
+
+    return pipe(
+      E.Do,
+      E.bind('root', () => E.of(root)),
+      E.chain(({ root }) =>
+        pipe(
+          cache,
+          getFromCacheByPath(rest, root),
+          v => v as HierarchyResult<R>,
+          v => v.valid ? E.of(target(v)) : E.left(v.error),
         )
       ),
     )
@@ -441,6 +494,21 @@ export const tryReadFromFile = (
 ): TE.TaskEither<Error, CT.CacheF> => {
   return pipe(
     tryReadJsonFile(accountDataFilePath),
+    TE.map(json => {
+      let j = json as { byDrivewsid: { [drivewsid: string]: { created: string } } }
+      let res = {
+        byDrivewsid: {} as { [drivewsid: string]: CT.CacheEntity },
+      }
+
+      for (const k of Object.keys(j.byDrivewsid)) {
+        res.byDrivewsid[k] = {
+          ...j.byDrivewsid[k],
+          created: new Date(j.byDrivewsid[k].created),
+        } as CT.CacheEntity
+      }
+
+      return res
+    }),
     TE.filterOrElseW(
       validateCacheJson,
       () => TypeDecodingError.create([], 'wrong ICloudDriveCache json'),

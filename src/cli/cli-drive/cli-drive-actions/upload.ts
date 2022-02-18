@@ -9,6 +9,7 @@ import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import * as H from '../../../icloud/drive/ffdrive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { DetailsDocwsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
+import { Path } from '../../../lib/util'
 import { normalizePath } from './helpers'
 
 export const upload = (
@@ -32,8 +33,7 @@ export const upload = (
             SRTE.bind('overwright', () => DF.of(overwright)),
             SRTE.bind('dst', () => DF.lsPartial(root, normalizePath(dstpath))),
             DF.chain(handle),
-            DF.saveCacheFirst(cacheFile),
-            DF.map(() => `Success.`),
+            DF.map(() => `Success. ${Path.basename(srcpath)}`),
           )
         ),
       )

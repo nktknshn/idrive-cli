@@ -39,6 +39,13 @@ export const isValidWithFile = <H>(res: PathValidation<H>): res is PathValidWith
   return res.valid === true && O.isSome(res.file)
 }
 
+export const isValid = <H>(res: PathValidation<H>): res is PathValid<H> => {
+  return res.valid === true
+}
+export const isInvalid = <H>(res: PathValidation<H>): res is PathValid<H> => {
+  return res.valid === false
+}
+
 export const validPath = <R extends Root>(
   path: H.Hierarchy<R>,
   file: O.Option<DriveChildrenItemFile> = O.none,

@@ -1,4 +1,5 @@
 import * as A from 'fp-ts/lib/Array'
+import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
@@ -6,9 +7,13 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
+import * as C from '../../../icloud/drive/cache/cache'
+import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
+import { isDetailsCacheEntity } from '../../../icloud/drive/cache/cache-types'
+import { ItemIsNotFolderError, NotFoundError } from '../../../icloud/drive/errors'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
-import { fileName, fileNameAddSlash } from '../../../icloud/drive/requests/types/types'
+import { fileName, fileNameAddSlash, isDetails, Root } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { logger, stderrLogger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
@@ -23,6 +28,7 @@ export const autocomplete = ({
   trash,
   file,
   dir,
+  cached,
 }: {
   path: string
   noCache: boolean
@@ -31,6 +37,7 @@ export const autocomplete = ({
   trash: boolean
   file: boolean
   dir: boolean
+  cached: boolean
 }): TE.TaskEither<Error, string> => {
   const npath = normalizePath(path)
   const nparentPath = normalizePath(Path.dirname(path))
@@ -41,6 +48,17 @@ export const autocomplete = ({
 
   logger.debug(`looking for ${childName}* in ${nparentPath} (${lookupDir})`)
 
+  const targetDir = lookupDir ? npath : nparentPath
+  /*   pipe(
+    DF.lsdirCachedO(targetDir)(root),
+    DF.chain(_ =>
+      O.isSome(_)
+        ? (new Date().getTime() - _.value.created.getTime()) > 3000
+          ? DF.lsdir(root, targetDir)
+          : DF.of(_.value.content)
+        : DF.lsdir(root, targetDir)
+    ),
+  ) */
   return pipe(
     {
       sessionFile,
@@ -50,10 +68,12 @@ export const autocomplete = ({
     },
     cliActionM2(() => {
       const res = pipe(
-        DF.getRoot(trash),
+        DF.getCachedRoot(trash),
         DF.chain(root =>
           pipe(
-            DF.lsdir(root, lookupDir ? npath : nparentPath),
+            cached
+              ? DF.lsdirCached(targetDir)(root)
+              : DF.lsdir(root, targetDir),
             DF.map(parent =>
               lookupDir
                 ? parent.items

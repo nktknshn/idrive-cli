@@ -18,10 +18,12 @@ export function parseArgs() {
         .options({
           fullPath: { alias: ['f'], default: false, type: 'boolean' },
           listInfo: { alias: ['l'], default: false, type: 'boolean' },
+          header: { alias: ['h'], default: false, type: 'boolean' },
           trash: { alias: ['t'], default: false, type: 'boolean' },
           etag: { alias: ['e'], default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
+          cached: { default: false, type: 'boolean' },
         }))
     // .command('update [path]', 'update cache', _ =>
     //   _
@@ -69,6 +71,7 @@ export function parseArgs() {
             file: { default: false, type: 'boolean' },
             dir: { default: false, type: 'boolean' },
             trash: { default: false, type: 'boolean' },
+            cached: { default: false, type: 'boolean' },
           }),
     )
     .command(

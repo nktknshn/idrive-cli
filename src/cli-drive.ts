@@ -23,7 +23,7 @@ async function main() {
   const [command] = argv._
 
   initLoggers(
-    { debug: !argv.debug },
+    { debug: argv.debug },
     [logger, cacheLogger, stderrLogger, apiLogger],
   )
 

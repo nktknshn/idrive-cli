@@ -76,7 +76,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
             path: H.partialPath<H.Hierarchy<R>>(result, path),
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
           }),
-          ({ content }): PathValidation<H.Hierarchy<R>> =>
+          ({ content, created }): PathValidation<H.Hierarchy<R>> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
               (result): PathValidation<H.Hierarchy<R>> =>

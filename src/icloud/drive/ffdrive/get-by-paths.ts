@@ -1,7 +1,5 @@
-import { string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { fromEquals } from 'fp-ts/lib/Eq'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
@@ -44,7 +42,7 @@ const showDetails = (details: T.Details) => {
 }
 
 /**
-Given cached root and cached hierarchy verify if the hierarchy is still actual
+Given cached root and cached hierarchy determine what part of the hierarchy is still valid
  */
 export const validateHierarchies = <R extends T.Root>(
   cachedRoot: R,
@@ -178,7 +176,7 @@ export const validateCachedPaths = <R extends T.Root>(
         DF.fromEither(
           pipe(
             paths,
-            NA.map(path => pipe(cache, C.getByPath(root, path))),
+            NA.map(path => pipe(cache, C.getByPathH(root, path))),
             E.sequenceArray,
             E.map(_ => _ as NEA<V.PathValidation<H.Hierarchy<R>>>),
           ),
@@ -343,15 +341,12 @@ const getActuals = <R extends T.Root>(
 export const getByPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<V.HierarchyResult<R>>> => {
-  const res = pipe(
-    validateCachedPaths<R>(root, paths),
+): DF.DriveM<NEA<V.HierarchyResult<R>>> =>
+  pipe(
+    validateCachedPaths(root, paths),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
-
-  return res
-}
 
 export const getByPathsE = <R extends T.Root>(
   root: R,

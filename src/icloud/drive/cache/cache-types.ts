@@ -34,53 +34,76 @@ export interface CacheEntityFolderRootDetails {
   readonly type: 'ROOT'
   readonly hasDetails: true
   readonly content: T.DetailsDocwsRoot
+  // readonly updated: Date
 }
 
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
-  constructor(public readonly content: T.DetailsDocwsRoot) {}
+  // readonly updated: Date = new Date()
+  constructor(
+    public readonly content: T.DetailsDocwsRoot,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export class CacheEntityFolderTrashDetails {
   readonly type = 'TRASH_ROOT'
   readonly hasDetails = true
-  constructor(public readonly content: T.DetailsTrash) {}
+  constructor(
+    public readonly content: T.DetailsTrash,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export class CacheEntityFolderDetails {
   readonly type = 'FOLDER'
   readonly hasDetails = true
 
-  constructor(public readonly content: T.DetailsFolder) {}
+  constructor(
+    public readonly content: T.DetailsFolder,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export class CacheEntityFolderItem {
   readonly type = 'FOLDER'
   readonly hasDetails = false
 
-  constructor(public readonly content: T.DriveChildrenItemFolder) {}
+  constructor(
+    public readonly content: T.DriveChildrenItemFolder,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export class CacheEntityAppLibraryDetails {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = true
 
-  constructor(public readonly content: T.DetailsAppLibrary) {}
+  constructor(
+    public readonly content: T.DetailsAppLibrary,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export class CacheEntityAppLibraryItem {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = false
 
-  constructor(public readonly content: T.DriveChildrenItemAppLibrary) {}
+  constructor(
+    public readonly content: T.DriveChildrenItemAppLibrary,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export class CacheEntityFile {
   readonly type = 'FILE'
   readonly hasDetails = false
 
-  constructor(public readonly content: T.DriveChildrenItemFile) {}
+  constructor(
+    public readonly content: T.DriveChildrenItemFile,
+    public readonly created: Date = new Date(),
+  ) {}
 }
 
 export const hasParentId = (entity: CacheEntity): entity is CacheEntityWithParentId =>

@@ -2,13 +2,11 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
-import { consumeStreamToString, getUrlStream } from '../../../icloud/drive/requests/download'
-import { isFile, isRegularDetails, isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
+import { isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { normalizePath } from './helpers'
 
@@ -37,6 +35,7 @@ export const recover = (
           pipe(
             API.putBackItemsFromTrash([item]),
             DF.fromApiRequest,
+            // DF.map(_ => _.items[0].)
             DF.map(() => `Success.`),
           )
         ),

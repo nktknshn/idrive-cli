@@ -19,8 +19,8 @@ import { NEA } from '../../lib/types'
 import { ICloudSessionValidated } from '../authorization/authorize'
 import * as API from './api'
 import * as C from './cache/cache'
-import { PathValidation } from './cache/cache-get-by-path-types'
-import { ItemIsNotFolderError } from './errors'
+import { HierarchyResult, PathValidation, target } from './cache/cache-get-by-path-types'
+import { ItemIsNotFolderError, NotFoundError } from './errors'
 import { getByPaths, getByPathsE } from './ffdrive/get-by-paths'
 import { Hierarchy } from './ffdrive/validation'
 import { getMissedFound } from './helpers'
@@ -30,7 +30,12 @@ import * as ESRTE from './ffdrive/m2'
 
 import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
-import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
+import {
+  CacheEntityDetails,
+  CacheEntityFolderLike,
+  CacheEntityFolderRootDetails,
+  CacheEntityFolderTrashDetails,
+} from './cache/cache-types'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
@@ -106,7 +111,10 @@ export const fromApiRequest = <A>(ma: API.Api<A>): DriveM<A> =>
 const putSession = (session: ICloudSessionValidated): DriveM<void> =>
   readEnvS(({ state }) => SRTE.put({ ...state, ...session }))
 
-const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
+const putCache = (cache: C.Cache): DriveM<void> =>
+  readEnvS(
+    ({ state }) => SRTE.put({ ...state, cache }),
+  )
 
 export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
@@ -178,7 +186,7 @@ export const chainRoot = <R>(
   )
 }
 
-export const getRoot = (trash: boolean): DriveM<T.DetailsTrash | T.DetailsDocwsRoot> => {
+export const getCachedRoot = (trash: boolean): DriveM<T.DetailsTrash | T.DetailsDocwsRoot> => {
   return pipe(
     retrieveRootAndTrashIfMissing(),
     chain(() =>
@@ -298,6 +306,52 @@ export const lsdir = <R extends T.Root>(root: R, path: NormalizedPath) =>
     filterOrElse(T.isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
+export const lsdirCached = <R extends T.Root>(path: NormalizedPath) =>
+  (root: R): DriveM<T.Details> =>
+    readEnvS(
+      ({ state }) =>
+        pipe(
+          state.cache,
+          C.getByPathH(root, path),
+          E.chain(_ =>
+            _.valid
+              ? E.of(target(_))
+              : E.left(NotFoundError.create(`not found ${path}`))
+          ),
+          E.filterOrElse(T.isDetails, () => ItemIsNotFolderError.create()),
+          // E.chain(item =>
+          //   pipe(
+          //     C.getByIdE(item.drivewsid)(state.cache),
+          //   )
+          // ),
+          fromEither,
+        ),
+    )
+
+export const lsdirCachedO = <R extends T.Root>(path: NormalizedPath) =>
+  (root: R) =>
+    readEnvS(
+      ({ state }) =>
+        pipe(
+          state.cache,
+          C.getByPathH(root, path),
+          E.map(_ =>
+            _.valid
+              ? O.of(target(_))
+              : O.none
+          ),
+          E.filterOrElse(
+            (v): v is O.Option<R | T.DetailsFolder | T.DetailsAppLibrary> =>
+              O.isNone(v) || (O.isSome(v) && T.isDetails(v.value)),
+            () => ItemIsNotFolderError.create(),
+          ),
+          E.map(flow(
+            O.map(item => C.getByIdE(item.drivewsid)(state.cache)),
+            O.fold(() => O.none, E.fold(() => O.none, v => O.some(v as CacheEntityDetails))),
+          )),
+          fromEither,
+        ),
+    )
 export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<PathValidation<Hierarchy<R>>> => {
   return pipe(
     getByPaths(root, [path]),
@@ -308,3 +362,18 @@ export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): Driv
 export const lssPartial = <R extends T.Root>(root: R, paths: NEA<NormalizedPath>) => {
   return getByPaths(root, paths)
 }
+
+export { getByPaths }
+
+export const getByPathsCached = <R extends T.Root>(
+  root: R,
+  paths: NEA<NormalizedPath>,
+): DriveM<NEA<HierarchyResult<R>>> =>
+  pipe(
+    readEnvS(({ state }) =>
+      pipe(
+        C.getByPaths(root, paths)(state.cache),
+        fromEither,
+      )
+    ),
+  )

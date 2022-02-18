@@ -18,7 +18,7 @@ import {
 
 export type Hierarchy<R> = [R, ...NonRootDetails[]]
 
-export const tail = <R extends Root>([, ...tail]: Hierarchy<R>) => tail
+export const tail = <R>([, ...tail]: Hierarchy<R>) => tail
 
 export const isHierarchy = <R extends Root>(details: NEA<Details>): details is Hierarchy<R> =>
   isCloudDocsRootDetails(details[0]) || isTrashDetails(details[0])

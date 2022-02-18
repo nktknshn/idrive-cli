@@ -1,5 +1,5 @@
 function __fish_autocomplete_path
-  argparse 't/trash' 'f/file' 'd/dir' -- $argv
+  argparse 't/trash' 'f/file' 'd/dir' 'c/cached' -- $argv
   set -l ac_args
 
   if not test -z "$_flag_trash"
@@ -14,8 +14,12 @@ function __fish_autocomplete_path
     set ac_args $ac_args --dir
   end
 
+  if not test -z "$_flag_cached"
+    set ac_args $ac_args --cached
+  end
+
   set -l pattern (commandline -ct)
-  idrive autocomplete -d $ac_args $pattern
+  idrive autocomplete $ac_args (string unescape $pattern)
 end
 
 function __fish_first_arg
