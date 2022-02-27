@@ -63,6 +63,16 @@ export function parseArgs() {
           }),
     )
     .command(
+      'uploads <srcpaths..> <dstpath>',
+      'uploads',
+      (_) =>
+        _.positional('srcpaths', { type: 'string', array: true, demandOption: true })
+          .positional('dstpath', { type: 'string', demandOption: true })
+          .options({
+            overwright: { default: false, type: 'boolean' },
+          }),
+    )
+    .command(
       'autocomplete <path>',
       'autocomplete',
       (_) =>
@@ -78,6 +88,29 @@ export function parseArgs() {
       'recover <path>',
       'recover',
       (_) => _.positional('path', { type: 'string', demandOption: true }),
+    )
+    .command(
+      'download <paths...>',
+      'download',
+      (_) =>
+        _.positional('paths', { array: true, type: 'string', demandOption: true })
+          .options({
+            output: { default: './', type: 'string' },
+            structured: { default: true, type: 'boolean' },
+            glob: { default: true, type: 'boolean' },
+            raw: { default: true, type: 'boolean' },
+            destination: { alias: ['D'], type: 'string', demandOption: true },
+          }),
+    )
+    .command(
+      'edit <path>',
+      'edit',
+      (_) =>
+        _.positional('path', { type: 'string', demandOption: true })
+          .options({
+            output: { default: './', type: 'string' },
+            structured: { default: true, type: 'boolean' },
+          }),
     )
     .help()
 }

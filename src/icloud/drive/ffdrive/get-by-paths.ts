@@ -215,7 +215,7 @@ const handleFolders = <R extends T.Root>(task: NEA<DepperFolders<R>>): DF.DriveM
       return modifySubsetDF(
         details,
         (v): v is [
-          T.DriveDetailsWithHierarchy,
+          T.NonRootDetails,
           [
             O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
             [NEA<string>, V.PathInvalid<H.Hierarchy<R>>],

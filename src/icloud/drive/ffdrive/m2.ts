@@ -17,6 +17,8 @@ export const get = <S, R, E = never>() => {
   const Do = SRTE.of<S, R, Err<S, E>, {}>({})
   const chain = <A, B, S_ extends S>(f: (a: A) => T_<B, S_>): (ma: T_<A, S_>) => T_<B, S_> => SRTE.chain(f)
 
+  // const chainW = <S, R2, E2, A, B>(f: (a: A) => T_<B, S>): (ma: T_<A, S_>) => T_<B, S_> => SRTE.chain(f)
+
   const of = <A, S_ extends S>(v: A): T_<A, S_> => SRTE.of<S_, R, Err<S_, E>, A>(v)
 
   const get: <S_ extends S>() => ESRTE<S_, R, E, S_> = SRTE.get
@@ -27,6 +29,7 @@ export const get = <S, R, E = never>() => {
       chain(state => SRTE.left(e)),
     )
   const leftE = <A = never, S_ extends S = S>(e: Err<S_, E>): T_<A, S_> => SRTE.left(e)
+
   const fromTaskEither = <A, S_ extends S>(te: TE.TaskEither<E, A>): T_<A, S_> =>
     (state: S_) =>
       (env: R) =>
@@ -66,6 +69,7 @@ export const get = <S, R, E = never>() => {
   return {
     Do,
     chain,
+    // chainW,
     of,
     get,
     left,

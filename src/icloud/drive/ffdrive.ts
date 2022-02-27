@@ -1,47 +1,38 @@
 import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { filterOrElse as filterOrElse_ } from 'fp-ts/lib/FromEither'
-import { apply, constant, constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
+import { constant, constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { Predicate } from 'fp-ts/lib/Predicate'
-import * as R from 'fp-ts/lib/Reader'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
-import { Refinement } from 'fp-ts/lib/Refinement'
-import { Semigroup } from 'fp-ts/lib/Semigroup'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
 import { NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { cacheLogger, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
+import { isObjectWithOwnProperty } from '../../lib/util'
 import { ICloudSessionValidated } from '../authorization/authorize'
+import { AccountLoginResponseBody } from '../authorization/types'
+import { ICloudSession } from '../session/session'
 import * as API from './api'
 import * as C from './cache/cache'
 import { HierarchyResult, PathValidation, target } from './cache/cache-get-by-path-types'
+import { CacheEntityDetails, CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
 import { ItemIsNotFolderError, NotFoundError } from './errors'
 import { getByPaths, getByPathsE } from './ffdrive/get-by-paths'
+import * as ESRTE from './ffdrive/m2'
 import { Hierarchy } from './ffdrive/validation'
 import { getMissedFound } from './helpers'
 import * as AR from './requests/request'
-
-import * as ESRTE from './ffdrive/m2'
-
-import { AccountLoginResponseBody } from '../authorization/types'
-import { ICloudSession } from '../session/session'
-import {
-  CacheEntityDetails,
-  CacheEntityFolderLike,
-  CacheEntityFolderRootDetails,
-  CacheEntityFolderTrashDetails,
-} from './cache/cache-types'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
 export { getByPathsE }
+export { getByPaths }
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
+
+export const isNotFileG = <A extends { drivewsid: string }>(d: A | T.DriveChildrenItemFile): d is A =>
+  !(isObjectWithOwnProperty(d, 'type') && d.type === 'FILE')
 
 export type DriveMEnv = {} & API.ApiEnv & AR.Env
 
@@ -80,7 +71,7 @@ export const readEnvS = <A>(
   f: (e: { state: DriveMState; env: DriveMEnv }) => DriveM<A>,
 ) => pipe(readEnv, chain(f))
 
-export const logS = flow(logReturnS, SRTE.map)
+export const logS = flow(logReturnS, map)
 
 export const errS = <A>(s: string): DriveM<A> =>
   readEnvS(
@@ -283,10 +274,13 @@ export const retrieveItemDetailsInFoldersSaving = (
     ),
   )
 
-export const retrieveItemDetailsInFoldersSavingE = (
+export function retrieveItemDetailsInFoldersSavingE(
+  drivewsids: NEA<T.NonRootDrivewsid>,
+): DriveM<NEA<T.NonRootDetails>>
+export function retrieveItemDetailsInFoldersSavingE(
   drivewsids: NEA<string>,
-): DriveM<NEA<T.Details>> =>
-  pipe(
+): DriveM<NEA<T.Details>> {
+  return pipe(
     retrieveItemDetailsInFoldersSavingNEA(drivewsids),
     chain(details =>
       pipe(
@@ -296,13 +290,15 @@ export const retrieveItemDetailsInFoldersSavingE = (
       )
     ),
   )
+}
 
 export const lsdir = <R extends T.Root>(root: R, path: NormalizedPath) =>
   pipe(
     getByPathsE(root, [path]),
-    chain(
-      flow(A.lookup(0), fromOption(() => err(`wat`))),
-    ),
+    map(NA.head),
+    // chain(
+    //   // flow(A.lookup(0), fromOption(() => err(`wat`))),
+    // ),
     filterOrElse(T.isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
@@ -362,8 +358,6 @@ export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): Driv
 export const lssPartial = <R extends T.Root>(root: R, paths: NEA<NormalizedPath>) => {
   return getByPaths(root, paths)
 }
-
-export { getByPaths }
 
 export const getByPathsCached = <R extends T.Root>(
   root: R,

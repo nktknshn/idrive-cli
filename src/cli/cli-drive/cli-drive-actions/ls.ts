@@ -22,6 +22,7 @@ import {
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/ffdrive'
 import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import { getFoldersRecursivelyD } from '../../../icloud/drive/ffdrive/recursive'
 import { recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { fetchClient } from '../../../lib/http/fetch-client'
@@ -291,24 +292,26 @@ export const listUnixPath = (
       header: boolean
     },
 ): TE.TaskEither<ErrorOutput, Output> => {
-  // if (recursive) {
-  //   return pipe(
-  //     { sessionFile, cacheFile, noCache },
-  //     cliActionM(
-  //       ({ cache, api }) =>
-  //         pipe(
-  //           DF.getFolderRecursive(paths[0], depth)({ cache })({ api }),
-  //           noCache
-  //             ? TE.chainFirst(() => TE.of(constVoid()))
-  //             : TE.chainFirst(([item, { cache }]) => C.trySaveFile(cache, cacheFile)),
-  //           TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
-  //         ),
-  //     ),
-  //   )
-  // }
+  const npaths = paths.map(normalizePath)
+
+  if (recursive) {
+    return pipe(
+      { sessionFile, cacheFile, noCache, ...defaultApiEnv },
+      cliActionM2(
+        () =>
+          pipe(
+            DF.of(``),
+            // getFoldersRecursively(paths[0], depth),
+            // noCache
+            //   ? TE.chainFirst(() => TE.of(constVoid()))
+            //   : TE.chainFirst(([item, { cache }]) => C.trySaveFile(cache, cacheFile)),
+            // TE.map(([v, cache]) => raw ? JSON.stringify(v) : showRecursive({})(v)),
+          ),
+      ),
+    )
+  }
 
   const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
-  const npaths = paths.map(normalizePath)
 
   assert(A.isNonEmpty(npaths))
 

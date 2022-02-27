@@ -43,6 +43,22 @@ export function downloadM(
   )
 }
 
+export function downloadBatchM(
+  { docwsids, zone }: { docwsids: string[]; zone: string },
+) {
+  return AR.basicDriveJsonRequest(
+    ({ state: { accountData } }) => ({
+      method: 'POST',
+      url: `${accountData.webservices.docws.url}/ws/${zone}/download/batch?dsid=${accountData.dsInfo.dsid}`,
+      options: {
+        addClientInfo: true,
+        data: docwsids.map((document_id) => ({ document_id })),
+      },
+    }),
+    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
+  )
+}
+
 export function downloadARR(
   { docwsid: documentId, zone }: RetrieveOpts,
 ) {

@@ -1,8 +1,12 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
 import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
+import { defaultApiEnv } from './defaults'
+import * as DF from './icloud/drive/ffdrive'
+import { cliActionM2 } from './icloud/drive/ffdrive/cli-action'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -11,11 +15,28 @@ const commands = {
   mkdir: Action.mkdir,
   rm: Action.rm,
   upload: Action.upload,
+  uploads: ({ sessionFile, cacheFile, srcpaths, dstpath, noCache }: {
+    srcpaths: string[]
+    dstpath: string
+    noCache: boolean
+    sessionFile: string
+    cacheFile: string
+  }) =>
+    pipe(
+      { sessionFile, cacheFile, noCache, ...defaultApiEnv },
+      cliActionM2(() =>
+        pipe(
+          DF.readEnvS(() => DF.of(`srcpaths=${srcpaths} dstpath=${dstpath}`)),
+        )
+      ),
+    ),
   mv: Action.move,
   autocomplete: Action.autocomplete,
   ac: Action.autocomplete,
   cat: Action.cat,
   recover: Action.recover,
+  download: Action.download,
+  edit: Action.edit,
 }
 
 async function main() {
@@ -38,7 +59,10 @@ async function main() {
 
   await pipe(
     commandFunction(argv),
-    TE.fold(printer.errorTask, printer.printTask),
+    TE.fold(
+      printer.errorTask,
+      printer.printTask,
+    ),
   )()
 }
 

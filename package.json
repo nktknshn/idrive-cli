@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",
+    "@types/micromatch": "^4.0.2",
     "@types/mime-types": "^2.1.1",
     "@types/node": "^16.9.6",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
@@ -51,6 +52,7 @@
     "yarn": "^1.22.15"
   },
   "peerDependencies": {
-    "chalk": "^4.1.2"
+    "chalk": "^4.1.2",
+    "micromatch": "^4.0.4"
   }
 }

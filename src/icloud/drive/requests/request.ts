@@ -133,7 +133,7 @@ export const handleResponse = <R, S extends State>(
       SRTE.bind('req', () => req),
       chain(({ env: { fetch }, req }) =>
         fromTaskEither(pipe(
-          logg(req.url, apiLogger.debug),
+          logg(`${req.url.replace(/\?.+/, '')} ${JSON.stringify(req.data)}`, apiLogger.debug),
           () => fetch(req),
           TE.map(httpResponse => ({ httpResponse })),
         ))

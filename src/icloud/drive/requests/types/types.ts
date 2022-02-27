@@ -124,7 +124,7 @@ export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
 export const isRegularDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is
   | DetailsFolder
-  | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
+  | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details) && isFolderLike(details)
 
 export const isCloudDocsRootDetails = (
   details: Details | DetailsTrash | DriveChildrenItem,
@@ -144,7 +144,7 @@ export const isNotRootDetails = (details: Details | DriveChildrenItem): details 
   | DetailsFolder
   | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
 
-export type DriveFolderLike =
+export type FolderLike =
   | DetailsFolder
   | DetailsAppLibrary
   | DetailsDocwsRoot
@@ -153,8 +153,8 @@ export type DriveFolderLike =
   | DriveChildrenItemAppLibrary
 
 export const isFolderLike = (
-  entity: Details | DriveChildrenItem,
-): entity is DriveFolderLike =>
+  entity: Details | DetailsTrash | DriveChildrenItem,
+): entity is FolderLike =>
   entity.drivewsid === types.trashDrivewsid
   || hasOwnProperty(entity, 'type') && entity.type === 'APP_LIBRARY'
   || hasOwnProperty(entity, 'type') && entity.type === 'FOLDER'

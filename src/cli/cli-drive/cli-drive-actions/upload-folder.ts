@@ -12,6 +12,10 @@ import { DetailsDocwsRoot, fileName, isFolderLike } from '../../../icloud/drive/
 import { Path } from '../../../lib/util'
 import { normalizePath } from './helpers'
 
+import fs from 'fs/promises'
+
+// fs.opendir
+
 export const uploadFolder = (
   { sessionFile, cacheFile, srcpath, dstpath, noCache, overwright }: {
     srcpath: string

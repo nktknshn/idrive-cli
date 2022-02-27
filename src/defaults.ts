@@ -6,3 +6,5 @@ export const defaultApiEnv = {
   fetch: fetchClient,
   getCode: () => input({ prompt: 'code: ' }),
 }
+
+export const tempDir = `/tmp/`
