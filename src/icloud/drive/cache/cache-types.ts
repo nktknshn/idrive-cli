@@ -1,5 +1,6 @@
 import * as T from '../requests/types/types'
 
+/** Cache is just a key-val storage for files info */
 export interface CacheF {
   readonly byDrivewsid: { readonly [drivewsid: string]: CacheEntity }
 }

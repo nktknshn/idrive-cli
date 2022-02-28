@@ -7,14 +7,11 @@ import { logger } from '../../lib/logging'
 import * as AR from '../drive/requests/request'
 import { AccountLoginResponseBody } from './types'
 
-export function requestAccoutLoginM<S extends AR.State>(): AR.ApiRequest<
-  AccountLoginResponseBody,
-  S
-> {
+export function requestAccoutLoginM<S extends AR.State>(): AR.ApiRequest<AccountLoginResponseBody, S> {
   logger.debug('requestAccoutLogin')
 
   return pipe(
-    AR.readEnv<S>(),
+    AR.readEnv(),
     AR.chain(({ state }) =>
       pipe(
         state.session.sessionToken,

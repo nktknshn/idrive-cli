@@ -15,24 +15,25 @@ import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
 import * as API from './api'
 import * as C from './cache/cache'
-import { HierarchyResult, PathValidation, target } from './cache/cache-get-by-path-types'
+import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
 import { CacheEntityDetails, CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
+import { getByPaths, getByPathsH } from './drive/get-by-paths'
+import { getFoldersTrees } from './drive/get-folders-trees'
+import * as ESRTE from './drive/m2'
+import { searchGlobs } from './drive/search-globs'
+import { Hierarchy } from './drive/validation'
 import { ItemIsNotFolderError, NotFoundError } from './errors'
-import { getByPaths, getByPathsE } from './ffdrive/get-by-paths'
-import * as ESRTE from './ffdrive/m2'
-import { Hierarchy } from './ffdrive/validation'
 import { getMissedFound } from './helpers'
 import * as AR from './requests/request'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
-export { getByPathsE }
 export { getByPaths }
+export { searchGlobs }
+export { getByPathsH }
+export { getFoldersTrees }
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
-
-export const isNotFileG = <A extends { drivewsid: string }>(d: A | T.DriveChildrenItemFile): d is A =>
-  !(isObjectWithOwnProperty(d, 'type') && d.type === 'FILE')
 
 export type DriveMEnv = {} & API.ApiEnv & AR.Env
 
@@ -217,45 +218,28 @@ export const retrieveRootAndTrashIfMissing = (): DriveM<void> => {
   )
 }
 
-export const saveCache = (cacheFile: string) =>
-  () => readEnvS(({ state: { cache } }) => fromTaskEither(C.trySaveFile(cache)(cacheFile)))
-
-export const saveCacheFirst = <T>(cacheFile: string) =>
-  (df: DriveM<T>): DriveM<T> =>
-    pipe(
-      df,
-      chain(v =>
-        pipe(
-          readEnv,
-          logS(() => `saving cache`, cacheLogger.debug),
-          chain(({ state: { cache } }) => fromTaskEither(C.trySaveFile(cache)(cacheFile))),
-          chain(() => of(v)),
-        )
-      ),
-    )
-
-export function retrieveItemDetailsInFoldersSavingNEA<R extends T.Root>(
+export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...T.NonRootDrivewsid[]],
 ): DriveM<[O.Some<R>, ...O.Option<T.NonRootDetails>[]]>
-export function retrieveItemDetailsInFoldersSavingNEA(
+export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof rootDrivewsid, ...string[]],
 ): DriveM<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
-export function retrieveItemDetailsInFoldersSavingNEA(
+export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof trashDrivewsid, ...string[]],
 ): DriveM<[O.Some<T.DetailsTrash>, ...O.Option<T.Details>[]]>
-export function retrieveItemDetailsInFoldersSavingNEA<R extends T.Root>(
+export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...string[]],
 ): DriveM<[O.Some<R>, ...O.Option<T.Details>[]]>
-export function retrieveItemDetailsInFoldersSavingNEA(
+export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
 ): DriveM<NEA<O.Option<T.Details>>>
-export function retrieveItemDetailsInFoldersSavingNEA(
+export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
 ): DriveM<NEA<O.Option<T.Details>>> {
-  return retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<T.Details>>>
+  return _retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<T.Details>>>
 }
 
-export const retrieveItemDetailsInFoldersSaving = (
+const _retrieveItemDetailsInFoldersSaving = (
   drivewsids: string[],
 ): DriveM<O.Option<T.Details>[]> =>
   pipe(
@@ -281,7 +265,7 @@ export function retrieveItemDetailsInFoldersSavingE(
   drivewsids: NEA<string>,
 ): DriveM<NEA<T.Details>> {
   return pipe(
-    retrieveItemDetailsInFoldersSavingNEA(drivewsids),
+    retrieveItemDetailsInFoldersSaving(drivewsids),
     chain(details =>
       pipe(
         O.sequenceArray(details),
@@ -294,12 +278,12 @@ export function retrieveItemDetailsInFoldersSavingE(
 
 export const lsdir = <R extends T.Root>(root: R, path: NormalizedPath) =>
   pipe(
-    getByPathsE(root, [path]),
+    getByPaths(root, [path]),
     map(NA.head),
     // chain(
     //   // flow(A.lookup(0), fromOption(() => err(`wat`))),
     // ),
-    filterOrElse(T.isDetails, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
+    filterOrElse(T.isDetailsG, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
 export const lsdirCached = <R extends T.Root>(path: NormalizedPath) =>
@@ -350,19 +334,19 @@ export const lsdirCachedO = <R extends T.Root>(path: NormalizedPath) =>
     )
 export const lsPartial = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<PathValidation<Hierarchy<R>>> => {
   return pipe(
-    getByPaths(root, [path]),
+    getByPathsH(root, [path]),
     map(NA.head),
   )
 }
 
 export const lssPartial = <R extends T.Root>(root: R, paths: NEA<NormalizedPath>) => {
-  return getByPaths(root, paths)
+  return getByPathsH(root, paths)
 }
 
 export const getByPathsCached = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DriveM<NEA<HierarchyResult<R>>> =>
+): DriveM<NEA<GetByPathResult<R>>> =>
   pipe(
     readEnvS(({ state }) =>
       pipe(

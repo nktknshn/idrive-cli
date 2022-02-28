@@ -6,11 +6,11 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import * as DF from '../../../icloud/drive/drive'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
+import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls'
 
@@ -41,44 +41,40 @@ export const mkdir = ({
       const nparentPath = normalizePath(Path.dirname(path))
 
       const res = pipe(
-        DF.chainRoot(root =>
+        DF.Do,
+        SRTE.bind('root', () => DF.chainRoot(DF.of)),
+        SRTE.bind('parent', ({ root }) => DF.lsdir(root, nparentPath)),
+        SRTE.bind('result', ({ parent }) =>
           pipe(
-            DF.Do,
-            SRTE.bind('parent', () => DF.lsdir(root, nparentPath)),
-            SRTE.bind('result', ({ parent }) =>
-              pipe(
-                API.createFolders({
-                  destinationDrivewsId: parent.drivewsid,
-                  names: [name],
-                }),
-                DF.fromApiRequest,
-                DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
-              )),
-            DF.chain(({ result, parent }) =>
-              pipe(
-                result.folders,
-                A.matchLeft(
-                  () => DF.left(err(`createFolders returned empty result`)),
-                  (head) =>
-                    DF.retrieveItemDetailsInFoldersSaving([
-                      head.drivewsid,
-                      parent.drivewsid,
-                    ]),
-                ),
-              )
+            API.createFolders({
+              destinationDrivewsId: parent.drivewsid,
+              names: [name],
+            }),
+            DF.fromApiRequest,
+            DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
+          )),
+        DF.chain(({ result, parent }) =>
+          pipe(
+            result.folders,
+            A.matchLeft(
+              () => DF.left(err(`createFolders returned empty result`)),
+              (head) =>
+                DF.retrieveItemDetailsInFoldersSaving([
+                  head.drivewsid,
+                  parent.drivewsid,
+                ]),
             ),
-            DF.map(flow(A.lookup(1), O.flatten)),
-            DF.map(
-              O.fold(
-                () => `missing created folder`,
-                showDetailsInfo({
-                  fullPath: false,
-                  path: '',
-                }),
-              ),
-            ),
-            DF.saveCacheFirst(cacheFile),
           )
+        ),
+        DF.map(flow(A.lookup(1), O.flatten)),
+        DF.map(
+          O.fold(
+            () => `missing created folder`,
+            showDetailsInfo({
+              fullPath: false,
+              path: '',
+            }),
+          ),
         ),
       )
 

@@ -6,9 +6,8 @@ import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
 import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
-import * as H from '../../../icloud/drive/ffdrive/validation'
+import * as DF from '../../../icloud/drive/drive'
+import * as H from '../../../icloud/drive/drive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemToTrashResponse } from '../../../icloud/drive/requests'
 import { RenameResponse } from '../../../icloud/drive/requests'
@@ -23,6 +22,7 @@ import {
 } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
+import { cliActionM2 } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
 
@@ -44,7 +44,7 @@ export const move = ({ sessionFile, cacheFile, srcpath, dstpath, noCache }: Env 
           DF.Do,
           SRTE.bind('srcdst', () => DF.lssPartial(root, [nsrc, ndst])),
           DF.chain(handle),
-          DF.saveCacheFirst(cacheFile),
+          // DF.saveCacheFirst(cacheFile),
           DF.map(() => `Success.`),
         )
       )

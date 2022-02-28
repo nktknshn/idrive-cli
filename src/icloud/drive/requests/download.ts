@@ -19,7 +19,14 @@ type RetrieveOpts = {
 interface ResponseBody {
   document_id: string
   owner_dsid: number
-  data_token: {
+  data_token?: {
+    url: string
+    token: string
+    signature: string
+    wrapping_key: string
+    reference_signature: string
+  }
+  package_token?: {
     url: string
     token: string
     signature: string
@@ -55,7 +62,15 @@ export function downloadBatchM(
         data: docwsids.map((document_id) => ({ document_id })),
       },
     }),
-    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
+    v =>
+      t.array(
+        t.union(
+          [
+            t.type({ package_token: t.type({ url: t.string }) }),
+            t.type({ data_token: t.type({ url: t.string }) }),
+          ],
+        ),
+      ).decode(v) as t.Validation<ResponseBody[]>,
   )
 }
 

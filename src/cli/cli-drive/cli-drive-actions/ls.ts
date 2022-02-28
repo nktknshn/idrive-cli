@@ -14,20 +14,20 @@ import Path from 'path'
 import { defaultApiEnv } from '../../../defaults'
 import * as C from '../../../icloud/drive/cache/cache'
 import {
-  HierarchyResult,
+  GetByPathResult,
   isInvalid,
   isValid,
   showGetByPathResult,
   target,
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
-import { getFoldersRecursivelyD } from '../../../icloud/drive/ffdrive/recursive'
+import * as DF from '../../../icloud/drive/drive'
+import { getFoldersTrees } from '../../../icloud/drive/drive/get-folders-trees'
 import { recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { fetchClient } from '../../../lib/http/fetch-client'
 import { input } from '../../../lib/input'
 import { NEA } from '../../../lib/types'
+import { cliActionM2 } from '../../cli-action'
 // import { cliActionM } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
@@ -323,7 +323,7 @@ export const listUnixPath = (
         DF.chain(root =>
           cached
             ? DF.getByPathsCached(root, npaths)
-            : DF.getByPaths(root, npaths)
+            : DF.getByPathsH(root, npaths)
         ),
         SRTE.map(
           raw

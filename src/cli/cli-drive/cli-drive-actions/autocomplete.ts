@@ -10,13 +10,13 @@ import * as API from '../../../icloud/drive/api'
 import * as C from '../../../icloud/drive/cache/cache'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { isDetailsCacheEntity } from '../../../icloud/drive/cache/cache-types'
+import * as DF from '../../../icloud/drive/drive'
 import { ItemIsNotFolderError, NotFoundError } from '../../../icloud/drive/errors'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
 import { fileName, fileNameAddSlash, isDetails, Root } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { logger, stderrLogger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
+import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls'
 
@@ -81,8 +81,8 @@ export const autocomplete = ({
                   f => fileName(f).startsWith(childName),
                 )
             ),
-            SRTE.chainFirst(
-              result => SRTE.fromIO(() => logger.debug(`suggestions: ${result.map(fileName)}`)),
+            DF.logS(
+              result => `suggestions: ${result.map(fileName)}`,
             ),
             DF.map((result) =>
               result

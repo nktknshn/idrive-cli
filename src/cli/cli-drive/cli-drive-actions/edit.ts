@@ -7,11 +7,11 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import fs from 'fs/promises'
 import { defaultApiEnv, tempDir } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import * as DF from '../../../icloud/drive/drive'
 import { consumeStreamToString, getUrlStream } from '../../../icloud/drive/requests/download'
 import { isFile } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
+import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 import child_process from 'child_process'
@@ -45,7 +45,7 @@ export const edit = (
         DF.Do,
         SRTE.bind('item', () =>
           pipe(
-            DF.chainRoot(root => DF.getByPathsE(root, [npath])),
+            DF.chainRoot(root => DF.getByPaths(root, [npath])),
             DF.map(NA.head),
             DF.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
           )),
@@ -57,11 +57,13 @@ export const edit = (
               url =>
                 DF.readEnvS(
                   ({ env }) =>
-                    pipe(
-                      getUrlStream({ url, client: env.fetch }),
-                      TE.chain(consumeStreamToString),
-                      DF.fromTaskEither,
-                    ),
+                    url
+                      ? pipe(
+                        getUrlStream({ url, client: env.fetch }),
+                        TE.chain(consumeStreamToString),
+                        DF.fromTaskEither,
+                      )
+                      : DF.left(err(`error getting url`)),
                 ),
             ),
           )

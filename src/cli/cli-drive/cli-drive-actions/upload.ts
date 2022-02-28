@@ -4,12 +4,12 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
 import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
-import * as H from '../../../icloud/drive/ffdrive/validation'
+import * as DF from '../../../icloud/drive/drive'
+import * as H from '../../../icloud/drive/drive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { DetailsDocwsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
 import { Path } from '../../../lib/util'
+import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 export const uploadFolder = (
@@ -110,7 +110,7 @@ const uploadOverwrighting = (
 }
 
 const handle = (
-  { src, dst, overwright }: { dst: V.HierarchyResult<DetailsDocwsRoot>; src: string; overwright: boolean },
+  { src, dst, overwright }: { dst: V.GetByPathResult<DetailsDocwsRoot>; src: string; overwright: boolean },
 ): DF.DriveM<void> => {
   // if the target path is presented on icloud drive
   if (dst.valid) {

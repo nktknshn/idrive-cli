@@ -3,8 +3,8 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import { cacheLogger, logger } from '../../../lib/logging'
+import * as H from '../drive/validation'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import * as H from '../ffdrive/validation'
 import { findInParent } from '../helpers'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../requests/types/types'
 import * as C from './cache'
@@ -23,7 +23,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
   parentEntity: R,
 ) =>
   (cache: CacheF): PathValidation<H.Hierarchy<R>> => {
-    cacheLogger.debug(`getPartialValidPathV2: [${path}], parent: ${showDetails(parentEntity)}`)
+    cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {
       return { valid: true, path: H.validPath([parentEntity]), file: O.none }

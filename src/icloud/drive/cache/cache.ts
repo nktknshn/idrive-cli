@@ -19,7 +19,7 @@ import { parsePath } from '../helpers'
 import * as T from '../requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from '../requests/types/types-io'
 import { getFromCacheByPath } from './cache-get-by-path'
-import { HierarchyResult, target } from './cache-get-by-path-types'
+import { GetByPathResult, target } from './cache-get-by-path-types'
 import * as CT from './cache-types'
 import { MissingParentError } from './errors'
 
@@ -306,7 +306,7 @@ export const getByPathH = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
 ) =>
-  (cache: CT.CacheF): E.Either<Error, HierarchyResult<R>> => {
+  (cache: CT.CacheF): E.Either<Error, GetByPathResult<R>> => {
     const parts = parsePath(path)
     const rest = pipe(parts, A.dropLeft(1))
 
@@ -317,7 +317,7 @@ export const getByPathH = <R extends T.Root>(
         pipe(
           cache,
           getFromCacheByPath(rest, root),
-          v => v as HierarchyResult<R>,
+          v => v as GetByPathResult<R>,
         )
       ),
     )
@@ -327,7 +327,7 @@ export const getByPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
 ) =>
-  (cache: CT.CacheF): E.Either<Error, NEA<HierarchyResult<R>>> => {
+  (cache: CT.CacheF): E.Either<Error, NEA<GetByPathResult<R>>> => {
     return pipe(
       E.Do,
       E.bind('root', () => E.of(root)),
@@ -367,7 +367,7 @@ export const getByPathE = <R extends T.Root>(
         pipe(
           cache,
           getFromCacheByPath(rest, root),
-          v => v as HierarchyResult<R>,
+          v => v as GetByPathResult<R>,
           v => v.valid ? E.of(target(v)) : E.left(v.error),
         )
       ),

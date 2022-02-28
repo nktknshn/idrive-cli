@@ -2,11 +2,11 @@ import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
+import { cliActionM2 } from './cli/cli-action'
 import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { defaultApiEnv } from './defaults'
-import * as DF from './icloud/drive/ffdrive'
-import { cliActionM2 } from './icloud/drive/ffdrive/cli-action'
+import * as DF from './icloud/drive/drive'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -37,6 +37,7 @@ const commands = {
   recover: Action.recover,
   download: Action.download,
   edit: Action.edit,
+  df: Action.downloadFolder,
 }
 
 async function main() {

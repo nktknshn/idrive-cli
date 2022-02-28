@@ -17,7 +17,7 @@ export const nonRootDrivewsid = t.brand(
   'NonRootDrivewsid',
 )
 
-export const genericItem = t.intersection([
+export const commonProperties = t.intersection([
   t.type({
     dateCreated: t.string,
     docwsid: t.string,
@@ -32,14 +32,14 @@ export const genericItem = t.intersection([
 ])
 
 export const itemDocwsRoot = t.intersection([
-  genericItem,
+  commonProperties,
   t.type({
     drivewsid: t.literal(rootDrivewsid),
   }),
 ])
 
 export const itemFolder = t.intersection([
-  genericItem,
+  commonProperties,
   t.type({
     drivewsid: nonRootDrivewsid,
     parentId: t.string,
@@ -56,7 +56,7 @@ export const itemFolder = t.intersection([
 ])
 
 export const itemFile = t.intersection([
-  genericItem,
+  commonProperties,
   t.intersection([
     t.type({
       drivewsid: nonRootDrivewsid,
@@ -76,7 +76,7 @@ export const itemFile = t.intersection([
 export const icon = t.type({ url: t.string, type: t.string, size: t.number })
 
 export const itemAppLibrary = t.intersection([
-  genericItem,
+  commonProperties,
   t.type({
     drivewsid: nonRootDrivewsid,
     parentId: t.string,

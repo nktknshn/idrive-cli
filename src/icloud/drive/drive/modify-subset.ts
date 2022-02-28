@@ -5,7 +5,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as DF from '../ffdrive'
+import * as DF from '../drive'
 
 /** modify subset of input which is true when `refinement` applied */
 export const modifySubsetDF = <A, B extends A, C, D extends A>(

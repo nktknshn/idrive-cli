@@ -103,6 +103,20 @@ export function parseArgs() {
           }),
     )
     .command(
+      'df <path> <dstpath>',
+      'df',
+      (_) =>
+        _.positional('path', { type: 'string', demandOption: true })
+          .positional('dstpath', { type: 'string', demandOption: true }),
+      // .options({
+      //   // output: { default: './', type: 'string' },
+      //   // structured: { default: true, type: 'boolean' },
+      //   // glob: { default: true, type: 'boolean' },
+      //   // raw: { default: true, type: 'boolean' },
+      //   // destination: { alias: ['D'], type: 'string', demandOption: true },
+      // }),
+    )
+    .command(
       'edit <path>',
       'edit',
       (_) =>

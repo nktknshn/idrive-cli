@@ -122,7 +122,12 @@ export const retrieveItemDetailsInFolder = (drivewsid: string) =>
 
 export const download = flow(
   executeRequest(RQ.downloadM),
-  R.map(AR.map(_ => _.data_token.url)),
+  R.map(AR.map(_ => _.data_token?.url ?? _.package_token?.url)),
+)
+
+export const downloadBatch = flow(
+  executeRequest(RQ.downloadBatchM),
+  R.map(AR.map(A.map(_ => _.data_token?.url ?? _.package_token?.url))),
 )
 
 export const createFolders = flow(

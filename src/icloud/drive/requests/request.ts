@@ -14,7 +14,7 @@ import { ICloudSessionValidated } from '../../authorization/authorize'
 import { AccountLoginResponseBody } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
-import * as ESRTE from '../ffdrive/m2'
+import * as ESRTE from '../drive/m2'
 import * as H from './http'
 
 export type AuthorizedRequest<R> = ApiRequest<R, ICloudSessionValidated>

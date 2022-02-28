@@ -6,6 +6,7 @@ import * as T from 'fp-ts/lib/Tree'
 import { TypeOf } from 'io-ts'
 import * as t from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../../lib/util'
+import { DetailsOrFile } from '../../drive'
 import * as types from './types-io'
 
 export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>
@@ -144,6 +145,9 @@ export const isNotRootDetails = (details: Details | DriveChildrenItem): details 
   | DetailsFolder
   | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
 
+export const isNotFileG = <A extends { drivewsid: string }>(d: A | DriveChildrenItemFile): d is A =>
+  !(isObjectWithOwnProperty(d, 'type') && d.type === 'FILE')
+
 export type FolderLike =
   | DetailsFolder
   | DetailsAppLibrary
@@ -173,6 +177,11 @@ export const partitionFoldersFiles = (
 export const isDetails = (
   entity: Details | DriveChildrenItem,
 ): entity is Details => isTrashDetails(entity) || (isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items'))
+
+export const isDetailsG = <R extends Root>(
+  entity: DetailsOrFile<R>,
+): entity is R | NonRootDetails =>
+  isTrashDetails(entity) || (isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items'))
 
 export const isFileItem = (
   entity: DriveChildrenItem,

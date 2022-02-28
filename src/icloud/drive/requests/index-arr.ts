@@ -1,4 +1,4 @@
-export { createFoldersM, CreateFoldersResponse } from './createFolders'
+export { createFoldersM, CreateFoldersResponse } from './create-folders'
 export { downloadM } from './download'
 export { moveItemsM } from './moveItems'
 export { moveItemsToTrashM, MoveItemToTrashResponse } from './moveItemsToTrash'

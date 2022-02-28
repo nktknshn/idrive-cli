@@ -1,5 +1,5 @@
-export { createFoldersM, CreateFoldersResponse } from './createFolders'
-export { downloadM } from './download'
+export { createFoldersM, CreateFoldersResponse } from './create-folders'
+export { downloadBatchM, downloadM } from './download'
 export { moveItemsM } from './moveItems'
 export { moveItemsToTrashM, MoveItemToTrashResponse } from './moveItemsToTrash'
 export { renameItemsM, RenameResponse } from './rename'

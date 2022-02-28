@@ -1,6 +1,6 @@
 export { autocomplete } from './autocomplete'
 export { cat } from './cat'
-export { download } from './download'
+export { download, downloadFolder } from './download'
 export { edit } from './edit'
 export { listUnixPath } from './ls'
 export { mkdir } from './mkdir'

@@ -4,10 +4,10 @@ import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import * as DF from '../../../icloud/drive/drive'
 import { isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
+import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 export const recover = (
@@ -27,7 +27,7 @@ export const recover = (
         DF.Do,
         SRTE.bind('item', () =>
           pipe(
-            DF.chainTrash(root => DF.getByPathsE(root, [npath])),
+            DF.chainTrash(root => DF.getByPaths(root, [npath])),
             DF.map(NA.head),
             DF.filterOrElse(not(isTrashDetailsG), () => err(`you cannot recover trash root`)),
           )),

@@ -6,10 +6,10 @@ import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
-import * as DF from '../../../icloud/drive/ffdrive'
-import { cliActionM2 } from '../../../icloud/drive/ffdrive/cli-action'
+import * as DF from '../../../icloud/drive/drive'
 import { isCloudDocsRootDetailsG, isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
+import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 export const rm = (
@@ -32,7 +32,7 @@ export const rm = (
         DF.Do,
         SRTE.bind('items', () =>
           pipe(
-            DF.chainRoot(root => DF.getByPathsE(root, npaths)),
+            DF.chainRoot(root => DF.getByPaths(root, npaths)),
             DF.filterOrElse(not(A.some(isTrashDetailsG)), () => err(`you cannot remove root`)),
             DF.filterOrElse(not(A.some(isCloudDocsRootDetailsG)), () => err(`you cannot remove trash`)),
           )),
