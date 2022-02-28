@@ -146,8 +146,6 @@ export const moveItemsToTrash = flow(
   executeRequest(RQ.moveItemsToTrashM),
 )
 
-type Z = typeof RQ
-
 export const upload = (
   { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
 ) =>

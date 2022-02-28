@@ -9,3 +9,8 @@
 
 - overwrighting upload
 - TRASH
+
+## Usage
+
+idrive ls 
+idrive init

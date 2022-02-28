@@ -3,7 +3,8 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fromIO } from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { readAccountData } from '../icloud/authorization/validate'
+import { AccountLoginResponseBody } from '../icloud/authorization/types'
+import { readAccountData, saveAccountData } from '../icloud/authorization/validate'
 import * as C from '../icloud/drive/cache/cache'
 import { CacheF } from '../icloud/drive/cache/cache-types'
 import * as DF from '../icloud/drive/drive'
@@ -11,11 +12,11 @@ import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { apiLogger, logReturnAs } from '../lib/logging'
 
-const getSessionFile = (deps: { sessionFile: string }) => readSessionFile(deps.sessionFile)
+export const loadSessionFile = (deps: { sessionFile: string }) => readSessionFile(deps.sessionFile)
 
-const getAccountData = (deps: { sessionFile: string }) => readAccountData(`${deps.sessionFile}-accountData`)
+export const loadAccountData = (deps: { sessionFile: string }) => readAccountData(`${deps.sessionFile}-accountData`)
 
-const getCache = (deps: { noCache: boolean; cacheFile: string }) =>
+export const loadCache = (deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache
       ? TE.of(C.cachef())
@@ -25,8 +26,12 @@ const getCache = (deps: { noCache: boolean; cacheFile: string }) =>
     ),
   )
 
-const saveSession = <S extends { session: ICloudSession }>(state: S) =>
+export const saveSession = <S extends { session: ICloudSession }>(state: S) =>
   (deps: { sessionFile: string }) => saveSession2(state.session)(deps.sessionFile)
+
+export const saveAccountData2 = <S extends { accountData: AccountLoginResponseBody }>(
+  state: S,
+) => (deps: { sessionFile: string }) => saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
 
 const saveCache = <S extends { cache: CacheF }>(state: S) =>
   (deps: { cacheFile: string; noCache: boolean }) =>
@@ -40,9 +45,9 @@ export function cliActionM2<T>(
 ) {
   return pipe(
     RTE.Do,
-    RTE.bind('session', () => getSessionFile),
-    RTE.bind('accountData', () => getAccountData),
-    RTE.bindW('cache', () => getCache),
+    RTE.bind('session', () => loadSessionFile),
+    RTE.bind('accountData', () => loadAccountData),
+    RTE.bindW('cache', () => loadCache),
     RTE.bindW('result', action()),
     RTE.chainFirst(({ cache }) =>
       RTE.fromIO(

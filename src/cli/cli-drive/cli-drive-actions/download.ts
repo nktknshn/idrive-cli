@@ -3,17 +3,14 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { apply, constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import { fst, snd } from 'fp-ts/lib/ReadonlyTuple'
+import { fst, mapFst, snd } from 'fp-ts/lib/ReadonlyTuple'
+import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { delay } from 'fp-ts/lib/Task'
-import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import { concatAll } from 'fp-ts/Monoid'
 import { MonoidSum } from 'fp-ts/number'
-import { createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
-import { Readable } from 'stream'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/drive'
@@ -23,24 +20,70 @@ import {
   zipFolderTreeWithPath,
 } from '../../../icloud/drive/drive/get-folders-trees'
 import { getUrlStream } from '../../../icloud/drive/requests/download'
-import {
-  Details,
-  DetailsDocwsRoot,
-  DriveChildrenItemFile,
-  isFile,
-  isFileItem,
-  isNotFileG,
-  NonRootDetails,
-} from '../../../icloud/drive/requests/types/types'
+import { Details, DriveChildrenItemFile, isFile, isFileItem } from '../../../icloud/drive/requests/types/types'
 import { err, SomeError } from '../../../lib/errors'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
-import { logg, logger } from '../../../lib/logging'
-import { NEA } from '../../../lib/types'
+import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
 import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 const sum = concatAll(MonoidSum)
+
+export const downloadFolder = (
+  { sessionFile, cacheFile, path, noCache, dstpath }: {
+    path: string
+    noCache: boolean
+    sessionFile: string
+    cacheFile: string
+    structured: boolean
+    glob: boolean
+    dstpath: string
+    raw: boolean
+  },
+) => {
+  logger.debug(`download: ${path}`)
+
+  // createWriteStream()
+
+  return pipe(
+    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
+    cliActionM2(() => recursiveDownload({ path, dstpath })),
+  )
+}
+
+const recursiveDownload = ({ path, dstpath }: { path: string; dstpath: string }) => {
+  return pipe(
+    DF.Do,
+    SRTE.bind('tree', () =>
+      pipe(
+        DF.chainRoot((root) => DF.lsdir(root, normalizePath(path))),
+        DF.chain(dir => DF.getFoldersTrees([dir], Infinity)),
+        DF.map(NA.head),
+      )),
+    SRTE.bind('treeWithPath', ({ tree }) => DF.of(addPathToFolderTree('/', tree))),
+    SRTE.bind('flatTree', ({ tree }) => DF.of(zipFolderTreeWithPath('/', tree))),
+    DF.chain(({ flatTree, treeWithPath }) => {
+      const files = pipe(
+        flatTree,
+        A.filter((item): item is [string, DriveChildrenItemFile] => isFile(item[1])),
+        A.map(mapFst(path => Path.join(dstpath, path))),
+      )
+
+      const { left: downloadable, right: empties } = pipe(
+        files,
+        A.partition(([, file]) => file.size == 0),
+      )
+
+      return pipe(
+        createDirStructure(dstpath, getDirStructure(treeWithPath)),
+        DF.chain(createEmptyFiles(empties.map(fst))),
+        DF.chain(downloadFiles(downloadable)),
+      )
+    }),
+    DF.map(JSON.stringify),
+  )
+}
 
 export const download = (
   { sessionFile, cacheFile, paths, noCache, structured }: {
@@ -70,37 +113,35 @@ export const download = (
   )
 }
 
-const treeStatistics = (
-  tree: TR.Tree<
-    FolderTreeValue<Details> & {
-      path: string
-    }
-  >,
-): {
-  directories: number
-  files: number
-  size: number
-} => {
-  const forestStats = pipe(tree.forest, A.map(treeStatistics))
+// const treeStatistics = (
+//   tree: TR.Tree<
+//     FolderTreeValue<Details> & {
+//       path: string
+//     }
+//   >,
+// ): {
+//   directories: number
+//   files: number
+//   size: number
+// } => {
+//   const forestStats = pipe(tree.forest, A.map(treeStatistics))
 
-  const files = pipe(
-    tree.value.details.items,
-    A.filter(isFileItem),
-  )
+//   const files = pipe(
+//     tree.value.details.items,
+//     A.filter(isFileItem),
+//   )
 
-  const size = pipe(
-    files,
-    A.reduce(0, (acc, item) => acc + item.size),
-  )
+//   const size = pipe(
+//     files,
+//     A.reduce(0, (acc, item) => acc + item.size),
+//   )
 
-  return {
-    directories: 1 + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.directories)),
-    files: files.length + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.files)),
-    size: size + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.size)),
-  }
-}
-
-import * as stream from 'stream'
+//   return {
+//     directories: 1 + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.directories)),
+//     files: files.length + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.files)),
+//     size: size + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.size)),
+//   }
+// }
 
 const getDirStructure = <T extends Details>(
   tree: TR.Tree<FolderTreeValue<T> & { path: string }>,
@@ -119,7 +160,7 @@ const mkdirTask = (path: string) =>
     TE.chain(() => TE.tryCatch(() => fs.mkdir(path), (e) => err(`cannot create ${path}: ${e}`))),
   )
 
-const createStructure = (basedir: string, struct: string[]) => {
+const createDirStructure = (basedir: string, struct: string[]) => {
   const paths = pipe(
     struct,
     A.map(s => Path.join(basedir, s)),
@@ -187,133 +228,72 @@ const downloadUrls = (urlDest: Array<readonly [string, string]>) =>
     )
   }
 
-const createEmptyFiles = (paths: string[]) => {
-  return pipe(
-    paths,
-    A.map(path =>
-      TE.tryCatch(
-        () => fs.writeFile(path, ''),
-        e => err(`error writing file ${path}: ${e}`),
-      )
-    ),
-    A.sequence(TE.ApplicativePar),
-    DF.fromTaskEither,
-  )
-}
-import * as R from 'fp-ts/lib/Record'
-export const downloadFolder = (
-  { sessionFile, cacheFile, path, noCache, dstpath }: {
-    path: string
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
-    structured: boolean
-    glob: boolean
-    dstpath: string
-    raw: boolean
-  },
-) => {
-  logger.debug(`download: ${path}`)
-  const npath = normalizePath(path)
-
-  // createWriteStream()
-
-  const action = () =>
-    pipe(
-      DF.readEnv,
-      SRTE.bind('tree', () =>
-        pipe(
-          DF.chainRoot((root) => DF.lsdir(root, npath)),
-          DF.chain(dir => DF.getFoldersTrees([dir], Infinity)),
-          DF.map(NA.head),
-        )),
-      SRTE.bind('treeWithPath', ({ tree }) => DF.of(addPathToFolderTree('/', tree))),
-      SRTE.bind('flatTree', ({ tree }) => DF.of(zipFolderTreeWithPath('/', tree))),
-      DF.chain(({ tree, flatTree, treeWithPath, env }) => {
-        // const folders = pipe(
-        //   flatTree,
-        //   A.filter((item): item is [string, DetailsDocwsRoot | NonRootDetails] => isNotFileG(item[1])),
-        // )
-
-        const files = pipe(
-          flatTree,
-          A.filter((item): item is [string, DriveChildrenItemFile] => isFile(item[1])),
+const createEmptyFiles = (paths: string[]) =>
+  () => {
+    return pipe(
+      paths,
+      A.map(path =>
+        TE.tryCatch(
+          () => fs.writeFile(path, ''),
+          e => err(`error writing file ${path}: ${e}`),
         )
-
-        const { left: downloadable, right: empties } = pipe(
-          files,
-          A.partition(([, file]) => file.size == 0),
-        )
-
-        const emptyFilesPathes = empties.map(([path]) => Path.join(dstpath, path))
-
-        if (!A.isNonEmpty(downloadable)) {
-          return DF.of({})
-        }
-
-        const byZone = pipe(
-          downloadable,
-          NA.groupBy(_ => _[1].zone),
-        )
-
-        let chunks: NA.NonEmptyArray<[string, DriveChildrenItemFile]>[] = []
-
-        for (const zone of R.keys(byZone)) {
-          chunks.push(...A.chunksOf(5)(byZone[zone]))
-        }
-
-        const filesChunks = chunks
-
-        const downloadChunk = (chunk: NA.NonEmptyArray<[path: string, file: DriveChildrenItemFile]>) => {
-          return pipe(
-            API.downloadBatch({
-              docwsids: chunk.map(snd).map(_ => _.docwsid),
-              zone: NA.head(chunk)[1].zone,
-            }),
-            DF.fromApiRequest,
-            DF.chain(urls =>
-              pipe(
-                A.zip(urls)(chunk),
-                A.map(
-                  ([[path], url]) => [url, Path.join(dstpath, path)] as const,
-                ),
-                A.filter((item): item is [string, string] => !!item[0]),
-                downloadUrls,
-                apply({ fetch: env.fetch }),
-                DF.fromTaskEither,
-              )
-            ),
-          )
-        }
-
-        const downloadFiles = () =>
-          pipe(
-            filesChunks,
-            A.map(downloadChunk),
-            SRTE.sequenceArray,
-            DF.map(a => [...a]),
-            DF.map(A.flatten),
-            DF.map(_ => {
-              return {
-                success: _.filter(_ => _.status === 'SUCCESS').length,
-                fail: _.filter(_ => _.status === 'FAIL').length,
-                fails: _.filter(_ => _.status === 'FAIL'),
-                emptyFiles: emptyFilesPathes,
-              }
-            }),
-          )
-
-        return pipe(
-          createStructure(dstpath, getDirStructure(treeWithPath)),
-          DF.chain(() => createEmptyFiles(emptyFilesPathes)),
-          DF.chain(() => downloadFiles()),
-        )
-      }),
-      DF.map(JSON.stringify),
+      ),
+      A.sequence(TE.ApplicativePar),
+      DF.fromTaskEither,
     )
+  }
 
-  return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(action),
-  )
-}
+const downloadChunk = () =>
+  (chunk: NA.NonEmptyArray<readonly [path: string, file: DriveChildrenItemFile]>) => {
+    return pipe(
+      DF.readEnv,
+      SRTE.bind('urls', () =>
+        DF.fromApiRequest(API.downloadBatch({
+          docwsids: chunk.map(snd).map(_ => _.docwsid),
+          zone: NA.head(chunk)[1].zone,
+        }))),
+      DF.chain(({ urls, env }) =>
+        pipe(
+          A.zip(urls)(chunk),
+          A.map(([[path], url]) => [url, path] as const),
+          A.filter((item): item is [string, string] => !!item[0]),
+          downloadUrls,
+          apply({ fetch: env.fetch }),
+          DF.fromTaskEither,
+        )
+      ),
+    )
+  }
+
+const downloadFiles = (
+  downloadable: (readonly [path: string, file: DriveChildrenItemFile])[],
+  chunkSize = 5,
+) =>
+  () => {
+    if (!A.isNonEmpty(downloadable)) {
+      return DF.of({})
+    }
+
+    const byZone = pipe(downloadable, NA.groupBy(([, file]) => file.zone))
+
+    let filesChunks = []
+
+    for (const zone of R.keys(byZone)) {
+      filesChunks.push(...A.chunksOf(chunkSize)(byZone[zone]))
+    }
+
+    return pipe(
+      filesChunks,
+      A.map(downloadChunk()),
+      SRTE.sequenceArray,
+      DF.map(a => A.flatten([...a])),
+      DF.map(_ => {
+        return {
+          success: _.filter(_ => _.status === 'SUCCESS').length,
+          fail: _.filter(_ => _.status === 'FAIL').length,
+          fails: _.filter(_ => _.status === 'FAIL'),
+          // emptyFiles: emptyFilesPathes,
+        }
+      }),
+    )
+  }

@@ -88,14 +88,7 @@ const taskEitherasTuple = <E, A>(
   return () => e().then(eitherAsTuple)
 }
 
-export const arrayFromOption = <T>(opt: O.Option<T>) =>
-  pipe(
-    opt,
-    O.fold(
-      () => [],
-      (v) => [v],
-    ),
-  )
+export const arrayFromOption = <T>(opt: O.Option<T>) => pipe(opt, O.fold(() => [], (v) => [v]))
 
 export function splitPair(
   sep: string,

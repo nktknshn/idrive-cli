@@ -17,7 +17,10 @@ import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../
 import * as ESRTE from '../drive/m2'
 import * as H from './http'
 
-export type AuthorizedRequest<R> = ApiRequest<R, ICloudSessionValidated>
+export type AuthorizedRequest<R, S extends ICloudSessionValidated = ICloudSessionValidated> = ApiRequest<
+  R,
+  S
+>
 
 export type AuthorizationState = {
   session: ICloudSession
@@ -36,7 +39,9 @@ export type Env = {
   getCode: () => TE.TaskEither<Error, string>
 }
 
-export type State = { session: ICloudSession }
+export type State = {
+  session: ICloudSession
+}
 
 /** API context */
 export type ApiRequest<A, S extends State = never> = ESRTE.ESRTE<S, Env, Error, A>
@@ -51,17 +56,11 @@ type Filter<S extends State> = (
   ma: ApiRequest<{ httpResponse: HttpResponse }, S>,
 ) => ApiRequest<{ httpResponse: HttpResponse }, S>
 
-export const {
-  chain,
-  leftE,
-  fromEither,
-  fromOption,
-  fromTaskEither,
-  get,
-  left,
-  map,
-  of,
-} = ESRTE.get<State, Env, Error>()
+export const { chain, leftE, fromEither, fromOption, fromTaskEither, get, left, map, of } = ESRTE.get<
+  State,
+  Env,
+  Error
+>()
 
 export const Do = <S extends State>() => of<{}, S>({})
 

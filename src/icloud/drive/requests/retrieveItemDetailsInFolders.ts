@@ -80,11 +80,11 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWi
 //   )
 // }
 
-export const getRetrieveItemDetailsInFoldersHttpRequest = (
+export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends ICloudSessionValidated>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ) => {
   return pipe(
-    AR.buildRequestC<ICloudSessionValidated>(({ state: { accountData } }) => ({
+    AR.buildRequestC<S>(({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
       options: { addClientInfo: true, data },
@@ -92,9 +92,24 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = (
   )
 }
 
-export function retrieveItemDetailsInFoldersM(
+export function retrieveItemDetailsInFoldersM<S extends ICloudSessionValidated>(
   { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<(Details | InvalidId)[]> {
+): AR.AuthorizedRequest<(Details | InvalidId)[], S> {
+  return pipe(
+    getRetrieveItemDetailsInFoldersHttpRequest<S>(
+      drivewsids.map(
+        (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
+      ),
+    ),
+    AR.handleResponse(AR.basicJsonResponse(
+      t.array(t.union([driveDetails, invalidIdItem])).decode,
+    )),
+  )
+}
+
+export function retrieveItemDetailsInFoldersRTE(
+  { drivewsids }: { drivewsids: string[] },
+) {
   return pipe(
     getRetrieveItemDetailsInFoldersHttpRequest(
       drivewsids.map(

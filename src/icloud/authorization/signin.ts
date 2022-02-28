@@ -6,6 +6,7 @@ import * as t from 'io-ts'
 import { err, UnexpectedResponse } from '../../lib/errors'
 import { HttpResponse } from '../../lib/http/fetch-client'
 import { getHeader } from '../../lib/http/http-headers'
+import { authLogger } from '../../lib/logging'
 import { arrayFromOption } from '../../lib/util'
 import * as AR from '../drive/requests/request'
 import { applyCookiesToSession } from '../session/session-http'
@@ -72,13 +73,9 @@ function getResponse(
   return E.left(new UnexpectedResponse(httpResponse, json))
 }
 
-export const requestSignInM = <S extends AR.State>(
-  // { accountName, password, trustTokens }: {
-  //   accountName: string
-  //   password: string
-  //   trustTokens: string[]
-  // },
-): AR.ApiRequest<SignInResponse, S> => {
+export const requestSignInM = <S extends AR.State>(): AR.ApiRequest<SignInResponse, S> => {
+  authLogger.debug('requestSignInM')
+
   return pipe(
     AR.buildRequestC<S>(({ state: { session } }) => ({
       method: 'POST',
