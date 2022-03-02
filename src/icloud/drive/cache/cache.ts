@@ -265,7 +265,7 @@ export const putItem = (
 ): ((cache: CT.CacheF) => E.Either<Error, CT.CacheF>) => {
   const shouldBeUpdated = (cached: O.Option<CT.CacheEntityWithParentId>) => {
     return O.isNone(cached)
-      || cached.value.content.etag !== item.etag
+      // || cached.value.content.etag !== item.etag
       || !cached.value.hasDetails
   }
 

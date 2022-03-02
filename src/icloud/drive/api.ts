@@ -1,238 +1,218 @@
 import * as A from 'fp-ts/lib/Array'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Reader'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import { err, InvalidGlobalSessionError } from '../../lib/errors'
-import { FetchClientEither, FetchError } from '../../lib/http/fetch-client'
-import { NEA } from '../../lib/types'
+import { FetchError } from '../../lib/http/fetch-client'
 import { Path } from '../../lib/util'
-import { authorizeSessionM, ICloudSessionValidated } from '../authorization/authorize'
+import { authorizeSessionSRTE, ICloudSessionValidated } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
 import * as RQ from './requests'
 // import * as AR from './requests/api-rte'
 import * as AR from './requests/request'
 import * as T from './requests/types/types'
-import { UploadResponseItem } from './requests/upload'
 
 export type ApiEnv = {
   retries: number
-  fetch: FetchClientEither
-  getCode: () => TE.TaskEither<Error, string>
 }
 
-export type Api<A> = R.Reader<ApiEnv, AR.AuthorizedRequest<A>>
+export type Api<A, S = ICloudSessionValidated, R = AR.Env> = AR.AuthorizedRequest<A, S, R & ApiEnv>
 
-export const of = <A>(v: A): Api<A> => () => AR.of(v)
+export const of = <A>(v: A): Api<A> => AR.of(v)
 
-const onInvalidSession = <S extends AR.State>(): AR.ApiRequest<void, S> => {
+const onInvalidSession = <S extends ICloudSessionValidated, R extends AR.Env>(): AR.ApiRequest<void, S, R> => {
   return pipe(
-    authorizeSessionM<S>(),
-    AR.chain((accountData) => SRTE.modify(s => ({ ...s, accountData }))),
+    authorizeSessionSRTE<S>(),
     AR.map(constVoid),
   )
 }
 
-const catchFetchErrors = (triesLeft: number) =>
-  <T, S extends AR.State>(
-    m: AR.ApiRequest<T, S>,
-  ): AR.ApiRequest<T, S> => {
+const catchFetchErrors3 = (triesLeft: number) =>
+  <A, R>(
+    m: TE.TaskEither<Error, A>,
+  ): TE.TaskEither<Error, A> => {
     return pipe(
       m,
-      AR.orElse((e) => {
-        return FetchError.is(e) && triesLeft > 0
-          ? catchFetchErrors(triesLeft - 1)(m)
-          : SRTE.left(e)
-      }),
+      TE.orElse((e) =>
+        FetchError.is(e) && triesLeft > 0
+          ? catchFetchErrors3(triesLeft - 1)(m)
+          : TE.left(e)
+      ),
     )
   }
 
-const catchInvalidSession = <T, S extends AR.State>(
-  m: AR.ApiRequest<T, S>,
-): AR.ApiRequest<T, S> => {
-  return pipe(
-    m,
-    AR.orElse((e) => {
-      return InvalidGlobalSessionError.is(e)
-        ? pipe(
-          onInvalidSession<S>(),
-          AR.chain(() => m),
+const executeRequest4 = <TArgs extends unknown[], A, S extends ICloudSessionValidated, R extends AR.Env>(
+  f: (...args: TArgs) => AR.ApiRequest<A, S, R>,
+): (...args: TArgs) => SRTE.StateReaderTaskEither<S, { retries: number } & R, Error, A> => {
+  return (...args: TArgs) =>
+    (s: S) =>
+      (r: { retries: number } & R) =>
+        pipe(
+          f(...args)(s)(r),
+          catchFetchErrors3(r.retries),
+          TE.orElse(e =>
+            InvalidGlobalSessionError.is(e)
+              ? pipe(
+                onInvalidSession<S, R>()(s)(r),
+                TE.chain(([, s]) => f(...args)(s)(r)),
+              )
+              : TE.left(e)
+          ),
         )
-        : SRTE.left(e)
-    }),
-  )
 }
 
-const executeRequest = <TArgs extends unknown[], R, S extends AR.State>(
-  f: (...args: TArgs) => AR.ApiRequest<R, S>,
-): (...args: TArgs) => R.Reader<ApiEnv, AR.ApiRequest<R, S>> =>
-  (...args: TArgs) =>
-    R.asks(({ retries }) =>
-      pipe(
-        f(...args),
-        catchFetchErrors(retries),
-        catchInvalidSession,
-      )
-    )
-
-const executeRequest2 = (env: { retries: number }) =>
-  <R, S extends AR.State>(
-    ma: AR.ApiRequest<R, S>,
-  ) =>
-    pipe(
-      ma,
-      catchFetchErrors(env.retries),
-      catchInvalidSession,
-    )
-
 export const renameItemsM = flow(
-  executeRequest(RQ.renameItemsM),
-  // executeRequest2({ retries: 3 }),
+  executeRequest4(RQ.renameItemsM),
 )
 
 export const putBackItemsFromTrash = flow(
-  executeRequest(RQ.putBackItemsFromTrashM),
+  executeRequest4(RQ.putBackItemsFromTrashM),
 )
 
 export const retrieveTrashDetails = flow(
-  executeRequest(RQ.retrieveTrashDetailsM),
+  executeRequest4(RQ.retrieveTrashDetailsM),
 )
 
 export const retrieveItemDetailsInFolders = flow(
-  executeRequest(RQ.retrieveItemDetailsInFoldersM),
+  executeRequest4(RQ.retrieveItemDetailsInFolders),
 )
 
 export const retrieveItemDetailsInFoldersO = flow(
   retrieveItemDetailsInFolders,
-  R.map(flow(AR.map(A.map(T.invalidIdToOption)))),
+  flow(AR.map(NA.map(T.invalidIdToOption))),
 )
 
-export const retrieveItemDetailsInFoldersS = (drivewsids: string[]) =>
+export const retrieveItemDetailsInFoldersS = <S extends ICloudSessionValidated, R extends AR.Env>(
+  drivewsids: string[],
+) =>
   pipe(
-    retrieveItemDetailsInFolders({ drivewsids }),
-    R.map(AR.map(ds => getMissedFound(drivewsids, ds))),
+    retrieveItemDetailsInFolders<S, R>({ drivewsids }),
+    AR.map(ds => getMissedFound(drivewsids, ds)),
   )
 
-export const retrieveItemDetailsInFolder = (drivewsid: string) =>
-  flow(
-    retrieveItemDetailsInFolders({ drivewsids: [drivewsid] }),
+export const retrieveItemDetailsInFolder = <S extends ICloudSessionValidated, R extends AR.Env>(
+  drivewsid: string,
+): SRTE.StateReaderTaskEither<S, { retries: number } & R, Error, (T.Details | T.InvalidId)> =>
+  pipe(
+    retrieveItemDetailsInFolders<S, R>({ drivewsids: [drivewsid] }),
+    AR.map(NA.head),
   )
 
 export const download = flow(
-  executeRequest(RQ.downloadM),
-  R.map(AR.map(_ => _.data_token?.url ?? _.package_token?.url)),
+  executeRequest4(RQ.downloadM),
+  AR.map(_ => _.data_token?.url ?? _.package_token?.url),
+)
+
+export const download4 = flow(
+  executeRequest4(RQ.downloadM),
+  AR.map(_ => _.data_token?.url ?? _.package_token?.url),
 )
 
 export const downloadBatch = flow(
-  executeRequest(RQ.downloadBatchM),
-  R.map(AR.map(A.map(_ => _.data_token?.url ?? _.package_token?.url))),
+  executeRequest4(RQ.downloadBatchM),
+  AR.map(A.map(_ => _.data_token?.url ?? _.package_token?.url)),
 )
 
 export const createFolders = flow(
-  executeRequest(RQ.createFoldersM),
+  executeRequest4(RQ.createFoldersM),
 )
 
 export const moveItems = flow(
-  executeRequest(RQ.moveItemsM),
+  executeRequest4(RQ.moveItemsM),
 )
 
 export const renameItems = flow(
-  executeRequest(RQ.renameItemsM),
+  executeRequest4(RQ.renameItemsM),
 )
 
 export const moveItemsToTrash = flow(
-  executeRequest(RQ.moveItemsToTrashM),
+  executeRequest4(RQ.moveItemsToTrashM),
 )
 
-export const upload = (
+export const upload = <S extends ICloudSessionValidated>(
   { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
-) =>
-  (env: { retries: number }) => {
-    const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
+) => {
+  const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
 
-    const getContentType = (extension: string): string => {
-      if (extension === '') {
-        return ''
-      }
-
-      const t = mime.contentType(extension)
-
-      if (t === false) {
-        return ''
-      }
-
-      return t
+  const getContentType = (extension: string): string => {
+    if (extension === '') {
+      return ''
     }
 
-    const retrying = executeRequest2(env)
+    const t = mime.contentType(extension)
 
-    return pipe(
-      AR.Do<ICloudSessionValidated>(),
-      SRTE.bind('fstats', () =>
-        AR.fromTaskEither(TE.tryCatch(
-          () => fs.stat(sourceFilePath),
-          (e) => err(`error getting file info: ${JSON.stringify(e)}`),
-        ))),
-      SRTE.bind('uploadResult', ({ fstats }) =>
-        pipe(
-          RQ.uploadM({
-            contentType: getContentType(parsedSource.ext),
-            filename: parsedSource.base,
-            size: fstats.size,
-            type: 'FILE',
-            zone,
-          }),
-          SRTE.filterOrElse(
-            (_): _ is NEA<UploadResponseItem> => _.length > 0,
-            () => err(`empty response`),
-          ),
-          retrying,
-        )),
-      SRTE.bind(
-        'singleFileUploadResult',
-        ({ uploadResult }) =>
-          retrying(
-            RQ.singleFileUploadM(
-              { filePath: sourceFilePath, url: uploadResult[0].url },
-            ),
-          ),
-      ),
-      SRTE.bind(
-        'updateDocumentsResult',
-        ({ uploadResult, singleFileUploadResult }) =>
-          retrying(
-            RQ.updateDocumentsM(
-              {
-                zone,
-                data: {
-                  allow_conflict: true,
-                  command: 'add_file',
-                  document_id: uploadResult[0].document_id,
-                  path: {
-                    starting_document_id: docwsid,
-                    path: parsedSource.base,
-                  },
-                  btime: new Date().getTime(),
-                  mtime: new Date().getTime(),
-                  file_flags: {
-                    is_executable: false,
-                    is_hidden: false,
-                    is_writable: true,
-                  },
-                  data: {
-                    receipt: singleFileUploadResult.singleFile.receipt,
-                    reference_signature: singleFileUploadResult.singleFile.referenceChecksum,
-                    signature: singleFileUploadResult.singleFile.fileChecksum,
-                    wrapping_key: singleFileUploadResult.singleFile.wrappingKey,
-                    size: singleFileUploadResult.singleFile.size,
-                  },
-                },
-              },
-            ),
-          ),
-      ),
-      SRTE.map(({ updateDocumentsResult }) => updateDocumentsResult.results[0].document),
-    )
+    if (t === false) {
+      return ''
+    }
+
+    return t
   }
+
+  // const retrying = executeRequest2(env)
+
+  return pipe(
+    AR.Do<ICloudSessionValidated>(),
+    SRTE.bindW('fstats', () =>
+      SRTE.fromTaskEither(TE.tryCatch(
+        () => fs.stat(sourceFilePath),
+        (e) => err(`error getting file info: ${JSON.stringify(e)}`),
+      ))),
+    SRTE.bindW('uploadResult', ({ fstats }) =>
+      pipe(
+        executeRequest4(RQ.uploadM)({
+          contentType: getContentType(parsedSource.ext),
+          filename: parsedSource.base,
+          size: fstats.size,
+          type: 'FILE',
+          zone,
+        }),
+        SRTE.filterOrElse(A.isNonEmpty, () => err(`empty response`)),
+        // retrying,
+      )),
+    SRTE.bindW(
+      'singleFileUploadResult',
+      ({ uploadResult }) =>
+        executeRequest4(RQ.singleFileUploadM)(
+          { filePath: sourceFilePath, url: uploadResult[0].url },
+        ),
+    ),
+    SRTE.bindW(
+      'updateDocumentsResult',
+      ({ uploadResult, singleFileUploadResult }) =>
+        executeRequest4(
+          RQ.updateDocumentsM,
+        )(
+          {
+            zone,
+            data: {
+              allow_conflict: true,
+              command: 'add_file',
+              document_id: uploadResult[0].document_id,
+              path: {
+                starting_document_id: docwsid,
+                path: parsedSource.base,
+              },
+              btime: new Date().getTime(),
+              mtime: new Date().getTime(),
+              file_flags: {
+                is_executable: false,
+                is_hidden: false,
+                is_writable: true,
+              },
+              data: {
+                receipt: singleFileUploadResult.singleFile.receipt,
+                reference_signature: singleFileUploadResult.singleFile.referenceChecksum,
+                signature: singleFileUploadResult.singleFile.fileChecksum,
+                wrapping_key: singleFileUploadResult.singleFile.wrappingKey,
+                size: singleFileUploadResult.singleFile.size,
+              },
+            },
+          },
+        ),
+    ),
+    SRTE.map(({ updateDocumentsResult }) => updateDocumentsResult.results[0].document),
+  )
+}

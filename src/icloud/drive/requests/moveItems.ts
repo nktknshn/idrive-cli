@@ -1,16 +1,17 @@
 import * as t from 'io-ts'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import * as ARR from './api-rte'
 import * as AR from './request'
 import { childrenItem } from './types/types-io'
 
-const moveItemToTrashResponse = t.type({ items: t.array(childrenItem) })
+const moveItemResponse = t.type({ items: t.array(childrenItem) })
 
-export interface MoveItemToTrashResponse extends t.TypeOf<typeof moveItemToTrashResponse> {}
+export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
-export const moveItemsM = ({ items, destinationDrivewsId }: {
+export const moveItemsM = <S extends ICloudSessionValidated>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
-}): AR.AuthorizedRequest<MoveItemToTrashResponse> =>
+}): AR.AuthorizedRequest<MoveItemsResponse, S> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
@@ -27,13 +28,13 @@ export const moveItemsM = ({ items, destinationDrivewsId }: {
         },
       },
     }),
-    moveItemToTrashResponse.decode,
+    moveItemResponse.decode,
   )
 
 export const moveItemsARR = ({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
-}): ARR.DriveApiRequest<MoveItemToTrashResponse> =>
+}): ARR.DriveApiRequest<MoveItemsResponse> =>
   ARR.basicDriveJsonRequest(
     ({ accountData }) => ({
       method: 'POST',
@@ -50,5 +51,5 @@ export const moveItemsARR = ({ items, destinationDrivewsId }: {
         },
       },
     }),
-    moveItemToTrashResponse.decode,
+    moveItemResponse.decode,
   )

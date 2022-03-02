@@ -12,16 +12,16 @@ const createFolderResponse = t.type({
 
 export interface CreateFoldersResponse extends t.TypeOf<typeof createFolderResponse> {}
 
-export function createFoldersM(
+export function createFoldersM<S extends ICloudSessionValidated>(
   { names, destinationDrivewsId }: {
     destinationDrivewsId: string
     names: string[]
   },
-): AR.AuthorizedRequest<CreateFoldersResponse> {
+): AR.AuthorizedRequest<CreateFoldersResponse, S> {
   const folders = names.map(name => ({ name, clientId: name }))
 
   return pipe(
-    AR.buildRequestC<ICloudSessionValidated>(({ state }) => ({
+    AR.buildRequestC<S>(({ state }) => ({
       method: 'POST',
       url: `${state.accountData.webservices.drivews.url}/createFolders?dsid=${state.accountData.dsInfo.dsid}`,
       options: { addClientInfo: true, data: { destinationDrivewsId, folders } },

@@ -2,7 +2,7 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
-import * as AM from '../../../icloud/drive/api'
+import * as API from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import * as H from '../../../icloud/drive/drive/validation'
@@ -34,7 +34,7 @@ export const uploadFolder = (
         SRTE.bind('root', () => DF.chainRoot(DF.of)),
         SRTE.bind('src', () => DF.of(srcpath)),
         SRTE.bind('overwright', () => DF.of(overwright)),
-        SRTE.bind('dst', ({ root }) => DF.lsPartial(root, normalizePath(dstpath))),
+        SRTE.bind('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
         DF.chain(handle),
         DF.map(() => `Success. ${Path.basename(srcpath)}`),
       )
@@ -60,7 +60,7 @@ export const upload = (
         SRTE.bind('root', () => DF.chainRoot(DF.of)),
         SRTE.bind('src', () => DF.of(srcpath)),
         SRTE.bind('overwright', () => DF.of(overwright)),
-        SRTE.bind('dst', ({ root }) => DF.lsPartial(root, normalizePath(dstpath))),
+        SRTE.bind('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
         DF.chain(handle),
         DF.map(() => `Success. ${Path.basename(srcpath)}`),
       )
@@ -78,7 +78,7 @@ const handle = (
     // if it's a folder
     if (isFolderLike(dstitem)) {
       return pipe(
-        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
+        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
         DF.fromApiRequest,
         DF.map(constVoid),
       )
@@ -101,7 +101,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
+        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         DF.fromApiRequest,
         DF.map(constVoid),
       )
@@ -125,10 +125,10 @@ const uploadOverwrighting = (
     DF.Do,
     SRTE.bind(
       'uploadResult',
-      () => DF.fromApiRequest(AM.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
+      () => DF.fromApiRequest(API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
     ),
     SRTE.bind('removeResult', () => {
-      return DF.fromApiRequest(AM.moveItemsToTrash({
+      return DF.fromApiRequest(API.moveItemsToTrash({
         items: [dstitem],
         trash: true,
       }))
@@ -136,7 +136,7 @@ const uploadOverwrighting = (
     DF.chain(({ uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        AM.renameItems({
+        API.renameItems({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

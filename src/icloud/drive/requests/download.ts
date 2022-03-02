@@ -36,9 +36,9 @@ interface ResponseBody {
   double_etag: string
 }
 
-export function downloadM(
+export function downloadM<S extends ICloudSessionValidated, R extends AR.Env>(
   { docwsid: documentId, zone }: RetrieveOpts,
-) {
+): AR.ApiRequest<ResponseBody, S, R> {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'GET',
@@ -50,9 +50,9 @@ export function downloadM(
   )
 }
 
-export function downloadBatchM(
+export function downloadBatchM<S extends ICloudSessionValidated>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
-) {
+): AR.ApiRequest<ResponseBody[], S, AR.Env> {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

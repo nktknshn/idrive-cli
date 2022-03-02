@@ -11,7 +11,6 @@ import * as TR from 'fp-ts/lib/Tree'
 import { concatAll } from 'fp-ts/Monoid'
 import { MonoidSum } from 'fp-ts/number'
 import * as fs from 'fs/promises'
-import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
 import * as DF from '../../../icloud/drive/drive'
 import {
@@ -20,22 +19,36 @@ import {
   zipFolderTreeWithPath,
 } from '../../../icloud/drive/drive/get-folders-trees'
 import { getUrlStream } from '../../../icloud/drive/requests/download'
-import { Details, DriveChildrenItemFile, isFile, isFileItem } from '../../../icloud/drive/requests/types/types'
+import { Details, DriveChildrenItemFile, isFile } from '../../../icloud/drive/requests/types/types'
 import { err, SomeError } from '../../../lib/errors'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
-import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 const sum = concatAll(MonoidSum)
 
+export const download = (
+  { paths, structured }: {
+    paths: string[]
+    structured: boolean
+    glob: boolean
+    raw: boolean
+  },
+) => {
+  assert(A.isNonEmpty(paths))
+
+  logger.debug(`download: ${pipe(paths)}`)
+
+  return pipe(
+    DF.searchGlobs(paths),
+    DF.map(JSON.stringify),
+  )
+}
+
 export const downloadFolder = (
-  { sessionFile, cacheFile, path, noCache, dstpath }: {
+  { path, dstpath }: {
     path: string
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
     structured: boolean
     glob: boolean
     dstpath: string
@@ -44,12 +57,7 @@ export const downloadFolder = (
 ) => {
   logger.debug(`download: ${path}`)
 
-  // createWriteStream()
-
-  return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(() => recursiveDownload({ path, dstpath })),
-  )
+  return recursiveDownload({ path, dstpath })
 }
 
 const recursiveDownload = ({ path, dstpath }: { path: string; dstpath: string }) => {
@@ -57,7 +65,7 @@ const recursiveDownload = ({ path, dstpath }: { path: string; dstpath: string })
     DF.Do,
     SRTE.bind('tree', () =>
       pipe(
-        DF.chainRoot((root) => DF.lsdir(root, normalizePath(path))),
+        DF.chainRoot((root) => DF.getByPathFolder(root, normalizePath(path))),
         DF.chain(dir => DF.getFoldersTrees([dir], Infinity)),
         DF.map(NA.head),
       )),
@@ -84,64 +92,6 @@ const recursiveDownload = ({ path, dstpath }: { path: string; dstpath: string })
     DF.map(JSON.stringify),
   )
 }
-
-export const download = (
-  { sessionFile, cacheFile, paths, noCache, structured }: {
-    paths: string[]
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
-    structured: boolean
-    glob: boolean
-    raw: boolean
-  },
-) => {
-  assert(A.isNonEmpty(paths))
-
-  logger.debug(`download: ${pipe(paths)}`)
-
-  const action = () => {
-    return pipe(
-      DF.searchGlobs(paths),
-      DF.map(JSON.stringify),
-    )
-  }
-
-  return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(action),
-  )
-}
-
-// const treeStatistics = (
-//   tree: TR.Tree<
-//     FolderTreeValue<Details> & {
-//       path: string
-//     }
-//   >,
-// ): {
-//   directories: number
-//   files: number
-//   size: number
-// } => {
-//   const forestStats = pipe(tree.forest, A.map(treeStatistics))
-
-//   const files = pipe(
-//     tree.value.details.items,
-//     A.filter(isFileItem),
-//   )
-
-//   const size = pipe(
-//     files,
-//     A.reduce(0, (acc, item) => acc + item.size),
-//   )
-
-//   return {
-//     directories: 1 + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.directories)),
-//     files: files.length + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.files)),
-//     size: size + pipe(forestStats, A.reduce(0, (acc, cur) => acc + cur.size)),
-//   }
-// }
 
 const getDirStructure = <T extends Details>(
   tree: TR.Tree<FolderTreeValue<T> & { path: string }>,
@@ -243,27 +193,26 @@ const createEmptyFiles = (paths: string[]) =>
     )
   }
 
-const downloadChunk = () =>
-  (chunk: NA.NonEmptyArray<readonly [path: string, file: DriveChildrenItemFile]>) => {
-    return pipe(
-      DF.readEnv,
-      SRTE.bind('urls', () =>
-        DF.fromApiRequest(API.downloadBatch({
-          docwsids: chunk.map(snd).map(_ => _.docwsid),
-          zone: NA.head(chunk)[1].zone,
-        }))),
-      DF.chain(({ urls, env }) =>
-        pipe(
-          A.zip(urls)(chunk),
-          A.map(([[path], url]) => [url, path] as const),
-          A.filter((item): item is [string, string] => !!item[0]),
-          downloadUrls,
-          apply({ fetch: env.fetch }),
-          DF.fromTaskEither,
-        )
-      ),
-    )
-  }
+const downloadChunk = (chunk: NA.NonEmptyArray<readonly [path: string, file: DriveChildrenItemFile]>) => {
+  return pipe(
+    DF.readEnv,
+    SRTE.bind('urls', () =>
+      API.downloadBatch({
+        docwsids: chunk.map(snd).map(_ => _.docwsid),
+        zone: NA.head(chunk)[1].zone,
+      })),
+    DF.chain(({ urls, env }) =>
+      pipe(
+        A.zip(urls)(chunk),
+        A.map(([[path], url]) => [url, path] as const),
+        A.filter((item): item is [string, string] => !!item[0]),
+        downloadUrls,
+        apply({ fetch: env.fetch }),
+        DF.fromTaskEither,
+      )
+    ),
+  )
+}
 
 const downloadFiles = (
   downloadable: (readonly [path: string, file: DriveChildrenItemFile])[],
@@ -284,7 +233,7 @@ const downloadFiles = (
 
     return pipe(
       filesChunks,
-      A.map(downloadChunk()),
+      A.map(downloadChunk),
       SRTE.sequenceArray,
       DF.map(a => A.flatten([...a])),
       DF.map(_ => {

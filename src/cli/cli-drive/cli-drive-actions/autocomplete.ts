@@ -1,44 +1,17 @@
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as O from 'fp-ts/lib/Option'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
-import { defaultApiEnv } from '../../../defaults'
-import * as API from '../../../icloud/drive/api'
-import * as C from '../../../icloud/drive/cache/cache'
-import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import { isDetailsCacheEntity } from '../../../icloud/drive/cache/cache-types'
+import { pipe } from 'fp-ts/lib/function'
 import * as DF from '../../../icloud/drive/drive'
-import { ItemIsNotFolderError, NotFoundError } from '../../../icloud/drive/errors'
-import { fileName, fileNameAddSlash, isDetails, Root } from '../../../icloud/drive/requests/types/types'
-import { err } from '../../../lib/errors'
-import { logger, stderrLogger } from '../../../lib/logging'
+import { fileName, fileNameAddSlash } from '../../../icloud/drive/requests/types/types'
+import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
-import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
-import { showDetailsInfo } from './ls'
 
-export const autocomplete = ({
-  sessionFile,
-  cacheFile,
-  path,
-  noCache,
-  trash,
-  file,
-  dir,
-  cached,
-}: {
+export const autocomplete = ({ path, trash, file, dir, cached }: {
   path: string
-  noCache: boolean
-  sessionFile: string
-  cacheFile: string
   trash: boolean
   file: boolean
   dir: boolean
   cached: boolean
-}): TE.TaskEither<Error, string> => {
+}) => {
   const npath = normalizePath(path)
   const nparentPath = normalizePath(Path.dirname(path))
 
@@ -60,44 +33,32 @@ export const autocomplete = ({
     ),
   ) */
   return pipe(
-    {
-      sessionFile,
-      cacheFile,
-      noCache,
-      ...defaultApiEnv,
-    },
-    cliActionM2(() => {
-      const res = pipe(
-        DF.getCachedRoot(trash),
-        DF.chain(root =>
-          pipe(
-            cached
-              ? DF.lsdirCached(targetDir)(root)
-              : DF.lsdir(root, targetDir),
-            DF.map(parent =>
-              lookupDir
-                ? parent.items
-                : parent.items.filter(
-                  f => fileName(f).startsWith(childName),
-                )
-            ),
-            DF.logS(
-              result => `suggestions: ${result.map(fileName)}`,
-            ),
-            DF.map((result) =>
-              result
-                .filter(item => file ? item.type === 'FILE' : true)
-                .filter(item => dir ? item.type === 'FOLDER' || item.type === 'APP_LIBRARY' : true)
-                .map(fileNameAddSlash)
-                .map(fn => lookupDir ? `/${npath}/${fn}` : `/${nparentPath}/${fn}`)
-                .map(Path.normalize)
-                .join('\n')
-            ),
-          )
+    DF.getCachedRoot(trash),
+    DF.chain(root =>
+      pipe(
+        cached
+          ? DF.getByPathFolderCached(targetDir)(root)
+          : DF.getByPathFolder(root, targetDir),
+        DF.map(parent =>
+          lookupDir
+            ? parent.items
+            : parent.items.filter(
+              f => fileName(f).startsWith(childName),
+            )
+        ),
+        DF.logS(
+          result => `suggestions: ${result.map(fileName)}`,
+        ),
+        DF.map((result) =>
+          result
+            .filter(item => file ? item.type === 'FILE' : true)
+            .filter(item => dir ? item.type === 'FOLDER' || item.type === 'APP_LIBRARY' : true)
+            .map(fileNameAddSlash)
+            .map(fn => lookupDir ? `/${npath}/${fn}` : `/${nparentPath}/${fn}`)
+            .map(Path.normalize)
+            .join('\n')
         ),
       )
-
-      return res
-    }),
+    ),
   )
 }

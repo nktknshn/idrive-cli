@@ -21,36 +21,30 @@ export const rm = (
     trash: boolean
   },
 ) => {
+  assert(A.isNonEmpty(paths))
+
+  const npaths = pipe(paths, NA.map(normalizePath))
+
   return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(() => {
-      assert(A.isNonEmpty(paths))
-
-      const npaths = pipe(paths, NA.map(normalizePath))
-
-      return pipe(
-        DF.Do,
-        SRTE.bind('items', () =>
-          pipe(
-            DF.chainRoot(root => DF.getByPaths(root, npaths)),
-            DF.filterOrElse(not(A.some(isTrashDetailsG)), () => err(`you cannot remove root`)),
-            DF.filterOrElse(not(A.some(isCloudDocsRootDetailsG)), () => err(`you cannot remove trash`)),
-          )),
-        SRTE.bind('result', ({ items }) =>
-          pipe(
-            API.moveItemsToTrash({ items, trash }),
-            DF.fromApiRequest,
-            DF.chain(
-              resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
-            ),
-          )),
-        // SRTE.chain(() => DF.lsdir(parentPath)),
-        DF.map(() => `Success.`),
-        // SRTE.map(showDetailsInfo({
-        //   fullPath: false,
-        //   path: '',
-        // })),
-      )
-    }),
+    DF.Do,
+    SRTE.bind('items', () =>
+      pipe(
+        DF.chainRoot(root => DF.getByPaths(root, npaths)),
+        DF.filterOrElse(not(A.some(isTrashDetailsG)), () => err(`you cannot remove root`)),
+        DF.filterOrElse(not(A.some(isCloudDocsRootDetailsG)), () => err(`you cannot remove trash`)),
+      )),
+    SRTE.bind('result', ({ items }) =>
+      pipe(
+        API.moveItemsToTrash<DF.DriveMState>({ items, trash }),
+        DF.chain(
+          resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
+        ),
+      )),
+    // SRTE.chain(() => DF.lsdir(parentPath)),
+    DF.map(() => `Success.`),
+    // SRTE.map(showDetailsInfo({
+    //   fullPath: false,
+    //   path: '',
+    // })),
   )
 }

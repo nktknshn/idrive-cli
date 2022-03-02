@@ -1,7 +1,8 @@
-import { constVoid, pipe } from 'fp-ts/lib/function'
+import { apply, constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as O from 'fp-ts/Option'
 import { authLogger } from '../../lib/logging'
 import * as AR from '../drive/requests/request'
 import { ICloudSession } from '../session/session'
@@ -34,13 +35,12 @@ export function authorizeSessionM<S extends AR.State>(): AR.ApiRequest<AccountLo
     AR.chain(() => requestAccoutLoginM()),
   )
 }
-import * as O from 'fp-ts/Option'
 export function authorizeSessionM2<
   S extends AR.State & {
     loadedAccountData: O.Option<AccountLoginResponseBody>
   },
 >(
-  session: S,
+  state: S,
 ): RTE.ReaderTaskEither<
   AR.Env,
   Error,
@@ -51,38 +51,30 @@ export function authorizeSessionM2<
   authLogger.debug('authorizeSession')
 
   return pipe(
-    session.loadedAccountData,
+    state.loadedAccountData,
     O.fold(
       () =>
         pipe(
-          authorizeSessionM<S>()(session),
+          authorizeSessionM<S>()(state),
           RTE.map(([accountData, session]) => ({
             ...session,
             accountData,
           })),
         ),
-      accountData => RTE.of({ ...session, accountData }),
+      accountData => RTE.of({ ...state, accountData }),
     ),
   )
 }
 
-export function authorizeSessionM3<
-  S extends AR.State & {},
->(
-  session: S,
-): RTE.ReaderTaskEither<
-  AR.Env,
-  Error,
-  { accountData: AccountLoginResponseBody } & S
-> {
+export function authorizeStateM3<
+  S extends AR.State,
+  R extends AR.Env,
+>(state: S): RTE.ReaderTaskEither<R, Error, { accountData: AccountLoginResponseBody } & S> {
   authLogger.debug('authorizeSession')
 
   return pipe(
-    authorizeSessionM<S>()(session),
-    RTE.map(([accountData, session]) => ({
-      ...session,
-      accountData,
-    })),
+    authorizeSessionM<S>()(state),
+    RTE.map(([accountData, state]) => ({ ...state, accountData })),
   )
 }
 
@@ -103,12 +95,12 @@ export function authorizeSessionRTE<S extends AR.State>() {
           : AR.of({})
       ),
       AR.chain(() => requestAccoutLoginM()),
-      f => f(s),
-      RTE.map(([accountData, session]) => ({ accountData, ...session })),
+      apply(s),
+      RTE.map(([accountData, state]) => ({ accountData, ...state })),
     )
 }
 
-export function authorizeSessionSRTE<S extends AR.State>() {
+export function authorizeSessionSRTE<S extends ICloudSessionValidated>() {
   authLogger.debug('authorizeSession')
 
   return pipe(

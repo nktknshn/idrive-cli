@@ -33,9 +33,9 @@ export const retrieveTrashDetailsM = (): AR.AuthorizedRequest<DetailsTrash> =>
     )),
   )
 
-export const putBackItemsFromTrashM = (
+export const putBackItemsFromTrashM = <S extends ICloudSessionValidated>(
   items: [{ drivewsid: string; etag: string }],
-): AR.AuthorizedRequest<{ items: DriveChildrenItem[] }> =>
+): AR.AuthorizedRequest<{ items: DriveChildrenItem[] }, S> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

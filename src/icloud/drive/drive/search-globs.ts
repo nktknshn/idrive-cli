@@ -13,39 +13,7 @@ import * as DF from '../drive'
 import { fileName } from '../requests/types/types'
 import * as T from '../requests/types/types'
 import { FolderTree, FolderTreeValue, getFoldersTrees } from './get-folders-trees'
-import { modifySubsetDF } from './modify-subset'
-
-const zipWithPath = <T extends T.Details>(
-  parentPath: string,
-  tree: FolderTree<T>,
-): [string, DF.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash>][] => {
-  const name = fileName(tree.value.details)
-  const path = Path.join(parentPath, name) + '/'
-
-  const subfiles = pipe(
-    tree.value.details.items,
-    A.filter(T.isFile),
-  )
-
-  const zippedsubfiles = pipe(
-    subfiles,
-    A.map(fileName),
-    A.map(f => Path.join(path, f)),
-    A.zip(subfiles),
-  )
-
-  const subfolders = pipe(
-    tree.forest,
-    A.map(t => zipWithPath(path, t)),
-    A.flatten,
-  )
-
-  return [
-    [path, tree.value.details],
-    ...subfolders,
-    ...zippedsubfiles,
-  ]
-}
+import { modifySubset } from './modify-subset'
 
 export const searchGlobs = (
   globs: NEA<string>,
@@ -61,7 +29,7 @@ export const searchGlobs = (
     DF.chainRoot(root => DF.getByPaths(root, basepaths)),
     SRTE.chain((bases) =>
       pipe(
-        modifySubsetDF(
+        modifySubset(
           bases,
           T.isNotFileG,
           (bases) =>
@@ -95,4 +63,36 @@ export const searchGlobs = (
       )
     ))),
   )
+}
+
+const zipWithPath = <T extends T.Details>(
+  parentPath: string,
+  tree: FolderTree<T>,
+): [string, DF.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash>][] => {
+  const name = fileName(tree.value.details)
+  const path = Path.join(parentPath, name) + '/'
+
+  const subfiles = pipe(
+    tree.value.details.items,
+    A.filter(T.isFile),
+  )
+
+  const zippedsubfiles = pipe(
+    subfiles,
+    A.map(fileName),
+    A.map(f => Path.join(path, f)),
+    A.zip(subfiles),
+  )
+
+  const subfolders = pipe(
+    tree.forest,
+    A.map(t => zipWithPath(path, t)),
+    A.flatten,
+  )
+
+  return [
+    [path, tree.value.details],
+    ...subfolders,
+    ...zippedsubfiles,
+  ]
 }

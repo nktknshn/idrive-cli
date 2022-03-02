@@ -60,18 +60,18 @@ const handle: ResponseHandler<{ items: DriveItemDetails[] }> = (session) =>
     TE.chain(apply(session)),
   )
 
-export function retrieveItemDetails(
-  client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
-  { drivewsids }: { drivewsids: string[] },
-): TE.TaskEither<
-  Error,
-  ResponseWithSession<{ items: DriveItemDetails[] }>
-> {
-  return retrieveItemDetailsGeneric(
-    client,
-    { accountData, session },
-    { items: drivewsids.map((drivewsid) => ({ drivewsid, includeHierarchy: true })) },
-    handle,
-  )
-}
+// function retrieveItemDetails(
+//   client: FetchClientEither,
+//   { accountData, session }: ICloudSessionValidated,
+//   { drivewsids }: { drivewsids: string[] },
+// ): TE.TaskEither<
+//   Error,
+//   ResponseWithSession<{ items: DriveItemDetails[] }>
+// > {
+//   return retrieveItemDetailsGeneric(
+//     client,
+//     { accountData, session },
+//     { items: drivewsids.map((drivewsid) => ({ drivewsid, includeHierarchy: true })) },
+//     handle,
+//   )
+// }

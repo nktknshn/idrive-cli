@@ -12,73 +12,49 @@ import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
 import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
-import { showDetailsInfo } from './ls'
+import { showDetailsInfo } from './ls/printing'
 
-export const mkdir = ({
-  sessionFile,
-  cacheFile,
-  path,
-  noCache,
-}: {
-  path: string
-  noCache: boolean
-  sessionFile: string
-  cacheFile: string
-}): TE.TaskEither<Error, string> => {
+export const mkdir = ({ path }: { path: string }) => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 
   logger.debug(`mkdir(${name} in ${parentPath})`)
+  const nparentPath = normalizePath(Path.dirname(path))
 
   return pipe(
-    {
-      sessionFile,
-      cacheFile,
-      noCache,
-      ...defaultApiEnv,
-    },
-    cliActionM2(() => {
-      const nparentPath = normalizePath(Path.dirname(path))
-
-      const res = pipe(
-        DF.Do,
-        SRTE.bind('root', () => DF.chainRoot(DF.of)),
-        SRTE.bind('parent', ({ root }) => DF.lsdir(root, nparentPath)),
-        SRTE.bind('result', ({ parent }) =>
-          pipe(
-            API.createFolders({
-              destinationDrivewsId: parent.drivewsid,
-              names: [name],
-            }),
-            DF.fromApiRequest,
-            DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
-          )),
-        DF.chain(({ result, parent }) =>
-          pipe(
-            result.folders,
-            A.matchLeft(
-              () => DF.left(err(`createFolders returned empty result`)),
-              (head) =>
-                DF.retrieveItemDetailsInFoldersSaving([
-                  head.drivewsid,
-                  parent.drivewsid,
-                ]),
-            ),
-          )
-        ),
-        DF.map(flow(A.lookup(1), O.flatten)),
-        DF.map(
-          O.fold(
-            () => `missing created folder`,
-            showDetailsInfo({
-              fullPath: false,
-              path: '',
-            }),
-          ),
+    DF.Do,
+    SRTE.bindW('root', DF.getRoot),
+    SRTE.bindW('parent', ({ root }) => DF.getByPathFolder(root, nparentPath)),
+    SRTE.bindW('result', ({ parent }) =>
+      pipe(
+        API.createFolders<DF.DriveMState>({
+          destinationDrivewsId: parent.drivewsid,
+          names: [name],
+        }),
+        DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
+      )),
+    SRTE.chainW(({ result, parent }) =>
+      pipe(
+        result.folders,
+        A.matchLeft(
+          () => DF.left(err(`createFolders returned empty result`)),
+          (head) =>
+            DF.retrieveItemDetailsInFoldersSaving([
+              head.drivewsid,
+              parent.drivewsid,
+            ]),
         ),
       )
-
-      return res
-    }),
+    ),
+    DF.map(flow(A.lookup(1), O.flatten)),
+    DF.map(
+      O.fold(
+        () => `missing created folder`,
+        showDetailsInfo({
+          fullPath: false,
+          path: '',
+        }),
+      ),
+    ),
   )
 }

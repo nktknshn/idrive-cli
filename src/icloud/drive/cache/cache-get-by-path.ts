@@ -71,10 +71,10 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         // BUG
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (): PathValidation<H.Hierarchy<R>> => ({
+          (e): PathValidation<H.Hierarchy<R>> => ({
             valid: false,
             path: H.partialPath<H.Hierarchy<R>>(result, path),
-            error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
+            error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
           ({ content, created }): PathValidation<H.Hierarchy<R>> =>
             pipe(
@@ -102,13 +102,12 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
       // sub item is a folder and since there is no rest
       // the item is the target. Get the details and return it
       return pipe(
-        cache,
-        C.getFolderDetailsByIdE(subitem.value.drivewsid),
+        C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (): PathValidation<H.Hierarchy<R>> => ({
+          (e): PathValidation<H.Hierarchy<R>> => ({
             valid: false,
             path: H.partialPath<H.Hierarchy<R>>(result, path),
-            error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details`),
+            error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
           ({ content }): PathValidation<H.Hierarchy<R>> => ({
             valid: true,

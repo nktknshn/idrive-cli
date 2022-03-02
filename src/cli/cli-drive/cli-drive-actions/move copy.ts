@@ -1,18 +1,20 @@
-import { pipe } from 'fp-ts/lib/function'
+import { identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
-import * as API from '../../../icloud/drive/api'
-import { getById } from '../../../icloud/drive/cache/cache'
+import { ICloudSessionValidated } from '../../../icloud/authorization/authorize'
+import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/drive'
+import * as DF from '../../../icloud/drive/drive copy'
 import * as H from '../../../icloud/drive/drive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
+import * as RQ from '../../../icloud/drive/requests'
 import { MoveItemToTrashResponse } from '../../../icloud/drive/requests'
 import { RenameResponse } from '../../../icloud/drive/requests'
-import { MoveItemsResponse } from '../../../icloud/drive/requests/moveItems'
+import * as AR from '../../../icloud/drive/requests/request'
 import {
   Details,
   DetailsDocwsRoot,
@@ -40,18 +42,22 @@ export const move = ({ srcpath, dstpath }: {
 
   return pipe(
     DF.Do,
-    // SRTE.bind(
-    //   'emy',
-    //   () => DF.askCache(getById('FOLDER::com.apple.CloudDocs::EFDC48C5-5917-4A68-B11A-057F63EFD4C8')),
-    // ),
-    // DF.logS(({ emy }) => `${JSON.stringify(emy)}`),
-    SRTE.bind(
+    SRTE.bindW('api', () => SRTE.fromReader((api: CapMoveItems<DF.DriveMState>) => api)),
+    SRTE.bindW(
       'srcdst',
-      () => DF.chainRoot(root => DF.getByPathsH(root, [nsrc, ndst])),
+      () =>
+        pipe(
+          DF.chainRoot(root => DF.lssPartial(root, [nsrc, ndst])),
+          // SRTE.flattenW,
+        ),
     ),
-    DF.chain(handle),
-    DF.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
-  )
+    // SRTE.chainW(handle),
+  ) // RTE.Do,
+  // RTE.ask<DF.DriveMState>(),
+  // RTE.bindW('api', () => (api: CapMoveItems<DF.DriveMState>) => TE.of(api)),
+  // RTE.bindW('srcdst', DF.chainRoot(root => DF.lssPartial(root, [nsrc, ndst]))),
+  // RTE.map(_ => _.),
+  // RTE.chainW(handle),
 }
 
 /*
@@ -61,10 +67,12 @@ export const move = ({ srcpath, dstpath }: {
   - partially valid path with path *not* equal to the path of src and a singleton rest. Then we move the item into the path *and* rename the item
 */
 const handle = (
-  { srcdst: [srcitem, dstitem] }: {
+  { srcdst: [srcitem, dstitem], api }: {
     srcdst: NEA<V.PathValidation<H.Hierarchy<DetailsDocwsRoot>>>
+    api: CapMoveItems<DF.DriveMState>
   },
-): DF.DriveM<MoveItemsResponse | RenameResponse> => {
+) => {
+  // : DF.DriveM<MoveItemToTrashResponse | RenameResponse> =>
   if (!srcitem.valid) {
     return DF.errS(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
   }
@@ -103,29 +111,43 @@ const handle = (
   return DF.left(err(`invalid dstitem`))
 }
 
+type CapMoveItems<S extends ICloudSessionValidated> = {
+  moveItemsM: ({ items, destinationDrivewsId }: {
+    destinationDrivewsId: string
+    items: {
+      drivewsid: string
+      etag: string
+    }[]
+  }) => AR.AuthorizedRequest<MoveItemToTrashResponse, S, AR.Env>
+}
+
 const caseMove = (
   src: NonRootDetails | DriveChildrenItemFile,
   dst: Details,
-): DF.DriveM<MoveItemsResponse> => {
+) => {
   return pipe(
-    API.moveItems({
-      destinationDrivewsId: dst.drivewsid,
-      items: [{ drivewsid: src.drivewsid, etag: src.etag }],
-    }),
+    RTE.ask<CapMoveItems<DF.DriveMState>>(),
+    RTE.map(({ moveItemsM }) =>
+      moveItemsM({
+        destinationDrivewsId: dst.drivewsid,
+        items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+      })
+    ),
+    // SRTE.fromReaderTaskEither,
+    // SRTE.chainW(v => v),
   )
 }
 
 const caseRename = (
   srcitem: NonRootDetails | DriveChildrenItemFile,
   name: string,
-): DF.DriveM<RenameResponse> => {
+) => {
   return pipe(
-    API.renameItems({
+    RQ.renameItemsM({
       items: [
         { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
       ],
     }),
-    // DF.fromApiRequest,
   )
 }
 
@@ -133,20 +155,20 @@ const caseMoveAndRename = (
   src: NonRootDetails | DriveChildrenItemFile,
   dst: (Details | DetailsTrash),
   name: string,
-): DF.DriveM<RenameResponse> => {
+) => {
   return pipe(
-    API.moveItems<DF.DriveMState>(
+    RQ.moveItemsM(
       {
         destinationDrivewsId: dst.drivewsid,
         items: [{ drivewsid: src.drivewsid, etag: src.etag }],
       },
     ),
-    DF.chain(() =>
-      API.renameItems({
+    AR.chain(() => {
+      return RQ.renameItemsM({
         items: [
           { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
         ],
       })
-    ),
+    }),
   )
 }

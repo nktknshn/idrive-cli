@@ -33,7 +33,7 @@ export const saveAccountData2 = <S extends { accountData: AccountLoginResponseBo
   state: S,
 ) => (deps: { sessionFile: string }) => saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
 
-const saveCache = <S extends { cache: CacheF }>(state: S) =>
+export const saveCache = <S extends { cache: CacheF }>(state: S) =>
   (deps: { cacheFile: string; noCache: boolean }) =>
     deps.noCache
       ? TE.of(constVoid())
@@ -49,15 +49,16 @@ export function cliActionM2<T>(
     RTE.bind('accountData', () => loadAccountData),
     RTE.bindW('cache', () => loadCache),
     RTE.bindW('result', action()),
-    RTE.chainFirst(({ cache }) =>
+    RTE.chainFirst(({ result: [, { cache }] }) =>
       RTE.fromIO(
         () => apiLogger.debug(`saving cache: ${Object.keys(cache.byDrivewsid).length} items`),
       )
     ),
-    RTE.chainFirstW(({ result: [, result] }) =>
+    RTE.chainFirstW(({ result: [, state] }) =>
       pipe(
-        RTE.of(result),
+        RTE.of(state),
         RTE.chainFirstW(saveSession),
+        RTE.chainFirstW(saveAccountData2),
         RTE.chainFirstW(saveCache),
       )
     ),

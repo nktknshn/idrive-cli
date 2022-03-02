@@ -20,10 +20,7 @@ export const cat = (
     trash: boolean
   },
 ) => {
-  return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(() => cat2({ path })),
-  )
+  return cat2({ path })
 }
 
 export const cat2 = (
@@ -35,7 +32,7 @@ export const cat2 = (
     DF.chainRoot(root => DF.getByPaths(root, [npath])),
     DF.map(NA.head),
     DF.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
-    SRTE.chain((item) =>
+    DF.chain((item) =>
       pipe(
         API.download(item),
         DF.fromApiRequest,

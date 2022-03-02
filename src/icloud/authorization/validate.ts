@@ -6,6 +6,7 @@ import * as fs from 'fs/promises'
 import * as t from 'io-ts'
 import {
   BufferDecodingError,
+  err,
   FileReadingError,
   InvalidGlobalSessionError,
   JsonParsingError,
@@ -48,10 +49,10 @@ export function validateSessionM(): AR.ApiRequest<O.Option<AccountLoginResponseB
 export function saveAccountData(
   accountData: AccountLoginResponseBody,
   accountDataFilePath: string,
-): TE.TaskEither<string, void> {
+): TE.TaskEither<Error, void> {
   return TE.tryCatch(
     () => fs.writeFile(accountDataFilePath, JSON.stringify(accountData)),
-    (e) => `Error writing accountData ${String(e)}`,
+    (e) => err(`Error writing accountData ${String(e)}`),
   )
 }
 

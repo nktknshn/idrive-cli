@@ -13,11 +13,11 @@ import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
 import * as C from '../cache/cache'
 import * as V from '../cache/cache-get-by-path-types'
-import * as DF from '../drive'
+import * as DF from '../drive copy'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { equalsDrivewsId, findInParent as lookupItemByFilename, recordFromTuples } from '../helpers'
 import * as T from '../requests/types/types'
-import { modifySubset } from './modify-subset'
+import { modifySubsetDF } from './modify-subset copy'
 import * as H from './validation'
 
 export const getByPathsH = <R extends T.Root>(
@@ -205,7 +205,7 @@ const getActuals = <R extends T.Root>(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )
   return pipe(
-    modifySubset(
+    modifySubsetDF(
       validationResults,
       (res): res is [V.PathInvalid<H.Hierarchy<R>>, NormalizedPath] => !res[0].valid,
       (subset: NEA<[V.PathInvalid<H.Hierarchy<R>>, NormalizedPath]>) => pipe(subset, NA.map(fst), handleInvalidPaths),
@@ -247,7 +247,7 @@ const handleInvalidPaths = <R extends T.Root>(
       DF.retrieveItemDetailsInFoldersSavingE(foldersToRetrieve),
       DF.map(NA.zip(subfolders)),
       DF.chain((details) => {
-        return modifySubset(
+        return modifySubsetDF(
           details,
           // select
           (v): v is [
@@ -322,7 +322,7 @@ const handleInvalidPaths = <R extends T.Root>(
     ): v is DeeperFolders<R> => T.isFolderLikeItem(v[0].value)
 
     if (A.isNonEmpty(found)) {
-      return modifySubset(found, selectFolders, handleSubfolders, handleFiles())
+      return modifySubsetDF(found, selectFolders, handleSubfolders, handleFiles())
     }
 
     return DF.of([])
@@ -334,7 +334,7 @@ const handleInvalidPaths = <R extends T.Root>(
     NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.path.rest)), NA.zip(partialPaths))),
   )
 
-  return modifySubset(
+  return modifySubsetDF(
     nextItems,
     // select items that were found
     (v): v is [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<H.Hierarchy<R>>]] => pipe(v, fst, O.isSome),

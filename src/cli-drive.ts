@@ -11,25 +11,10 @@ import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } fr
 import { isKeyOf } from './lib/util'
 
 const commands = {
-  ls: Action.listUnixPath,
+  ls: Action.listUnixPath2,
   mkdir: Action.mkdir,
   rm: Action.rm,
   upload: Action.upload,
-  uploads: ({ sessionFile, cacheFile, srcpaths, dstpath, noCache }: {
-    srcpaths: string[]
-    dstpath: string
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
-  }) =>
-    pipe(
-      { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-      cliActionM2(() =>
-        pipe(
-          DF.readEnvS(() => DF.of(`srcpaths=${srcpaths} dstpath=${dstpath}`)),
-        )
-      ),
-    ),
   mv: Action.move,
   autocomplete: Action.autocomplete,
   ac: Action.autocomplete,
@@ -59,11 +44,11 @@ async function main() {
   const commandFunction = commands[command]
 
   await pipe(
-    commandFunction(argv),
-    TE.fold(
-      printer.errorTask,
-      printer.printTask,
+    pipe(
+      { ...argv, ...defaultApiEnv },
+      cliActionM2(() => commandFunction(argv)),
     ),
+    TE.fold(printer.errorTask, printer.printTask),
   )()
 }
 

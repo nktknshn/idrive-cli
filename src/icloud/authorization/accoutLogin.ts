@@ -11,7 +11,7 @@ export function requestAccoutLoginM<S extends AR.State>(): AR.ApiRequest<Account
   logger.debug('requestAccoutLogin')
 
   return pipe(
-    AR.readEnv(),
+    AR.readEnv<S>(),
     AR.chain(({ state }) =>
       pipe(
         state.session.sessionToken,

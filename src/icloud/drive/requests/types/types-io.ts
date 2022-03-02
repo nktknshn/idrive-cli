@@ -27,6 +27,7 @@ export const commonProperties = t.intersection([
   }),
   t.partial({
     extension: t.string,
+    status: t.string,
     restorePath: t.string,
   }),
 ])

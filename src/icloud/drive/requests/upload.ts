@@ -6,6 +6,7 @@ import Path from 'path'
 import { err } from '../../../lib/errors'
 import { uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
+import { ICloudSessionValidated } from '../../authorization/authorize'
 import { readWebauthToken } from '../../session/session-cookies'
 import * as ARR from './api-rte'
 import * as AR from './request'
@@ -86,7 +87,7 @@ const updateDocumentsRequest = t.type({
   }),
 })
 
-export const uploadM = (
+export const uploadM = <S extends ICloudSessionValidated, R extends AR.Env>(
   { zone, contentType, filename, size, type }: {
     zone: string
     contentType: string
@@ -94,7 +95,7 @@ export const uploadM = (
     size: number
     type: 'FILE'
   },
-): AR.AuthorizedRequest<UploadResponse> =>
+): AR.AuthorizedRequest<UploadResponse, S, R> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData, session } }) => ({
       method: 'POST',
@@ -106,9 +107,9 @@ export const uploadM = (
     uploadResponse.decode,
   )
 
-export const singleFileUploadM = (
+export const singleFileUploadM = <S extends ICloudSessionValidated, R extends AR.Env>(
   { filePath, url }: { filePath: string; url: string },
-): AR.AuthorizedRequest<SingleFileResponse> => {
+): AR.AuthorizedRequest<SingleFileResponse, S, R> => {
   const filename = Path.parse(filePath).base
 
   return pipe(
@@ -123,9 +124,9 @@ export const singleFileUploadM = (
   )
 }
 
-export const updateDocumentsM = (
+export const updateDocumentsM = <S extends ICloudSessionValidated, R extends AR.Env>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
-): AR.AuthorizedRequest<UpdateDocumentsResponse> =>
+): AR.AuthorizedRequest<UpdateDocumentsResponse, S, R> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

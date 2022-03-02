@@ -91,10 +91,11 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends ICloudSessi
     })),
   )
 }
+import * as iot from 'io-ts-types'
 
-export function retrieveItemDetailsInFoldersM<S extends ICloudSessionValidated>(
+export function retrieveItemDetailsInFolders<S extends ICloudSessionValidated, R extends AR.Env>(
   { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<(Details | InvalidId)[], S> {
+): AR.AuthorizedRequest<NEA<(Details | InvalidId)>, S, R> {
   return pipe(
     getRetrieveItemDetailsInFoldersHttpRequest<S>(
       drivewsids.map(
@@ -102,7 +103,7 @@ export function retrieveItemDetailsInFoldersM<S extends ICloudSessionValidated>(
       ),
     ),
     AR.handleResponse(AR.basicJsonResponse(
-      t.array(t.union([driveDetails, invalidIdItem])).decode,
+      iot.nonEmptyArray(t.union([driveDetails, invalidIdItem])).decode,
     )),
   )
 }
@@ -140,6 +141,7 @@ export const retrieveItemDetailsInFoldersHierarchyM = (
     )),
   )
 
+import { NEA } from '../../../lib/types'
 import * as ARR from './api-rte'
 
 export const retrieveItemDetailsInFoldersRequestARR = (

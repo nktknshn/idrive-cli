@@ -5,10 +5,10 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as DF from '../drive'
+import * as DF from '../drive copy'
 
 /** modify subset of input which is true when `refinement` applied */
-export const modifySubset = <A, B extends A, C, D extends A>(
+export const modifySubsetDF = <A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
   f: ((v: NA.NonEmptyArray<B>) => DF.DriveM<C[]>),

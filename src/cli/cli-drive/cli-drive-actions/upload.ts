@@ -2,7 +2,7 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
-import * as AM from '../../../icloud/drive/api'
+import * as API from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import * as H from '../../../icloud/drive/drive/validation'
@@ -23,103 +23,45 @@ export const uploadFolder = (
   },
 ) => {
   return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(() => {
-      return pipe(
-        DF.chainRoot(root =>
-          pipe(
-            DF.Do,
-            SRTE.bind('src', () => DF.of(srcpath)),
-            SRTE.bind('overwright', () => DF.of(overwright)),
-            SRTE.bind('dst', () => DF.lsPartial(root, normalizePath(dstpath))),
-            DF.chain(handle),
-            DF.map(() => `Success. ${Path.basename(srcpath)}`),
-          )
-        ),
-      )
-    }),
+    DF.Do,
+    SRTE.bind('root', () => DF.chainRoot(root => DF.of(root))),
+    SRTE.bind('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
+    SRTE.bind('src', () => DF.of(srcpath)),
+    SRTE.bind('overwright', () => DF.of(overwright)),
+    DF.chain(handle),
+    DF.map(() => `Success. ${Path.basename(srcpath)}`),
   )
 }
 
 export const upload = (
-  { sessionFile, cacheFile, srcpath, dstpath, noCache, overwright }: {
+  { srcpath, dstpath, overwright }: {
     srcpath: string
     dstpath: string
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
     overwright: boolean
   },
 ) => {
   return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(() => {
-      return pipe(
-        DF.chainRoot(root =>
-          pipe(
-            DF.Do,
-            SRTE.bind('src', () => DF.of(srcpath)),
-            SRTE.bind('overwright', () => DF.of(overwright)),
-            SRTE.bind('dst', () => DF.lsPartial(root, normalizePath(dstpath))),
-            DF.chain(handle),
-            DF.map(() => `Success. ${Path.basename(srcpath)}`),
-          )
-        ),
-      )
-    }),
-  )
-}
-
-const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
-  return `${type}::${zone}::${document_id}`
-}
-
-const uploadOverwrighting = (
-  { src, dst }: { dst: V.PathValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
-) => {
-  const dstitem = V.target(dst)
-  const parent = NA.last(dst.path.details)
-
-  return pipe(
     DF.Do,
-    SRTE.bind(
-      'uploadResult',
-      () => DF.fromApiRequest(AM.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
-    ),
-    SRTE.bind('removeResult', () => {
-      return DF.fromApiRequest(AM.moveItemsToTrash({
-        items: [dstitem],
-        trash: true,
-      }))
-    }),
-    DF.chain(({ uploadResult, removeResult }) => {
-      const drivewsid = getDrivewsid(uploadResult)
-      return pipe(
-        AM.renameItems({
-          items: [{
-            drivewsid,
-            etag: uploadResult.etag,
-            ...parseName(fileName(dstitem)),
-          }],
-        }),
-        DF.fromApiRequest,
-        DF.map(constVoid),
-      )
-    }),
+    SRTE.bind('root', DF.getRoot),
+    SRTE.bind('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
+    SRTE.bind('src', () => DF.of(srcpath)),
+    SRTE.bind('overwright', () => DF.of(overwright)),
+    DF.chain(handle),
+    DF.map(() => `Success. ${Path.basename(srcpath)}`),
   )
 }
 
 const handle = (
   { src, dst, overwright }: { dst: V.GetByPathResult<DetailsDocwsRoot>; src: string; overwright: boolean },
 ): DF.DriveM<void> => {
-  // if the target path is presented on icloud drive
+  // if the target path is presented at icloud drive
   if (dst.valid) {
     const dstitem = V.target(dst)
 
     // if it's a folder
     if (isFolderLike(dstitem)) {
       return pipe(
-        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
+        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
         DF.fromApiRequest,
         DF.map(constVoid),
       )
@@ -142,7 +84,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        AM.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
+        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         DF.fromApiRequest,
         DF.map(constVoid),
       )
@@ -150,4 +92,42 @@ const handle = (
   }
 
   return DF.errS(`invalid destination path: ${H.showMaybeValidPath(dst.path)}`)
+}
+
+const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
+  return `${type}::${zone}::${document_id}`
+}
+
+const uploadOverwrighting = (
+  { src, dst }: { dst: V.PathValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
+) => {
+  const dstitem = V.target(dst)
+  const parent = NA.last(dst.path.details)
+
+  return pipe(
+    DF.Do,
+    SRTE.bind(
+      'uploadResult',
+      () => DF.fromApiRequest(API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
+    ),
+    SRTE.bind('removeResult', () => {
+      return API.moveItemsToTrash({
+        items: [dstitem],
+        trash: true,
+      })
+    }),
+    DF.chain(({ uploadResult, removeResult }) => {
+      const drivewsid = getDrivewsid(uploadResult)
+      return pipe(
+        API.renameItems<DF.DriveMState>({
+          items: [{
+            drivewsid,
+            etag: uploadResult.etag,
+            ...parseName(fileName(dstitem)),
+          }],
+        }),
+        DF.map(constVoid),
+      )
+    }),
+  )
 }

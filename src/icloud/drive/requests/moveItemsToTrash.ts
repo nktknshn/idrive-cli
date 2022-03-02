@@ -14,10 +14,10 @@ export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
 }
 
-export const moveItemsToTrashM = ({ items, trash = false }: {
+export const moveItemsToTrashM = <S extends ICloudSessionValidated>({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
-}): AR.AuthorizedRequest<MoveItemToTrashResponse> =>
+}): AR.AuthorizedRequest<MoveItemToTrashResponse, S> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

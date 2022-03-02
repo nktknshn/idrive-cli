@@ -70,6 +70,7 @@ const isSameDetails = (a: T.Details, b: T.Details) => {
 
   return true
 }
+
 export const tail = <R>([, ...tail]: Hierarchy<R>) => tail
 export const root = <R>([root]: Hierarchy<R>) => root
 

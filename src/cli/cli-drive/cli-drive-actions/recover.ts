@@ -11,35 +11,23 @@ import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 export const recover = (
-  { sessionFile, cacheFile, path, noCache }: {
-    path: string
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
-  },
+  { path }: { path: string },
 ) => {
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    { sessionFile, cacheFile, noCache, ...defaultApiEnv },
-    cliActionM2(() => {
-      return pipe(
-        DF.Do,
-        SRTE.bind('item', () =>
-          pipe(
-            DF.chainTrash(root => DF.getByPaths(root, [npath])),
-            DF.map(NA.head),
-            DF.filterOrElse(not(isTrashDetailsG), () => err(`you cannot recover trash root`)),
-          )),
-        SRTE.chain(({ item }) =>
-          pipe(
-            API.putBackItemsFromTrash([item]),
-            DF.fromApiRequest,
-            // DF.map(_ => _.items[0].)
-            DF.map(() => `Success.`),
-          )
-        ),
+    DF.Do,
+    SRTE.bind('item', () =>
+      pipe(
+        DF.chainTrash(trash => DF.getByPaths(trash, [npath])),
+        DF.map(NA.head),
+        DF.filterOrElse(not(isTrashDetailsG), () => err(`you cannot recover trash root`)),
+      )),
+    SRTE.chain(({ item }) =>
+      pipe(
+        API.putBackItemsFromTrash<DF.DriveMState>([item]),
+        DF.map(() => `Success.`),
       )
-    }),
+    ),
   )
 }

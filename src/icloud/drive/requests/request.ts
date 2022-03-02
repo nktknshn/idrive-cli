@@ -17,10 +17,7 @@ import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../
 import * as ESRTE from '../drive/m2'
 import * as H from './http'
 
-export type AuthorizedRequest<R, S extends ICloudSessionValidated = ICloudSessionValidated> = ApiRequest<
-  R,
-  S
->
+export type AuthorizedRequest<A, S = ICloudSessionValidated, R = Env> = ApiRequest<A, S, R>
 
 export type AuthorizationState = {
   session: ICloudSession
@@ -44,7 +41,7 @@ export type State = {
 }
 
 /** API context */
-export type ApiRequest<A, S extends State = never> = ESRTE.ESRTE<S, Env, Error, A>
+export type ApiRequest<A, S, R = Env> = ESRTE.ESRTE<S, R, Error, A>
 
 interface ValidHttpResponseBrand {
   readonly ValidHttpResponse: unique symbol
@@ -56,7 +53,7 @@ type Filter<S extends State> = (
   ma: ApiRequest<{ httpResponse: HttpResponse }, S>,
 ) => ApiRequest<{ httpResponse: HttpResponse }, S>
 
-export const { chain, leftE, fromEither, fromOption, fromTaskEither, get, left, map, of } = ESRTE.get<
+export const { chain, leftE, fromEither, fromOption, fromTaskEither, get, left, map, of, filterOrElse } = ESRTE.get<
   State,
   Env,
   Error
@@ -66,7 +63,7 @@ export const Do = <S extends State>() => of<{}, S>({})
 
 const ado = sequenceS(SRTE.Apply)
 
-export const readEnv = <S extends { session: ICloudSession }>() => ado({ state: get(), env: SRTE.ask<S, Env>() })
+export const readEnv = <S extends { session: ICloudSession }>() => ado({ state: get<S>(), env: SRTE.ask<S, Env>() })
 
 const putSession = <S extends { session: ICloudSession }>(session: ICloudSession): ApiRequest<void, S> =>
   pipe(
@@ -140,7 +137,7 @@ export const handleResponse = <R, S extends State>(
       f,
     )
 
-export const filterHttpResponse = <R extends { httpResponse: HttpResponse }, S extends State = never>(
+export const filterHttpResponse = <R extends { httpResponse: HttpResponse }, S extends State>(
   f: (r: R) => E.Either<Error, R>,
 ) => (ma: ApiRequest<R, S>) => pipe(ma, chain(a => fromEither(f(a))))
 
@@ -160,7 +157,7 @@ export const handleBadRequest = <S extends State>(): Filter<S> =>
         : E.of(r),
   )
 
-const handleStatus = <R extends { httpResponse: HttpResponse }, S extends State = never>(validStatuses: number[]) =>
+const handleStatus = <R extends { httpResponse: HttpResponse }, S extends State>(validStatuses: number[]) =>
   filterHttpResponse<R, S>(
     (r) =>
       validStatuses.includes(r.httpResponse.status)
@@ -286,12 +283,12 @@ export const basicJsonResponse = <T extends { httpResponse: HttpResponse }, S ex
   )
 }
 
-export const basicDriveJsonRequest = <R>(
-  f: (a: { state: ICloudSessionValidated; env: Env }) => HttpRequestConfig,
+export const basicDriveJsonRequest = <S extends ICloudSessionValidated, R>(
+  f: (a: { state: S; env: Env }) => HttpRequestConfig,
   jsonDecoder: t.Decode<unknown, R>,
 ) => {
   return pipe(
-    buildRequestC(f),
+    buildRequestC<S>(f),
     handleResponse(basicJsonResponse(jsonDecoder)),
   )
 }
