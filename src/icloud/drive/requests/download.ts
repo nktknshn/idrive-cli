@@ -5,7 +5,7 @@ import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
 import { isObjectWithOwnProperty } from '../../../lib/util'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import * as ARR from './api-rte'
 import { applyToSession, expectJson, ResponseWithSession } from './http'
@@ -16,7 +16,7 @@ type RetrieveOpts = {
   zone: string
 }
 
-interface ResponseBody {
+export interface DownloadResponseBody {
   document_id: string
   owner_dsid: number
   data_token?: {
@@ -36,9 +36,12 @@ interface ResponseBody {
   double_etag: string
 }
 
-export function downloadM<S extends ICloudSessionValidated, R extends AR.Env>(
-  { docwsid: documentId, zone }: RetrieveOpts,
-): AR.ApiRequest<ResponseBody, S, R> {
+export function downloadM<S extends AuthorizedState, R extends AR.RequestEnv = AR.RequestEnv>(
+  { docwsid: documentId, zone }: {
+    docwsid: string
+    zone: string
+  },
+): AR.ApiRequest<DownloadResponseBody, S, R> {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'GET',
@@ -46,13 +49,13 @@ export function downloadM<S extends ICloudSessionValidated, R extends AR.Env>(
         `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
       options: { addClientInfo: false },
     }),
-    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
+    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<DownloadResponseBody>,
   )
 }
 
-export function downloadBatchM<S extends ICloudSessionValidated>(
+export function downloadBatchM<S extends AuthorizedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
-): AR.ApiRequest<ResponseBody[], S, AR.Env> {
+): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestEnv> {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
@@ -70,7 +73,7 @@ export function downloadBatchM<S extends ICloudSessionValidated>(
             t.type({ data_token: t.type({ url: t.string }) }),
           ],
         ),
-      ).decode(v) as t.Validation<ResponseBody[]>,
+      ).decode(v) as t.Validation<DownloadResponseBody[]>,
   )
 }
 
@@ -84,7 +87,7 @@ export function downloadARR(
         `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
       options: { addClientInfo: false },
     }),
-    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<ResponseBody>,
+    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<DownloadResponseBody>,
   )
 }
 

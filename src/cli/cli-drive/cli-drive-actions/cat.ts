@@ -25,18 +25,17 @@ export const cat = (
 
 export const cat2 = (
   { path }: { path: string },
-) => {
+): SRTE.StateReaderTaskEither<DF.DriveMState, DF.DriveMEnv, Error, string> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(
     DF.chainRoot(root => DF.getByPaths(root, [npath])),
-    DF.map(NA.head),
-    DF.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
-    DF.chain((item) =>
+    SRTE.map(NA.head),
+    SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
+    SRTE.chain((item) =>
       pipe(
-        API.download(item),
-        DF.fromApiRequest,
-        DF.chain(
+        API.download<DF.DriveMState>(item),
+        SRTE.chain(
           url =>
             url
               ? DF.readEnvS(
@@ -47,7 +46,7 @@ export const cat2 = (
                     DF.fromTaskEither,
                   ),
               )
-              : DF.left(err(`cannot get url`)),
+              : SRTE.left(err(`cannot get url`)),
         ),
       )
     ),

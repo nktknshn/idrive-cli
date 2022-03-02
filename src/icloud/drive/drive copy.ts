@@ -11,7 +11,7 @@ import { err } from '../../lib/errors'
 import { cacheLogger, logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 import { isObjectWithOwnProperty } from '../../lib/util'
-import { ICloudSessionValidated } from '../authorization/authorize'
+import { AuthorizedState } from '../authorization/authorize'
 import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
 import * as API from './api'
@@ -49,7 +49,7 @@ export type ApiType = {
 export type DriveMEnv =
   & { api: ApiType }
   & API.ApiEnv
-  & AR.Env
+  & AR.RequestEnv
 
 export type DriveMState = {
   cache: C.Cache

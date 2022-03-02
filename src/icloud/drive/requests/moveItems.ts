@@ -1,5 +1,5 @@
 import * as t from 'io-ts'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import * as ARR from './api-rte'
 import * as AR from './request'
 import { childrenItem } from './types/types-io'
@@ -8,7 +8,7 @@ const moveItemResponse = t.type({ items: t.array(childrenItem) })
 
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
-export const moveItemsM = <S extends ICloudSessionValidated>({ items, destinationDrivewsId }: {
+export const moveItemsM = <S extends AuthorizedState>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
 }): AR.AuthorizedRequest<MoveItemsResponse, S> =>

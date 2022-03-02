@@ -11,7 +11,7 @@ import {
 } from '../../../lib/errors'
 import { HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { ICloudSession } from '../../session/session'
 import { applyCookiesToSession } from '../../session/session-http'
 

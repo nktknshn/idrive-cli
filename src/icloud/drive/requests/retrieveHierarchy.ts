@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { applyCookiesToSession } from '../../session/session-http'
 import { applyToSession, decodeJson, filterStatus, ResponseWithSession, withResponse } from './http'
 import * as AR from './request'
@@ -16,7 +16,7 @@ import { driveDetailsWithHierarchyPartial, hierarchy } from './types/types-io'
 
 export function retrieveHierarchy(
   client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
+  { accountData, session }: AuthorizedState,
   { drivewsids }: { drivewsids: string[] },
 ): TE.TaskEither<Error, ResponseWithSession<DriveDetailsPartialWithHierarchy[]>> {
   const res = retrieveItemDetailsInFoldersGeneric(

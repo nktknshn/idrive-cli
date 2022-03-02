@@ -4,7 +4,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import { applyToSession, decodeJson, expectJson, filterStatus, ResponseWithSession, withResponse } from './http'
 import * as AR from './request'
@@ -33,7 +33,7 @@ export const retrieveTrashDetailsM = (): AR.AuthorizedRequest<DetailsTrash> =>
     )),
   )
 
-export const putBackItemsFromTrashM = <S extends ICloudSessionValidated>(
+export const putBackItemsFromTrashM = <S extends AuthorizedState>(
   items: [{ drivewsid: string; etag: string }],
 ): AR.AuthorizedRequest<{ items: DriveChildrenItem[] }, S> =>
   AR.basicDriveJsonRequest(

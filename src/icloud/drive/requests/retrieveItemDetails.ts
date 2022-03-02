@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither, HttpResponse } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { ICloudSession } from '../../session/session'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import {
@@ -22,7 +22,7 @@ import { itemDetails } from './types/types-io'
 
 function retrieveItemDetailsGeneric<R>(
   client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
+  { accountData, session }: AuthorizedState,
   props: { items: { drivewsid: string }[] },
   app: ResponseHandler<R>,
 ): TE.TaskEither<Error, ResponseWithSession<R>> {

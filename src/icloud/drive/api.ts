@@ -3,12 +3,13 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { Stats } from 'fs'
 import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import { err, InvalidGlobalSessionError } from '../../lib/errors'
 import { FetchError } from '../../lib/http/fetch-client'
 import { Path } from '../../lib/util'
-import { authorizeSessionSRTE, ICloudSessionValidated } from '../authorization/authorize'
+import { AuthorizedState, authorizeSessionM } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
 import * as RQ from './requests'
 // import * as AR from './requests/api-rte'
@@ -19,13 +20,13 @@ export type ApiEnv = {
   retries: number
 }
 
-export type Api<A, S = ICloudSessionValidated, R = AR.Env> = AR.AuthorizedRequest<A, S, R & ApiEnv>
+export type Api<A, S, R = AR.RequestEnv> = AR.AuthorizedRequest<A, S, R & ApiEnv>
 
-export const of = <A>(v: A): Api<A> => AR.of(v)
+export const of = <A, S>(v: A): Api<A, S> => SRTE.of(v)
 
-const onInvalidSession = <S extends ICloudSessionValidated, R extends AR.Env>(): AR.ApiRequest<void, S, R> => {
+const onInvalidSession = <S extends AuthorizedState, R extends AR.RequestEnv>(): AR.ApiRequest<void, S, R> => {
   return pipe(
-    authorizeSessionSRTE<S>(),
+    authorizeSessionM<S>(),
     AR.map(constVoid),
   )
 }
@@ -44,7 +45,7 @@ const catchFetchErrors3 = (triesLeft: number) =>
     )
   }
 
-const executeRequest4 = <TArgs extends unknown[], A, S extends ICloudSessionValidated, R extends AR.Env>(
+const executeRequest4 = <TArgs extends unknown[], A, S extends AuthorizedState, R extends AR.RequestEnv>(
   f: (...args: TArgs) => AR.ApiRequest<A, S, R>,
 ): (...args: TArgs) => SRTE.StateReaderTaskEither<S, { retries: number } & R, Error, A> => {
   return (...args: TArgs) =>
@@ -85,7 +86,7 @@ export const retrieveItemDetailsInFoldersO = flow(
   flow(AR.map(NA.map(T.invalidIdToOption))),
 )
 
-export const retrieveItemDetailsInFoldersS = <S extends ICloudSessionValidated, R extends AR.Env>(
+export const retrieveItemDetailsInFoldersS = <S extends AuthorizedState, R extends AR.RequestEnv>(
   drivewsids: string[],
 ) =>
   pipe(
@@ -93,7 +94,7 @@ export const retrieveItemDetailsInFoldersS = <S extends ICloudSessionValidated, 
     AR.map(ds => getMissedFound(drivewsids, ds)),
   )
 
-export const retrieveItemDetailsInFolder = <S extends ICloudSessionValidated, R extends AR.Env>(
+export const retrieveItemDetailsInFolder = <S extends AuthorizedState, R extends AR.RequestEnv>(
   drivewsid: string,
 ): SRTE.StateReaderTaskEither<S, { retries: number } & R, Error, (T.Details | T.InvalidId)> =>
   pipe(
@@ -132,9 +133,22 @@ export const moveItemsToTrash = flow(
   executeRequest4(RQ.moveItemsToTrashM),
 )
 
-export const upload = <S extends ICloudSessionValidated>(
+export const upload = <S extends AuthorizedState>(
   { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
-) => {
+): SRTE.StateReaderTaskEither<
+  S,
+  { retries: number } & AR.RequestEnv,
+  Error,
+  {
+    status: { status_code: number; error_message: string }
+    etag: string
+    zone: string
+    type: string
+    document_id: string
+    parent_id: string
+    mtime: number
+  }
+> => {
   const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
 
   const getContentType = (extension: string): string => {
@@ -154,32 +168,48 @@ export const upload = <S extends ICloudSessionValidated>(
   // const retrying = executeRequest2(env)
 
   return pipe(
-    AR.Do<ICloudSessionValidated>(),
-    SRTE.bindW('fstats', () =>
-      SRTE.fromTaskEither(TE.tryCatch(
-        () => fs.stat(sourceFilePath),
-        (e) => err(`error getting file info: ${JSON.stringify(e)}`),
-      ))),
-    SRTE.bindW('uploadResult', ({ fstats }) =>
-      pipe(
-        executeRequest4(RQ.uploadM)({
-          contentType: getContentType(parsedSource.ext),
-          filename: parsedSource.base,
-          size: fstats.size,
-          type: 'FILE',
-          zone,
-        }),
-        SRTE.filterOrElse(A.isNonEmpty, () => err(`empty response`)),
-        // retrying,
+    AR.Do<S>(),
+    SRTE.bind('fstats', () =>
+      SRTE.fromTaskEither(
+        TE.tryCatch(
+          () => fs.stat(sourceFilePath),
+          (e) => err(`error getting file info: ${JSON.stringify(e)}`),
+        ),
       )),
-    SRTE.bindW(
+    // () =>
+    // SRTE.bindTo('fstats'),
+    SRTE.bind('uploadResult', ({ fstats }) => {
+      const req: SRTE.StateReaderTaskEither<
+        S,
+        ApiEnv & AR.RequestEnv,
+        Error,
+        {
+          document_id: string
+          url: string
+          owner: string
+          owner_id: string
+        }[]
+      > = executeRequest4(RQ.uploadM)({
+        contentType: getContentType(parsedSource.ext),
+        filename: parsedSource.base,
+        size: fstats.size,
+        type: 'FILE',
+        zone,
+      })
+
+      return pipe(
+        req,
+        SRTE.filterOrElse(A.isNonEmpty, () => err(`empty response`)),
+      )
+    }),
+    SRTE.bind(
       'singleFileUploadResult',
       ({ uploadResult }) =>
         executeRequest4(RQ.singleFileUploadM)(
           { filePath: sourceFilePath, url: uploadResult[0].url },
         ),
     ),
-    SRTE.bindW(
+    SRTE.bind(
       'updateDocumentsResult',
       ({ uploadResult, singleFileUploadResult }) =>
         executeRequest4(

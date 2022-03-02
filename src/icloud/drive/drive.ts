@@ -10,7 +10,7 @@ import { NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
-import { ICloudSessionValidated } from '../authorization/authorize'
+import { AuthorizedState } from '../authorization/authorize'
 import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
 import * as API from './api'
@@ -37,14 +37,11 @@ export { modifySubset }
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
-export type DriveMEnv = {} & API.ApiEnv & AR.Env
+export type DriveMEnv = {} & API.ApiEnv & AR.RequestEnv
 
 export type DriveMState = {
   cache: C.Cache
-  // session: ICloudSessionValidated
-  session: ICloudSession
-  accountData: AccountLoginResponseBody
-}
+} & AuthorizedState
 
 export type DriveM<A, S extends DriveMState = DriveMState> = ESRTE.ESRTE<S, DriveMEnv, Error, A>
 
@@ -82,19 +79,16 @@ export const errS = <A>(s: string): DriveM<A> =>
     // ({ state }) => SRTE.left({ error: err(s), state }),
   )
 
-const executeApiRequest = <A>(ma: API.Api<A>) =>
-  readEnvS(({ env, state }) =>
-    pipe(
-      ma(state)(env),
-      fromTaskEither,
-      // fromTaskEither(({ error, state }) => left(error)),
-    )
-  )
-
-const putSession = (session: ICloudSessionValidated): DriveM<void> =>
-  readEnvS(({ state }) => SRTE.put({ ...state, ...session }))
+// const putSession = (session: AuthorizedState): DriveM<void> =>
+//   readEnvS(({ state }) => SRTE.put({ ...state, ...session }))
 
 const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
+
+export const asksCache = <A>(f: (cache: C.Cache) => A): DriveM<A> =>
+  pipe(readEnv, map(({ state: { cache } }) => f(cache)))
+
+export const chainCache = <A>(f: (cache: C.Cache) => DriveM<A>): DriveM<A> =>
+  readEnvS(({ state: { cache } }) => f(cache))
 
 const putFoundMissed = ({ found, missed }: {
   found: T.Details[]
@@ -115,37 +109,22 @@ const putDetailss = (detailss: T.Details[]): DriveM<void> =>
     ),
   )
 
-export const fromApiRequest = <A>(ma: API.Api<A>): DriveM<A> =>
-  pipe(
-    executeApiRequest(ma),
-    chain(([res, session]) =>
-      pipe(
-        putSession(session),
-        map(constant(res)),
-      )
-    ),
-  )
-
-export const askCache = <A>(f: (cache: C.Cache) => A): DriveM<A> =>
-  pipe(readEnv, map(({ state: { cache } }) => f(cache)))
-
-export const chainCache = <A>(f: (cache: C.Cache) => DriveM<A>): DriveM<A> =>
-  readEnvS(({ state: { cache } }) => f(cache))
-
 export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
     chainCache(
       flow(C.getFolderDetailsByIdsSeparated(drivewsids), fromEither),
     ),
     SRTE.chain(({ missed }) =>
-      fromApiRequest(
-        missed.length > 0
-          ? API.retrieveItemDetailsInFoldersS(missed)
-          : API.of({ missed: [], found: [] }),
+      pipe(
+        missed,
+        A.match(
+          () => SRTE.of({ missed: [], found: [] }),
+          missed => API.retrieveItemDetailsInFoldersS<DriveMState, DriveMEnv>(missed),
+        ),
       )
     ),
     chain(putFoundMissed),
-    chain(() => askCache(C.getFolderDetailsByIds(drivewsids))),
+    chain(() => asksCache(C.getFolderDetailsByIds(drivewsids))),
     chain(fromEither),
   )
 }
@@ -184,7 +163,7 @@ export const getCachedRoot = (trash: boolean): DriveM<T.DetailsTrash | T.Details
   )
 }
 
-export const chainTrash = <R>(
+export const chainCachedTrash = <R>(
   f: (root: T.DetailsTrash) => DriveM<R>,
 ): DriveM<R> => {
   return pipe(
@@ -195,7 +174,7 @@ export const chainTrash = <R>(
   )
 }
 
-export const retrieveRootAndTrashIfMissing = (): DriveM<void> => {
+const retrieveRootAndTrashIfMissing = (): DriveM<void> => {
   return pipe(
     retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
     map(constVoid),
@@ -306,4 +285,4 @@ export const getByPathsCached = <R extends T.Root>(
   )
 
 export const getRoot = () => chainRoot(of)
-export const getTrash = () => chainTrash(of)
+export const getTrash = () => chainCachedTrash(of)

@@ -36,8 +36,7 @@ export const edit = ({ path }: { path: string }) => {
       )),
     SRTE.chain(({ item }) =>
       pipe(
-        API.download(item),
-        DF.fromApiRequest,
+        API.download<DF.DriveMState>(item),
         DF.chain(
           url =>
             DF.readEnvS(

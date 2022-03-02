@@ -61,8 +61,7 @@ const handle = (
     // if it's a folder
     if (isFolderLike(dstitem)) {
       return pipe(
-        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
-        DF.fromApiRequest,
+        API.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
         DF.map(constVoid),
       )
     }
@@ -84,8 +83,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
-        DF.fromApiRequest,
+        API.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         DF.map(constVoid),
       )
     }
@@ -108,7 +106,7 @@ const uploadOverwrighting = (
     DF.Do,
     SRTE.bind(
       'uploadResult',
-      () => DF.fromApiRequest(API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
+      () => API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
     ),
     SRTE.bind('removeResult', () => {
       return API.moveItemsToTrash({

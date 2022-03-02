@@ -13,6 +13,7 @@ import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
 import fs from 'fs/promises'
+import { ESRTE } from '../../../icloud/drive/drive/m2'
 
 // fs.opendir
 
@@ -78,8 +79,7 @@ const handle = (
     // if it's a folder
     if (isFolderLike(dstitem)) {
       return pipe(
-        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
-        DF.fromApiRequest,
+        API.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
         DF.map(constVoid),
       )
     }
@@ -101,8 +101,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        API.upload({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
-        DF.fromApiRequest,
+        API.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         DF.map(constVoid),
       )
     }
@@ -117,7 +116,9 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
 
 const uploadOverwrighting = (
   { src, dst }: { dst: V.PathValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
-) => {
+): DF.DriveM<
+  void
+> => {
   const dstitem = V.target(dst)
   const parent = NA.last(dst.path.details)
 
@@ -125,10 +126,10 @@ const uploadOverwrighting = (
     DF.Do,
     SRTE.bind(
       'uploadResult',
-      () => DF.fromApiRequest(API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
+      () => (API.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone })),
     ),
     SRTE.bind('removeResult', () => {
-      return DF.fromApiRequest(API.moveItemsToTrash({
+      return (API.moveItemsToTrash({
         items: [dstitem],
         trash: true,
       }))
@@ -136,14 +137,13 @@ const uploadOverwrighting = (
     DF.chain(({ uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        API.renameItems({
+        API.renameItems<DF.DriveMState>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,
             ...parseName(fileName(dstitem)),
           }],
         }),
-        DF.fromApiRequest,
         DF.map(constVoid),
       )
     }),

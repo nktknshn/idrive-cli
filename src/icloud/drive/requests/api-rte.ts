@@ -11,7 +11,7 @@ import * as t from 'io-ts'
 import { BadRequestError, err, InvalidGlobalSessionError, MissingResponseBody } from '../../../lib/errors'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { AccountLoginResponseBody } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
@@ -20,7 +20,7 @@ import * as H from './http'
 export const Do = RTE.of<Env, Error, {}>({})
 
 export type ReaderRequest<T> = R.Reader<
-  { client: FetchClientEither; session: ICloudSessionValidated },
+  { client: FetchClientEither; session: AuthorizedState },
   TE.TaskEither<Error, H.ResponseWithSession<T>>
 >
 
@@ -297,7 +297,7 @@ export const orElse = <R>(
     )
   }
 
-export type DriveApiRequest<R> = ApiSessionRequest<[R, ICloudSessionValidated]>
+export type DriveApiRequest<R> = ApiSessionRequest<[R, AuthorizedState]>
 
 export type AuthorizationState = {
   session: ICloudSession

@@ -36,7 +36,7 @@ export const isHsa2Required = (
 ): response is SignInResponse409 & { hsa2Required: true } =>
   response.tag === 'SignInResponse409' && response.authType == 'hsa2'
 
-function getResponse(
+export function getResponse(
   httpResponse: HttpResponse,
   json: E.Either<Error, unknown>,
 ): E.Either<Error, SignInResponse> {

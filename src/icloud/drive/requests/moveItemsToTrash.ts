@@ -4,7 +4,7 @@ import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
 import * as ARR from './api-rte'
 import { expectJson, ResponseWithSession } from './http'
@@ -14,7 +14,7 @@ export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
 }
 
-export const moveItemsToTrashM = <S extends ICloudSessionValidated>({ items, trash = false }: {
+export const moveItemsToTrashM = <S extends AuthorizedState>({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
 }): AR.AuthorizedRequest<MoveItemToTrashResponse, S> =>

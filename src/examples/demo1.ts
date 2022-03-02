@@ -1,9 +1,12 @@
+import { state } from 'fp-ts'
 import * as A from 'fp-ts/Array'
 import { sequenceS } from 'fp-ts/lib/Apply'
-import { flow, identity, pipe } from 'fp-ts/lib/function'
+import { apply, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
+import * as RT from 'fp-ts/lib/ReaderTask'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { not } from 'fp-ts/lib/Refinement'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import { mapFst, snd } from 'fp-ts/lib/Tuple'
 import * as NA from 'fp-ts/NonEmptyArray'
@@ -11,36 +14,28 @@ import * as TE from 'fp-ts/TaskEither'
 import { normalizePath } from '../cli/cli-drive/cli-drive-actions/helpers'
 import { defaultCacheFile, defaultSessionFile } from '../config'
 import { defaultApiEnv } from '../defaults'
-import {
-  authorizeSessionM,
-  authorizeSessionM2,
-  authorizeSessionRTE,
-  authorizeStateM3,
-  ICloudSessionValidated,
-} from '../icloud/authorization/authorize'
+import { AuthorizedState, authorizeSessionM, authorizeStateM3 } from '../icloud/authorization/authorize'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData } from '../icloud/authorization/validate'
 import * as API from '../icloud/drive/api'
+import * as NM from '../icloud/drive/api/methods'
+import * as NR from '../icloud/drive/api/requests'
+import * as NT from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
 import * as DF from '../icloud/drive/drive'
 import { getMissedFound } from '../icloud/drive/helpers'
 import * as RQ from '../icloud/drive/requests'
 import * as AR from '../icloud/drive/requests/request'
-import {
-  Details,
-  fileName,
-  isFolderLikeItem,
-  isInvalidId,
-  isNotRootDetails,
-} from '../icloud/drive/requests/types/types'
-import { rootDrivewsid } from '../icloud/drive/requests/types/types-io'
+import * as T from '../icloud/drive/requests/types/types'
+import { driveDetails, invalidIdItem, rootDrivewsid } from '../icloud/drive/requests/types/types-io'
 import * as S from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
-import { err, InvalidGlobalSessionError } from '../lib/errors'
+import { BadRequestError, err, InvalidGlobalSessionError } from '../lib/errors'
 import { apiLogger, authLogger, cacheLogger, initLoggers, logger, logReturnAs, stderrLogger } from '../lib/logging'
+import { NEA } from '../lib/types'
 
 const retryingF = <
-  R extends AR.Env,
+  R extends AR.RequestEnv,
   A,
   S extends { session: S.ICloudSession },
   Args extends unknown[],
@@ -144,7 +139,12 @@ const saveState = <A>(
 import prompts_, { PromptObject } from 'prompts'
 import { saveCache } from '../cli/cli-action'
 import { autocomplete } from '../cli/cli-drive/cli-drive-actions'
+import { authorizationHeaders } from '../icloud/authorization/headers'
+import { executor } from '../icloud/drive/api/newbuilder'
 import { CacheF } from '../icloud/drive/cache/cache-types'
+import { applyCookiesToSession, HttpRequestConfig } from '../icloud/session/session-http'
+import { headers } from '../icloud/session/session-http-headers'
+import { HttpResponse } from '../lib/http/fetch-client'
 
 const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
@@ -175,9 +175,6 @@ const askPassword = () =>
   }, {
     onCancel: () => process.exit(1),
   })
-import { state } from 'fp-ts'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { NEA } from '../lib/types'
 
 const initSessionPrompts = () => {
   return pipe(
@@ -247,86 +244,157 @@ const loadAccountData = (
     ),
   )
 
-const loadAuthorization = pipe(
+const getAuthorizedState: RTE.ReaderTaskEither<
+  { sessionFile: string } & API.ApiEnv & AR.RequestEnv,
+  Error,
+  AuthorizedState
+> = pipe(
   loadSession,
-  RTE.chainW(loadAccountData),
-)
-const action = pipe(
-  DF.getRoot(),
-  DF.chain(root => API.retrieveItemDetailsInFoldersS([rootDrivewsid])),
+  RTE.chain(loadAccountData),
 )
 
-const getTrees = (
+// const action = pipe(
+//   DF.getRoot(),
+//   DF.chain(root => NM.retrieveItemDetailsInFoldersSG<S>([rootDrivewsid])),
+// )
+
+type TreeNode = T.Details | T.DriveChildrenItemFile
+
+const getTrees = <S extends AuthorizedState = never>(
   drivewsids: NEA<string>,
-): AR.ApiRequest<TR.Tree<Details>[], ICloudSessionValidated, API.ApiEnv & AR.Env> => {
-  return pipe(
-    API.retrieveItemDetailsInFolders({ drivewsids }),
-    SRTE.map(flow(A.filter(not(isInvalidId)))),
-    SRTE.bindTo('parents'),
-    SRTE.bind(
-      'subtrees',
-      ({ parents }) =>
-        pipe(
-          parents,
-          A.map(_ => A.filter(isFolderLikeItem)(_.items)),
-          A.flatten,
-          A.match(
-            () => SRTE.of([]),
-            flow(NA.map(_ => _.drivewsid), getTrees),
-          ),
-        ),
-    ),
-    SRTE.map(({ subtrees, parents }) =>
+): SRTE.StateReaderTaskEither<
+  S,
+  {
+    retrieveItemDetailsInFolders: NT.ApiType['retrieveItemDetailsInFolders']
+    downloadM: NT.ApiType['downloadM']
+  },
+  Error,
+  TR.Tree<TreeNode>[]
+> => {
+  const getSubfolders = (parents: T.Details[]): T.FolderLikeItem[] =>
+    A.flatten(
+      parents.map(
+        _ => A.filter(T.isFolderLikeItem)(_.items),
+      ),
+    )
+
+  const matchSubtrees = (
+    parents: T.Details[],
+    subtrees: TR.Tree<TreeNode>[],
+  ): [TR.Tree<TreeNode>[], T.Details][] =>
+    pipe(
+      parents.map(p =>
+        subtrees.filter(
+          st =>
+            T.isNotRootDetails(st.value)
+            && st.value.parentId == p.drivewsid,
+        )
+      ),
+      A.zip(parents),
+    )
+
+  const makeTree = (parent: T.Details, subtrees: TR.Tree<TreeNode>[]) =>
+    TR.make(
+      parent,
       pipe(
-        parents,
-        A.map(parent =>
-          pipe(
-            subtrees,
-            A.filter(st => isNotRootDetails(st.value) && st.value.parentId == parent.drivewsid),
-          )
+        parent.items,
+        A.filter(T.isFileItem),
+        A.map(TR.make),
+        A.concat(subtrees),
+      ),
+    )
+
+  return pipe(
+    SRTE.ask<S, {
+      retrieveItemDetailsInFolders: NT.ApiType['retrieveItemDetailsInFolders']
+      downloadM: NT.ApiType['downloadM']
+    }>(),
+    SRTE.chainW(_ => _.retrieveItemDetailsInFolders({ drivewsids })),
+    SRTE.map(A.filter(not(T.isInvalidId))),
+    SRTE.bindTo('parents'),
+    SRTE.bind('subtrees', ({ parents }) =>
+      pipe(
+        getSubfolders(parents),
+        A.match(
+          () => SRTE.of([]),
+          sfs => getTrees<S>(pipe(sfs, NA.map(_ => _.drivewsid))),
         ),
-        A.zip(parents),
-        A.map(([forest, parent]) => TR.make(parent, forest)),
-      )
-    ),
+      )),
+    SRTE.map(({ subtrees, parents }) => matchSubtrees(parents, subtrees)),
+    SRTE.map(A.map(([subtrees, parent]) => makeTree(parent, subtrees))),
   )
 }
 
-const recursiveTree = pipe(
-  getTrees([rootDrivewsid]),
-  SRTE.map(A.map(flow(
-    TR.map(fileName),
-    TR.drawTree,
-  ))),
-  SRTE.map(_ => _.join('\n')),
-)
+const prog2 = <S extends AuthorizedState>() =>
+  pipe(
+    NM.retrieveItemDetailsInFoldersS<S>([rootDrivewsid]),
+    SRTE.map(_ => _.missed.join(',')),
+  )
 
-const req2 = pipe(
-  loadAuthorization,
+const rootTreeProgram = <S extends AuthorizedState>() =>
+  pipe(
+    getTrees<S>([rootDrivewsid]),
+    SRTE.map(A.map(flow(
+      TR.map(T.fileNameAddSlash),
+      TR.drawTree,
+    ))),
+    SRTE.map(_ => _.join('\n')),
+  )
+
+// NM.executor(getFoldersRequest)([{ drivewsid: rootDrivewsid, partialData: false, includeHierarchy: false }])
+
+// const prog3 = <S extends AuthorizedState>() =>
+//   pipe(
+//     SRTE.ask<S, { executor: NM.Executor }>(),
+//     SRTE.map((_) => ({ folderReq: _.executor(getFoldersRequest<S>()) })),
+//     SRTE.chainW(api => api.folderReq({ drivewsids: [rootDrivewsid] })),
+//     SRTE.map(_ => JSON.stringify(_)),
+//   )
+
+const program = pipe(
+  getAuthorizedState,
   RTE.bindW('cache', () => loadOrCreateCache),
   RTE.apS('someth', RTE.of(1)),
-  RTE.chainW(recursiveTree),
+  RTE.chainW(pipe(rootTreeProgram())),
   RTE.chainFirstW(res =>
     pipe(
       RTE.of(snd(res)),
       RTE.chainFirstW(saveAccountData2),
       RTE.chainFirstW(saveSession),
-      // RTE.chainFirstW(saveCache),
+      RTE.chainFirstW(saveCache),
     )
   ),
-  RTE.fold(
-    (e) => () => async () => `${e.message}`,
-    ([res, state]) => () => async () => res,
+  RTE.match(
+    (e) => `${e.name}: ${e.message}`,
+    ([res]) => res,
   ),
 )
 
+const meth1 = <S extends AuthorizedState>(
+  { drivewsids }: { drivewsids: string[] },
+): AR.AuthorizedRequest<NEA<T.Details | T.InvalidId>, S, {}> =>
+  (s: S) => () => RQ.retrieveItemDetailsInFolders<S, AR.RequestEnv>({ drivewsids })(s)(defaultApiEnv)
+
+const meth2 = executor(defaultApiEnv)(NR.getFoldersRequest())
+
+const api = {
+  retrieveItemDetailsInFolders: executor(defaultApiEnv)(NR.getFoldersRequest()),
+  downloadM: executor(defaultApiEnv)(NR.downloadM()),
+}
+
 const main = async () => {
-  const t = req2({
+  const t = program({
     sessionFile: defaultSessionFile,
     cacheFile: defaultCacheFile,
     noCache: false,
     // api,
     ...defaultApiEnv,
+    // executor: flow(
+    //   NM.executor,
+    //   // SRTE.chain(_ => _),
+    // ),
+    ...api,
+    //  NM.executor(getFoldersRequest),
   })
 
   console.log(
@@ -335,51 +403,3 @@ const main = async () => {
 }
 
 main()
-
-// const req1 = pipe(
-//   // loadSession(),
-//   RTE.Do,
-//   RTE.bindW('session', () => loadSessionFile),
-//   RTE.bindW('accountData', () => loadAccountData),
-//   // RTE.bindW('cache', () => loadCache),
-//   RTE.chainW(
-//     // API.retrieveTrashDetails(),
-//     RQ.retrieveItemDetailsInFolders({ drivewsids: [rootDrivewsid] }),
-//     // DF.chainRoot(root => DF.lsdir(root, normalizePath('/'))),
-//   ),
-//   RTE.chainW(
-//     ([res, state]) =>
-//       pipe(
-//         state,
-//         RQ.retrieveItemDetailsInFolders({ drivewsids: [rootDrivewsid] }),
-//       ),
-//   ),
-//   RTE.chainW(flow(snd, RQ.retrieveItemDetailsInFolders({ drivewsids: [rootDrivewsid] }))),
-//   RTE.chainW(
-//     ([res, state]) => pipe(state, API.retrieveItemDetailsInFolders({ drivewsids: [rootDrivewsid] })),
-//   ),
-//   RTE.chainW(
-//     ([res, state]) => pipe(state, autocomplete({ path: '/', trash: false, file: false, dir: true, cached: false })),
-//   ),
-//   RTE.chainFirstW(saveState),
-//   RTE.fold(
-//     (e) => RTE.left(err(`error ${e}`)),
-//     v => RTE.of(JSON.stringify(v)),
-//   ),
-// )
-
-const retrieveItemDetailsInFolders = retryingF(RQ.retrieveItemDetailsInFolders)
-const retrieveItemDetailsInFoldersS = retryingF(
-  <S extends ICloudSessionValidated, R extends AR.Env>(drivewsids: string[]) =>
-    pipe(
-      RQ.retrieveItemDetailsInFolders<S, R>({ drivewsids }),
-      AR.map(ds => getMissedFound(drivewsids, ds)),
-    ),
-)
-
-// const api: DF.ApiType = {
-//   retrieveItemDetailsInFolders,
-//   retrieveItemDetailsInFoldersS,
-// }
-
-type CommonOperator<S extends { session: S.ICloudSession }, A, R> = (s: S) => RTE.ReaderTaskEither<R, Error, A>

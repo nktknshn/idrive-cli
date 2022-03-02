@@ -3,7 +3,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
-import { ICloudSessionValidated } from '../../../icloud/authorization/authorize'
+import { AuthorizedState } from '../../../icloud/authorization/authorize'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive copy'
 import * as H from '../../../icloud/drive/drive/validation'
@@ -62,8 +62,8 @@ type capUpload = {
       parent_id: string
       mtime: number
     },
-    ICloudSessionValidated,
-    AR.Env
+    AuthorizedState,
+    AR.RequestEnv
   >
 }
 
@@ -75,7 +75,7 @@ type capRenameItems = {
       name: string
       extension?: string
     }[]
-  }) => AR.AuthorizedRequest<RQ.RenameResponse, ICloudSessionValidated>
+  }) => AR.AuthorizedRequest<RQ.RenameResponse, AuthorizedState>
 }
 
 type capMoveItemsToTrash = {
@@ -85,7 +85,7 @@ type capMoveItemsToTrash = {
       etag: string
     }[]
     trash?: boolean | undefined
-  }) => AR.AuthorizedRequest<RQ.MoveItemToTrashResponse, ICloudSessionValidated>
+  }) => AR.AuthorizedRequest<RQ.MoveItemToTrashResponse, AuthorizedState>
 }
 
 type ApiType =
@@ -117,7 +117,7 @@ const uploadOverwrighting2 = (
   )
 }
 
-const Do = <S extends ICloudSessionValidated>() => SRTE.of<S, unknown, Error, unknown>({})
+const Do = <S extends AuthorizedState>() => SRTE.of<S, unknown, Error, unknown>({})
 
 export const upload = (
   { sessionFile, cacheFile, srcpath, dstpath, noCache, overwright }: {

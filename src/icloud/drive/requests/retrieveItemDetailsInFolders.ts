@@ -6,7 +6,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
-import { ICloudSessionValidated } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
 import { applyToSession, decodeJson, filterStatus, ResponseHandler, ResponseWithSession, withResponse } from './http'
 import * as AR from './request'
@@ -15,7 +15,7 @@ import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '.
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,
-  { accountData, session }: ICloudSessionValidated,
+  { accountData, session }: AuthorizedState,
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
   handleResponse: ResponseHandler<R>,
 ): TE.TaskEither<Error, ResponseWithSession<R>> {
@@ -80,7 +80,7 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWi
 //   )
 // }
 
-export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends ICloudSessionValidated>(
+export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ) => {
   return pipe(
@@ -93,7 +93,7 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends ICloudSessi
 }
 import * as iot from 'io-ts-types'
 
-export function retrieveItemDetailsInFolders<S extends ICloudSessionValidated, R extends AR.Env>(
+export function retrieveItemDetailsInFolders<S extends AuthorizedState, R extends AR.RequestEnv>(
   { drivewsids }: { drivewsids: string[] },
 ): AR.AuthorizedRequest<NEA<(Details | InvalidId)>, S, R> {
   return pipe(

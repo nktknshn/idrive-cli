@@ -18,7 +18,10 @@ export function parsePath(path: string): NA.NonEmptyArray<string> {
     : ['/', ...parsedPath]
 }
 
-export const getMissedFound = <T>(drivewsids: string[], details: T.MaybeNotFound<T>[]) => {
+export const getMissedFound = <T>(
+  drivewsids: string[],
+  details: T.MaybeNotFound<T>[],
+): { missed: string[]; found: T[] } => {
   return pipe(
     A.zip(drivewsids, details),
     A.partitionMap(([dwid, d]) => T.isInvalidId(d) ? E.left(dwid) : E.right(d)),

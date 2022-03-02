@@ -9,7 +9,7 @@ import { err, InvalidGlobalSessionError } from '../../lib/errors'
 import { FetchClientEither, FetchError } from '../../lib/http/fetch-client'
 import { NEA } from '../../lib/types'
 import { Path } from '../../lib/util'
-import { authorizeSessionM, ICloudSessionValidated } from '../authorization/authorize'
+import { AuthorizedState, authorizeSessionM } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
 import * as RQ from './requests'
 // import * as AR from './requests/api-rte'
@@ -167,7 +167,7 @@ export const upload = (
     const retrying = executeRequest2(env)
 
     return pipe(
-      AR.Do<ICloudSessionValidated>(),
+      AR.Do<AuthorizedState>(),
       SRTE.bind('fstats', () =>
         AR.fromTaskEither(TE.tryCatch(
           () => fs.stat(sourceFilePath),
@@ -250,8 +250,8 @@ export const uploadSimple = (
     parent_id: string
     mtime: number
   },
-  ICloudSessionValidated,
-  AR.Env
+  AuthorizedState,
+  AR.RequestEnv
 > => {
   const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
 
@@ -270,7 +270,7 @@ export const uploadSimple = (
   }
 
   return pipe(
-    AR.Do<ICloudSessionValidated>(),
+    AR.Do<AuthorizedState>(),
     SRTE.bind('fstats', () =>
       AR.fromTaskEither(TE.tryCatch(
         () => fs.stat(sourceFilePath),

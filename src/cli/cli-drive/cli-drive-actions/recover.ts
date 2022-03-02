@@ -19,7 +19,7 @@ export const recover = (
     DF.Do,
     SRTE.bind('item', () =>
       pipe(
-        DF.chainTrash(trash => DF.getByPaths(trash, [npath])),
+        DF.chainCachedTrash(trash => DF.getByPaths(trash, [npath])),
         DF.map(NA.head),
         DF.filterOrElse(not(isTrashDetailsG), () => err(`you cannot recover trash root`)),
       )),

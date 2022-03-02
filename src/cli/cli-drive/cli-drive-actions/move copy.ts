@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
-import { ICloudSessionValidated } from '../../../icloud/authorization/authorize'
+import { AuthorizedState } from '../../../icloud/authorization/authorize'
 import * as AM from '../../../icloud/drive/api'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive copy'
@@ -111,14 +111,14 @@ const handle = (
   return DF.left(err(`invalid dstitem`))
 }
 
-type CapMoveItems<S extends ICloudSessionValidated> = {
+type CapMoveItems<S extends AuthorizedState> = {
   moveItemsM: ({ items, destinationDrivewsId }: {
     destinationDrivewsId: string
     items: {
       drivewsid: string
       etag: string
     }[]
-  }) => AR.AuthorizedRequest<MoveItemToTrashResponse, S, AR.Env>
+  }) => AR.AuthorizedRequest<MoveItemToTrashResponse, S, AR.RequestEnv>
 }
 
 const caseMove = (
