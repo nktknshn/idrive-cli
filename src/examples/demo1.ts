@@ -32,41 +32,12 @@ import * as S from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { BadRequestError, err, InvalidGlobalSessionError } from '../lib/errors'
 import { apiLogger, authLogger, cacheLogger, initLoggers, logger, logReturnAs, stderrLogger } from '../lib/logging'
-import { NEA } from '../lib/types'
-
-const retryingF = <
-  R extends AR.RequestEnv,
-  A,
-  S extends { session: S.ICloudSession },
-  Args extends unknown[],
->(
-  f: (...args: Args) => (s: S) => RTE.ReaderTaskEither<R, Error, [A, S]>,
-) =>
-  (...args: Args) =>
-    (s: S): RTE.ReaderTaskEither<R, Error, [A, S]> => {
-      return pipe(
-        f(...args)(s),
-        RTE.orElse(
-          (e) =>
-            InvalidGlobalSessionError.is(e)
-              ? pipe(
-                authorizeStateM3(s),
-                RTE.chain(f(...args)),
-              )
-              : RTE.left(e),
-        ),
-      )
-    }
+import { NEA, XXX } from '../lib/types'
 
 initLoggers(
   { debug: true },
   [logger, cacheLogger, stderrLogger, apiLogger, authLogger],
 )
-
-const session = {
-  session: S.session('user', 'passw'),
-  someData: 1,
-}
 
 const ado = sequenceS(RTE.ApplySeq)
 import * as O from 'fp-ts/Option'
@@ -120,20 +91,6 @@ export const loadSessionFileO = (deps: { sessionFile: string }) =>
   pipe(
     readSessionFile(deps.sessionFile),
     TE.fold(() => TE.of(O.none), a => TE.of(O.some(a))),
-  )
-
-const saveState = <A>(
-  res: [A, {
-    session: S.ICloudSession
-    accountData: AccountLoginResponseBody
-    // cache: CacheF
-  }],
-) =>
-  pipe(
-    RTE.of(res),
-    RTE.chainFirstW(flow(snd, saveAccountData2)),
-    RTE.chainFirstW(flow(snd, saveSession)),
-    // RTE.chainFirstW(flow(snd, saveCache)),
   )
 
 import prompts_, { PromptObject } from 'prompts'
@@ -260,17 +217,9 @@ const getAuthorizedState: RTE.ReaderTaskEither<
 
 type TreeNode = T.Details | T.DriveChildrenItemFile
 
-const getTrees = <S extends AuthorizedState = never>(
+const getTrees = <S extends AuthorizedState & { someth: number }>(
   drivewsids: NEA<string>,
-): SRTE.StateReaderTaskEither<
-  S,
-  {
-    retrieveItemDetailsInFolders: NT.ApiType['retrieveItemDetailsInFolders']
-    downloadM: NT.ApiType['downloadM']
-  },
-  Error,
-  TR.Tree<TreeNode>[]
-> => {
+): XXX<S, NT.Use<'retrieveItemDetailsInFolders'>, TR.Tree<TreeNode>[]> => {
   const getSubfolders = (parents: T.Details[]): T.FolderLikeItem[] =>
     A.flatten(
       parents.map(
@@ -305,10 +254,7 @@ const getTrees = <S extends AuthorizedState = never>(
     )
 
   return pipe(
-    SRTE.ask<S, {
-      retrieveItemDetailsInFolders: NT.ApiType['retrieveItemDetailsInFolders']
-      downloadM: NT.ApiType['downloadM']
-    }>(),
+    SRTE.ask<S, NT.Use<'retrieveItemDetailsInFolders'>>(),
     SRTE.chainW(_ => _.retrieveItemDetailsInFolders({ drivewsids })),
     SRTE.map(A.filter(not(T.isInvalidId))),
     SRTE.bindTo('parents'),
@@ -331,7 +277,7 @@ const prog2 = <S extends AuthorizedState>() =>
     SRTE.map(_ => _.missed.join(',')),
   )
 
-const rootTreeProgram = <S extends AuthorizedState>() =>
+const rootTreeProgram = <S extends AuthorizedState & { someth: number }>() =>
   pipe(
     getTrees<S>([rootDrivewsid]),
     SRTE.map(A.map(flow(
@@ -340,16 +286,6 @@ const rootTreeProgram = <S extends AuthorizedState>() =>
     ))),
     SRTE.map(_ => _.join('\n')),
   )
-
-// NM.executor(getFoldersRequest)([{ drivewsid: rootDrivewsid, partialData: false, includeHierarchy: false }])
-
-// const prog3 = <S extends AuthorizedState>() =>
-//   pipe(
-//     SRTE.ask<S, { executor: NM.Executor }>(),
-//     SRTE.map((_) => ({ folderReq: _.executor(getFoldersRequest<S>()) })),
-//     SRTE.chainW(api => api.folderReq({ drivewsids: [rootDrivewsid] })),
-//     SRTE.map(_ => JSON.stringify(_)),
-//   )
 
 const program = pipe(
   getAuthorizedState,
@@ -369,17 +305,11 @@ const program = pipe(
     ([res]) => res,
   ),
 )
-
-const meth1 = <S extends AuthorizedState>(
-  { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<NEA<T.Details | T.InvalidId>, S, {}> =>
-  (s: S) => () => RQ.retrieveItemDetailsInFolders<S, AR.RequestEnv>({ drivewsids })(s)(defaultApiEnv)
-
-const meth2 = executor(defaultApiEnv)(NR.getFoldersRequest())
+const ex = executor(defaultApiEnv)
 
 const api = {
-  retrieveItemDetailsInFolders: executor(defaultApiEnv)(NR.getFoldersRequest()),
-  downloadM: executor(defaultApiEnv)(NR.downloadM()),
+  retrieveItemDetailsInFolders: ex(NR.getFoldersRequest),
+  downloadM: ex(NR.downloadM),
 }
 
 const main = async () => {
@@ -387,14 +317,8 @@ const main = async () => {
     sessionFile: defaultSessionFile,
     cacheFile: defaultCacheFile,
     noCache: false,
-    // api,
     ...defaultApiEnv,
-    // executor: flow(
-    //   NM.executor,
-    //   // SRTE.chain(_ => _),
-    // ),
     ...api,
-    //  NM.executor(getFoldersRequest),
   })
 
   console.log(

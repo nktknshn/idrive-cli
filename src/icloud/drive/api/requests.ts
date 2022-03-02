@@ -21,7 +21,7 @@ const genericItemDetailsRequest = <S extends AR.AuthorizationState>(
       options: { addClientInfo: true, data },
     })
 
-const decodeResponse = (httpResponse: HttpResponse) =>
+const defaultDecoding = (httpResponse: HttpResponse) =>
   pipe(
     TE.of({ httpResponse }),
     NM.checkStatuses([200]),
@@ -37,7 +37,7 @@ export const getFoldersRequest = <S extends AR.AuthorizationState>() =>
         )),
       decodeResponse: (httpResponse: HttpResponse) =>
         pipe(
-          decodeResponse(httpResponse),
+          defaultDecoding(httpResponse),
           NM.requireJson(
             v => iot.nonEmptyArray(t.union([driveDetails, invalidIdItem])).decode(v),
           ),
@@ -56,7 +56,7 @@ export const downloadM = <S extends AR.AuthorizationState>() =>
           zone: string
         },
       ) =>
-        ({ session, accountData }: S): TE.TaskEither<Error, HttpRequestConfig> =>
+        ({ session, accountData }: S) =>
           TE.of({
             method: 'GET',
             url:
@@ -65,7 +65,7 @@ export const downloadM = <S extends AR.AuthorizationState>() =>
           }),
       decodeResponse: (httpResponse: HttpResponse) =>
         pipe(
-          decodeResponse(httpResponse),
+          defaultDecoding(httpResponse),
           NM.requireJson(
             v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<DownloadResponseBody>,
           ),

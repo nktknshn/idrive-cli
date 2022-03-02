@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { BadRequestError, err, InvalidGlobalSessionError, MissingResponseBody } from '../../../lib/errors'
 import { HttpResponse } from '../../../lib/http/fetch-client'
-import { NEA } from '../../../lib/types'
+import { NEA, XXX } from '../../../lib/types'
 import { AuthorizedState, authorizeSessionM } from '../../authorization/authorize'
 import { authorizationHeaders } from '../../authorization/headers'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
@@ -122,6 +122,19 @@ export const applyToSession = <
       })
     }
 
+export const applyToSession2 = <
+  S extends { session: ICloudSession },
+>(
+  f: (httpResponse: HttpResponse) => (session: ICloudSession) => ICloudSession,
+) =>
+  <T extends { httpResponse: HttpResponse }>(context: T) =>
+    (state: S): TE.TaskEither<Error, S> => {
+      return TE.of({
+        ...state,
+        session: f(context.httpResponse)(state.session),
+      })
+    }
+
 export const result = <S extends { session: ICloudSession }, T extends { httpResponse: HttpResponse }, A>(
   handler: (context: T) => (oldstate: S) => (state: S) => TE.TaskEither<Error, A>,
 ) => (context: T) => (state: S) => pipe(context, handler)(state)
@@ -129,6 +142,12 @@ export const result = <S extends { session: ICloudSession }, T extends { httpRes
 export const request = <args extends unknown[], S extends State, T extends { httpResponse: HttpResponse }, A>(
   req: Request<args, S, T, A>,
 ): Request<args, S, T, A> => req
+
+export const constructor = <S extends State, args extends unknown[]>(
+  f: (...args: args) => (state: S) => TE.TaskEither<Error, HttpRequestConfig>,
+): (...args: args) => (state: S) => TE.TaskEither<Error, HttpRequestConfig> => {
+  return f
+}
 
 export interface Request<args extends unknown[], S extends State, T extends { httpResponse: HttpResponse }, A> {
   constructor: (...args: args) => (state: S) => TE.TaskEither<Error, HttpRequestConfig>
@@ -147,33 +166,32 @@ export type Executor = <
     httpResponse: HttpResponse
   },
   A,
->(
-  req: Request<TArgs, S, T, A>,
-) => <S2 extends S>(...args: TArgs) => SRTE.StateReaderTaskEither<S2, {}, Error, A>
+>(request: () => Request<TArgs, S, T, A>) => <S2 extends S>(...args: TArgs) => XXX<S2, {}, A>
 
 export const executor = (env: RequestEnv & {}) =>
   <TArgs extends unknown[], S extends State, T extends { httpResponse: HttpResponse }, A>(
-    req: Request<TArgs, S, T, A>,
-  ): <S2 extends S>(...args: TArgs) => SRTE.StateReaderTaskEither<S2, {}, Error, A> => {
+    req: () => Request<TArgs, S, T, A>,
+  ): <S2 extends S>(...args: TArgs) => XXX<S2, {}, A> => {
     return <S2 extends S>(...args: TArgs) =>
       (s: S2) =>
         () => {
-          const executeRequest = (s: S2) =>
+          const { result, handleResponse, decodeResponse, constructor } = req()
+
+          const executeRequest = (state: S2) =>
             pipe(
-              TE.of<Error, { env: RequestEnv }>({ env }),
-              TE.bind('state', () => TE.of(s)),
-              TE.bind('request', ({ state }) =>
+              TE.Do,
+              TE.bind('request', () =>
                 pipe(
-                  req.constructor(...args)(state),
+                  constructor(...args)(state),
                   TE.map(r => apiHttpRequest(r.method, r.url, r.options)(state)),
                 )),
-              TE.bind('response', ({ env, request }) => (env.fetch(request))),
-              TE.bind('context', ({ response }) => (req.decodeResponse(response))),
-              TE.bind('newstate', ({ context, state }) => (req.handleResponse(context)(state))),
-              TE.chainW(({ context, newstate, state, response, request }) =>
+              TE.bind('response', ({ request }) => env.fetch(request)),
+              TE.bind('context', ({ response }) => decodeResponse(response)),
+              TE.bind('newstate', ({ context }) => handleResponse(context)(state)),
+              TE.chainW(({ context, newstate, response, request }) =>
                 pipe(
-                  req.result(context)(state)(newstate),
-                  TE.map((res) => [res, { ...s, ...newstate }] as [A, S2]),
+                  result(context)(state)(newstate),
+                  TE.map((res) => [res, { ...state, ...newstate }] as [A, S2]),
                 )
               ),
             )

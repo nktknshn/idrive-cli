@@ -1,7 +1,7 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { NEA } from '../../../lib/types'
+import { NEA, XX, XXX } from '../../../lib/types'
 import { AuthorizedState, authorizeSessionM } from '../../authorization/authorize'
-import { RenameResponse } from '../requests'
+import { CreateFoldersResponse, RenameResponse } from '../requests'
 import { DownloadResponseBody } from '../requests/download'
 import { MoveItemsResponse } from '../requests/moveItems'
 import * as T from './../requests/types/types'
@@ -12,6 +12,8 @@ type STE<S, A> = SRTE.StateReaderTaskEither<S, {}, Error, A>
 export type RetrieveItemDetailsInFolders = <S extends AuthorizedState>(
   { drivewsids }: { drivewsids: NEA<string> },
 ) => STE<S, NEA<(T.Details | T.InvalidId)>>
+
+export type Use<K extends keyof ApiType> = Record<K, ApiType[K]>
 
 export type ApiType = {
   retrieveItemDetailsInFolders: RetrieveItemDetailsInFolders
@@ -39,4 +41,11 @@ export type ApiType = {
       items: { drivewsid: string; etag: string; name: string; extension?: string }[]
     },
   ) => STE<S, RenameResponse>
+
+  createFoldersM: <S extends AuthorizedState>(
+    { names, destinationDrivewsId }: {
+      destinationDrivewsId: string
+      names: string[]
+    },
+  ) => XX<S, CreateFoldersResponse>
 }

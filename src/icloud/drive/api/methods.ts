@@ -57,7 +57,7 @@ export const download = <S extends AuthorizedState>(
   },
 ) =>
   pipe(
-    SRTE.ask<S, { downloadM: NT.ApiType['downloadM'] }, Error>(),
+    SRTE.ask<S, NT.Use<'downloadM'>>(),
     SRTE.chainW(_ => _.downloadM(opts)),
     SRTE.map(
       _ => _.data_token?.url ?? _.package_token?.url,

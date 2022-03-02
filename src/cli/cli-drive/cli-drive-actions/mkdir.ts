@@ -6,28 +6,31 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
+import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
+import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls/printing'
 
-export const mkdir = ({ path }: { path: string }) => {
+export const mkdir = ({ path }: { path: string }): XXX<DF.DriveMState, Use<'createFoldersM'>, string> => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 
   logger.debug(`mkdir(${name} in ${parentPath})`)
   const nparentPath = normalizePath(Path.dirname(path))
 
-  return pipe(
-    DF.Do,
+  const res = pipe(
+    SRTE.ask<DF.DriveMState, Use<'createFoldersM'>>(),
+    SRTE.bindTo('api'),
     SRTE.bindW('root', DF.getRoot),
     SRTE.bindW('parent', ({ root }) => DF.getByPathFolder(root, nparentPath)),
-    SRTE.bindW('result', ({ parent }) =>
+    SRTE.bindW('result', ({ parent, api }) =>
       pipe(
-        API.createFolders<DF.DriveMState>({
+        api.createFoldersM<DF.DriveMState>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),
