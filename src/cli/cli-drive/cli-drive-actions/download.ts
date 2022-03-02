@@ -12,6 +12,8 @@ import { concatAll } from 'fp-ts/Monoid'
 import { MonoidSum } from 'fp-ts/number'
 import * as fs from 'fs/promises'
 import * as API from '../../../icloud/drive/api'
+import * as NM from '../../../icloud/drive/api/methods'
+import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import {
   addPathToFolderTree,
@@ -23,8 +25,11 @@ import { Details, DriveChildrenItemFile, isFile } from '../../../icloud/drive/re
 import { err, SomeError } from '../../../lib/errors'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { logger } from '../../../lib/logging'
+import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { normalizePath } from './helpers'
+
+type Deps = DF.DriveMEnv & Use<'renameItemsM'> & Use<'upload'> & Use<'fetchClient'>
 
 const sum = concatAll(MonoidSum)
 
@@ -62,16 +67,17 @@ export const downloadFolder = (
 
 const recursiveDownload = ({ path, dstpath }: { path: string; dstpath: string }) => {
   return pipe(
-    DF.Do,
-    SRTE.bind('tree', () =>
+    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.bindTo('api'),
+    SRTE.bindW('tree', () =>
       pipe(
         DF.chainRoot((root) => DF.getByPathFolder(root, normalizePath(path))),
         DF.chain(dir => DF.getFoldersTrees([dir], Infinity)),
         DF.map(NA.head),
       )),
-    SRTE.bind('treeWithPath', ({ tree }) => DF.of(addPathToFolderTree('/', tree))),
-    SRTE.bind('flatTree', ({ tree }) => DF.of(zipFolderTreeWithPath('/', tree))),
-    DF.chain(({ flatTree, treeWithPath }) => {
+    SRTE.bindW('treeWithPath', ({ tree }) => DF.of(addPathToFolderTree('/', tree))),
+    SRTE.bindW('flatTree', ({ tree }) => DF.of(zipFolderTreeWithPath('/', tree))),
+    SRTE.chainW(({ flatTree, treeWithPath }) => {
       const files = pipe(
         flatTree,
         A.filter((item): item is [string, DriveChildrenItemFile] => isFile(item[1])),
@@ -86,7 +92,7 @@ const recursiveDownload = ({ path, dstpath }: { path: string; dstpath: string })
       return pipe(
         createDirStructure(dstpath, getDirStructure(treeWithPath)),
         DF.chain(createEmptyFiles(empties.map(fst))),
-        DF.chain(downloadFiles(downloadable)),
+        SRTE.chain(downloadFiles(downloadable)),
       )
     }),
     DF.map(JSON.stringify),
@@ -195,19 +201,20 @@ const createEmptyFiles = (paths: string[]) =>
 
 const downloadChunk = (chunk: NA.NonEmptyArray<readonly [path: string, file: DriveChildrenItemFile]>) => {
   return pipe(
-    DF.readEnv,
-    SRTE.bind('urls', () =>
-      API.downloadBatch({
+    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.bindTo('api'),
+    SRTE.bindW('urls', () =>
+      NM.downloadBatch({
         docwsids: chunk.map(snd).map(_ => _.docwsid),
         zone: NA.head(chunk)[1].zone,
       })),
-    DF.chain(({ urls, env }) =>
+    SRTE.chainW(({ urls, api }) =>
       pipe(
         A.zip(urls)(chunk),
         A.map(([[path], url]) => [url, path] as const),
         A.filter((item): item is [string, string] => !!item[0]),
         downloadUrls,
-        apply({ fetch: env.fetch }),
+        apply({ fetch: api.fetchClient }),
         DF.fromTaskEither,
       )
     ),
@@ -235,8 +242,8 @@ const downloadFiles = (
       filesChunks,
       A.map(downloadChunk),
       SRTE.sequenceArray,
-      DF.map(a => A.flatten([...a])),
-      DF.map(_ => {
+      SRTE.map(a => A.flatten([...a])),
+      SRTE.map(_ => {
         return {
           success: _.filter(_ => _.status === 'SUCCESS').length,
           fail: _.filter(_ => _.status === 'FAIL').length,

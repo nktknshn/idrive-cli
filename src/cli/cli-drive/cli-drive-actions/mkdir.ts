@@ -16,14 +16,16 @@ import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls/printing'
 
-export const mkdir = ({ path }: { path: string }): XXX<DF.DriveMState, Use<'createFoldersM'>, string> => {
+export const mkdir = (
+  { path }: { path: string },
+): XXX<DF.DriveMState, DF.DriveMEnv & Use<'createFoldersM'>, string> => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 
   logger.debug(`mkdir(${name} in ${parentPath})`)
   const nparentPath = normalizePath(Path.dirname(path))
 
-  const res = pipe(
+  return pipe(
     SRTE.ask<DF.DriveMState, Use<'createFoldersM'>>(),
     SRTE.bindTo('api'),
     SRTE.bindW('root', DF.getRoot),

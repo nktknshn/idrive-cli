@@ -5,6 +5,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
+import { Use } from '../../../icloud/drive/api/type'
 import { getById } from '../../../icloud/drive/cache/cache'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
@@ -24,9 +25,12 @@ import {
 } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
+import { XXX } from '../../../lib/types'
 import { cliActionM2 } from '../../cli-action'
 import { Env } from '../../types'
 import { normalizePath } from './helpers'
+
+type Deps = DF.DriveMEnv & Use<'moveItemsM'> & Use<'renameItemsM'>
 
 /**
  * move a file or a directory
@@ -49,7 +53,7 @@ export const move = ({ srcpath, dstpath }: {
       'srcdst',
       () => DF.chainRoot(root => DF.getByPathsH(root, [nsrc, ndst])),
     ),
-    DF.chain(handle),
+    SRTE.chain(handle),
     DF.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
   )
 }
@@ -64,7 +68,7 @@ const handle = (
   { srcdst: [srcitem, dstitem] }: {
     srcdst: NEA<V.PathValidation<H.Hierarchy<DetailsDocwsRoot>>>
   },
-): DF.DriveM<MoveItemsResponse | RenameResponse> => {
+): XXX<DF.DriveMState, Deps, MoveItemsResponse | RenameResponse> => {
   if (!srcitem.valid) {
     return DF.errS(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
   }
@@ -106,25 +110,31 @@ const handle = (
 const caseMove = (
   src: NonRootDetails | DriveChildrenItemFile,
   dst: Details,
-): DF.DriveM<MoveItemsResponse> => {
+): XXX<DF.DriveMState, Deps, MoveItemsResponse> => {
   return pipe(
-    API.moveItems({
-      destinationDrivewsId: dst.drivewsid,
-      items: [{ drivewsid: src.drivewsid, etag: src.etag }],
-    }),
+    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.chainW(({ moveItemsM }) =>
+      moveItemsM({
+        destinationDrivewsId: dst.drivewsid,
+        items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+      })
+    ),
   )
 }
 
 const caseRename = (
   srcitem: NonRootDetails | DriveChildrenItemFile,
   name: string,
-): DF.DriveM<RenameResponse> => {
+): XXX<DF.DriveMState, Deps, RenameResponse> => {
   return pipe(
-    API.renameItems({
-      items: [
-        { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
-      ],
-    }),
+    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.chainW(({ renameItemsM }) =>
+      renameItemsM({
+        items: [
+          { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
+        ],
+      })
+    ),
     // DF.fromApiRequest,
   )
 }
@@ -133,20 +143,41 @@ const caseMoveAndRename = (
   src: NonRootDetails | DriveChildrenItemFile,
   dst: (Details | DetailsTrash),
   name: string,
-): DF.DriveM<RenameResponse> => {
+): XXX<DF.DriveMState, Deps, RenameResponse> => {
+  // return pipe(
+  //   API.moveItems<DF.DriveMState>(
+  //     {
+  //       destinationDrivewsId: dst.drivewsid,
+  //       items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+  //     },
+  //   ),
+  //   DF.chain(() =>
+  //     API.renameItems({
+  //       items: [
+  //         { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
+  //       ],
+  //     })
+  //   ),
+  // )
+
   return pipe(
-    API.moveItems<DF.DriveMState>(
-      {
-        destinationDrivewsId: dst.drivewsid,
-        items: [{ drivewsid: src.drivewsid, etag: src.etag }],
-      },
-    ),
-    DF.chain(() =>
-      API.renameItems({
-        items: [
-          { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
-        ],
-      })
+    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.chainW(({ renameItemsM, moveItemsM }) =>
+      pipe(
+        moveItemsM<DF.DriveMState>(
+          {
+            destinationDrivewsId: dst.drivewsid,
+            items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+          },
+        ),
+        DF.chain(() =>
+          renameItemsM({
+            items: [
+              { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
+            ],
+          })
+        ),
+      )
     ),
   )
 }

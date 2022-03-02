@@ -74,3 +74,16 @@ export const downloadBatch = <S extends AuthorizedState>(
       A.map(_ => _.data_token?.url ?? _.package_token?.url),
     ),
   )
+
+// export function getUrlStream(
+//   { client, url }: { client: FetchClientEither; url: string },
+// ): TE.TaskEither<Error, Readable> {
+//   return pipe(
+//     client({ method: 'GET', url, headers: {}, data: undefined, responseType: 'stream' }),
+//     expectResponse(
+//       _ => _.status == 200,
+//       _ => err(`responded ${_.status}`),
+//     ),
+//     TE.map(_ => _.data as Readable),
+//   )
+// }

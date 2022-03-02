@@ -6,11 +6,13 @@ import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
+import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { isCloudDocsRootDetailsG, isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
+type Deps = DF.DriveMEnv & Use<'moveItemsToTrashM'>
 
 export const rm = (
   { sessionFile, cacheFile, paths, noCache, trash }: {
@@ -26,16 +28,17 @@ export const rm = (
   const npaths = pipe(paths, NA.map(normalizePath))
 
   return pipe(
-    DF.Do,
-    SRTE.bind('items', () =>
+    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.bindTo('api'),
+    SRTE.bindW('items', () =>
       pipe(
         DF.chainRoot(root => DF.getByPaths(root, npaths)),
         DF.filterOrElse(not(A.some(isTrashDetailsG)), () => err(`you cannot remove root`)),
         DF.filterOrElse(not(A.some(isCloudDocsRootDetailsG)), () => err(`you cannot remove trash`)),
       )),
-    SRTE.bind('result', ({ items }) =>
+    SRTE.bindW('result', ({ items, api }) =>
       pipe(
-        API.moveItemsToTrash<DF.DriveMState>({ items, trash }),
+        api.moveItemsToTrashM<DF.DriveMState>({ items, trash }),
         DF.chain(
           resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
         ),

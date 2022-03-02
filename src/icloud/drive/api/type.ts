@@ -1,7 +1,10 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as TE from 'fp-ts/lib/TaskEither'
+import { Readable } from 'stream'
+import { FetchClient, FetchClientEither } from '../../../lib/http/fetch-client'
 import { NEA, XX, XXX } from '../../../lib/types'
 import { AuthorizedState, authorizeSessionM } from '../../authorization/authorize'
-import { CreateFoldersResponse, RenameResponse } from '../requests'
+import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
 import { DownloadResponseBody } from '../requests/download'
 import { MoveItemsResponse } from '../requests/moveItems'
 import * as T from './../requests/types/types'
@@ -48,4 +51,33 @@ export type ApiType = {
       names: string[]
     },
   ) => XX<S, CreateFoldersResponse>
+
+  putBackItemsFromTrashM: <S extends AuthorizedState>(
+    items: [{ drivewsid: string; etag: string }],
+  ) => XX<S, { items: T.DriveChildrenItem[] }>
+
+  moveItemsToTrashM: <S extends AuthorizedState>(
+    { items, trash }: {
+      items: { drivewsid: string; etag: string }[]
+      trash?: boolean
+    },
+  ) => XX<S, MoveItemToTrashResponse>
+
+  upload: <S extends AuthorizedState>(
+    { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
+  ) => XX<S, {
+    status: { status_code: number; error_message: string }
+    etag: string
+    zone: string
+    type: string
+    document_id: string
+    parent_id: string
+    mtime: number
+  }>
+
+  fetchClient: FetchClientEither
+
+  getUrlStream({ url }: {
+    url: string
+  }): TE.TaskEither<Error, Readable>
 }

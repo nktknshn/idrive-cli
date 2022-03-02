@@ -14,6 +14,8 @@ import { AuthorizedState } from '../authorization/authorize'
 import { AccountLoginResponseBody } from '../authorization/types'
 import { ICloudSession } from '../session/session'
 import * as API from './api'
+import * as NM from './api/methods'
+import { Use } from './api/type'
 import * as C from './cache/cache'
 import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
 import { CacheEntityDetails, CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
@@ -37,7 +39,7 @@ export { modifySubset }
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
-export type DriveMEnv = {} & API.ApiEnv & AR.RequestEnv
+export type DriveMEnv = {} & Use<'retrieveItemDetailsInFolders'>
 
 export type DriveMState = {
   cache: C.Cache
@@ -119,7 +121,7 @@ export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM
         missed,
         A.match(
           () => SRTE.of({ missed: [], found: [] }),
-          missed => API.retrieveItemDetailsInFoldersS<DriveMState, DriveMEnv>(missed),
+          missed => NM.retrieveItemDetailsInFoldersS(missed),
         ),
       )
     ),
@@ -207,7 +209,7 @@ const _retrieveItemDetailsInFoldersSaving = (
 ): DriveM<O.Option<T.Details>[]> =>
   pipe(
     readEnv,
-    SRTE.bind('details', () => API.retrieveItemDetailsInFolders({ drivewsids })),
+    SRTE.bindW('details', ({ env }) => env.retrieveItemDetailsInFolders({ drivewsids: drivewsids as NEA<string> })),
     SRTE.chain(({ details }) =>
       pipe(
         putFoundMissed(getMissedFound(drivewsids, details)),
