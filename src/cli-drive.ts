@@ -6,6 +6,8 @@ import { cliActionM2 } from './cli/cli-action'
 import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { defaultApiEnv } from './defaults'
+import { api } from './icloud/drive/api/api'
+import { Use } from './icloud/drive/api/type'
 import * as DF from './icloud/drive/drive'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
@@ -31,9 +33,14 @@ async function main() {
 
   initLoggers(
     { debug: argv.debug },
-    [logger, cacheLogger, stderrLogger, apiLogger],
+    [
+      logger,
+      cacheLogger,
+      stderrLogger,
+      apiLogger,
+    ],
   )
-
+  argv.glob
   if (!isKeyOf(commands, command)) {
     printer.error(`invalid command ${command}`)
     showHelp()
@@ -45,7 +52,7 @@ async function main() {
 
   await pipe(
     pipe(
-      { ...argv, ...defaultApiEnv },
+      { ...argv, ...defaultApiEnv, ...api },
       cliActionM2(() => commandFunction(argv)),
     ),
     TE.fold(printer.errorTask, printer.printTask),
