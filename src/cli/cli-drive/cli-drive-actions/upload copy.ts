@@ -95,7 +95,7 @@ type ApiType =
 
 import { Kind, URIS } from 'fp-ts/lib/HKT'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveMState } from '../../../icloud/drive/drive'
+import { State } from '../../../icloud/drive/drive'
 
 const uploadOverwrighting2 = (
   { src, dst }: { dst: V.PathValidWithFile<H.Hierarchy<DetailsDocwsRoot>>; src: string },
@@ -189,7 +189,7 @@ const uploadOverwrighting = (
 const handle = (
   { src, dst, overwright }: { dst: V.GetByPathResult<DetailsDocwsRoot>; src: string; overwright: boolean },
 ) =>
-  SRTE.fromReaderTaskEither<capUpload, Error, unknown, DriveMState>(
+  SRTE.fromReaderTaskEither<capUpload, Error, unknown, State>(
     RTE.asks((api: capUpload) => {
       // if the target path is presented on icloud drive
       if (dst.valid) {

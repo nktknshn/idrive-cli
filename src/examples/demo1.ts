@@ -1,38 +1,37 @@
-import { state } from 'fp-ts'
 import * as A from 'fp-ts/Array'
+import * as E from 'fp-ts/Either'
 import { sequenceS } from 'fp-ts/lib/Apply'
-import { apply, flow, identity, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Reader'
-import * as RT from 'fp-ts/lib/ReaderTask'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
-import { mapFst, snd } from 'fp-ts/lib/Tuple'
+import { snd } from 'fp-ts/lib/Tuple'
 import * as NA from 'fp-ts/NonEmptyArray'
+import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
-import { normalizePath } from '../cli/cli-drive/cli-drive-actions/helpers'
+import prompts_ from 'prompts'
+import { saveCache } from '../cli/cli-action'
 import { defaultCacheFile, defaultSessionFile } from '../config'
 import { defaultApiEnv } from '../defaults'
-import { AuthorizedState, authorizeSessionM, authorizeStateM3 } from '../icloud/authorization/authorize'
+import { AuthorizedState, authorizeStateM3 } from '../icloud/authorization/authorize'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData } from '../icloud/authorization/validate'
 import * as API from '../icloud/drive/api'
 import * as NM from '../icloud/drive/api/methods'
+import { executor } from '../icloud/drive/api/newbuilder'
 import * as NR from '../icloud/drive/api/requests'
 import * as NT from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
-import * as DF from '../icloud/drive/drive'
-import { getMissedFound } from '../icloud/drive/helpers'
-import * as RQ from '../icloud/drive/requests'
+import { CacheF } from '../icloud/drive/cache/cache-types'
 import * as AR from '../icloud/drive/requests/request'
 import * as T from '../icloud/drive/requests/types/types'
-import { driveDetails, invalidIdItem, rootDrivewsid } from '../icloud/drive/requests/types/types-io'
+import { rootDrivewsid } from '../icloud/drive/requests/types/types-io'
 import * as S from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
-import { BadRequestError, err, InvalidGlobalSessionError } from '../lib/errors'
+import { err } from '../lib/errors'
 import { apiLogger, authLogger, cacheLogger, initLoggers, logger, logReturnAs, stderrLogger } from '../lib/logging'
-import { NEA, XXX } from '../lib/types'
+import { NEA, RT, XXX } from '../lib/types'
 
 initLoggers(
   { debug: true },
@@ -40,23 +39,18 @@ initLoggers(
 )
 
 const ado = sequenceS(RTE.ApplySeq)
-import * as O from 'fp-ts/Option'
 
 export const _loadAccountData = (deps: { sessionFile: string }) =>
   pipe(
     readAccountData(`${deps.sessionFile}-accountData`),
-    // TE.foldW(() => TE.of(undefined), a => TE.of(a)),
-    // TE.fold(() => TE.of(O.none), a => TE.of(O.some(a))),
   )
 
 export const loadAccountDataO = (deps: { sessionFile: string }) =>
   pipe(
     readAccountData(`${deps.sessionFile}-accountData`),
-    // TE.foldW(() => TE.of(undefined), a => TE.of(a)),
     TE.fold((e) => TE.of(O.none), a => TE.of(O.some(a))),
   )
 
-import * as E from 'fp-ts/Either'
 export const loadAccountDataE = (deps: { sessionFile: string }) =>
   pipe(
     readAccountData(`${deps.sessionFile}-accountData`),
@@ -64,8 +58,6 @@ export const loadAccountDataE = (deps: { sessionFile: string }) =>
       (e) => async () => E.right(E.left(e)),
       (v) => async () => E.right(E.right(v)),
     ),
-    // TE.foldW(() => TE.of(undefined), a => TE.of(a)),
-    // TE.fold((e) => TE.of(O.none), a => TE.of(O.some(a))),
   )
 
 export const loadOrCreateCache = (deps: { noCache: boolean; cacheFile: string }): TE.TaskEither<Error, CacheF> =>
@@ -92,16 +84,6 @@ export const loadSessionFileO = (deps: { sessionFile: string }) =>
     readSessionFile(deps.sessionFile),
     TE.fold(() => TE.of(O.none), a => TE.of(O.some(a))),
   )
-
-import prompts_, { PromptObject } from 'prompts'
-import { saveCache } from '../cli/cli-action'
-import { autocomplete } from '../cli/cli-drive/cli-drive-actions'
-import { authorizationHeaders } from '../icloud/authorization/headers'
-import { executor } from '../icloud/drive/api/newbuilder'
-import { CacheF } from '../icloud/drive/cache/cache-types'
-import { applyCookiesToSession, HttpRequestConfig } from '../icloud/session/session-http'
-import { headers } from '../icloud/session/session-http-headers'
-import { HttpResponse } from '../lib/http/fetch-client'
 
 const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
@@ -186,7 +168,11 @@ const loadSession = pipe(
 
 const loadAccountData = (
   session: S.ICloudSession,
-) =>
+): RT<
+  AR.RequestEnv & { sessionFile: string },
+  Error,
+  { session: S.ICloudSession; accountData: AccountLoginResponseBody }
+> =>
   pipe(
     _loadAccountData,
     RTE.map(accountData => ({ session, accountData })),
@@ -210,16 +196,12 @@ const getAuthorizedState: RTE.ReaderTaskEither<
   RTE.chain(loadAccountData),
 )
 
-// const action = pipe(
-//   DF.getRoot(),
-//   DF.chain(root => NM.retrieveItemDetailsInFoldersSG<S>([rootDrivewsid])),
-// )
-
 type TreeNode = T.Details | T.DriveChildrenItemFile
+type Deps = NT.Use<'retrieveItemDetailsInFolders'>
 
 const getTrees = <S extends AuthorizedState & { someth: number }>(
   drivewsids: NEA<string>,
-): XXX<S, NT.Use<'retrieveItemDetailsInFolders'>, TR.Tree<TreeNode>[]> => {
+): XXX<S, Deps, TR.Tree<TreeNode>[]> => {
   const getSubfolders = (parents: T.Details[]): T.FolderLikeItem[] =>
     A.flatten(
       parents.map(
@@ -254,7 +236,7 @@ const getTrees = <S extends AuthorizedState & { someth: number }>(
     )
 
   return pipe(
-    SRTE.ask<S, NT.Use<'retrieveItemDetailsInFolders'>>(),
+    SRTE.ask<S, Deps>(),
     SRTE.chainW(_ => _.retrieveItemDetailsInFolders({ drivewsids })),
     SRTE.map(A.filter(not(T.isInvalidId))),
     SRTE.bindTo('parents'),

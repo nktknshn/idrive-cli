@@ -5,7 +5,7 @@ import { headers } from '../session/session-http-headers'
 import { authorizationHeaders } from './headers'
 import { applyAuthorizationResponse } from './session'
 
-export const requestSecurityCodeM = <S extends AR.State>(
+export const requestSecurityCodeM = <S extends AR.BasicState>(
   code: string,
 ): AR.ApiRequest<{}, S> => {
   return pipe(

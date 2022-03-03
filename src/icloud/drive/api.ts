@@ -8,6 +8,7 @@ import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import { err, InvalidGlobalSessionError } from '../../lib/errors'
 import { FetchError } from '../../lib/http/fetch-client'
+import { XXX } from '../../lib/types'
 import { Path } from '../../lib/util'
 import { AuthorizedState, authorizeSessionM } from '../authorization/authorize'
 import { getMissedFound } from './helpers'
@@ -133,22 +134,19 @@ export const moveItemsToTrash = flow(
   executeRequest4(RQ.moveItemsToTrashM),
 )
 
+export type UploadResult = {
+  status: { status_code: number; error_message: string }
+  etag: string
+  zone: string
+  type: string
+  document_id: string
+  parent_id: string
+  mtime: number
+}
+
 export const upload = <S extends AuthorizedState>(
   { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
-): SRTE.StateReaderTaskEither<
-  S,
-  { retries: number } & AR.RequestEnv,
-  Error,
-  {
-    status: { status_code: number; error_message: string }
-    etag: string
-    zone: string
-    type: string
-    document_id: string
-    parent_id: string
-    mtime: number
-  }
-> => {
+): XXX<S, { retries: number } & AR.RequestEnv, UploadResult> => {
   const parsedSource = fname ? Path.parse(fname) : Path.parse(sourceFilePath)
 
   const getContentType = (extension: string): string => {

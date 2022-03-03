@@ -14,6 +14,53 @@ import * as T from '../requests/types/types'
 
 const ado = sequenceS(SRTE.Apply)
 
+export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
+  return pipe(
+    tree,
+    TR.map(_ => T.fileNameAddSlash(_.details)),
+    TR.drawTree,
+  )
+}
+
+const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
+  const files: (T | T.DriveChildrenItemFile)[] = pipe(
+    tree.value.details.items,
+    A.filter(T.isFile),
+  )
+
+  return TR.make(
+    tree.value.details as T | T.DriveChildrenItemFile,
+    pipe(
+      tree.forest.map(f => treeWithFiles(f)),
+      A.concat(
+        files.map(f => TR.make(f)),
+      ),
+    ),
+  )
+}
+
+export const drawFilesTree = <T extends T.Details>(tree: FolderTree<T>) => {
+  const getSubTrees = (tree: FolderTree<T>): TR.Tree<T.HasName> => {
+    const files: T.HasName[] = pipe(
+      tree.value.details.items,
+      A.filter(T.isFile),
+    )
+
+    return TR.make(
+      tree.value.details as T.HasName,
+      A.concat(
+        files.map(f => TR.make(f)),
+      )(tree.forest.map(f => getSubTrees(f))),
+    )
+  }
+
+  return pipe(
+    getSubTrees(tree),
+    TR.map(T.fileNameAddSlash),
+    TR.drawTree,
+  )
+}
+
 export type FolderTreeDeep<T extends T.Details> = {
   readonly details: T
   readonly deep: true
@@ -98,8 +145,8 @@ export const zipFolderTreeWithPath = <T extends T.Details>(
 
   return [
     [path, tree.value.details],
-    ...subfolders,
     ...zippedsubfiles,
+    ...subfolders,
   ]
 }
 
@@ -107,8 +154,8 @@ export const addPathToFolderTree = <T extends T.Details>(
   parentPath: string,
   tree: FolderTree<T>,
 ): TR.Tree<FolderTreeValue<T> & { path: string }> => {
-  const name = T.fileName(tree.value.details)
-  const path = Path.join(parentPath, name) + '/'
+  const name = T.fileNameAddSlash(tree.value.details)
+  const path = Path.join(parentPath, name)
 
   return TR.make(
     { ...tree.value, path },

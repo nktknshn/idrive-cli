@@ -17,7 +17,7 @@ export interface AuthorizedState {
   accountData: AccountLoginResponseBody
 }
 
-export function authorizeSessionM<S extends AR.State>(): AR.ApiRequest<AccountLoginResponseBody, S> {
+export function authorizeSessionM<S extends AR.BasicState>(): AR.ApiRequest<AccountLoginResponseBody, S> {
   authLogger.debug('authorizeSession')
 
   return pipe(
@@ -37,7 +37,7 @@ export function authorizeSessionM<S extends AR.State>(): AR.ApiRequest<AccountLo
 }
 
 export function authorizeStateM3<
-  S extends AR.State,
+  S extends AR.BasicState,
   R extends AR.RequestEnv,
 >(state: S): RTE.ReaderTaskEither<R, Error, { accountData: AccountLoginResponseBody } & S> {
   authLogger.debug('authorizeSession')

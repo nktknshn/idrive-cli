@@ -9,7 +9,7 @@ import { HttpResponse } from '../../../lib/http/fetch-client'
 import { getHeader } from '../../../lib/http/http-headers'
 import { arrayFromOption } from '../../../lib/util'
 import * as NM from '../../drive/api/newbuilder'
-import { State } from '../../drive/requests/request'
+import { BasicState } from '../../drive/requests/request'
 import { applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
 import { headers } from '../../session/session-http-headers'
 import { authorizationHeaders } from '../headers'
@@ -74,7 +74,7 @@ export function getResponse(
   return E.left(new UnexpectedResponse(httpResponse, json))
 }
 
-export const requestSignInM = <S extends State>() => {
+export const requestSignInM = <S extends BasicState>() => {
   const constructor = NM.constructor(() =>
     ({ session }: S) =>
       TE.of({

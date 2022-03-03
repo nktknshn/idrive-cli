@@ -36,7 +36,7 @@ export type RequestEnv = {
   getCode: () => TE.TaskEither<Error, string>
 }
 
-export type State = {
+export type BasicState = {
   session: ICloudSession
 }
 
@@ -49,17 +49,17 @@ interface ValidHttpResponseBrand {
 
 type ValidHttpResponse<R extends { httpResponse: HttpResponse }> = t.Branded<R, ValidHttpResponseBrand>
 
-type Filter<S extends State> = (
+type Filter<S extends BasicState> = (
   ma: ApiRequest<{ httpResponse: HttpResponse }, S>,
 ) => ApiRequest<{ httpResponse: HttpResponse }, S>
 
 export const { chain, leftE, fromEither, fromOption, fromTaskEither, get, left, map, of, filterOrElse } = ESRTE.get<
-  State,
+  BasicState,
   RequestEnv,
   Error
 >()
 
-export const Do = <S extends State>() => of<{}, S>({})
+export const Do = <S extends BasicState>() => of<{}, S>({})
 
 const ado = sequenceS(SRTE.Apply)
 
@@ -72,7 +72,7 @@ const putSession = <S extends { session: ICloudSession }>(session: ICloudSession
     chain(({ state }) => SRTE.put({ ...state, session })),
   )
 
-export const buildRequest = <S extends State>(
+export const buildRequest = <S extends BasicState>(
   f: (a: { state: S; env: RequestEnv }) => R.Reader<{ state: S }, HttpRequest>,
 ): ApiRequest<HttpRequest, S> =>
   pipe(
@@ -81,7 +81,7 @@ export const buildRequest = <S extends State>(
     chain(reader => pipe(readEnv<S>(), map(reader))),
   )
 
-export const buildRequestC = <S extends State>(
+export const buildRequestC = <S extends BasicState>(
   f: (a: { state: S; env: RequestEnv }) => HttpRequestConfig,
 ): ApiRequest<HttpRequest, S> =>
   pipe(
@@ -100,7 +100,7 @@ export const buildRequestC = <S extends State>(
     // ),
   )
 
-export const buildRequestE = <S extends State>(
+export const buildRequestE = <S extends BasicState>(
   f: (a: { state: S; env: RequestEnv }) => ApiRequest<R.Reader<{ session: ICloudSession }, HttpRequest>, S>,
 ): ApiRequest<HttpRequest, S> =>
   pipe(
@@ -109,7 +109,7 @@ export const buildRequestE = <S extends State>(
     chain(reader => pipe(readEnv<S>(), map(s => reader(s.state)))),
   )
 
-export const fetch = <S extends State>(
+export const fetch = <S extends BasicState>(
   req: ApiRequest<HttpRequest, S>,
 ) => {
   return pipe(
@@ -119,7 +119,7 @@ export const fetch = <S extends State>(
   )
 }
 
-export const handleResponse = <A, S extends State>(
+export const handleResponse = <A, S extends BasicState>(
   f: (ma: ApiRequest<{ httpResponse: HttpResponse }, S>) => ApiRequest<A, S>,
 ) =>
   (
@@ -138,11 +138,11 @@ export const handleResponse = <A, S extends State>(
       f,
     )
 
-export const filterHttpResponse = <R extends { httpResponse: HttpResponse }, S extends State>(
+export const filterHttpResponse = <R extends { httpResponse: HttpResponse }, S extends BasicState>(
   f: (r: R) => E.Either<Error, R>,
 ) => (ma: ApiRequest<R, S>) => pipe(ma, chain(a => fromEither(f(a))))
 
-export const handleInvalidSession = <S extends State>(): Filter<S> =>
+export const handleInvalidSession = <S extends BasicState>(): Filter<S> =>
   filterHttpResponse(
     (r) =>
       r.httpResponse.status == 421
@@ -150,7 +150,7 @@ export const handleInvalidSession = <S extends State>(): Filter<S> =>
         : E.of(r),
   )
 
-export const handleBadRequest = <S extends State>(): Filter<S> =>
+export const handleBadRequest = <S extends BasicState>(): Filter<S> =>
   filterHttpResponse(
     (r) =>
       r.httpResponse.status == 400
@@ -158,7 +158,7 @@ export const handleBadRequest = <S extends State>(): Filter<S> =>
         : E.of(r),
   )
 
-const handleStatus = <R extends { httpResponse: HttpResponse }, S extends State>(validStatuses: number[]) =>
+const handleStatus = <R extends { httpResponse: HttpResponse }, S extends BasicState>(validStatuses: number[]) =>
   filterHttpResponse<R, S>(
     (r) =>
       validStatuses.includes(r.httpResponse.status)
@@ -166,7 +166,7 @@ const handleStatus = <R extends { httpResponse: HttpResponse }, S extends State>
         : E.left(err(`invalid status ${r.httpResponse.status} ${JSON.stringify(r.httpResponse.data)}`)),
   )
 
-export const validateHttpResponse = <R extends { httpResponse: HttpResponse }, S extends State>(
+export const validateHttpResponse = <R extends { httpResponse: HttpResponse }, S extends BasicState>(
   { validStatuses }: { validStatuses: number[] } = { validStatuses: [200, 204] },
 ) =>
   (ma: ApiRequest<R, S>): ApiRequest<ValidHttpResponse<R>, S> =>
@@ -178,7 +178,7 @@ export const validateHttpResponse = <R extends { httpResponse: HttpResponse }, S
       map(_ => _ as ValidHttpResponse<R>),
     )
 
-export const decodeJson = <T extends { httpResponse: HttpResponse }, R, S extends State>(
+export const decodeJson = <T extends { httpResponse: HttpResponse }, R, S extends BasicState>(
   decode: (u: unknown) => t.Validation<R>,
 ) =>
   (
@@ -200,7 +200,7 @@ export const decodeJson = <T extends { httpResponse: HttpResponse }, R, S extend
       ),
     )
 
-export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S extends State>(
+export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S extends BasicState>(
   decode: (u: unknown) => t.Validation<R>,
 ) =>
   (
@@ -252,7 +252,7 @@ export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S 
 export const applyToSession = <T extends { httpResponse: HttpResponse }>(
   f: (a: ValidHttpResponse<T>) => (session: ICloudSession) => ICloudSession,
 ) =>
-  <S extends State>(
+  <S extends BasicState>(
     ma: ApiRequest<ValidHttpResponse<T>, S>,
   ) =>
     pipe(
@@ -266,14 +266,14 @@ export const applyToSession = <T extends { httpResponse: HttpResponse }>(
       ),
     )
 
-export const applyCookies = <T extends { httpResponse: HttpResponse }, S extends State>() =>
+export const applyCookies = <T extends { httpResponse: HttpResponse }, S extends BasicState>() =>
   applyToSession<T>(({ httpResponse }) =>
     flow(
       applyCookiesToSession(httpResponse),
     )
   )
 
-export const basicJsonResponse = <T extends { httpResponse: HttpResponse }, S extends State, R>(
+export const basicJsonResponse = <T extends { httpResponse: HttpResponse }, S extends BasicState, R>(
   jsonDecoder: t.Decode<unknown, R>,
 ) => {
   return flow(
@@ -294,7 +294,7 @@ export const basicDriveJsonRequest = <S extends AuthorizedState, A>(
   )
 }
 
-export const orElse = <R, S extends State>(
+export const orElse = <R, S extends BasicState>(
   onError: (e: ESRTE.Err<S, Error>) => ApiRequest<R, S>,
 ) =>
   (

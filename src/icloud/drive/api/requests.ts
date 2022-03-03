@@ -51,10 +51,7 @@ export const downloadM = <S extends AR.AuthorizationState>() =>
   NM.request(
     {
       constructor: (
-        { docwsid: documentId, zone }: {
-          docwsid: string
-          zone: string
-        },
+        { docwsid: documentId, zone }: { docwsid: string; zone: string },
       ) =>
         ({ session, accountData }: S) =>
           TE.of({

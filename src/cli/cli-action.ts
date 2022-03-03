@@ -5,12 +5,14 @@ import { fromIO } from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData } from '../icloud/authorization/validate'
+import { ApiType } from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
 import { CacheF } from '../icloud/drive/cache/cache-types'
 import * as DF from '../icloud/drive/drive'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { apiLogger, logReturnAs } from '../lib/logging'
+import { XXX } from '../lib/types'
 
 export const loadSessionFile = (deps: { sessionFile: string }) => readSessionFile(deps.sessionFile)
 
@@ -40,8 +42,8 @@ export const saveCache = <S extends { cache: CacheF }>(state: S) =>
       : C.trySaveFile(state.cache)(deps.cacheFile)
 
 /** read the state and execute an action in the context */
-export function cliActionM2<T>(
-  action: () => DF.DriveM<T>,
+export function cliActionM2<T, R extends DF.DriveMEnv & ApiType>(
+  action: () => XXX<DF.State, R, T>,
 ) {
   return pipe(
     RTE.Do,

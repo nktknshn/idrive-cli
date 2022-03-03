@@ -16,9 +16,11 @@ import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls/printing'
 
+type Deps = DF.DriveMEnv & Use<'createFoldersM'>
+
 export const mkdir = (
   { path }: { path: string },
-): XXX<DF.DriveMState, DF.DriveMEnv & Use<'createFoldersM'>, string> => {
+): XXX<DF.State, Deps, string> => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 
@@ -26,13 +28,13 @@ export const mkdir = (
   const nparentPath = normalizePath(Path.dirname(path))
 
   return pipe(
-    SRTE.ask<DF.DriveMState, Use<'createFoldersM'>>(),
+    SRTE.ask<DF.State, Deps>(),
     SRTE.bindTo('api'),
     SRTE.bindW('root', DF.getRoot),
     SRTE.bindW('parent', ({ root }) => DF.getByPathFolder(root, nparentPath)),
     SRTE.bindW('result', ({ parent, api }) =>
       pipe(
-        api.createFoldersM<DF.DriveMState>({
+        api.createFoldersM<DF.State>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),
@@ -42,7 +44,7 @@ export const mkdir = (
       pipe(
         result.folders,
         A.matchLeft(
-          () => DF.left(err(`createFolders returned empty result`)),
+          () => SRTE.left(err(`createFolders returned empty result`)),
           (head) =>
             DF.retrieveItemDetailsInFoldersSaving([
               head.drivewsid,
@@ -51,8 +53,8 @@ export const mkdir = (
         ),
       )
     ),
-    DF.map(flow(A.lookup(1), O.flatten)),
-    DF.map(
+    SRTE.map(flow(A.lookup(1), O.flatten)),
+    SRTE.map(
       O.fold(
         () => `missing created folder`,
         showDetailsInfo({

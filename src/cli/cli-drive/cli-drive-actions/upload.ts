@@ -9,11 +9,16 @@ import * as DF from '../../../icloud/drive/drive'
 import * as H from '../../../icloud/drive/drive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { DetailsDocwsRoot, fileName, isFolderLike } from '../../../icloud/drive/requests/types/types'
+import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Use<'renameItemsM'> & Use<'upload'> & Use<'moveItemsToTrashM'>
+type Deps =
+  & DF.DriveMEnv
+  & Use<'renameItemsM'>
+  & Use<'upload'>
+  & Use<'moveItemsToTrashM'>
 
 // export const uploadFolder = (
 //   { sessionFile, cacheFile, srcpath, dstpath, noCache, overwright }: {
@@ -42,9 +47,9 @@ export const upload = (
     dstpath: string
     overwright: boolean
   },
-) => {
+): XXX<DF.State, Deps, string> => {
   return pipe(
-    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.ask<DF.State, Deps>(),
     SRTE.bindTo('api'),
     SRTE.bindW('root', DF.getRoot),
     SRTE.bindW('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
@@ -70,7 +75,7 @@ const handle = (
     // if it's a folder
     if (isFolderLike(dstitem)) {
       return pipe(
-        api.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
+        api.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
         DF.map(constVoid),
       )
     }
@@ -92,7 +97,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        api.upload<DF.DriveMState>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
+        api.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         DF.map(constVoid),
       )
     }
@@ -130,7 +135,7 @@ const uploadOverwrighting = (
     DF.chain(({ uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        api.renameItemsM<DF.DriveMState>({
+        api.renameItemsM<DF.State>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

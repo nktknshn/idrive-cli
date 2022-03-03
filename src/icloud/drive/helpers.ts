@@ -4,6 +4,7 @@ import { fromEquals } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
+import { Refinement } from 'fp-ts/lib/Refinement'
 import Path from 'path'
 import * as T from './requests/types/types'
 
@@ -63,3 +64,14 @@ export const findInParent = (
 
 export const equalsDrivewsId = <T extends string>() =>
   fromEquals((a: { drivewsid: T }, b: { drivewsid: T }) => a.drivewsid == b.drivewsid)
+
+export const guardSnd = <A, B, F extends B>(refinement: Refinement<B, F>) =>
+  (tuple: [A, B]): tuple is [A, F] => refinement(tuple[1])
+
+export const guardFst = <A, B, F extends A>(refinement: Refinement<A, F>) =>
+  (tuple: [A, B] | readonly [A, B]): tuple is [F, B] | readonly [F, B] => refinement(tuple[0])
+
+export const guardThird = <A, B, C, F extends C>(refinement: Refinement<C, F>) =>
+  (tuple: [A, B, C]): tuple is [A, B, F] => refinement(tuple[2])
+
+export const isDefined = <A>(a: A | undefined): a is A => !!a

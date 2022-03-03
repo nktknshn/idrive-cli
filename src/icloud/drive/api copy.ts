@@ -25,7 +25,7 @@ export type Api<A> = R.Reader<ApiEnv, AR.AuthorizedRequest<A>>
 
 export const of = <A>(v: A): Api<A> => () => AR.of(v)
 
-const onInvalidSession = <S extends AR.State>(): AR.ApiRequest<void, S> => {
+const onInvalidSession = <S extends AR.BasicState>(): AR.ApiRequest<void, S> => {
   return pipe(
     authorizeSessionM<S>(),
     AR.chain((accountData) => SRTE.modify(s => ({ ...s, accountData }))),
@@ -34,7 +34,7 @@ const onInvalidSession = <S extends AR.State>(): AR.ApiRequest<void, S> => {
 }
 
 const catchFetchErrors = (triesLeft: number) =>
-  <T, S extends AR.State>(
+  <T, S extends AR.BasicState>(
     m: AR.ApiRequest<T, S>,
   ): AR.ApiRequest<T, S> => {
     return pipe(
@@ -47,7 +47,7 @@ const catchFetchErrors = (triesLeft: number) =>
     )
   }
 
-const catchInvalidSession = <T, S extends AR.State>(
+const catchInvalidSession = <T, S extends AR.BasicState>(
   m: AR.ApiRequest<T, S>,
 ): AR.ApiRequest<T, S> => {
   return pipe(
@@ -63,7 +63,7 @@ const catchInvalidSession = <T, S extends AR.State>(
   )
 }
 
-const executeRequest = <TArgs extends unknown[], R, S extends AR.State>(
+const executeRequest = <TArgs extends unknown[], R, S extends AR.BasicState>(
   f: (...args: TArgs) => AR.ApiRequest<R, S>,
 ): (...args: TArgs) => R.Reader<ApiEnv, AR.ApiRequest<R, S>> =>
   (...args: TArgs) =>
@@ -76,7 +76,7 @@ const executeRequest = <TArgs extends unknown[], R, S extends AR.State>(
     )
 
 const executeRequest2 = (env: { retries: number }) =>
-  <R, S extends AR.State>(
+  <R, S extends AR.BasicState>(
     ma: AR.ApiRequest<R, S>,
   ) =>
     pipe(

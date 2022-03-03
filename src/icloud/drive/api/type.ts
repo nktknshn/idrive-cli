@@ -4,46 +4,43 @@ import { Readable } from 'stream'
 import { FetchClient, FetchClientEither } from '../../../lib/http/fetch-client'
 import { NEA, XX, XXX } from '../../../lib/types'
 import { AuthorizedState, authorizeSessionM } from '../../authorization/authorize'
+import { AccountLoginResponseBody } from '../../authorization/types'
 import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
 import { DownloadResponseBody } from '../requests/download'
 import { MoveItemsResponse } from '../requests/moveItems'
+import { BasicState } from '../requests/request'
 import * as T from './../requests/types/types'
-
-type ESRTE<S, R, A> = SRTE.StateReaderTaskEither<S, R, Error, A>
-type STE<S, A> = SRTE.StateReaderTaskEither<S, {}, Error, A>
-
-export type RetrieveItemDetailsInFolders = <S extends AuthorizedState>(
-  { drivewsids }: { drivewsids: NEA<string> },
-) => STE<S, NEA<(T.Details | T.InvalidId)>>
 
 export type Use<K extends keyof ApiType> = Record<K, ApiType[K]>
 
 export type ApiType = {
-  retrieveItemDetailsInFolders: RetrieveItemDetailsInFolders
+  retrieveItemDetailsInFolders: <S extends AuthorizedState>(
+    { drivewsids }: { drivewsids: NEA<string> },
+  ) => XX<S, NEA<(T.Details | T.InvalidId)>>
 
   downloadM: <S extends AuthorizedState>(
     { docwsid: documentId, zone }: {
       docwsid: string
       zone: string
     },
-  ) => STE<S, DownloadResponseBody>
+  ) => XX<S, DownloadResponseBody>
 
   downloadBatchM: <S extends AuthorizedState>(
     { docwsids, zone }: { docwsids: string[]; zone: string },
-  ) => STE<S, DownloadResponseBody[]>
+  ) => XX<S, DownloadResponseBody[]>
 
   moveItemsM: <S extends AuthorizedState>(
     { items, destinationDrivewsId }: {
       destinationDrivewsId: string
       items: { drivewsid: string; etag: string }[]
     },
-  ) => STE<S, MoveItemsResponse>
+  ) => XX<S, MoveItemsResponse>
 
   renameItemsM: <S extends AuthorizedState>(
     { items }: {
       items: { drivewsid: string; etag: string; name: string; extension?: string }[]
     },
-  ) => STE<S, RenameResponse>
+  ) => XX<S, RenameResponse>
 
   createFoldersM: <S extends AuthorizedState>(
     { names, destinationDrivewsId }: {
@@ -80,4 +77,6 @@ export type ApiType = {
   getUrlStream({ url }: {
     url: string
   }): TE.TaskEither<Error, Readable>
+
+  authorizeSessionM: <S extends BasicState>() => XX<S, AccountLoginResponseBody>
 }

@@ -39,13 +39,13 @@ export { modifySubset }
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
-export type DriveMEnv = {} & Use<'retrieveItemDetailsInFolders'>
+export type DriveMEnv = Use<'retrieveItemDetailsInFolders'>
 
-export type DriveMState = {
+export type State = {
   cache: C.Cache
 } & AuthorizedState
 
-export type DriveM<A, S extends DriveMState = DriveMState> = ESRTE.ESRTE<S, DriveMEnv, Error, A>
+export type DriveM<A, S extends State = State> = ESRTE.ESRTE<S, DriveMEnv, Error, A>
 
 export const {
   Do,
@@ -59,18 +59,18 @@ export const {
   of,
   fromTaskEitherE,
   filterOrElse,
-} = ESRTE.get<DriveMState, DriveMEnv, Error>()
+} = ESRTE.get<State, DriveMEnv, Error>()
 
-const ado = sequenceS(SRTE.Apply)
+export const ado = sequenceS(SRTE.Apply)
 // const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
-  state: get<DriveMState>(),
-  env: SRTE.ask<DriveMState, DriveMEnv>(),
+  state: get<State>(),
+  env: SRTE.ask<State, DriveMEnv>(),
 })
 
 export const readEnvS = <A>(
-  f: (e: { state: DriveMState; env: DriveMEnv }) => DriveM<A>,
+  f: (e: { state: State; env: DriveMEnv }) => DriveM<A>,
 ) => pipe(readEnv, chain(f))
 
 export const logS = flow(logReturnS, map)
@@ -239,7 +239,7 @@ export function retrieveItemDetailsInFoldersSavingE(
 export const getByPathFolder = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
-): ESRTE.ESRTE<DriveMState, DriveMEnv, Error, R | T.NonRootDetails> =>
+): ESRTE.ESRTE<State, DriveMEnv, Error, R | T.NonRootDetails> =>
   pipe(
     getByPaths(root, [path]),
     map(NA.head),

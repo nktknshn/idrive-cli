@@ -4,8 +4,17 @@ import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
 import { not } from 'fp-ts/lib/Refinement'
+import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
 import * as T from '../../../../icloud/drive/requests/types/types'
+
+export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrash>) => {
+  return pipe(
+    tree,
+    TR.map(T.fileNameAddSlash),
+    TR.drawTree,
+  )
+}
 
 const joinWithPath = (path: string) =>
   (name: string) =>
@@ -29,11 +38,16 @@ const formatDate = (date: Date | string) =>
           date.getFullYear(),
         ].join(' '),
   )
+
 const showWithFullPath = (path: string) => flow(T.fileName, joinWithPath(path))
+
 const showRaw = (result: T.Details | T.DriveChildrenItem) => JSON.stringify(result)
+
 type Row = [string, string | number]
+
 type Element = Row | string | false | Element[]
 // type Component<P> = (props: P) => (Element | string | false)[]
+
 const Trash = ({ details }: { details: T.DetailsTrash }): Element[] => {
   return [
     ['name', T.fileName(details)],

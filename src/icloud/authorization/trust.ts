@@ -14,7 +14,7 @@ export interface TrustResponse204 {
   trustToken: string
 }
 
-export const requestTrustDeviceM = <S extends AR.State>(): AR.ApiRequest<TrustResponse204, S> => {
+export const requestTrustDeviceM = <S extends AR.BasicState>(): AR.ApiRequest<TrustResponse204, S> => {
   logger.debug('requestTrustDeviceM')
 
   return pipe(

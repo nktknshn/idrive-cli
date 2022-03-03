@@ -14,14 +14,9 @@ import { err } from '../../../lib/errors'
 import { XXX } from '../../../lib/types'
 import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
+
 export const cat = (
-  { sessionFile, cacheFile, path, noCache, trash }: {
-    path: string
-    noCache: boolean
-    sessionFile: string
-    cacheFile: string
-    trash: boolean
-  },
+  { path }: { path: string },
 ) => {
   return cat2({ path })
 }
@@ -30,15 +25,11 @@ type Deps = DF.DriveMEnv & Use<'downloadM'> & Use<'getUrlStream'>
 
 export const cat2 = (
   { path }: { path: string },
-): XXX<
-  DF.DriveMState,
-  Deps,
-  string
-> => {
+): XXX<DF.State, Deps, string> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.ask<DF.State, Deps>(),
     SRTE.bindTo('api'),
     SRTE.bindW('root', () => DF.getRoot()),
     SRTE.bindW('item', ({ root }) =>
@@ -47,19 +38,17 @@ export const cat2 = (
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.bindW('url', ({ item }) => NM.download<DF.DriveMState>(item)),
+    SRTE.bindW('url', ({ item }) => NM.getUrl<DF.State>(item)),
     SRTE.chainW(({ api, url }) =>
       pipe(
-        url,
-        O.fromNullable,
+        O.fromNullable(url),
         O.match(
           () => SRTE.left(err(`cannot get url`)),
           url =>
-            pipe(
+            SRTE.fromTaskEither(pipe(
               api.getUrlStream({ url }),
               TE.chain(consumeStreamToString),
-              DF.fromTaskEither,
-            ),
+            )),
         ),
       )
     ),

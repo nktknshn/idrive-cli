@@ -244,7 +244,7 @@ export const fileName = (item: HasName | DetailsTrash) => {
 export const fileNameAddSlash = (item: HasName | DetailsTrash) => {
   const fname = fileName(item)
 
-  if (isFolderDrivewsid(item.drivewsid)) {
+  if (isFolderDrivewsid(item.drivewsid) && item.drivewsid !== types.rootDrivewsid) {
     return `${fname}/`
   }
 

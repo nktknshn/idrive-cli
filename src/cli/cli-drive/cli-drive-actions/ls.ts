@@ -18,7 +18,7 @@ import { normalizePath } from './helpers'
 import { showDetailsInfo, showFileInfo } from './ls/printing'
 
 export const listUnixPath2 = (
-  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob }: {
+  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header }: {
     recursive: boolean
     paths: string[]
     fullPath: boolean
@@ -26,7 +26,6 @@ export const listUnixPath2 = (
     update: boolean
     trash: boolean
     depth: number
-    glob: boolean
     raw: boolean
     cached: boolean
     etag: boolean

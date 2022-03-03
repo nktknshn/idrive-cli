@@ -21,7 +21,7 @@ export function parseArgs() {
           header: { alias: ['h'], default: false, type: 'boolean' },
           trash: { alias: ['t'], default: false, type: 'boolean' },
           etag: { alias: ['e'], default: false, type: 'boolean' },
-          glob: { alias: ['e'], default: false, type: 'boolean' },
+          // glob: { alias: ['e'], default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
           cached: { default: false, type: 'boolean' },
@@ -85,11 +85,11 @@ export function parseArgs() {
             cached: { default: false, type: 'boolean' },
           }),
     )
-    .command(
-      'recover <path>',
-      'recover',
-      (_) => _.positional('path', { type: 'string', demandOption: true }),
-    )
+    // .command(
+    //   'recover <path>',
+    //   'recover',
+    //   (_) => _.positional('path', { type: 'string', demandOption: true }),
+    // )
     .command(
       'download <paths...>',
       'download',
@@ -98,7 +98,7 @@ export function parseArgs() {
           .options({
             output: { default: './', type: 'string' },
             structured: { default: true, type: 'boolean' },
-            glob: { default: true, type: 'boolean' },
+            // glob: { default: true, type: 'boolean' },
             raw: { default: true, type: 'boolean' },
             destination: { alias: ['D'], type: 'string', demandOption: true },
           }),
@@ -108,14 +108,15 @@ export function parseArgs() {
       'df',
       (_) =>
         _.positional('path', { type: 'string', demandOption: true })
-          .positional('dstpath', { type: 'string', demandOption: true }),
-      // .options({
-      //   // output: { default: './', type: 'string' },
-      //   // structured: { default: true, type: 'boolean' },
-      //   // glob: { default: true, type: 'boolean' },
-      //   // raw: { default: true, type: 'boolean' },
-      //   // destination: { alias: ['D'], type: 'string', demandOption: true },
-      // }),
+          .positional('dstpath', { type: 'string', demandOption: true })
+          .options({
+            glob: { default: [], type: 'string', array: false },
+            exclude: { default: false, type: 'boolean' },
+            // glob: { default: true, type: 'boolean' },
+            // raw: { default: true, type: 'boolean' },
+            dry: { default: false, type: 'boolean' },
+            // destination: { alias: ['D'], type: 'string', demandOption: true },
+          }),
     )
     .command(
       'edit <path>',

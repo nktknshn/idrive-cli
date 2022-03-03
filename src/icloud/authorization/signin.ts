@@ -73,7 +73,7 @@ export function getResponse(
   return E.left(new UnexpectedResponse(httpResponse, json))
 }
 
-export const requestSignInM = <S extends AR.State>(): AR.ApiRequest<SignInResponse, S> => {
+export const requestSignInM = <S extends AR.BasicState>(): AR.ApiRequest<SignInResponse, S> => {
   authLogger.debug('requestSignInM')
 
   return pipe(

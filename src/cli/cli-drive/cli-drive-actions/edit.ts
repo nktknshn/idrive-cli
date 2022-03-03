@@ -7,21 +7,29 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import fs from 'fs/promises'
 import { tempDir } from '../../../defaults'
-import * as API from '../../../icloud/drive/api'
 import * as NM from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
-import { consumeStreamToString, getUrlStream } from '../../../icloud/drive/requests/download'
+import { consumeStreamToString } from '../../../icloud/drive/requests/download'
 import { isFile } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
+import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { upload } from '.'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Use<'downloadM'> & Use<'getUrlStream'>
+type Deps =
+  & DF.DriveMEnv
+  & Use<'downloadM'>
+  & Use<'getUrlStream'>
+  & Use<'renameItemsM'>
+  & Use<'upload'>
+  & Use<'moveItemsToTrashM'>
 
-export const edit = ({ path }: { path: string }) => {
+export const edit = (
+  { path }: { path: string },
+): XXX<DF.State, Deps, string> => {
   const npath = pipe(path, normalizePath)
 
   const tempFile = Path.join(
@@ -32,42 +40,33 @@ export const edit = ({ path }: { path: string }) => {
   logger.debug(`temp file: ${tempFile}`)
 
   return pipe(
-    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.ask<DF.State, Deps, Error>(),
     SRTE.bindTo('api'),
     SRTE.bindW('item', () =>
       pipe(
         DF.chainRoot(root => DF.getByPaths(root, [npath])),
-        DF.map(NA.head),
-        DF.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
+        SRTE.map(NA.head),
+        SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.bindW('url', ({ item }) => NM.download<DF.DriveMState>(item)),
-    SRTE.chain(({ api, url }) =>
+    SRTE.bindW('url', ({ item }) => NM.getUrl<DF.State>(item)),
+    SRTE.chainW(({ api, url }) =>
       pipe(
-        url,
-        O.fromNullable,
-        O.matchW(
+        O.fromNullable(url),
+        O.match(
           () => SRTE.left(err(`cannot get url`)),
           url =>
-            pipe(
+            SRTE.fromTaskEither(pipe(
               api.getUrlStream({ url }),
               TE.chain(consumeStreamToString),
-              DF.fromTaskEither,
-            ),
+            )),
         ),
       )
     ),
-    SRTE.chainW((data) => {
+    SRTE.chain((data) => {
       return pipe(
         SRTE.fromTask(
           () => fs.writeFile(tempFile, data),
         ),
-        // DF.logS(() => ``),
-        // SRTE.chainFirst(
-        //   (): DF.DriveM<void> =>
-        //     SRTE.fromIO(() => {
-        //       logger.debug(`as`)
-        //     }),
-        // ),
       )
     }),
     SRTE.chainW((): DF.DriveM<NodeJS.Signals | null> => {
@@ -98,6 +97,5 @@ export const edit = ({ path }: { path: string }) => {
         dstpath: npath,
       })
     }),
-    _ => _,
   )
 }

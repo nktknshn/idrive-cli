@@ -19,7 +19,7 @@ export const recover = (
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    SRTE.ask<DF.DriveMState, Deps>(),
+    SRTE.ask<DF.State, Deps>(),
     SRTE.bindTo('api'),
     SRTE.bindW('item', () =>
       pipe(
@@ -29,7 +29,7 @@ export const recover = (
       )),
     SRTE.chainW(({ item, api }) =>
       pipe(
-        api.putBackItemsFromTrashM<DF.DriveMState>([item]),
+        api.putBackItemsFromTrashM<DF.State>([item]),
         DF.map(() => `Success.`),
       )
     ),
