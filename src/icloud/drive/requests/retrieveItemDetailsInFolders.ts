@@ -142,31 +142,3 @@ export const retrieveItemDetailsInFoldersHierarchyM = (
   )
 
 import { NEA } from '../../../lib/types'
-import * as ARR from './api-rte'
-
-export const retrieveItemDetailsInFoldersRequestARR = (
-  data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
-) => {
-  return pipe(
-    ARR.buildRequestC(({ accountData }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
-      options: { addClientInfo: true, data },
-    })),
-  )
-}
-
-export function retrieveItemDetailsInFoldersARR(
-  { drivewsids }: { drivewsids: string[] },
-): ARR.DriveApiRequest<(Details | InvalidId)[]> {
-  return pipe(
-    retrieveItemDetailsInFoldersRequestARR(
-      drivewsids.map(
-        (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
-      ),
-    ),
-    ARR.handleResponse(ARR.basicJsonResponse(
-      t.array(t.union([driveDetails, invalidIdItem])).decode,
-    )),
-  )
-}

@@ -6,7 +6,6 @@ import { apiLogger } from '../../../lib/logging'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
-import * as ARR from './api-rte'
 import { expectJson, ResponseWithSession } from './http'
 import * as AR from './request'
 
@@ -36,31 +35,4 @@ export const moveItemsToTrashM = <S extends AuthorizedState>({ items, trash = fa
       },
     }),
     v => t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
-  )
-
-export const moveItemsToTrashARR = ({ items, trash = false }: {
-  items: { drivewsid: string; etag: string }[]
-  trash?: boolean
-}): ARR.DriveApiRequest<MoveItemToTrashResponse> =>
-  ARR.basicDriveJsonRequest(
-    ({ accountData }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.drivews.url}/${
-        trash ? 'moveItemsToTrash' : 'deleteItems'
-      }?dsid=${accountData.dsInfo.dsid}`,
-      options: {
-        addClientInfo: true,
-        data: {
-          items: items.map((item) => ({
-            drivewsid: item.drivewsid,
-            clientId: item.drivewsid,
-            etag: item.etag,
-          })),
-        },
-      },
-    }),
-    v =>
-      t.type({
-        items: t.array(t.type({ drivewsid: t.string })),
-      }).decode(v) as t.Validation<MoveItemToTrashResponse>,
   )

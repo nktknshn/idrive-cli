@@ -8,7 +8,6 @@ import { uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
 import { AuthorizedState } from '../../authorization/authorize'
 import { readWebauthToken } from '../../session/session-cookies'
-import * as ARR from './api-rte'
 import * as AR from './request'
 
 export type UpdateDocumentsRequest = t.TypeOf<typeof updateDocumentsRequest>
@@ -129,55 +128,6 @@ export const updateDocumentsM = <S extends AuthorizedState, R extends AR.Request
 ): AR.AuthorizedRequest<UpdateDocumentsResponse, S, R> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
-      options: { addClientInfo: true, data },
-    }),
-    updateDocumentsResponse.decode,
-  )
-
-export const uploadARR = (
-  { zone = 'com.apple.CloudDocs', contentType, filename, size, type }: {
-    zone?: string
-    contentType: string
-    filename: string
-    size: number
-    type: 'FILE'
-  },
-): ARR.DriveApiRequest<UploadResponse> =>
-  ARR.basicDriveJsonRequest(
-    ({ accountData, session }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
-        session.cookies['X-APPLE-WEBAUTH-TOKEN'] ?? ''
-      }`,
-      options: { addClientInfo: true, data: { filename, content_type: contentType, size, type } },
-    }),
-    uploadResponse.decode,
-  )
-
-export const singleFileUploadARR = (
-  { filePath, url }: { filePath: string; url: string },
-): ARR.DriveApiRequest<SingleFileResponse> => {
-  const filename = Path.parse(filePath).base
-
-  return pipe(
-    TE.tryCatch(
-      () => fs.readFile(filePath),
-      (e) => err(`error opening file ${String(e)}`),
-    ),
-    logf(`singleFileUpload.`, apiLogger.debug),
-    TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
-    ARR.fromTaskEither,
-    ARR.handleResponse(ARR.basicJsonResponse(singleFileResponse.decode)),
-  )
-}
-
-export const updateDocumentsARR = (
-  { zone = 'com.apple.CloudDocs', data }: { zone?: string; data: UpdateDocumentsRequest },
-): ARR.DriveApiRequest<UpdateDocumentsResponse> =>
-  ARR.basicDriveJsonRequest(
-    ({ accountData }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
       options: { addClientInfo: true, data },

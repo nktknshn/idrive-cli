@@ -80,3 +80,20 @@ export const moveItems = <S extends AuthorizedState>() =>
     SRTE.asks<S, API.Use<'moveItemsM'>, API.ApiType['moveItemsM']>(_ => _.moveItemsM),
     // SRTE.chainW(_ => _.renameItemsM(opts)),
   )
+
+export const createFolders = <S extends AuthorizedState>(
+  args: {
+    destinationDrivewsId: string
+    names: string[]
+  },
+) =>
+  pipe(
+    SRTE.ask<S, API.Use<'createFoldersM'>>(),
+    SRTE.chainW(_ => _.createFoldersM(args)),
+    SRTE.map(_ => _.folders),
+    SRTE.filterOrElse(
+      (folders): folders is T.DriveChildrenItemFolder[] => pipe(folders, A.every((folder) => folder.status === 'OK')),
+      () => err(`createFoldersM returned incorrect response. Existing directory?`),
+    ),
+    // SRTE.chainW(_ => _.renameItemsM(opts)),
+  )

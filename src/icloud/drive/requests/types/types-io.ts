@@ -27,7 +27,7 @@ export const commonProperties = t.intersection([
   }),
   t.partial({
     extension: t.string,
-    status: t.string,
+    status: t.literal('OK'),
     restorePath: t.string,
   }),
 ])
@@ -169,9 +169,9 @@ export const itemDetails = t.union([
   //   invalidIdItem,
 ])
 
-export const trashItemFolder = t.intersection([itemFolder, t.type({ 'restorePath': t.string })])
-export const trashItemFile = t.intersection([itemFile, t.type({ 'restorePath': t.string })])
-export const trashItemAppLibrary = t.intersection([itemAppLibrary, t.type({ 'restorePath': t.string })])
+export const trashItemFolder = t.intersection([itemFolder, t.partial({ 'restorePath': t.string })])
+export const trashItemFile = t.intersection([itemFile, t.partial({ 'restorePath': t.string })])
+export const trashItemAppLibrary = t.intersection([itemAppLibrary, t.partial({ 'restorePath': t.string })])
 
 export const trashItem = t.union([
   trashItemFolder,

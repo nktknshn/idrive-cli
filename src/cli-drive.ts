@@ -15,6 +15,7 @@ const commands = {
   mkdir: Action.mkdir,
   rm: Action.rm,
   upload: Action.upload,
+  uploads: Action.uploads,
   mv: Action.move,
   autocomplete: Action.autocomplete,
   ac: Action.autocomplete,

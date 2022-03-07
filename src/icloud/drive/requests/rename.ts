@@ -1,6 +1,5 @@
 import * as t from 'io-ts'
 import { AuthorizedState } from '../../authorization/authorize'
-import * as ARR from './api-rte'
 import * as AR from './request'
 import { childrenItem } from './types/types-io'
 
@@ -24,21 +23,3 @@ export const renameItemsM = <S extends AuthorizedState>(
     }),
     renameResponse.decode,
   )
-
-export const renameItemsARR = (
-  { items }: {
-    items: { drivewsid: string; etag: string; name: string; extension?: string }[]
-  },
-): ARR.DriveApiRequest<RenameResponse> => {
-  return ARR.basicDriveJsonRequest(
-    ({ accountData }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.drivews.url}/renameItems?dsid=${accountData.dsInfo.dsid}`,
-      options: {
-        addClientInfo: true,
-        data: { items },
-      },
-    }),
-    renameResponse.decode,
-  )
-}

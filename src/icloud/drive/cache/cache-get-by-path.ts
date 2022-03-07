@@ -5,7 +5,7 @@ import * as O from 'fp-ts/lib/Option'
 import { cacheLogger, logger } from '../../../lib/logging'
 import * as H from '../drive/validation'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import { findInParent } from '../helpers'
+import { findInParentFilename } from '../helpers'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../requests/types/types'
 import * as C from './cache'
 import { PathValidation } from './cache-get-by-path-types'
@@ -30,7 +30,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
     }
 
     const [subItemName, ...rest] = path
-    const subitem = findInParent(parentEntity, subItemName)
+    const subitem = findInParentFilename(parentEntity, subItemName)
 
     const result: H.Hierarchy<R> = [parentEntity]
 

@@ -5,10 +5,16 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import { swap } from 'fp-ts/lib/Tuple'
-import { GetByPathResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cache-get-by-path-types'
+import micromatch from 'micromatch'
+import {
+  GetByPathResult,
+  isValid,
+  showGetByPathResult,
+  target,
+} from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import { FolderTree, treeWithFiles } from '../../../icloud/drive/drive/get-folders-trees'
-import { recordFromTuples } from '../../../icloud/drive/helpers'
+import { guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
@@ -18,7 +24,7 @@ import { normalizePath } from './helpers'
 import { showDetailsInfo, showFileInfo } from './ls/printing'
 
 export const listUnixPath2 = (
-  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header }: {
+  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob }: {
     recursive: boolean
     paths: string[]
     fullPath: boolean
@@ -27,11 +33,62 @@ export const listUnixPath2 = (
     trash: boolean
     depth: number
     raw: boolean
+    glob: boolean
     cached: boolean
     etag: boolean
     header: boolean
   },
 ) => {
+  const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
+
+  if (glob) {
+    const scanned = pipe(
+      paths as NEA<string>,
+      NA.map(p => micromatch.scan(p)),
+    )
+
+    const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+
+    return pipe(
+      DF.getCachedRoot(trash),
+      SRTE.chain(root =>
+        cached
+          ? DF.getByPathsCached(root, basepaths)
+          : DF.getByPathsH(root, basepaths)
+      ),
+      SRTE.map(NA.zip(scanned)),
+      SRTE.map(A.filter(guardFst(isValid))),
+      SRTE.map(A.map(([path, scan]) => {
+        const d = NA.last(path.path.details)
+        const t = target(path)
+
+        if (T.isFile(t)) {
+          return showFileInfo({ ...opts })(t)
+        }
+
+        const items = pipe(
+          NA.last(path.path.details).items,
+          A.filter(
+            item =>
+              scan.glob.length > 0
+                ? micromatch.isMatch(
+                  T.fileName(item),
+                  scan.glob,
+                  { basename: true },
+                )
+                : true,
+          ),
+        )
+        return showDetailsInfo({ path: scan.base, fullPath, printFolderInfo: true, ...opts })({
+          ...d,
+          items,
+        })
+      })),
+      // SRTE.map(A.flatten),
+      SRTE.map(_ => _.join('\n\n')),
+    )
+  }
+
   const npaths = paths.map(normalizePath)
   assert(A.isNonEmpty(npaths))
 
@@ -55,8 +112,6 @@ export const listUnixPath2 = (
       SRTE.map(trees => pipe(trees, NA.map(treeWithFiles), NA.map(showTree), _ => _.join('\n'))),
     )
   }
-
-  const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
 
   const showRaw = (result: NEA<GetByPathResult<T.DetailsDocwsRoot | T.DetailsTrash>>) =>
     pipe(

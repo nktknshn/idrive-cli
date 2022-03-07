@@ -68,8 +68,8 @@ complete --no-files -c idrive -n "__fish_seen_subcommand_from rm" -a "(__fish_au
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path -t)"
 
-complete -c idrive -n "__fish_seen_subcommand_from upload; and __fish_upload_first_arg"
-complete --no-files -c idrive -n "__fish_seen_subcommand_from upload; and __fish_upload_second_arg" -a "(__fish_autocomplete_path)"
+complete -c idrive -n "__fish_seen_subcommand_from upload; and __fish_first_arg"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from upload; and __fish_second_arg" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_first_arg" -a "(__fish_autocomplete_path)"
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_second_arg" -a "(__fish_autocomplete_path -d)"

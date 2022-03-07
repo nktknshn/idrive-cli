@@ -6,6 +6,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
+import { createFolders } from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { err } from '../../../lib/errors'
@@ -34,15 +35,15 @@ export const mkdir = (
     SRTE.bindW('parent', ({ root }) => DF.getByPathFolder(root, nparentPath)),
     SRTE.bindW('result', ({ parent, api }) =>
       pipe(
-        api.createFoldersM<DF.State>({
+        createFolders<DF.State>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),
-        DF.logS((resp) => `created: ${resp.folders.map((_) => _.drivewsid)}`),
+        DF.logS((resp) => `created: ${resp.map((_) => _.drivewsid)}`),
       )),
     SRTE.chainW(({ result, parent }) =>
       pipe(
-        result.folders,
+        result,
         A.matchLeft(
           () => SRTE.left(err(`createFolders returned empty result`)),
           (head) =>

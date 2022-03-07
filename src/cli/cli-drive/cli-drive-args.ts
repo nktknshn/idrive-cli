@@ -21,7 +21,7 @@ export function parseArgs() {
           header: { alias: ['h'], default: false, type: 'boolean' },
           trash: { alias: ['t'], default: false, type: 'boolean' },
           etag: { alias: ['e'], default: false, type: 'boolean' },
-          // glob: { alias: ['e'], default: false, type: 'boolean' },
+          glob: { default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
           cached: { default: false, type: 'boolean' },
@@ -63,16 +63,26 @@ export function parseArgs() {
             overwright: { default: false, type: 'boolean' },
           }),
     )
-    // .command(
-    //   'uploads <srcpaths..> <dstpath>',
-    //   'uploads',
-    //   (_) =>
-    //     _.positional('srcpaths', { type: 'string', array: true, demandOption: true })
-    //       .positional('dstpath', { type: 'string', demandOption: true })
-    //       .options({
-    //         overwright: { default: false, type: 'boolean' },
-    //       }),
-    // )
+    .command(
+      'uploads <args..>',
+      'uploads',
+      (_) =>
+        _.positional('args', { type: 'string', array: true, demandOption: true })
+          // _.positional('srcpath', { type: 'string', demandOption: true })
+          // .positional('dstpath', { type: 'string', demandOption: true })
+          .options({
+            overwright: { default: false, type: 'boolean' },
+          })
+          .check((argv, options) => {
+            const args = argv.args
+
+            if (args.length < 2) {
+              throw new Error(`e ti che`)
+            }
+
+            return true
+          }),
+    )
     .command(
       'autocomplete <path>',
       'autocomplete',

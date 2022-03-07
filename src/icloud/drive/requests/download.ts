@@ -7,7 +7,6 @@ import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-clien
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
 import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import * as ARR from './api-rte'
 import { applyToSession, expectJson, ResponseWithSession } from './http'
 import * as AR from './request'
 
@@ -74,20 +73,6 @@ export function downloadBatchM<S extends AuthorizedState>(
           ],
         ),
       ).decode(v) as t.Validation<DownloadResponseBody[]>,
-  )
-}
-
-export function downloadARR(
-  { docwsid: documentId, zone }: RetrieveOpts,
-) {
-  return ARR.basicDriveJsonRequest(
-    ({ accountData }) => ({
-      method: 'GET',
-      url:
-        `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
-      options: { addClientInfo: false },
-    }),
-    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<DownloadResponseBody>,
   )
 }
 

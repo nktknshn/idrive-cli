@@ -6,6 +6,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import Path from 'path'
+import { DetailsOrFile } from './drive'
 import * as T from './requests/types/types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
@@ -52,8 +53,8 @@ export const parseName = (fileName: string): { name: string; extension?: string 
   }
 }
 
-export const findInParent = (
-  parent: T.Details,
+export const findInParentFilename = <R extends T.Root>(
+  parent: T.NonRootDetails | R,
   itemName: string,
 ): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> => {
   return pipe(

@@ -14,3 +14,8 @@
 
 idrive ls 
 idrive init
+
+idrive upload file1.txt /targetdir/newname.txt
+idrive upload file1.txt /targetdir/otherfile.txt --overwright
+
+idrive uploads file1.txt file2.txt file3.txt /targetdir
