@@ -1,35 +1,21 @@
-import assert from 'assert'
+import { Eq } from 'fp-ts/Eq'
 import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
-import { fst, mapFst, snd } from 'fp-ts/lib/ReadonlyTuple'
-import * as R from 'fp-ts/lib/Record'
+import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
-import { concatAll } from 'fp-ts/Monoid'
-import { MonoidSum } from 'fp-ts/number'
 import micromatch from 'micromatch'
-import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import * as H from '../../../icloud/drive/drive/validation'
-import { guardFst, guardSnd, isDefined } from '../../../icloud/drive/helpers'
-import {
-  DetailsAppLibrary,
-  DetailsDocwsRoot,
-  DetailsFolder,
-  isFolderLike,
-} from '../../../icloud/drive/requests/types/types'
-import { loggerIO } from '../../../lib/loggerIO'
-import { printer, printerIO } from '../../../lib/logging'
-import { XX, XXX } from '../../../lib/types'
+import { DetailsDocwsRoot, isFolderLike } from '../../../icloud/drive/requests/types/types'
+import { err } from '../../../lib/errors'
+import { printerIO } from '../../../lib/logging'
+import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { getDirectoryStructure, LocalTreeElement, walkDir, walkDirRel } from './download/helpers'
+import { getDirectoryStructure, LocalTreeElement, walkDirRel } from './download/helpers'
 import { normalizePath } from './helpers'
 
 type Argv = {
@@ -51,7 +37,7 @@ type Deps =
   & Use<'getUrlStream'>
 
 export const uploadFolder = (
-  { localpath, remotepath, include, exclude }: Argv,
+  { localpath, remotepath, include, exclude, dry }: Argv,
 ): XXX<DF.State, Deps, unknown> => {
   return pipe(
     SRTE.ask<DF.State, Deps>(),
@@ -60,6 +46,7 @@ export const uploadFolder = (
     SRTE.bindW('dst', ({ root }) => DF.getByPathH(root, normalizePath(remotepath))),
     SRTE.bindW('src', () => SRTE.of(localpath)),
     SRTE.bindW('exclude', () => SRTE.of(exclude)),
+    SRTE.bindW('dry', () => SRTE.of(dry)),
     SRTE.bindW('include', () => SRTE.of(include)),
     SRTE.chainW(handle),
     SRTE.map((res) => `Success. ${JSON.stringify(res)}`),
@@ -82,10 +69,10 @@ const createUploadTask = (
       A.filter(flow(snd, _ => _.type === 'file')),
     )
 
-    const folders = pipe(
-      flatTree,
-      A.filter(flow(snd, _ => _.type === 'directory')),
-    )
+    // const folders = pipe(
+    //   flatTree,
+    //   A.filter(flow(snd, _ => _.type === 'directory')),
+    // )
 
     const { left: excluded, right: valid } = pipe(
       files,
@@ -102,7 +89,7 @@ const createUploadTask = (
     )
 
     const dirstruct = pipe(
-      A.concatW(folders)(A.concat(uploadable)(empties)),
+      A.concat(uploadable)(empties),
       A.map(a => a[0]),
       getDirectoryStructure,
     )
@@ -115,7 +102,7 @@ const createUploadTask = (
     }
   }
 
-const getKids = (parent: string) =>
+const getSubdirsPerParent = (parent: string) =>
   (struct: string[]): (readonly [string, string])[] => {
     const kids = pipe(
       struct,
@@ -126,13 +113,12 @@ const getKids = (parent: string) =>
 
     const subkids = pipe(
       kids,
-      A.map(([p, k]) => getKids(Path.join(p, k))(struct)),
+      A.map(([p, k]) => getSubdirsPerParent(Path.join(p, k))(struct)),
       A.flatten,
     )
 
     return [...kids, ...subkids]
   }
-import { Eq } from 'fp-ts/Eq'
 const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
   return A.chop(as => {
     const { init, rest } = pipe(as, A.spanLeft((a: A) => S.equals(a, as[0])))
@@ -145,24 +131,20 @@ const createDirStructure = (
   dirstruct: string[],
 ) => {
   const task = pipe(
-    getKids('/')(dirstruct),
+    getSubdirsPerParent('/')(dirstruct),
     group<readonly [string, string]>({
       equals: (a, b) => a[0] == b[0],
     }),
     A.map(chunk => [chunk[0][0], A.map(snd)(chunk)] as const),
   )
+
   const dirToIdMap: Record<string, string> = {
     '/': dstitemDrivewsid,
   }
 
-  console.log(
-    task,
-  )
-
   return pipe(
     SRTE.ask<DF.State, Deps, Error>(),
-    SRTE.bindTo('api'),
-    SRTE.chain(({ api }) =>
+    SRTE.chain((api) =>
       pipe(
         task,
         A.reduce(
@@ -176,6 +158,7 @@ const createDirStructure = (
                     destinationDrivewsId: dirToIdMap[parent],
                     names,
                   }),
+                  SRTE.chainFirstIOK(() => printerIO.print(`${names} in ${parent}`)),
                   SRTE.map(_ => A.zip(names)(_.folders)),
                   SRTE.map(
                     A.reduce(
@@ -196,10 +179,11 @@ const parseDrivewsid = (drivewsid: string) => {
   return { type, zone, docwsid }
 }
 const handle = (
-  { src, dst, api, include, exclude }: {
+  { src, dst, api, include, exclude, dry }: {
     src: string
     dst: V.GetByPathResult<DetailsDocwsRoot>
     api: Deps
+    dry: boolean
     include: string[]
     exclude: string[]
   },
@@ -215,36 +199,59 @@ const handle = (
     if (isFolderLike(dstitem)) {
       return pipe(
         DF.Do,
-        SRTE.bind('task', () => SRTE.fromTaskEither(task)),
-        SRTE.chainFirstIOK(({ task }) => printerIO.print(task.uploadable)),
-        SRTE.bindW('uploadRoot', () =>
-          api.createFoldersM({
-            names: [dirname],
-            destinationDrivewsId: dstitem.drivewsid,
-          })),
-        SRTE.bindW(
-          'dirs',
-          ({ uploadRoot, task }) => createDirStructure(uploadRoot.folders[0].drivewsid, task.dirstruct),
-        ),
-        SRTE.chainW(({ task, dirs }) =>
-          pipe(
-            task.uploadable,
-            A.map(([remotepath, element]) =>
-              api.upload<DF.State>({
-                sourceFilePath: Path.join(src, element.path),
-                docwsid: parseDrivewsid(dirs[Path.dirname(remotepath)]).docwsid,
-                zone: parseDrivewsid(dirs[Path.dirname(remotepath)]).zone,
-              })
+        SRTE.bindW('task', () => SRTE.fromTaskEither(task)),
+        // SRTE.chainFirstIOK(({ task }) => printerIO.print(task.uploadable)),
+        dry
+          ? SRTE.map(() => '')
+          : flow(
+            SRTE.bindW('uploadRoot', () =>
+              api.createFoldersM({
+                names: [dirname],
+                destinationDrivewsId: dstitem.drivewsid,
+              })),
+            SRTE.bindW(
+              'dirs',
+              ({ uploadRoot, task }) =>
+                pipe(
+                  printerIO.print(`creating dir structure`),
+                  SRTE.fromIO,
+                  SRTE.chain(() => createDirStructure(uploadRoot.folders[0].drivewsid, task.dirstruct)),
+                ),
             ),
-            SRTE.sequenceArray,
-          )
-        ),
+            SRTE.chainW(({ task, dirs }) => {
+              return pipe(
+                task.uploadable,
+                A.chunksOf(5),
+                A.map((chunk) =>
+                  pipe(
+                    SRTE.get<DF.State, DF.DriveMEnv>(),
+                    SRTE.chainW((s) =>
+                      SRTE.fromReaderTaskEither(pipe(
+                        chunk,
+                        A.map(([remotepath, element]) =>
+                          pipe(
+                            api.upload<DF.State>({
+                              sourceFilePath: Path.join(src, element.path),
+                              docwsid: parseDrivewsid(dirs[Path.dirname(remotepath)]).docwsid,
+                              zone: parseDrivewsid(dirs[Path.dirname(remotepath)]).zone,
+                            })(s),
+                            RTE.chainFirstIOK(() => printerIO.print(`${remotepath}`)),
+                          )
+                        ),
+                        A.sequence(RTE.ApplicativePar),
+                      ))
+                    ),
+                  )
+                ),
+                SRTE.sequenceArray,
+              )
+            }),
+            SRTE.map(() => ''),
+          ),
+        SRTE.map(() => ''),
       )
     }
   }
 
-  return SRTE.fromTaskEither(pipe(
-    walkDirRel(src),
-    TE.map(createUploadTask({ include, exclude })),
-  ))
+  return SRTE.left(err(`invalid location`))
 }

@@ -39,7 +39,7 @@ const catchFetchErrors3 = (triesLeft: number) =>
     return pipe(
       m,
       TE.orElse((e) =>
-        FetchError.is(e) && triesLeft > 0
+        triesLeft > 0
           ? catchFetchErrors3(triesLeft - 1)(m)
           : TE.left(e)
       ),
@@ -54,7 +54,6 @@ const executeRequest4 = <TArgs extends unknown[], A, S extends AuthorizedState, 
       (r: { retries: number } & R) =>
         pipe(
           f(...args)(s)(r),
-          catchFetchErrors3(r.retries),
           TE.orElse(e =>
             InvalidGlobalSessionError.is(e)
               ? pipe(
@@ -63,9 +62,10 @@ const executeRequest4 = <TArgs extends unknown[], A, S extends AuthorizedState, 
               )
               : TE.left(e)
           ),
+          catchFetchErrors3(r.retries),
         )
 }
-
+// invalid status 409 {"uuid":"246e70e0-c062-48d7-bafe-9f91331299e6","messageForDeveloper":"Sync zone CAS Op-Lock failed. There was a concurrent write and this operation was rejected. Retry request...","error_code":"ZONE_BUSY","serverErrorCode":"ZONE_BUSY","reason":"Sync zone CAS Op-Lock failed. There was a concurrent write and this operation was rejected. Retry request..."}
 export const renameItemsM = flow(
   executeRequest4(RQ.renameItemsM),
 )

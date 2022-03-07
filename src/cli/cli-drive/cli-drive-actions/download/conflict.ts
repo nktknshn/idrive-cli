@@ -14,7 +14,14 @@ import { DownloadInto, DownloadTask, FilterTreeResult, fstat, LocalTreeElement, 
 
 export type Conflict = readonly [LocalTreeElement, readonly [localpath: string, remotefile: T.DriveChildrenItemFile]]
 
-export const lookForConflicts = (
+export type SolutionAction = 'skip' | 'overwright'
+export type Solution = (readonly [Conflict, SolutionAction])[]
+
+export type ConflictsSolver = (
+  conflicts: Conflict[],
+) => TE.TaskEither<Error, (readonly [Conflict, SolutionAction])[]>
+
+const lookForConflicts = (
   localTree: TR.Tree<LocalTreeElement>,
   { downloadable, empties }: DownloadTask,
 ): Conflict[] => {
@@ -52,14 +59,7 @@ export const lookForConflicts = (
 export const showConflict = ([localfile, [localpath, file]]: Conflict) =>
   `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${file.size} bytes)`
 
-export type SolutionAction = 'skip' | 'overwright'
-export type Solution = (readonly [Conflict, SolutionAction])[]
-
-export type ConflictsSolver = (
-  conflicts: Conflict[],
-) => TE.TaskEither<Error, (readonly [Conflict, SolutionAction])[]>
-
-export const applySoultion = (
+const applySoultion = (
   { downloadable, empties, dirstruct }: DownloadTask,
 ) =>
   (
