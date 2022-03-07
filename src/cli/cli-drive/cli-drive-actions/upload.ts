@@ -29,20 +29,40 @@ import { fstat } from './download/helpers'
 import { normalizePath } from './helpers'
 const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
+type AskingFunc = ((
+  info: { parent: DetailsDocwsRoot | NonRootDetails; dstitem: DriveChildrenItemFile; src: string },
+) => TE.TaskEither<Error, boolean>)
+
 type Deps =
   & DF.DriveMEnv
   & Use<'renameItemsM'>
   & Use<'upload'>
   & Use<'moveItemsToTrashM'>
 
+export const ask: AskingFunc = (info) =>
+  pipe(
+    prompts({
+      type: 'confirm',
+      name: 'value',
+      message: `overwright ${fileName(info.dstitem)}`,
+      choices: [
+        { title: 'y', selected: false, value: 'y' },
+        { value: 'n', title: 'n', selected: false },
+      ],
+    }, {
+      onCancel: () => process.exit(1),
+    }),
+    TE.map(_ => {
+      return _.value as boolean
+    }),
+  )
+
 export const uploads = (
   { args, overwright }: {
     args: string[]
     overwright:
       | boolean
-      | ((
-        info: { parent: DetailsDocwsRoot | NonRootDetails; dstitem: DriveChildrenItemFile; src: string },
-      ) => TE.TaskEither<Error, boolean>)
+      | AskingFunc
   },
 ): XXX<DF.State, Deps, string> => {
   const dstpath = NA.last(args as NEA<string>)
@@ -57,30 +77,7 @@ export const uploads = (
     SRTE.chainW(({ api, dst, overwright }) =>
       pipe(
         srcpaths,
-        A.map(src => {
-          return uploadToFolder({
-            api,
-            dst,
-            src,
-            overwright: (info) =>
-              pipe(
-                prompts({
-                  type: 'confirm',
-                  name: 'value',
-                  message: `overwright ${fileName(info.dstitem)}`,
-                  choices: [
-                    { title: 'y', selected: false, value: 'y' },
-                    { value: 'n', title: 'n', selected: false },
-                  ],
-                }, {
-                  onCancel: () => process.exit(1),
-                }),
-                TE.map(_ => {
-                  return _.value as boolean
-                }),
-              ),
-          })
-        }),
+        A.map(src => uploadToFolder({ api, dst, src, overwright: ask })),
         SRTE.sequenceArray,
       )
     ),
@@ -112,9 +109,7 @@ const uploadToFolder = (
   { src, dst, overwright, api }: {
     overwright:
       | boolean
-      | ((
-        info: { parent: DetailsDocwsRoot | NonRootDetails; dstitem: DriveChildrenItemFile; src: string },
-      ) => TE.TaskEither<Error, boolean>)
+      | AskingFunc
     dst: DetailsDocwsRoot | NonRootDetails
     src: string
     api: Deps

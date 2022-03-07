@@ -41,54 +41,6 @@ export const listUnixPath2 = (
 ) => {
   const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
 
-  if (glob) {
-    const scanned = pipe(
-      paths as NEA<string>,
-      NA.map(p => micromatch.scan(p)),
-    )
-
-    const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
-
-    return pipe(
-      DF.getCachedRoot(trash),
-      SRTE.chain(root =>
-        cached
-          ? DF.getByPathsCached(root, basepaths)
-          : DF.getByPathsH(root, basepaths)
-      ),
-      SRTE.map(NA.zip(scanned)),
-      SRTE.map(A.filter(guardFst(isValid))),
-      SRTE.map(A.map(([path, scan]) => {
-        const d = NA.last(path.path.details)
-        const t = target(path)
-
-        if (T.isFile(t)) {
-          return showFileInfo({ ...opts })(t)
-        }
-
-        const items = pipe(
-          NA.last(path.path.details).items,
-          A.filter(
-            item =>
-              scan.glob.length > 0
-                ? micromatch.isMatch(
-                  T.fileName(item),
-                  scan.glob,
-                  { basename: true },
-                )
-                : true,
-          ),
-        )
-        return showDetailsInfo({ path: scan.base, fullPath, printFolderInfo: true, ...opts })({
-          ...d,
-          items,
-        })
-      })),
-      // SRTE.map(A.flatten),
-      SRTE.map(_ => _.join('\n\n')),
-    )
-  }
-
   const npaths = paths.map(normalizePath)
   assert(A.isNonEmpty(npaths))
 
@@ -147,13 +99,60 @@ export const listUnixPath2 = (
         : v => NA.head(v),
     )
 
+  // return pipe(
+  //   DF.getCachedRoot(trash),
+  //   SRTE.chain(root =>
+  //     cached
+  //       ? DF.getByPathsCached(root, npaths)
+  //       : DF.getByPathsH(root, npaths)
+  //   ),
+  //   SRTE.map(raw ? showRaw : showConsole),
+  // )
+
+  const scanned = pipe(
+    paths as NEA<string>,
+    NA.map(p => micromatch.scan(p)),
+  )
+
+  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+
   return pipe(
+    // DF.searchGlobs(paths as NEA<string>),
     DF.getCachedRoot(trash),
     SRTE.chain(root =>
       cached
-        ? DF.getByPathsCached(root, npaths)
-        : DF.getByPathsH(root, npaths)
+        ? DF.getByPathsCached(root, basepaths)
+        : DF.getByPathsH(root, basepaths)
     ),
-    SRTE.map(raw ? showRaw : showConsole),
+    SRTE.map(NA.zip(scanned)),
+    SRTE.map(A.filter(guardFst(isValid))),
+    SRTE.map(A.map(([path, scan]) => {
+      const d = NA.last(path.path.details)
+      const t = target(path)
+
+      if (T.isFile(t)) {
+        return showFileInfo({ ...opts })(t)
+      }
+
+      const items = pipe(
+        NA.last(path.path.details).items,
+        A.filter(
+          item =>
+            scan.glob.length > 0
+              ? micromatch.isMatch(
+                T.fileName(item),
+                scan.glob,
+                { basename: true },
+              )
+              : true,
+        ),
+      )
+      return showDetailsInfo({ path: scan.base, fullPath, printFolderInfo: true, ...opts })({
+        ...d,
+        items,
+      })
+    })),
+    // SRTE.map(A.flatten),
+    SRTE.map(_ => _.join('\n\n')),
   )
 }
