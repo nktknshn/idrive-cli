@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DF from '../../../icloud/drive/drive'
 import { fileName, fileNameAddSlash } from '../../../icloud/drive/requests/types/types'
 import { logger } from '../../../lib/logging'
@@ -34,12 +35,12 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   ) */
   return pipe(
     DF.getCachedRoot(trash),
-    DF.chain(root =>
+    SRTE.chain(root =>
       pipe(
         cached
           ? DF.getByPathFolderCached(targetDir)(root)
           : DF.getByPathFolder(root, targetDir),
-        DF.map(parent =>
+        SRTE.map(parent =>
           lookupDir
             ? parent.items
             : parent.items.filter(
@@ -49,7 +50,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
         DF.logS(
           result => `suggestions: ${result.map(fileName)}`,
         ),
-        DF.map((result) =>
+        SRTE.map((result) =>
           result
             .filter(item => file ? item.type === 'FILE' : true)
             .filter(item => dir ? item.type === 'FOLDER' || item.type === 'APP_LIBRARY' : true)

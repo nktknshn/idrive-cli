@@ -83,7 +83,7 @@ const handle = (
     return caseMoveAndRename(src, dst, fname)
   }
 
-  return DF.left(err(`invalid dstitem`))
+  return SRTE.left(err(`invalid dstitem`))
 }
 
 const caseMove = (

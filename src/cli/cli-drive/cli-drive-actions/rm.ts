@@ -40,7 +40,7 @@ export const rm = (
         ),
       )),
     // SRTE.chain(() => DF.lsdir(parentPath)),
-    DF.map(() => `Success.`),
+    SRTE.map(() => `Success.`),
     // SRTE.map(showDetailsInfo({
     //   fullPath: false,
     //   path: '',

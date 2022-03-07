@@ -35,14 +35,14 @@ export const searchGlobs = (
           (bases) =>
             pipe(
               getFoldersTrees(bases, 256),
-              DF.map(NA.map(E.of)),
+              SRTE.map(NA.map(E.of)),
             ),
           (base) => E.left(base),
         ),
       )
     ),
-    DF.map(flow(NA.zip(basepaths), NA.zip(globs), NA.zip(scanned))),
-    DF.map(flow(NA.map(([[[fileOrTree, basepath], globpattern], scan]) =>
+    SRTE.map(flow(NA.zip(basepaths), NA.zip(globs), NA.zip(scanned))),
+    SRTE.map(flow(NA.map(([[[fileOrTree, basepath], globpattern], scan]) =>
       pipe(
         fileOrTree,
         E.fold(

@@ -24,6 +24,7 @@ const commands = {
   edit: Action.edit,
   df: Action.downloadFolder,
   init: Action.initSession,
+  uf: Action.uploadFolder,
 }
 
 async function main() {

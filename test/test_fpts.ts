@@ -11,6 +11,7 @@ const paths = [
   '/dir1/dir3/file1.txt',
   '/dir2/dir3/dir5/asd.txt',
   '/dir2/dir4/abc.txt',
+  '/dir3/dir1/xyz',
 ]
 
 const parseDown = (path: string) => {
@@ -24,7 +25,7 @@ const parseDown = (path: string) => {
   return A.reverse(result)
 }
 
-const res = pipe(
+const struct = pipe(
   paths,
   A.map(Path.parse),
   A.map(_ => _.dir),
@@ -33,6 +34,27 @@ const res = pipe(
   A.uniq<string>({ equals: (a, b) => a == b }),
 )
 
+const getKids = (parent: string) =>
+  (struct: string[]): (readonly [string, string])[] => {
+    const kids = pipe(
+      struct,
+      A.map(Path.parse),
+      A.filter(_ => _.dir == parent),
+      A.map(_ => [parent, _.base] as const),
+    )
+
+    const subkids = pipe(
+      kids,
+      A.map(([p, k]) => getKids(Path.join(p, k))(struct)),
+      A.flatten,
+    )
+
+    return [...kids, ...subkids]
+  }
+
 console.log(
-  res,
+  pipe(
+    struct,
+    getKids('/'),
+  ),
 )

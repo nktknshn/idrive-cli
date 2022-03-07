@@ -22,7 +22,7 @@ export const modifySubset = <A, B extends A, C, D extends A>(
   )
 
   return pipe(
-    pipe(subset.map(_ => _.a), A.match(() => DF.of([]), f)),
+    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.State, DF.DriveMEnv, Error, C[]>([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
     SRTE.map(res => projectIndexes(input as NA.NonEmptyArray<D>, res, fac)),

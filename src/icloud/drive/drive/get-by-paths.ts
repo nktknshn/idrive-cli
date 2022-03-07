@@ -36,26 +36,25 @@ export const getByPaths = <R extends T.Root>(
 ): DF.DriveM<NEA<DF.DetailsOrFile<R>>> => {
   return pipe(
     getByPathsH(root, paths),
-    DF.map(
-      NA.map(res =>
-        res.valid
-          ? DF.of(V.target(res))
-          : DF.left<DF.DetailsOrFile<R>>(
-            err(
-              `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
-            ),
-          )
-      ),
-    ),
-    DF.chain(
+    SRTE.chain(
       flow(
-        SRTE.sequenceArray,
-        SRTE.map(RA.toArray),
-        SRTE.chain(
-          flow(
-            NA.fromArray,
+        NA.map(res =>
+          res.valid
+            ? E.of(V.target(res))
+            : E.left(
+              err(
+                `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
+              ),
+            )
+        ),
+        E.sequenceArray,
+        E.map(RA.toArray),
+        SRTE.fromEither,
+        SRTE.chain(a =>
+          pipe(
+            NA.fromArray(a),
             DF.fromOption(() => err(`mystically returned empty array`)),
-          ),
+          )
         ),
       ),
     ),
@@ -70,7 +69,7 @@ const validateCachedPaths = <R extends T.Root>(
   return pipe(
     DF.getByPathsCached(root, paths),
     DF.logS((cached) => `cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
-    DF.chain((cached) =>
+    SRTE.chain((cached) =>
       pipe(
         validateCachedHierarchies(pipe(cached, NA.map(_ => _.path.details))),
         SRTE.map(NA.zip(cached)),
@@ -114,7 +113,7 @@ const validateCachedHierarchies = <R extends T.Root>(
         cachedRoot.drivewsid,
         ...drivewsids,
       ]),
-    DF.map(([actualRoot, ...actualRest]) => {
+    SRTE.map(([actualRoot, ...actualRest]) => {
       const detailsRecord = recordFromTuples(
         A.zip(drivewsids, actualRest),
       )
@@ -245,8 +244,8 @@ const handleInvalidPaths = <R extends T.Root>(
 
     return pipe(
       DF.retrieveItemDetailsInFoldersSavingE(foldersToRetrieve),
-      DF.map(NA.zip(subfolders)),
-      DF.chain((details) => {
+      SRTE.map(NA.zip(subfolders)),
+      SRTE.chain((details) => {
         return modifySubset(
           details,
           // select
@@ -325,7 +324,7 @@ const handleInvalidPaths = <R extends T.Root>(
       return modifySubset(found, selectFolders, handleSubfolders, handleFiles())
     }
 
-    return DF.of([])
+    return SRTE.of([])
   }
 
   const nextItems = pipe(

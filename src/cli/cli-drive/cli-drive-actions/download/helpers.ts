@@ -7,7 +7,7 @@ import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import { Eq } from 'fp-ts/lib/string'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
-import { Stats } from 'fs'
+import { createWriteStream, Stats } from 'fs'
 import * as fs from 'fs/promises'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
@@ -23,10 +23,13 @@ import { normalizePath, stripTrailingSlash } from '../helpers'
 
 export type DownloadInto = (readonly [localpath: string, remotefile: T.DriveChildrenItemFile])
 
-export type FilterTreeResult = {
+export type DownloadTask = {
   dirstruct: string[]
   downloadable: DownloadInto[]
   empties: DownloadInto[]
+}
+
+export type FilterTreeResult = DownloadTask & {
   excluded: DownloadInto[]
 }
 
@@ -53,6 +56,23 @@ export const writeFile = (destpath: string) =>
       e => err(`error writing file ${destpath}: ${e}`),
     )
 
+export const writeFile2 = (destpath: string) =>
+  (readble: Readable): TE.TaskEither<SomeError, void> =>
+    TE.tryCatch(
+      () => {
+        // const writer = createWriteStream(destpath)
+        // readble.pipe(writer)
+        // return TE.taskify(stream.finished)(writer)()
+        return new Promise(
+          (resolve, reject) => {
+            const stream = createWriteStream(destpath)
+            readble.pipe(stream).on('close', resolve)
+          },
+        )
+      },
+      e => err(`error writing file ${destpath}: ${e}`),
+    )
+
 export type DownloadUrlToFile<R> = (
   url: string,
   destpath: string,
@@ -69,7 +89,7 @@ export const downloadUrlToFile: DownloadUrlToFile<Use<'getUrlStream'>> = (
     RTE.chainTaskEitherK(({ api }) => api.getUrlStream({ url })),
     RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
     RTE.chainFirstIOK(() => printerIO.print(`writing ${destpath}`)),
-    RTE.chainW(RTE.fromTaskEitherK(writeFile(destpath))),
+    RTE.chainW(RTE.fromTaskEitherK(writeFile2(destpath))),
     RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
   )
 
@@ -166,52 +186,48 @@ export const getDirectoryStructure = (paths: string[]) => {
 }
 
 export const filterTree = (
-  tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>,
-  glob: string[],
-  exclude: boolean,
-): FilterTreeResult => {
-  const flatTree = zipFolderTreeWithPath('/', tree)
+  { exclude, include }: { include: string[]; exclude: string[] },
+) =>
+  (tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>): FilterTreeResult => {
+    const flatTree = zipFolderTreeWithPath('/', tree)
 
-  const files = pipe(
-    flatTree,
-    A.filter(guardSnd(T.isFile)),
-  )
+    const files = pipe(
+      flatTree,
+      A.filter(guardSnd(T.isFile)),
+    )
 
-  const folders = pipe(
-    flatTree,
-    A.filter(guardSnd(T.isFolderLike)),
-  )
+    const folders = pipe(
+      flatTree,
+      A.filter(guardSnd(T.isFolderLike)),
+    )
 
-  const { left: excluded, right: valid } = glob.length > 0
-    ? pipe(
+    const { left: excluded, right: valid } = pipe(
       files,
       A.partition(
         ([path, item]) =>
-          exclude
-            ? !micromatch.any(path, glob)
-            : micromatch.any(path, glob),
+          (include.length == 0 || micromatch.any(path, include, { dot: true }))
+          && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true })),
       ),
     )
-    : { left: [], right: files }
 
-  const { left: downloadable, right: empties } = pipe(
-    valid,
-    A.partition(([, file]) => file.size == 0),
-  )
+    const { left: downloadable, right: empties } = pipe(
+      valid,
+      A.partition(([, file]) => file.size == 0),
+    )
 
-  const dirstruct = pipe(
-    A.concatW(folders)(A.concat(downloadable)(empties)),
-    A.map(a => a[0]),
-    getDirectoryStructure,
-  )
+    const dirstruct = pipe(
+      A.concatW(folders)(A.concat(downloadable)(empties)),
+      A.map(a => a[0]),
+      getDirectoryStructure,
+    )
 
-  return {
-    dirstruct,
-    downloadable,
-    empties,
-    excluded,
+    return {
+      dirstruct,
+      downloadable,
+      empties,
+      excluded,
+    }
   }
-}
 
 const opendir = (path: string) =>
   TE.tryCatch(
@@ -296,7 +312,7 @@ export const walkDir = (path: string): TE.TaskEither<Error, TR.Tree<LocalTreeEle
           return TR.make(
             {
               type: 'directory' as const,
-              path: dir.path,
+              path: dir.path + '/',
               name: Path.basename(dir.path),
               stats,
             },

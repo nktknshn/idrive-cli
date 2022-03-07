@@ -7,7 +7,7 @@ import * as TR from 'fp-ts/lib/Tree'
 import { swap } from 'fp-ts/lib/Tuple'
 import { GetByPathResult, showGetByPathResult, target } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import { FolderTree } from '../../../icloud/drive/drive/get-folders-trees'
+import { FolderTree, treeWithFiles } from '../../../icloud/drive/drive/get-folders-trees'
 import { recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
@@ -37,11 +37,11 @@ export const listUnixPath2 = (
 
   if (recursive) {
     const showTree = (
-      tree: FolderTree<T.DetailsDocwsRoot | T.DetailsTrash | T.NonRootDetails>,
+      tree: TR.Tree<T.Details | T.DriveChildrenItemFile>,
     ) => {
       return pipe(
         tree,
-        TR.map(_ => T.fileName(_.details)),
+        TR.map(_ => T.fileName(_)),
         TR.drawTree,
       )
     }
@@ -49,10 +49,10 @@ export const listUnixPath2 = (
     return pipe(
       DF.Do,
       SRTE.bind('root', DF.getRoot),
-      DF.chain(({ root }) => DF.getByPaths(root, npaths)),
-      DF.map(flow(A.filter(T.isDetails))),
-      DF.chain(dirs => A.isNonEmpty(dirs) ? DF.getFoldersTrees(dirs, depth) : DF.left(err(`dirs please`))),
-      DF.map(trees => pipe(trees, NA.map(showTree), _ => _.join('\n'))),
+      SRTE.chain(({ root }) => DF.getByPaths(root, npaths)),
+      SRTE.map(flow(A.filter(T.isDetails))),
+      SRTE.chain(dirs => A.isNonEmpty(dirs) ? DF.getFoldersTrees(dirs, depth) : SRTE.left(err(`dirs please`))),
+      SRTE.map(trees => pipe(trees, NA.map(treeWithFiles), NA.map(showTree), _ => _.join('\n'))),
     )
   }
 
@@ -94,7 +94,7 @@ export const listUnixPath2 = (
 
   return pipe(
     DF.getCachedRoot(trash),
-    DF.chain(root =>
+    SRTE.chain(root =>
       cached
         ? DF.getByPathsCached(root, npaths)
         : DF.getByPathsH(root, npaths)

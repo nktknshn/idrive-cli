@@ -4,16 +4,19 @@ import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
+import { boolean } from 'yargs'
 import { guardSnd } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/requests/types/types'
 import { err } from '../../../../lib/errors'
-import { DownloadInto, FilterTreeResult, LocalTreeElement } from './helpers'
+import { loggerIO } from '../../../../lib/loggerIO'
+import { Path } from '../../../../lib/util'
+import { DownloadInto, DownloadTask, FilterTreeResult, fstat, LocalTreeElement, walkDirRel } from './helpers'
 
 export type Conflict = readonly [LocalTreeElement, readonly [localpath: string, remotefile: T.DriveChildrenItemFile]]
 
 export const lookForConflicts = (
   localTree: TR.Tree<LocalTreeElement>,
-  { downloadable, empties }: FilterTreeResult,
+  { downloadable, empties }: DownloadTask,
 ): Conflict[] => {
   const remotes = pipe(
     [...downloadable, ...empties],
@@ -47,7 +50,7 @@ export const lookForConflicts = (
 }
 
 export const showConflict = ([localfile, [localpath, file]]: Conflict) =>
-  `conflict: local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${file.size} bytes)`
+  `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${file.size} bytes)`
 
 export type SolutionAction = 'skip' | 'overwright'
 export type Solution = (readonly [Conflict, SolutionAction])[]
@@ -56,7 +59,78 @@ export type ConflictsSolver = (
   conflicts: Conflict[],
 ) => TE.TaskEither<Error, (readonly [Conflict, SolutionAction])[]>
 
-export const failOnConflicts: ConflictsSolver = (conflicts) =>
+export const applySoultion = (
+  { downloadable, empties, dirstruct }: DownloadTask,
+) =>
+  (
+    solution: Solution,
+  ): { dirstruct: string[]; downloadable: DownloadInto[]; empties: DownloadInto[] } & { initialTask: DownloadTask } => {
+    const fa = ([path, file]: readonly [string, T.DriveChildrenItemFile]) =>
+      pipe(
+        solution,
+        A.findFirstMap(
+          ([[localfile, [localpath, f]], action]) =>
+            f.drivewsid === file.drivewsid ? O.some([localpath, file, action] as const) : O.none,
+        ),
+        O.getOrElse(() => [path, file, 'overwright' as SolutionAction] as const),
+      )
+
+    const findAction = (fs: DownloadInto[]) =>
+      pipe(
+        fs,
+        A.map((c) => fa(c)),
+        A.filterMap(([path, file, action]) => action === 'overwright' ? O.some([path, file] as const) : O.none),
+      )
+
+    return {
+      downloadable: findAction(downloadable),
+      empties: findAction(empties),
+      dirstruct,
+      initialTask: { downloadable, empties, dirstruct },
+    }
+  }
+
+export const handleLocalFilesConflicts = ({ dstpath, conflictsSolver }: {
+  dstpath: string
+  conflictsSolver: ConflictsSolver
+  // downloader: DownloadICloudFiles
+}): (
+  initialtask: DownloadTask,
+) => TE.TaskEither<
+  Error,
+  { dirstruct: string[]; downloadable: DownloadInto[]; empties: DownloadInto[]; initialTask: DownloadTask }
+> =>
+  (initialtask: DownloadTask) => {
+    const dst = Path.normalize(dstpath)
+
+    const conflicts = pipe(
+      fstat(dst),
+      TE.fold(
+        (e) => TE.of([]),
+        () =>
+          pipe(
+            walkDirRel(dst),
+            TE.map(localtree => lookForConflicts(localtree, initialtask)),
+          ),
+      ),
+    )
+
+    return pipe(
+      conflicts,
+      TE.chain(conflictsSolver),
+      TE.chainFirstIOK(
+        (solution) =>
+          loggerIO.debug(
+            `conflicts: \n${
+              solution.map(([conflict, action]) => `[${action}] ${showConflict(conflict)}`).join('\n')
+            }\n`,
+          ),
+      ),
+      TE.map(applySoultion(initialtask)),
+    )
+  }
+
+const failOnConflicts: ConflictsSolver = (conflicts) =>
   pipe(
     conflicts,
     A.match(
@@ -64,41 +138,43 @@ export const failOnConflicts: ConflictsSolver = (conflicts) =>
       () => TE.left(err(`conflicts`)),
     ),
   )
-export const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
+const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
   pipe(
     conflicts,
     A.map(c => [c, 'skip'] as const),
     TE.of,
   )
-export const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
+const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
   pipe(
     conflicts,
     A.map(c => [c, 'overwright'] as const),
     TE.of,
   )
+const resolveConflictsRename: ConflictsSolver = (conflicts) =>
+  pipe(
+    conflicts,
+    A.map(([localfile, [path, remotefile]]) => [[localfile, [path + '.new', remotefile]], 'overwright'] as const),
+    TE.of,
+  )
 
-export const applySoultion = (
-  { downloadable, empties }: FilterTreeResult,
-) =>
-  (solution: Solution): { downloadable: DownloadInto[]; empties: DownloadInto[] } => {
-    const fa = (path: string) =>
-      pipe(
-        solution,
-        A.findFirstMap(
-          ([[localfile, [localpath, file]], action]) => localpath === path ? O.some(action) : O.none,
-        ),
-        O.getOrElse((): SolutionAction => 'overwright'),
-      )
+const resolveConflictsOverwrightIfSizeDifferent = (
+  skipRemotes = (f: T.DriveChildrenItemFile) => false,
+): ConflictsSolver =>
+  (conflicts) =>
+    pipe(
+      conflicts,
+      A.map(([localfile, [path, remotefile]]) =>
+        localfile.stats.size !== remotefile.size && !skipRemotes(remotefile)
+          ? [[localfile, [path, remotefile]], 'overwright' as SolutionAction] as const
+          : [[localfile, [path, remotefile]], 'skip' as SolutionAction] as const
+      ),
+      TE.of,
+    )
 
-    const findAction = (fs: DownloadInto[]) =>
-      pipe(
-        fs,
-        A.map(([path, file]) => [[path, file], fa(path)] as const),
-        A.filterMap(([a, action]) => action === 'overwright' ? O.some(a) : O.none),
-      )
-
-    return {
-      downloadable: findAction(downloadable),
-      empties: findAction(empties),
-    }
-  }
+export const solvers = {
+  failOnConflicts,
+  resolveConflictsSkipAll,
+  resolveConflictsOverwrightAll,
+  resolveConflictsRename,
+  resolveConflictsOverwrightIfSizeDifferent,
+}

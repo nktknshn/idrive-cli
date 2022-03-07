@@ -53,10 +53,10 @@ export const upload = (
     SRTE.bindTo('api'),
     SRTE.bindW('root', DF.getRoot),
     SRTE.bindW('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
-    SRTE.bindW('src', () => DF.of(srcpath)),
-    SRTE.bindW('overwright', () => DF.of(overwright)),
+    SRTE.bindW('src', () => SRTE.of(srcpath)),
+    SRTE.bindW('overwright', () => SRTE.of(overwright)),
     SRTE.chainW(handle),
-    DF.map(() => `Success. ${Path.basename(srcpath)}`),
+    SRTE.map(() => `Success. ${Path.basename(srcpath)}`),
   )
 }
 
@@ -76,7 +76,7 @@ const handle = (
     if (isFolderLike(dstitem)) {
       return pipe(
         api.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, zone: dstitem.zone }),
-        DF.map(constVoid),
+        SRTE.map(constVoid),
       )
     }
     // if it's a file and the overwright flag set
@@ -98,7 +98,7 @@ const handle = (
     if (isFolderLike(dstitem)) {
       return pipe(
         api.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
-        DF.map(constVoid),
+        SRTE.map(constVoid),
       )
     }
   }
@@ -132,7 +132,7 @@ const uploadOverwrighting = (
         trash: true,
       })
     }),
-    DF.chain(({ uploadResult, removeResult }) => {
+    SRTE.chainW(({ uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
         api.renameItemsM<DF.State>({
@@ -142,7 +142,7 @@ const uploadOverwrighting = (
             ...parseName(fileName(dstitem)),
           }],
         }),
-        DF.map(constVoid),
+        SRTE.map(constVoid),
       )
     }),
   )

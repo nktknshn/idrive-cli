@@ -22,7 +22,7 @@ export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
   )
 }
 
-const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
+export const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
   const files: (T | T.DriveChildrenItemFile)[] = pipe(
     tree.value.details.items,
     A.filter(T.isFile),
@@ -105,7 +105,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
         DF.retrieveItemDetailsInFoldersSavingE(
           pipe(subfolders, NA.map(_ => _.drivewsid)),
         ),
-        DF.chain(details => getFoldersTrees(details, depth - 1)),
+        SRTE.chain(details => getFoldersTrees(details, depth - 1)),
         SRTE.map(
           groupBy(_ => _.value.details.parentId),
         ),

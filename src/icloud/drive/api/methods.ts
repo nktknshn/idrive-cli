@@ -60,9 +60,9 @@ export const downloadBatch = <S extends AuthorizedState>(
   pipe(
     SRTE.ask<S, API.Use<'downloadBatchM'>, Error>(),
     SRTE.chainW(_ => _.downloadBatchM(opts)),
-    SRTE.map(
-      A.map(_ => _.data_token?.url ?? _.package_token?.url),
-    ),
+    // SRTE.map(
+    //   A.map(_ => _.data_token?.url ?? _.package_token?.url),
+    // ),
   )
 
 export const renameItems = <S extends AuthorizedState>(

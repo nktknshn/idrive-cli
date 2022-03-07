@@ -5,7 +5,7 @@ import { fromIO } from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { AuthorizedState, authorizeStateM3 } from '../icloud/authorization/authorize'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
-import { readAccountData, saveAccountData } from '../icloud/authorization/validate'
+import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
 import { ApiEnv } from '../icloud/drive/api'
 import { ApiType } from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
@@ -39,9 +39,9 @@ export const loadCache = (deps: { noCache: boolean; cacheFile: string }) =>
 export const saveSession = <S extends { session: ICloudSession }>(state: S) =>
   (deps: { sessionFile: string }) => saveSession2(state.session)(deps.sessionFile)
 
-export const saveAccountData2 = <S extends { accountData: AccountLoginResponseBody }>(
+export const saveAccountData = <S extends { accountData: AccountLoginResponseBody }>(
   state: S,
-) => (deps: { sessionFile: string }) => saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
+) => (deps: { sessionFile: string }) => _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
 
 export const saveCache = <S extends { cache: CacheF }>(state: S) =>
   (deps: { cacheFile: string; noCache: boolean }) =>
@@ -60,37 +60,30 @@ const loadSession = pipe(
           ),
         ),
   ),
+  RTE.map(session => ({ session })),
 )
 const loadAccountData = (
-  session: ICloudSession,
+  { session }: { session: ICloudSession },
 ) =>
   pipe(
     _loadAccountData,
     RTE.map(accountData => ({ session, accountData })),
     RTE.orElseW(e =>
       pipe(
-        loggerIO.error(`error ${e.name} while reading account data.`),
+        loggerIO.error(`couldn't read account data. (${e})`),
         RTE.fromIO,
         RTE.chain(() => authorizeStateM3({ session })),
       )
     ),
   )
 
-const getAuthorizedState: RTE.ReaderTaskEither<
-  { sessionFile: string } & ApiEnv & RequestEnv,
-  Error,
-  AuthorizedState
-> = pipe(
-  loadSession,
-  RTE.chain(loadAccountData),
-)
-
 /** read the state and execute an action in the context */
 export function cliActionM2<T, R extends DF.DriveMEnv & ApiType>(
   action: () => XXX<DF.State, R, T>,
 ) {
   return pipe(
-    getAuthorizedState,
+    loadSession,
+    RTE.chain(loadAccountData),
     RTE.bindW('cache', () => loadCache),
     RTE.bindW('result', action()),
     RTE.chainFirst(({ result: [, { cache }] }) =>
@@ -102,7 +95,7 @@ export function cliActionM2<T, R extends DF.DriveMEnv & ApiType>(
       pipe(
         RTE.of(state),
         RTE.chainFirstW(saveSession),
-        RTE.chainFirstW(saveAccountData2),
+        RTE.chainFirstW(saveAccountData),
         RTE.chainFirstW(saveCache),
       )
     ),

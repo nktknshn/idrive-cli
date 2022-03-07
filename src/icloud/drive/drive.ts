@@ -1,24 +1,20 @@
 import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constant, constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { identity } from 'io-ts'
 import { NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 import { AuthorizedState } from '../authorization/authorize'
-import { AccountLoginResponseBody } from '../authorization/types'
-import { ICloudSession } from '../session/session'
-import * as API from './api'
 import * as NM from './api/methods'
 import { Use } from './api/type'
 import * as C from './cache/cache'
 import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
-import { CacheEntityDetails, CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
+import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
 import { getByPaths, getByPathsH } from './drive/get-by-paths'
 import { getFoldersTrees } from './drive/get-folders-trees'
 import * as ESRTE from './drive/m2'
@@ -27,7 +23,6 @@ import { searchGlobs } from './drive/search-globs'
 import { Hierarchy } from './drive/validation'
 import { ItemIsNotFolderError, NotFoundError } from './errors'
 import { getMissedFound } from './helpers'
-import * as AR from './requests/request'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
@@ -45,27 +40,21 @@ export type State = {
   cache: C.Cache
 } & AuthorizedState
 
-export type DriveM<A, S extends State = State> = ESRTE.ESRTE<S, DriveMEnv, Error, A>
+export type DriveM<A, S extends State = State> = SRTE.StateReaderTaskEither<S, DriveMEnv, Error, A>
 
 export const {
   Do,
-  chain,
   fromEither,
   fromOption,
   fromTaskEither,
-  get,
-  left,
-  map,
-  of,
-  fromTaskEitherE,
-  filterOrElse,
 } = ESRTE.get<State, DriveMEnv, Error>()
+const { map, chain, of, filterOrElse } = SRTE
 
 export const ado = sequenceS(SRTE.Apply)
 // const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
-  state: get<State>(),
+  state: SRTE.get<State, DriveMEnv>(),
   env: SRTE.ask<State, DriveMEnv>(),
 })
 
@@ -210,10 +199,10 @@ const _retrieveItemDetailsInFoldersSaving = (
   pipe(
     readEnv,
     SRTE.bindW('details', ({ env }) => env.retrieveItemDetailsInFolders({ drivewsids: drivewsids as NEA<string> })),
-    SRTE.chain(({ details }) =>
+    chain(({ details }) =>
       pipe(
         putFoundMissed(getMissedFound(drivewsids, details)),
-        SRTE.chain(() => of(A.map(T.invalidIdToOption)(details))),
+        chain(() => of(A.map(T.invalidIdToOption)(details))),
       )
     ),
   )
@@ -230,7 +219,7 @@ export function retrieveItemDetailsInFoldersSavingE(
       pipe(
         O.sequenceArray(details),
         fromOption(() => err(`some of the ids was not found`)),
-        SRTE.map(v => v as NEA<T.Details>),
+        map(v => v as NEA<T.Details>),
       )
     ),
   )

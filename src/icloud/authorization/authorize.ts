@@ -22,24 +22,23 @@ export function authorizeSessionM<S extends AR.BasicState>(): AR.ApiRequest<Acco
 
   return pipe(
     requestSignInM<S>(),
-    AR.chain((resp) =>
+    SRTE.chain((resp) =>
       isHsa2Required(resp)
         ? pipe(
-          AR.readEnv<S>(),
-          AR.chain(({ env }) => AR.fromTaskEither(env.getCode())),
-          AR.chain(code => requestSecurityCodeM(code)),
-          AR.chain(() => requestTrustDeviceM()),
+          SRTE.ask<S, AR.RequestEnv>(),
+          SRTE.chain(({ getCode }) => SRTE.fromTaskEither(getCode())),
+          SRTE.chain(code => requestSecurityCodeM(code)),
+          SRTE.chain(() => requestTrustDeviceM()),
         )
-        : AR.of({})
+        : SRTE.of({})
     ),
-    AR.chain(() => requestAccoutLoginM()),
+    SRTE.chain(() => requestAccoutLoginM()),
   )
 }
 
 export function authorizeStateM3<
   S extends AR.BasicState,
-  R extends AR.RequestEnv,
->(state: S): RTE.ReaderTaskEither<R, Error, { accountData: AccountLoginResponseBody } & S> {
+>(state: S): RTE.ReaderTaskEither<AR.RequestEnv, Error, { accountData: AccountLoginResponseBody } & S> {
   authLogger.debug('authorizeSession')
 
   return pipe(

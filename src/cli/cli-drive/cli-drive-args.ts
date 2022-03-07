@@ -63,16 +63,16 @@ export function parseArgs() {
             overwright: { default: false, type: 'boolean' },
           }),
     )
-    .command(
-      'uploads <srcpaths..> <dstpath>',
-      'uploads',
-      (_) =>
-        _.positional('srcpaths', { type: 'string', array: true, demandOption: true })
-          .positional('dstpath', { type: 'string', demandOption: true })
-          .options({
-            overwright: { default: false, type: 'boolean' },
-          }),
-    )
+    // .command(
+    //   'uploads <srcpaths..> <dstpath>',
+    //   'uploads',
+    //   (_) =>
+    //     _.positional('srcpaths', { type: 'string', array: true, demandOption: true })
+    //       .positional('dstpath', { type: 'string', demandOption: true })
+    //       .options({
+    //         overwright: { default: false, type: 'boolean' },
+    //       }),
+    // )
     .command(
       'autocomplete <path>',
       'autocomplete',
@@ -110,8 +110,26 @@ export function parseArgs() {
         _.positional('path', { type: 'string', demandOption: true })
           .positional('dstpath', { type: 'string', demandOption: true })
           .options({
-            glob: { default: [], type: 'string', array: false },
-            exclude: { default: false, type: 'boolean' },
+            include: { default: [], type: 'string', array: false },
+            exclude: { default: [], type: 'string', array: false },
+            // exclude: { default: false, type: 'boolean' },
+            // silent: { default: true, type: 'boolean' },
+            // overwright: { default: true, type: 'boolean' },
+            // raw: { default: true, type: 'boolean' },
+            dry: { default: false, type: 'boolean' },
+            // destination: { alias: ['D'], type: 'string', demandOption: true },
+          }),
+    )
+    .command(
+      'uf <localpath> <remotepath>',
+      'uf',
+      (_) =>
+        _.positional('localpath', { type: 'string', demandOption: true })
+          .positional('remotepath', { type: 'string', demandOption: true })
+          .options({
+            include: { default: [], type: 'string', array: false },
+            exclude: { default: [], type: 'string', array: false },
+            // exclude: { default: false, type: 'boolean' },
             // silent: { default: true, type: 'boolean' },
             // overwright: { default: true, type: 'boolean' },
             // raw: { default: true, type: 'boolean' },
