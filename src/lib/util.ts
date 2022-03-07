@@ -10,7 +10,7 @@ import Path from 'path'
 export { Path }
 export const cast = <T>() => <R extends T>(v: R): T => v
 
-export type ObjectType = Record<string, unknown>
+export type ObjectType = {}
 
 export function isObject(a: unknown): a is ObjectType {
   return typeof a === 'object' && a !== null

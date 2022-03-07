@@ -112,7 +112,8 @@ export function parseArgs() {
           .options({
             glob: { default: [], type: 'string', array: false },
             exclude: { default: false, type: 'boolean' },
-            // glob: { default: true, type: 'boolean' },
+            // silent: { default: true, type: 'boolean' },
+            // overwright: { default: true, type: 'boolean' },
             // raw: { default: true, type: 'boolean' },
             dry: { default: false, type: 'boolean' },
             // destination: { alias: ['D'], type: 'string', demandOption: true },
@@ -127,6 +128,10 @@ export function parseArgs() {
             output: { default: './', type: 'string' },
             structured: { default: true, type: 'boolean' },
           }),
+    )
+    .command(
+      'init',
+      'init',
     )
     .help()
 }

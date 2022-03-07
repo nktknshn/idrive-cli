@@ -1,34 +1,17 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
-import { defaultApiEnv } from '../../../defaults'
-import * as API from '../../../icloud/drive/api'
 import * as NM from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
-import { getById } from '../../../icloud/drive/cache/cache'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import * as H from '../../../icloud/drive/drive/validation'
 import { parseName } from '../../../icloud/drive/helpers'
-import { MoveItemToTrashResponse } from '../../../icloud/drive/requests'
 import { RenameResponse } from '../../../icloud/drive/requests'
 import { MoveItemsResponse } from '../../../icloud/drive/requests/moveItems'
-import {
-  Details,
-  DetailsDocwsRoot,
-  DetailsTrash,
-  DriveChildrenItemFile,
-  isDetails,
-  isNotRootDetails,
-  NonRootDetails,
-} from '../../../icloud/drive/requests/types/types'
+import * as T from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
-import { NEA } from '../../../lib/types'
-import { XXX } from '../../../lib/types'
-import { cliActionM2 } from '../../cli-action'
-import { Env } from '../../types'
+import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
 
 type Deps = DF.DriveMEnv & Use<'moveItemsM'> & Use<'renameItemsM'>
@@ -50,7 +33,7 @@ export const move = ({ srcpath, dstpath }: {
       () => DF.chainRoot(root => DF.getByPathsH(root, [nsrc, ndst])),
     ),
     SRTE.chain(handle),
-    DF.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
+    SRTE.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
   )
 }
 
@@ -62,7 +45,7 @@ export const move = ({ srcpath, dstpath }: {
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.PathValidation<H.Hierarchy<DetailsDocwsRoot>>>
+    srcdst: NEA<V.PathValidation<H.Hierarchy<T.DetailsDocwsRoot>>>
   },
 ): XXX<DF.State, Deps, MoveItemsResponse | RenameResponse> => {
   if (!srcitem.valid) {
@@ -71,14 +54,14 @@ const handle = (
 
   const src = V.target(srcitem)
 
-  if (!isNotRootDetails(src)) {
+  if (!T.isNotRootDetails(src)) {
     return DF.errS(`src cant be root`)
   }
 
   if (dstitem.valid) {
     const dst = V.target(dstitem)
 
-    if (!isDetails(dst)) {
+    if (!T.isDetails(dst)) {
       return DF.errS(`dst is a file`)
     }
 
@@ -104,8 +87,8 @@ const handle = (
 }
 
 const caseMove = (
-  src: NonRootDetails | DriveChildrenItemFile,
-  dst: Details,
+  src: T.NonRootDetails | T.DriveChildrenItemFile,
+  dst: T.Details,
 ): XXX<DF.State, Deps, MoveItemsResponse> => {
   return pipe(
     SRTE.ask<DF.State, Deps>(),
@@ -119,7 +102,7 @@ const caseMove = (
 }
 
 const caseRename = (
-  srcitem: NonRootDetails | DriveChildrenItemFile,
+  srcitem: T.NonRootDetails | T.DriveChildrenItemFile,
   name: string,
 ): XXX<DF.State, Deps, RenameResponse> => {
   return pipe(
@@ -132,8 +115,8 @@ const caseRename = (
 }
 
 const caseMoveAndRename = (
-  src: NonRootDetails | DriveChildrenItemFile,
-  dst: (Details | DetailsTrash),
+  src: T.NonRootDetails | T.DriveChildrenItemFile,
+  dst: (T.Details | T.DetailsTrash),
   name: string,
 ): XXX<DF.State, Deps, RenameResponse> => {
   // return pipe(

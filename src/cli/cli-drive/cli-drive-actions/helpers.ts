@@ -238,14 +238,14 @@ export type NormalizedPath = Branded<string, NormalizedPathBrand>
 //   return drivewsid !== rootDrivewsid && drivewsid !== trashDrivewsid
 // }
 
-const stripSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
+export const stripTrailingSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
 const addSlash = (s: string) => s.startsWith('/') ? s : `/${s}`
 
 /**
  * NormalizedPath has Path.normalize applied and no trailing slash
  */
 export const normalizePath = (path: string): NormalizedPath => {
-  return pipe(Path.normalize(path), stripSlash, addSlash) as NormalizedPath
+  return pipe(Path.normalize(path), stripTrailingSlash, addSlash) as NormalizedPath
 }
 
 export const itemWithHierarchyToPath = (item: T.HasName & { hierarchy: T.Hierarchy }) => {

@@ -65,8 +65,20 @@ export const findInParent = (
 export const equalsDrivewsId = <T extends string>() =>
   fromEquals((a: { drivewsid: T }, b: { drivewsid: T }) => a.drivewsid == b.drivewsid)
 
-export const guardSnd = <A, B, F extends B>(refinement: Refinement<B, F>) =>
-  (tuple: [A, B]): tuple is [A, F] => refinement(tuple[1])
+// export const guardSnd = <A, B, F extends B>(refinement: Refinement<B, F>) =>
+//   (tuple: [A, B] | readonly [A, B]): tuple is [A, F] | readonly [A, F] => refinement(tuple[1])
+
+export function guardSnd<A, B, F extends B>(
+  refinement: Refinement<B, F>,
+): (tuple: readonly [A, B]) => tuple is readonly [A, F]
+export function guardSnd<A, B, F extends B>(
+  refinement: Refinement<B, F>,
+): (tuple: [A, B]) => tuple is [A, F]
+export function guardSnd<A, B, F extends B>(
+  refinement: Refinement<B, F>,
+) {
+  return (tuple: [A, B]) => refinement(tuple[1])
+}
 
 export const guardFst = <A, B, F extends A>(refinement: Refinement<A, F>) =>
   (tuple: [A, B] | readonly [A, B]): tuple is [F, B] | readonly [F, B] => refinement(tuple[0])

@@ -9,6 +9,34 @@ const { combine, timestamp, label, prettyPrint, json } = winston.format
 
 // })
 
+export const printerIO = {
+  print: <T>(value: T) =>
+    () => {
+      console.log(value)
+    },
+  error: () =>
+    (value: Error | string) =>
+      () => {
+        console.error(value)
+      },
+  printTask: <T>(value: T): () => Promise<void> =>
+    async () => {
+      console.log(value)
+    },
+  errorTask: (value: Error): () => Promise<void> =>
+    async () => {
+      console.error(value.message)
+      // console.error({
+      //   // name: value.name,
+      //   error: value.message,
+      //   name: value.name,
+      //   stack: value.stack,
+      //   input: InvalidJsonInResponse.is(value) ? value.input : undefined,
+      //   // httpResponse: InvalidJsonInResponse.is(value) ? value.httpResponse : undefined,
+      // })
+    },
+}
+
 const printer = {
   print: <T>(value: T): void => {
     console.log(value)

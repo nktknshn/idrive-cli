@@ -7,8 +7,6 @@ import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { defaultApiEnv } from './defaults'
 import { api } from './icloud/drive/api/api'
-import { Use } from './icloud/drive/api/type'
-import * as DF from './icloud/drive/drive'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -25,6 +23,7 @@ const commands = {
   download: Action.download,
   edit: Action.edit,
   df: Action.downloadFolder,
+  init: Action.initSession,
 }
 
 async function main() {
@@ -40,12 +39,20 @@ async function main() {
       apiLogger,
     ],
   )
-  argv.glob
+
   if (!isKeyOf(commands, command)) {
     printer.error(`invalid command ${command}`)
     showHelp()
     sys.exit(1)
     return
+  }
+
+  if (command === 'init') {
+    return await pipe(
+      { ...argv, ...defaultApiEnv, ...api },
+      Action.initSession(),
+      TE.fold(printer.errorTask, printer.printTask),
+    )()
   }
 
   const commandFunction = commands[command]
