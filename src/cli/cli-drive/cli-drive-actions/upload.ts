@@ -27,11 +27,8 @@ import { Path } from '../../../lib/util'
 import { cliActionM2 } from '../../cli-action'
 import { fstat } from './download/helpers'
 import { normalizePath } from './helpers'
-const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
-type AskingFunc = ((
-  info: { parent: DetailsDocwsRoot | NonRootDetails; dstitem: DriveChildrenItemFile; src: string },
-) => TE.TaskEither<Error, boolean>)
+type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
 type Deps =
   & DF.DriveMEnv
@@ -39,16 +36,14 @@ type Deps =
   & Use<'upload'>
   & Use<'moveItemsToTrashM'>
 
-export const ask: AskingFunc = (info) =>
+const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
+
+export const ask = ({ message }: { message: string }) =>
   pipe(
     prompts({
       type: 'confirm',
       name: 'value',
-      message: `overwright ${fileName(info.dstitem)}`,
-      choices: [
-        { title: 'y', selected: false, value: 'y' },
-        { value: 'n', title: 'n', selected: false },
-      ],
+      message,
     }, {
       onCancel: () => process.exit(1),
     }),
@@ -129,7 +124,9 @@ const uploadToFolder = (
     }
     else {
       return pipe(
-        overwright({ src, dstitem: actualFile.value, parent: dst }),
+        overwright({
+          message: `overwright ${fileName(actualFile.value)}`,
+        }),
         SRTE.fromTaskEither,
         SRTE.chain(overwright => uploadToFolder({ src, dst, overwright, api })),
       )

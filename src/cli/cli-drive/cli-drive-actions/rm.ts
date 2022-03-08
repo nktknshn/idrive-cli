@@ -1,7 +1,8 @@
 import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as RA from 'fp-ts/lib/ReadonlyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
@@ -57,7 +58,10 @@ export const rma = (
 }
 import * as E from 'fp-ts/Either'
 import { toArray } from 'fp-ts/lib/ReadonlyArray'
-import { fst } from 'fp-ts/lib/ReadonlyTuple'
+import { fst, snd } from 'fp-ts/lib/ReadonlyTuple'
+import * as O from 'fp-ts/Option'
+import { Path } from '../../../lib/util'
+import { ask } from './upload'
 export const rm = (
   { paths, trash }: {
     paths: string[]
@@ -83,13 +87,17 @@ export const rm = (
         DF.chainRoot(root => DF.getByPaths(root, basepaths)),
         SRTE.map(NA.zip(scanned)),
       )),
-    SRTE.bindW('remove', ({ items, api }) => {
+    SRTE.bindW('remove', ({ items }) => {
       const { left: directs, right: globs } = pipe(
         items,
-        A.partition(([item, scan]) => scan.glob.length > 0),
+        A.partitionMap(([item, scan]) =>
+          scan.glob.length == 0
+            ? E.left([item, scan.input] as const)
+            : E.right([item, scan] as const)
+        ),
       )
 
-      const es = pipe(
+      return SRTE.fromEither(pipe(
         globs,
         A.map(([item, scan]) =>
           isFile(item)
@@ -97,12 +105,10 @@ export const rm = (
             : E.right(
               pipe(
                 item.items,
-                A.filter(item =>
-                  micromatch.isMatch(
-                    fileName(item),
-                    scan.glob,
-                    { basename: true },
-                  )
+                A.filterMap(item =>
+                  micromatch.isMatch(fileName(item), scan.glob, { basename: true })
+                    ? O.some([item, Path.join(scan.base, fileName(item))] as const)
+                    : O.none
                 ),
               ),
             )
@@ -110,19 +116,26 @@ export const rm = (
         E.sequenceArray,
         E.map(toArray),
         E.map(A.flatten),
-        E.map(A.concatW(pipe(directs, A.map(fst)))),
-        // E.map(A.map(fileName)),
-      )
-
-      return SRTE.fromEither(es)
+        E.map(A.concatW(directs)),
+      ))
     }),
     SRTE.chainW(({ remove, api }) =>
-      pipe(
-        api.moveItemsToTrashM<DF.State>({ items: remove, trash }),
-        SRTE.chain(
-          resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
-        ),
-      )
+      remove.length > 0
+        ? pipe(
+          ask({ message: `remove\n${pipe(remove, A.map(a => a[1])).join('\n')}` }),
+          SRTE.fromTaskEither,
+          SRTE.chain((answer) =>
+            answer
+              ? pipe(
+                api.moveItemsToTrashM<DF.State>({ items: remove.map(a => a[0]), trash }),
+                SRTE.chain(
+                  resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
+                ),
+              )
+              : SRTE.of(constVoid())
+          ),
+        )
+        : SRTE.of(constVoid())
     ),
     // SRTE.chain(() => DF.lsdir(parentPath)),
     // SRTE.map((toberemoved) => toberemoved.map(_ => _.)),

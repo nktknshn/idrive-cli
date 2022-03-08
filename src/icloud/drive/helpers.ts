@@ -5,6 +5,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
+import micromatch from 'micromatch'
 import Path from 'path'
 import { DetailsOrFile } from './drive'
 import * as T from './requests/types/types'
@@ -60,6 +61,25 @@ export const findInParentFilename = <R extends T.Root>(
   return pipe(
     parent.items,
     A.findFirst((item: T.DriveChildrenItem | T.DriveChildrenTrashItem) => T.fileName(item) == itemName),
+  )
+}
+
+export const findInParentGlob = <R extends T.Root>(
+  parent: T.NonRootDetails | R,
+  glob: string,
+): (T.DriveChildrenItem | T.DriveChildrenTrashItem)[] => {
+  return pipe(
+    parent.items,
+    A.filter(
+      item =>
+        glob.length > 0
+          ? micromatch.isMatch(
+            T.fileName(item),
+            glob,
+            { basename: true },
+          )
+          : true,
+    ),
   )
 }
 

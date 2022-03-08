@@ -43,7 +43,7 @@ end
 
 complete -c idrive -e
 
-set -l idrive_commands ls cat mkdir upload rm mv recover
+set -l idrive_commands ls cat mkdir upload uploads rm mv recover
 
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a ls -d 'list'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a cat -d 'cat'
@@ -51,6 +51,7 @@ complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_comman
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a rm -d 'rm'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a mv -d 'mv'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a upload -d 'upload'
+complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a uploads -d 'uploads'
 
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a recover -d 'recover'
 
@@ -69,6 +70,8 @@ complete --no-files -c idrive -n "__fish_seen_subcommand_from rm" -a "(__fish_au
 complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path -t)"
 
 complete -c idrive -n "__fish_seen_subcommand_from upload; and __fish_first_arg"
+complete -c idrive -n "__fish_seen_subcommand_from uploads"
+
 complete --no-files -c idrive -n "__fish_seen_subcommand_from upload; and __fish_second_arg" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_first_arg" -a "(__fish_autocomplete_path)"

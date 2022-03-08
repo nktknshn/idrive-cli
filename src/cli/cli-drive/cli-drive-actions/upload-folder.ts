@@ -8,6 +8,7 @@ import { fst, snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
+import * as NA from 'fp-ts/NonEmptyArray'
 import micromatch from 'micromatch'
 import { AuthorizedState } from '../../../icloud/authorization/authorize'
 import { UploadResult } from '../../../icloud/drive/api'
@@ -19,7 +20,9 @@ import { CacheF } from '../../../icloud/drive/cache/cache-types'
 import * as DF from '../../../icloud/drive/drive'
 import { findInParentFilename } from '../../../icloud/drive/helpers'
 import {
+  DetailsAppLibrary,
   DetailsDocwsRoot,
+  DetailsFolder,
   DriveChildrenItemFolder,
   FolderLikeItem,
   isFolderLike,
@@ -61,10 +64,9 @@ export const uploadFolder = (
     SRTE.bindW('src', () => SRTE.of(localpath)),
     SRTE.bindW('args', () => SRTE.of({ localpath, remotepath, include, exclude, dry })),
     SRTE.chainW(handle),
-    SRTE.map((res) => `Success. ${JSON.stringify(res)}`),
+    SRTE.map((res) => `Success.`),
   )
 }
-import * as NA from 'fp-ts/NonEmptyArray'
 const handle = (
   { src, dst, api, args }: {
     src: string
@@ -79,6 +81,38 @@ const handle = (
     walkDirRel(src),
     TE.map(createUploadTask(args)),
   )
+
+  const go = (
+    dstitem: DetailsDocwsRoot | DetailsFolder | DetailsAppLibrary,
+    dirname: string,
+  ) =>
+    pipe(
+      DF.Do,
+      SRTE.bindW('task', () => SRTE.fromTaskEither(task)),
+      // SRTE.chainFirstIOK(({ task }) => printerIO.print(task.uploadable)),
+      SRTE.bindW('uploadRoot', () =>
+        NM.createFolders({
+          names: [dirname],
+          destinationDrivewsId: dstitem.drivewsid,
+        })),
+      SRTE.bindW(
+        'dirs',
+        ({ uploadRoot, task }) =>
+          pipe(
+            printerIO.print(`creating dir structure`),
+            SRTE.fromIO,
+            SRTE.chain(() => createDirStructure(uploadRoot[0].drivewsid, task.dirstruct)),
+          ),
+      ),
+      SRTE.chainW(({ task, dirs }) => {
+        return pipe(
+          task.uploadable,
+          A.chunksOf(5),
+          A.map(uploadChumk(dirs)),
+          A.sequence(SRTE.Applicative),
+        )
+      }),
+    )
 
   const uploadChumk = (
     dirs: Record<string, string>,
@@ -122,34 +156,15 @@ const handle = (
           ),
         ))
       }
-      return pipe(
-        DF.Do,
-        SRTE.bindW('task', () => SRTE.fromTaskEither(task)),
-        // SRTE.chainFirstIOK(({ task }) => printerIO.print(task.uploadable)),
-        SRTE.bindW('uploadRoot', () =>
-          NM.createFolders({
-            names: [dirname],
-            destinationDrivewsId: dstitem.drivewsid,
-          })),
-        SRTE.bindW(
-          'dirs',
-          ({ uploadRoot, task }) =>
-            pipe(
-              printerIO.print(`creating dir structure`),
-              SRTE.fromIO,
-              SRTE.chain(() => createDirStructure(uploadRoot[0].drivewsid, task.dirstruct)),
-            ),
-        ),
-        SRTE.chainW(({ task, dirs }) => {
-          return pipe(
-            task.uploadable,
-            A.chunksOf(5),
-            A.map(uploadChumk(dirs)),
-            A.sequence(SRTE.Applicative),
-          )
-        }),
-      )
+
+      return go(dstitem, dirname)
     }
+  }
+  else if (dst.path.rest.length == 1) {
+    const dstitem = NA.last(dst.path.details)
+    const fname = NA.head(dst.path.rest)
+
+    return go(dstitem, fname)
   }
 
   return SRTE.left(err(`invalid location`))

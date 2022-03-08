@@ -14,7 +14,7 @@ import {
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import { FolderTree, treeWithFiles } from '../../../icloud/drive/drive/get-folders-trees'
-import { guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
+import { findInParentGlob, guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
@@ -40,6 +40,7 @@ export const listUnixPath2 = (
   },
 ) => {
   const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
+  assert(A.isNonEmpty(paths))
 
   const npaths = paths.map(normalizePath)
   assert(A.isNonEmpty(npaths))
@@ -109,11 +110,7 @@ export const listUnixPath2 = (
   //   SRTE.map(raw ? showRaw : showConsole),
   // )
 
-  const scanned = pipe(
-    paths as NEA<string>,
-    NA.map(p => micromatch.scan(p)),
-  )
-
+  const scanned = pipe(paths, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
   return pipe(
@@ -127,7 +124,6 @@ export const listUnixPath2 = (
     SRTE.map(NA.zip(scanned)),
     SRTE.map(A.filter(guardFst(isValid))),
     SRTE.map(A.map(([path, scan]) => {
-      const d = NA.last(path.path.details)
       const t = target(path)
 
       if (T.isFile(t)) {
@@ -135,20 +131,11 @@ export const listUnixPath2 = (
       }
 
       const items = pipe(
-        NA.last(path.path.details).items,
-        A.filter(
-          item =>
-            scan.glob.length > 0
-              ? micromatch.isMatch(
-                T.fileName(item),
-                scan.glob,
-                { basename: true },
-              )
-              : true,
-        ),
+        findInParentGlob(t, scan.glob),
       )
+
       return showDetailsInfo({ path: scan.base, fullPath, printFolderInfo: true, ...opts })({
-        ...d,
+        ...t,
         items,
       })
     })),
