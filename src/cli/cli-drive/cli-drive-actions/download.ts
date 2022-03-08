@@ -47,6 +47,14 @@ type Deps =
   & Use<'downloadBatchM'>
   & Use<'getUrlStream'>
 
+type DownloadICloudFiles<R> = (
+  dstpath: string,
+) => (task: { downloadable: DownloadInto[] }) => XXX<
+  DF.State,
+  R,
+  [E.Either<Error, void>, readonly [url: string, path: string]][]
+>
+
 export const downloadFolder = (
   argv: Argv,
 ): XXX<DF.State, Deps, string> => {
@@ -56,11 +64,11 @@ export const downloadFolder = (
 const recursiveDownload = (
   { path, dstpath, dry, exclude, include }: Argv,
 ): XXX<DF.State, Deps, string> => {
-  const downloader = downloadICloudFilesChunked({ chunkSize: 5 })
+  const download = downloadICloudFilesChunked({ chunkSize: 5 })
 
   const verbose = dry
 
-  return pipe(
+  const buildTask = pipe(
     DF.getRoot(),
     SRTE.chain((root) =>
       pipe(
@@ -101,18 +109,21 @@ const recursiveDownload = (
             `nothing to download. ${task.initialTask.downloadable.length} files were rejected by conflict solver`,
           ),
     ),
+  )
+
+  const action = (task: DownloadTask) =>
+    pipe(
+      createDirs(dstpath)(task),
+      TE.chain(() => createEmpties(dstpath)(task)),
+      SRTE.fromTaskEither,
+      SRTE.chain(() => download(dstpath)(task)),
+    )
+
+  return pipe(
+    buildTask,
     dry
       ? SRTE.map(() => [])
-      : flow(
-        SRTE.chainFirst(
-          task => SRTE.fromTaskEither(createDirsAndEmpties(dstpath)(task)),
-        ),
-        SRTE.chainW(task =>
-          task.downloadable.length > 0
-            ? pipe(downloader(dstpath)(task))
-            : SRTE.of([])
-        ),
-      ),
+      : SRTE.chainW(action),
     SRTE.map((results) => {
       return {
         success: results.filter(flow(fst, E.isRight)).length,
@@ -128,29 +139,27 @@ const recursiveDownload = (
   )
 }
 
-const createDirsAndEmpties = (dstpath: string) =>
-  ({ dirstruct, empties }: DownloadTask) =>
+const createDirs = (dstpath: string) =>
+  ({ dirstruct }: DownloadTask) =>
     pipe(
       loggerIO.debug(`creating local dirs`),
       TE.fromIO,
       TE.chain(() => prepareDestinationDir(dstpath)),
       TE.chain(() => createDirStructure(dstpath, dirstruct)),
+    )
+
+const createEmpties = (dstpath: string) =>
+  ({ empties }: DownloadTask) =>
+    pipe(
       empties.length > 0
-        ? flow(
-          TE.chainIOK(() => loggerIO.debug(`creating empty ${empties.length} files`)),
+        ? pipe(
+          loggerIO.debug(`creating empty ${empties.length} files`),
+          TE.fromIO,
           TE.chain(() => createEmptyFiles(dstpath, empties.map(fst))),
           TE.map(constVoid),
         )
-        : TE.map(constVoid),
+        : TE.of(constVoid()),
     )
-
-type DownloadICloudFiles<R> = (
-  dstpath: string,
-) => (task: { downloadable: DownloadInto[] }) => XXX<
-  DF.State,
-  R,
-  [E.Either<Error, void>, readonly [url: string, path: string]][]
->
 
 const downloadICloudFilesChunked = (
   { chunkSize = 5 },

@@ -10,7 +10,7 @@ import { err } from '../../lib/errors'
 import { logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 import { AuthorizedState } from '../authorization/authorize'
-import * as NM from './api/methods'
+import * as API from './api/methods'
 import { Use } from './api/type'
 import * as C from './cache/cache'
 import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
@@ -99,7 +99,10 @@ const putDetailss = (detailss: T.Details[]): DriveM<void> =>
       map(constVoid),
     ),
   )
-
+type MissedFoundDetails = {
+  missed: string[]
+  found: (T.Details)[]
+}
 export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
     chainCache(
@@ -110,7 +113,7 @@ export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM
         missed,
         A.match(
           () => SRTE.of({ missed: [], found: [] }),
-          missed => NM.retrieveItemDetailsInFoldersS(missed),
+          (missed) => API.retrieveItemDetailsInFoldersS(missed),
         ),
       )
     ),
@@ -238,10 +241,14 @@ export const getByPathFolder = <R extends T.Root>(
     filterOrElse(T.isDetailsG, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
-export const getByPathsFolders = <R extends T.Root>(root: R, paths: NEA<NormalizedPath>) =>
+export const getByPathsFolders = <R extends T.Root>(
+  root: R,
+  paths: NEA<NormalizedPath>,
+): SRTE.StateReaderTaskEither<State, DriveMEnv, ItemIsNotFolderError, NEA<R | T.NonRootDetails>> =>
   pipe(
     getByPaths(root, paths),
-    filterOrElse(A.every(T.isDetailsG), (e) => ItemIsNotFolderError.create(`is not a folder`)),
+    filterOrElse((items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items), (e) =>
+      ItemIsNotFolderError.create(`is not a folder`)),
   )
 
 export const getByPathFolderCached = <R extends T.Root>(path: NormalizedPath) =>

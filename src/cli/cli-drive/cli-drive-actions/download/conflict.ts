@@ -5,7 +5,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
 import { boolean } from 'yargs'
-import { guardSnd } from '../../../../icloud/drive/helpers'
+import { guardSnd, guardSndRO } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/requests/types/types'
 import { err } from '../../../../lib/errors'
 import { loggerIO } from '../../../../lib/loggerIO'
@@ -50,7 +50,7 @@ const lookForConflicts = (
           pipe(remotes, A.findFirst(([p]) => p === f.path)),
         ] as const
       ),
-      A.filter(guardSnd(O.isSome)),
+      A.filter(guardSndRO(O.isSome)),
       A.map(mapSnd(_ => _.value)),
     ),
   )

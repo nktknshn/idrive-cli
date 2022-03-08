@@ -216,7 +216,8 @@ export const filterTree = (
     )
 
     const dirstruct = pipe(
-      A.concatW(folders)(A.concat(downloadable)(empties)),
+      A.concat(downloadable)(empties),
+      A.concatW(folders),
       A.map(a => a[0]),
       getDirectoryStructure,
     )

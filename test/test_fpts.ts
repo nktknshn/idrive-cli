@@ -1,60 +1,34 @@
 import { getApplySemigroup } from 'fp-ts/lib/Apply'
+import * as Apply from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
+import * as n from 'fp-ts/lib/number'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as S from 'fp-ts/lib/Semigroup'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as T from 'fp-ts/lib/Tuple'
+import * as M from 'fp-ts/Monoid'
 import Path from 'path'
 
-const paths = [
-  '/file1.txt',
-  '/dir1/file1.txt',
-  '/dir1/dir3/file1.txt',
-  '/dir2/dir3/dir5/asd.txt',
-  '/dir2/dir4/abc.txt',
-  '/dir3/dir1/xyz',
-]
+async function main() {
+  console.log(
+    await pipe(
+      [1, 2, 3, 4],
+      SRTE.traverseArray(n => SRTE.of(n + 1)),
+    )({})({})(),
+  )
 
-const parseDown = (path: string) => {
-  const result = []
+  // Apply.ap(SRTE.Apply, )
+  Apply.sequenceT(SRTE.Apply)
+  const ts = T.getApply(n.SemigroupSum)
 
-  while (path !== '/') {
-    result.push(path)
-    path = Path.parse(path).dir
-  }
+  const a = [1, 2, 3]
 
-  return A.reverse(result)
+  const sg = S.struct({
+    a: n.SemigroupSum,
+    b: n.SemigroupSum,
+  })
 }
 
-const struct = pipe(
-  paths,
-  A.map(Path.parse),
-  A.map(_ => _.dir),
-  A.map(parseDown),
-  A.flatten,
-  A.uniq<string>({ equals: (a, b) => a == b }),
-)
-
-const getKids = (parent: string) =>
-  (struct: string[]): (readonly [string, string])[] => {
-    const kids = pipe(
-      struct,
-      A.map(Path.parse),
-      A.filter(_ => _.dir == parent),
-      A.map(_ => [parent, _.base] as const),
-    )
-
-    const subkids = pipe(
-      kids,
-      A.map(([p, k]) => getKids(Path.join(p, k))(struct)),
-      A.flatten,
-    )
-
-    return [...kids, ...subkids]
-  }
-
-console.log(
-  pipe(
-    struct,
-    getKids('/'),
-  ),
-)
+main()

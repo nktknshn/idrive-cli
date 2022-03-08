@@ -8,7 +8,13 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
-import { fileName, isCloudDocsRootDetailsG, isFile, isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
+import {
+  fileName,
+  isCloudDocsRootDetailsG,
+  isFile,
+  isNotRootDetails,
+  isTrashDetailsG,
+} from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
@@ -77,6 +83,15 @@ export const rm = (
     NA.map(micromatch.scan),
   )
 
+  const { left: directs, right: globs } = pipe(
+    scanned,
+    A.partitionMap(scan =>
+      scan.glob.length == 0
+        ? E.left(scan.input)
+        : E.right(scan.input)
+    ),
+  )
+
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
   return pipe(
@@ -84,50 +99,24 @@ export const rm = (
     SRTE.bindTo('api'),
     SRTE.bindW('items', () =>
       pipe(
-        DF.chainRoot(root => DF.getByPaths(root, basepaths)),
-        SRTE.map(NA.zip(scanned)),
+        DF.chainRoot(root => DF.searchGlobs(paths)),
+        SRTE.map(A.flatten),
       )),
-    SRTE.bindW('remove', ({ items }) => {
-      const { left: directs, right: globs } = pipe(
-        items,
-        A.partitionMap(([item, scan]) =>
-          scan.glob.length == 0
-            ? E.left([item, scan.input] as const)
-            : E.right([item, scan] as const)
-        ),
-      )
-
-      return SRTE.fromEither(pipe(
-        globs,
-        A.map(([item, scan]) =>
-          isFile(item)
-            ? E.left(err(`${scan.input} is invalid`))
-            : E.right(
-              pipe(
-                item.items,
-                A.filterMap(item =>
-                  micromatch.isMatch(fileName(item), scan.glob, { basename: true })
-                    ? O.some([item, Path.join(scan.base, fileName(item))] as const)
-                    : O.none
-                ),
-              ),
-            )
-        ),
-        E.sequenceArray,
-        E.map(toArray),
-        E.map(A.flatten),
-        E.map(A.concatW(directs)),
-      ))
-    }),
-    SRTE.chainW(({ remove, api }) =>
-      remove.length > 0
+    SRTE.chainW(({ items, api }) =>
+      items.length > 0
         ? pipe(
-          ask({ message: `remove\n${pipe(remove, A.map(a => a[1])).join('\n')}` }),
+          ask({ message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}` }),
           SRTE.fromTaskEither,
           SRTE.chain((answer) =>
             answer
               ? pipe(
-                api.moveItemsToTrashM<DF.State>({ items: remove.map(a => a[0]), trash }),
+                api.moveItemsToTrashM<DF.State>({
+                  items: pipe(
+                    items.map(a => a.item),
+                    A.filter(isNotRootDetails),
+                  ),
+                  trash,
+                }),
                 SRTE.chain(
                   resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
                 ),

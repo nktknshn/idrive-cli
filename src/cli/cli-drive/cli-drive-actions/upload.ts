@@ -4,6 +4,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as O from 'fp-ts/Option'
 import prompts_ from 'prompts'
 import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api'
@@ -11,7 +12,7 @@ import { Use } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import * as H from '../../../icloud/drive/drive/validation'
-import { findInParentFilename, parseName } from '../../../icloud/drive/helpers'
+import { findInParentFilename, findInParentFilename2, parseName } from '../../../icloud/drive/helpers'
 import {
   Details,
   DetailsDocwsRoot,
@@ -27,7 +28,6 @@ import { Path } from '../../../lib/util'
 import { cliActionM2 } from '../../cli-action'
 import { fstat } from './download/helpers'
 import { normalizePath } from './helpers'
-
 type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
 type Deps =
@@ -111,9 +111,11 @@ const uploadToFolder = (
   },
 ): SRTE.StateReaderTaskEither<DF.State, DF.DriveMEnv, Error, void> => {
   const actualFile = pipe(
-    dst.items,
-    A.filter(isFile),
-    A.findFirst(item => fileName(item) == Path.basename(src)),
+    findInParentFilename2(
+      dst,
+      Path.basename(src),
+    ),
+    O.filter(isFile),
   )
 
   if (isSome(actualFile)) {

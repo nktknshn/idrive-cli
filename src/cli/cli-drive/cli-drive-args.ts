@@ -20,10 +20,11 @@ export function parseArgs() {
           listInfo: { alias: ['l'], default: false, type: 'boolean' },
           header: { alias: ['h'], default: false, type: 'boolean' },
           trash: { alias: ['t'], default: false, type: 'boolean' },
+          tree: { default: false, type: 'boolean' },
           etag: { alias: ['e'], default: false, type: 'boolean' },
           glob: { default: false, type: 'boolean' },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
-          depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
+          depth: { alias: ['D'], default: Infinity, type: 'number', demandOption: 'recursive' },
           cached: { default: false, type: 'boolean' },
         }))
     // .command('update [path]', 'update cache', _ =>

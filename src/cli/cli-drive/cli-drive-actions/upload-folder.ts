@@ -12,7 +12,7 @@ import * as NA from 'fp-ts/NonEmptyArray'
 import micromatch from 'micromatch'
 import { AuthorizedState } from '../../../icloud/authorization/authorize'
 import { UploadResult } from '../../../icloud/drive/api'
-import * as NM from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/methods'
 import { result } from '../../../icloud/drive/api/newbuilder'
 import { Use } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
@@ -91,7 +91,7 @@ const handle = (
       SRTE.bindW('task', () => SRTE.fromTaskEither(task)),
       // SRTE.chainFirstIOK(({ task }) => printerIO.print(task.uploadable)),
       SRTE.bindW('uploadRoot', () =>
-        NM.createFolders({
+        API.createFolders({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })),
@@ -219,7 +219,7 @@ const createUploadTask = (
     }
   }
 
-const getSubdirsPerParent = (parent: string) =>
+export const getSubdirsPerParent = (parent: string) =>
   (struct: string[]): (readonly [string, string])[] => {
     const kids = pipe(
       struct,
@@ -268,23 +268,20 @@ const createDirStructure = (
           acc,
           SRTE.chain((dirToIdMap) =>
             pipe(
-              printerIO.print(`${names} in ${parent}`),
+              printerIO.print(`creating ${names} in ${parent}`),
               SRTE.fromIO,
               SRTE.chain(() =>
-                NM.createFolders<DF.State>({
+                API.createFolders<DF.State>({
                   destinationDrivewsId: dirToIdMap[parent],
                   names,
                 })
               ),
               SRTE.map(A.zip(names)),
               SRTE.map(
-                A.reduce(
-                  dirToIdMap,
-                  (a, [item, name]) => ({
-                    ...a,
-                    [Path.join(parent, name)]: item.drivewsid,
-                  }),
-                ),
+                A.reduce(dirToIdMap, (a, [item, name]) => ({
+                  ...a,
+                  [Path.join(parent, name)]: item.drivewsid,
+                })),
               ),
             )
           ),
