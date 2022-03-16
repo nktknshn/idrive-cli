@@ -54,12 +54,15 @@ export const downloadBatch = <S extends AuthorizedState>(
 export const renameItems = flow(
   getMethod<API.Use<'renameItemsM'>>()(_ => _.renameItemsM),
 )
+export const upload = flow(
+  getMethod<API.Use<'upload'>>()(_ => _.upload),
+)
 
 export const moveItems = flow(
   getMethod<API.Use<'moveItemsM'>>()(_ => _.moveItemsM),
 )
 
-export const createFolders = flow(
+export const createFoldersFailing = flow(
   getMethod<API.Use<'createFoldersM'>>()(_ => _.createFoldersM),
   SRTE.map(_ => _.folders),
   SRTE.filterOrElse(

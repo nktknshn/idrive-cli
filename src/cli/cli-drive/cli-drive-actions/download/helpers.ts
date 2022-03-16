@@ -21,16 +21,22 @@ import { printerIO } from '../../../../lib/logging'
 import { hasOwnProperty, Path } from '../../../../lib/util'
 import { normalizePath, stripTrailingSlash } from '../helpers'
 
-export type DownloadInto = (readonly [localpath: string, remotefile: T.DriveChildrenItemFile])
+export type DownloadInfo = (readonly [remotepath: string, remotefile: T.DriveChildrenItemFile])
 
-export type DownloadTask = {
+export type DownloadStructure = {
   dirstruct: string[]
-  downloadable: DownloadInto[]
-  empties: DownloadInto[]
+  downloadable: DownloadInfo[]
+  empties: DownloadInfo[]
 }
 
-export type FilterTreeResult = DownloadTask & {
-  excluded: DownloadInto[]
+export type FilterTreeResult = DownloadStructure & {
+  excluded: DownloadInfo[]
+}
+
+export type DownloadTask = {
+  localdirstruct: string[]
+  downloadable: { info: DownloadInfo; localpath: string }[]
+  empties: { info: DownloadInfo; localpath: string }[]
 }
 
 export const mkdirTask = (path: string) =>
@@ -107,10 +113,10 @@ export const downloadUrlsPar = (
   )
 }
 
-export const createEmptyFiles = (dstpath: string, paths: string[]) => {
+export const createEmptyFiles = (paths: string[]) => {
   return pipe(
     paths,
-    A.map(p => Path.join(dstpath, p)),
+    // A.map(p => Path.join(dstpath, p)),
     A.map(path =>
       TE.tryCatch(
         () => fs.writeFile(path, ''),
@@ -158,6 +164,25 @@ export const createDirStructure = (
     ),
     TE.map(() => pipe(paths, A.map(mkdir))),
     TE.chain(TE.sequenceSeqArray),
+    TE.map(constVoid),
+  )
+}
+
+export const createDirsList = (
+  dirs: string[],
+): TE.TaskEither<SomeError, void> => {
+  const mkdir = flow(
+    mkdirTask,
+    TE.orElse(e =>
+      isEexistError(e)
+        ? TE.of(constVoid())
+        : TE.left(e)
+    ),
+  )
+
+  return pipe(
+    pipe(dirs, A.map(mkdir)),
+    TE.sequenceSeqArray,
     TE.map(constVoid),
   )
 }

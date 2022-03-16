@@ -10,9 +10,17 @@ import * as T from '../../../../icloud/drive/requests/types/types'
 import { err } from '../../../../lib/errors'
 import { loggerIO } from '../../../../lib/loggerIO'
 import { Path } from '../../../../lib/util'
-import { DownloadInto, DownloadTask, FilterTreeResult, fstat, LocalTreeElement, walkDirRel } from './helpers'
+import {
+  DownloadInfo,
+  DownloadStructure,
+  DownloadTask,
+  FilterTreeResult,
+  fstat,
+  LocalTreeElement,
+  walkDirRel,
+} from './helpers'
 
-export type Conflict = readonly [LocalTreeElement, readonly [localpath: string, remotefile: T.DriveChildrenItemFile]]
+export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpath: string }]
 
 export type SolutionAction = 'skip' | 'overwright'
 export type Solution = (readonly [Conflict, SolutionAction])[]
@@ -47,7 +55,7 @@ const lookForConflicts = (
       A.map(f =>
         [
           f,
-          pipe(remotes, A.findFirst(([p]) => p === f.path)),
+          pipe(remotes, A.findFirst((p) => p.localpath === f.path)),
         ] as const
       ),
       A.filter(guardSndRO(O.isSome)),
@@ -56,67 +64,122 @@ const lookForConflicts = (
   )
 }
 
-export const showConflict = ([localfile, [localpath, file]]: Conflict) =>
-  `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${file.size} bytes)`
+export const showConflict = ([localfile, { info, localpath }]: Conflict) =>
+  `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${info[1].size} bytes)`
 
 const applySoultion = (
-  { downloadable, empties, dirstruct }: DownloadTask,
+  { downloadable, empties, localdirstruct }: DownloadTask,
 ) =>
   (
     solution: Solution,
-  ): { dirstruct: string[]; downloadable: DownloadInto[]; empties: DownloadInto[] } & { initialTask: DownloadTask } => {
-    const fa = ([path, file]: readonly [string, T.DriveChildrenItemFile]) =>
+  ): DownloadTask & {
+    initialTask: DownloadTask
+  } => {
+    const fa = (d: {
+      info: DownloadInfo
+      localpath: string
+    }) =>
       pipe(
         solution,
         A.findFirstMap(
-          ([[localfile, [localpath, f]], action]) =>
-            f.drivewsid === file.drivewsid ? O.some([localpath, file, action] as const) : O.none,
+          ([[localfile, { info, localpath }], action]) =>
+            info[1].drivewsid === d.info[1].drivewsid ? O.some([{ info, localpath }, action] as const) : O.none,
         ),
-        O.getOrElse(() => [path, file, 'overwright' as SolutionAction] as const),
+        O.getOrElse(() => [d, 'overwright' as SolutionAction] as const),
       )
 
-    const findAction = (fs: DownloadInto[]) =>
+    const findAction = (fs: { info: DownloadInfo; localpath: string }[]) =>
       pipe(
         fs,
         A.map((c) => fa(c)),
-        A.filterMap(([path, file, action]) => action === 'overwright' ? O.some([path, file] as const) : O.none),
+        A.filterMap(([d, action]) => action === 'overwright' ? O.some(d) : O.none),
       )
 
     return {
       downloadable: findAction(downloadable),
       empties: findAction(empties),
-      dirstruct,
-      initialTask: { downloadable, empties, dirstruct },
+      localdirstruct,
+      initialTask: { downloadable, empties, localdirstruct },
     }
   }
+import * as E from 'fp-ts/Either'
+import * as RA from 'fp-ts/ReadonlyArray'
+import * as Task from 'fp-ts/Task'
 
-export const handleLocalFilesConflicts = ({ dstpath, conflictsSolver }: {
-  dstpath: string
+const lookForConflicts2 = (
+  { downloadable, empties }: DownloadTask,
+) => {
+  const remotes = pipe(
+    [...downloadable, ...empties],
+  )
+
+  return pipe(
+    remotes,
+    A.map(
+      (c) =>
+        pipe(
+          fstat(c.localpath),
+          TE.match((e) => E.right(c), s => E.left({ c, s })),
+        ),
+      //
+    ),
+    Task.sequenceSeqArray,
+    Task.map(RA.toArray),
+    Task.map(A.separate),
+    Task.map(({ left }) =>
+      pipe(
+        left,
+        A.map(({ c, s }): Conflict => [{
+          type: s.isDirectory() ? 'directory' as const : 'file' as const,
+          stats: s,
+          path: c.localpath,
+          name: Path.basename(c.localpath),
+        }, c]),
+      )
+    ),
+    // TE.ap
+    // A.filter(_ => _.type === 'file'),
+    // flow(
+    //   A.map(f =>
+    //     [
+    //       f,
+    //       pipe(remotes, A.findFirst((p) => p.localpath === f.path)),
+    //     ] as const
+    //   ),
+    //   A.filter(guardSndRO(O.isSome)),
+    //   A.map(mapSnd(_ => _.value)),
+    // ),
+  )
+}
+
+export const handleLocalFilesConflicts = ({ conflictsSolver }: {
+  // dstpath: string
   conflictsSolver: ConflictsSolver
   // downloader: DownloadICloudFiles
 }): (
   initialtask: DownloadTask,
 ) => TE.TaskEither<
   Error,
-  { dirstruct: string[]; downloadable: DownloadInto[]; empties: DownloadInto[]; initialTask: DownloadTask }
+  DownloadTask & { initialTask: DownloadTask }
 > =>
   (initialtask: DownloadTask) => {
-    const dst = Path.normalize(dstpath)
+    // const dst = Path.normalize(dstpath)
 
-    const conflicts = pipe(
-      fstat(dst),
-      TE.fold(
-        (e) => TE.of([]),
-        () =>
-          pipe(
-            walkDirRel(dst),
-            TE.map(localtree => lookForConflicts(localtree, initialtask)),
-          ),
-      ),
-    )
+    // const conflicts = pipe(
+    //   fstat(dst),
+    //   TE.fold(
+    //     (e) => TE.of([]),
+    //     () =>
+    //       pipe(
+    //         walkDirRel(dst),
+    //         TE.map(localtree => lookForConflicts(localtree, initialtask)),
+    //       ),
+    //   ),
+    // )
 
     return pipe(
-      conflicts,
+      lookForConflicts2(initialtask),
+      TE.fromTask,
       TE.chain(conflictsSolver),
       TE.chainFirstIOK(
         (solution) =>
@@ -153,7 +216,9 @@ const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
 const resolveConflictsRename: ConflictsSolver = (conflicts) =>
   pipe(
     conflicts,
-    A.map(([localfile, [path, remotefile]]) => [[localfile, [path + '.new', remotefile]], 'overwright'] as const),
+    A.map(([localfile, { info, localpath }]) =>
+      [[localfile, { info, localpath: localpath + '.new' }], 'overwright'] as const
+    ),
     TE.of,
   )
 
@@ -163,10 +228,10 @@ const resolveConflictsOverwrightIfSizeDifferent = (
   (conflicts) =>
     pipe(
       conflicts,
-      A.map(([localfile, [path, remotefile]]) =>
-        localfile.stats.size !== remotefile.size && !skipRemotes(remotefile)
-          ? [[localfile, [path, remotefile]], 'overwright' as SolutionAction] as const
-          : [[localfile, [path, remotefile]], 'skip' as SolutionAction] as const
+      A.map(([localfile, { info, localpath }]) =>
+        localfile.stats.size !== info[1].size && !skipRemotes(info[1])
+          ? [[localfile, { info, localpath }], 'overwright' as SolutionAction] as const
+          : [[localfile, { info, localpath }], 'skip' as SolutionAction] as const
       ),
       TE.of,
     )

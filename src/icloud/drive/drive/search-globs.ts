@@ -15,8 +15,19 @@ import * as T from '../requests/types/types'
 import { getFoldersTrees, shallowFolder, zipFolderTreeWithPath } from './get-folders-trees'
 import { modifySubset } from './modify-subset'
 
+export const searchGlobsShallow = (
+  globs: NEA<string>,
+): DF.DriveM<
+  NA.NonEmptyArray<
+    { path: string; item: DF.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
+  >
+> => {
+  return searchGlobs(globs, 0)
+}
+
 export const searchGlobs = (
   globs: NEA<string>,
+  depth = Infinity,
 ): DF.DriveM<
   NA.NonEmptyArray<
     { path: string; item: DF.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
@@ -37,7 +48,7 @@ export const searchGlobs = (
             ([scan]) => scan.isGlob,
             globs =>
               pipe(
-                getFoldersTrees(pipe(globs, NA.map(snd)), Infinity),
+                getFoldersTrees(pipe(globs, NA.map(snd)), depth),
                 SRTE.map(NA.map(E.of)),
               ),
             dir => E.of(shallowFolder(dir[1])),

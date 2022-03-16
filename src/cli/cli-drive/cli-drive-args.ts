@@ -102,16 +102,16 @@ export function parseArgs() {
     //   (_) => _.positional('path', { type: 'string', demandOption: true }),
     // )
     .command(
-      'download <paths...>',
+      'download <path> <dstpath>',
       'download',
       (_) =>
-        _.positional('paths', { array: true, type: 'string', demandOption: true })
+        _.positional('path', { type: 'string', demandOption: true })
           .options({
             output: { default: './', type: 'string' },
             structured: { default: true, type: 'boolean' },
-            // glob: { default: true, type: 'boolean' },
+            dry: { default: false, type: 'boolean' },
             raw: { default: true, type: 'boolean' },
-            destination: { alias: ['D'], type: 'string', demandOption: true },
+            // destination: { alias: ['D'], type: 'string', demandOption: true },
           }),
     )
     .command(

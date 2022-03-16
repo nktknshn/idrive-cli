@@ -11,22 +11,26 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { concatAll } from 'fp-ts/Monoid'
 import { MonoidSum } from 'fp-ts/number'
+import micromatch from 'micromatch'
 import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
-import { guardFst, isDefined } from '../../../icloud/drive/helpers'
+import { guardFst, isDefined, prependPath } from '../../../icloud/drive/helpers'
+import { fileName } from '../../../icloud/drive/requests/types/types'
 import { loggerIO } from '../../../lib/loggerIO'
 import { printer, printerIO } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { handleLocalFilesConflicts, solvers } from './download/conflict'
 import {
+  createDirsList,
   createDirStructure,
   createEmptyFiles,
-  DownloadInto,
+  DownloadInfo,
+  DownloadStructure,
   DownloadTask,
   downloadUrlsPar,
-  filterTree as createDownloadTask,
+  filterTree,
   prepareDestinationDir,
 } from './download/helpers'
 import { normalizePath } from './helpers'
@@ -47,13 +51,57 @@ type Deps =
   & Use<'downloadBatchM'>
   & Use<'getUrlStream'>
 
-type DownloadICloudFiles<R> = (
-  dstpath: string,
-) => (task: { downloadable: DownloadInto[] }) => XXX<
+type DownloadICloudFiles<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
   DF.State,
   R,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 >
+
+export const downloads = (
+  { paths }: {
+    paths: string[]
+    raw: boolean
+  },
+) => {
+  assert(A.isNonEmpty(paths))
+
+  return pipe(
+    DF.searchGlobs(paths),
+    SRTE.map(JSON.stringify),
+  )
+}
+
+export const download = (
+  { path, dry, dstpath }: {
+    path: string
+    dstpath: string
+    raw: boolean
+    dry: boolean
+  },
+) => {
+  return pipe(
+    recursiveDownload(
+      {
+        path: micromatch.scan(path).base,
+        dstpath,
+        dry,
+        exclude: [],
+        include: [
+          '/' + Path.join(
+            Path.basename(micromatch.scan(path).base),
+            micromatch.scan(path).glob,
+          ),
+        ],
+      },
+      0,
+      basicDownloadTask((ds) => ({
+        downloadable: ds.downloadable.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
+        empties: ds.empties.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
+        localdirstruct: [dstpath],
+      })),
+    ),
+  )
+}
 
 export const downloadFolder = (
   argv: Argv,
@@ -61,9 +109,42 @@ export const downloadFolder = (
   return recursiveDownload(argv)
 }
 
+const toDirMapper = (dstpath: string) =>
+  (ds: DownloadStructure): DownloadTask => {
+    return {
+      downloadable: ds.downloadable.map(([remotepath, file]) => ({
+        info: [remotepath, file],
+        localpath: prependPath(dstpath)(remotepath),
+      })),
+      empties: ds.empties.map(([remotepath, file]) => ({
+        info: [remotepath, file],
+        localpath: prependPath(dstpath)(remotepath),
+      })),
+      localdirstruct: [dstpath, ...ds.dirstruct.map(prependPath(dstpath))],
+    }
+  }
+
+const basicDownloadTask = (_toDirMapper: (ds: DownloadStructure) => DownloadTask) =>
+  (ds: DownloadStructure) => {
+    const task = _toDirMapper(ds)
+
+    return handleLocalFilesConflicts({
+      // conflictsSolver: resolveConflictsRename,
+      conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
+        file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
+      ),
+    })(task)
+  }
+
 const recursiveDownload = (
   { path, dstpath, dry, exclude, include }: Argv,
+  depth = Infinity,
+  createDownloadTask = basicDownloadTask(toDirMapper(dstpath)),
 ): XXX<DF.State, Deps, string> => {
+  printer.print(
+    { path, dstpath, dry, exclude, include },
+  )
+
   const download = downloadICloudFilesChunked({ chunkSize: 5 })
 
   const verbose = dry
@@ -73,11 +154,11 @@ const recursiveDownload = (
     SRTE.chain((root) =>
       pipe(
         DF.getByPathFolder(root, normalizePath(path)),
-        SRTE.chain(dir => DF.getFoldersTrees([dir], Infinity)),
+        SRTE.chain(dir => DF.getFoldersTrees([dir], depth)),
         SRTE.map(NA.head),
       )
     ),
-    SRTE.map(createDownloadTask({ include, exclude })),
+    SRTE.map(filterTree({ include, exclude })),
     SRTE.chainFirstIOK(
       (task) =>
         () => {
@@ -89,20 +170,21 @@ const recursiveDownload = (
         },
     ),
     SRTE.chainTaskEitherK(
-      handleLocalFilesConflicts({
-        dstpath,
-        // conflictsSolver: resolveConflictsRename,
-        conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
-          file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
-        ),
-      }),
+      createDownloadTask,
     ),
     SRTE.chainFirstIOK(
       (task) =>
         task.downloadable.length > 0
           ? printerIO.print(
             verbose
-              ? `will be downloaded: \n${[...task.downloadable, ...task.empties].map(fst).join('\n')}\n`
+              ? `will be downloaded: \n${
+                [...task.downloadable, ...task.empties].map(({ info, localpath }) =>
+                  `${fileName(info[1])} into ${localpath}`
+                )
+                  .join(
+                    '\n',
+                  )
+              }\n`
               : `${task.downloadable.length + task.empties.length} files will be downloaded`,
           )
           : printerIO.print(
@@ -113,10 +195,10 @@ const recursiveDownload = (
 
   const action = (task: DownloadTask) =>
     pipe(
-      createDirs(dstpath)(task),
-      TE.chain(() => createEmpties(dstpath)(task)),
+      createDirsList(task.localdirstruct),
+      TE.chain(() => createEmpties(task)),
       SRTE.fromTaskEither,
-      SRTE.chain(() => download(dstpath)(task)),
+      SRTE.chain(() => download(task)),
     )
 
   return pipe(
@@ -140,49 +222,47 @@ const recursiveDownload = (
 }
 
 const createDirs = (dstpath: string) =>
-  ({ dirstruct }: DownloadTask) =>
+  ({ localdirstruct }: DownloadTask) =>
     pipe(
       loggerIO.debug(`creating local dirs`),
       TE.fromIO,
       TE.chain(() => prepareDestinationDir(dstpath)),
-      TE.chain(() => createDirStructure(dstpath, dirstruct)),
+      TE.chain(() => createDirStructure(dstpath, localdirstruct)),
     )
 
-const createEmpties = (dstpath: string) =>
-  ({ empties }: DownloadTask) =>
-    pipe(
-      empties.length > 0
-        ? pipe(
-          loggerIO.debug(`creating empty ${empties.length} files`),
-          TE.fromIO,
-          TE.chain(() => createEmptyFiles(dstpath, empties.map(fst))),
-          TE.map(constVoid),
-        )
-        : TE.of(constVoid()),
-    )
+const createEmpties = ({ empties }: DownloadTask) =>
+  pipe(
+    empties.length > 0
+      ? pipe(
+        loggerIO.debug(`creating empty ${empties.length} files`),
+        TE.fromIO,
+        TE.chain(() => createEmptyFiles(empties.map(_ => _.localpath))),
+        TE.map(constVoid),
+      )
+      : TE.of(constVoid()),
+  )
 
 const downloadICloudFilesChunked = (
   { chunkSize = 5 },
 ): DownloadICloudFiles<Use<'downloadBatchM'> & Use<'getUrlStream'>> =>
-  (dstpath) =>
-    ({ downloadable }) => {
-      return pipe(
-        splitIntoChunks(
-          pipe(downloadable, A.map(mapFst(path => Path.join(dstpath, path)))),
-          chunkSize,
-        ),
-        A.map(downloadChunkPar()),
-        SRTE.sequenceArray,
-        SRTE.map(flow(RA.toArray, A.flatten)),
-      )
-    }
+  ({ downloadable }) => {
+    return pipe(
+      splitIntoChunks(downloadable, chunkSize),
+      A.map(downloadChunkPar()),
+      SRTE.sequenceArray,
+      SRTE.map(flow(RA.toArray, A.flatten)),
+    )
+  }
 
-const splitIntoChunks = (files: DownloadInto[], chunkSize = 5): NA.NonEmptyArray<DownloadInto>[] => {
+const splitIntoChunks = (
+  files: { info: DownloadInfo; localpath: string }[],
+  chunkSize = 5,
+): NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>[] => {
   const filesChunks = []
 
   const byZone = pipe(
     files,
-    NA.groupBy(([, file]) => file.zone),
+    NA.groupBy((c) => c.info[1].zone),
   )
 
   for (const zone of R.keys(byZone)) {
@@ -194,7 +274,7 @@ const splitIntoChunks = (files: DownloadInto[], chunkSize = 5): NA.NonEmptyArray
 
 const downloadChunkPar = () =>
   (
-    chunk: NA.NonEmptyArray<DownloadInto>,
+    chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
   ): XXX<
     DF.State,
     Use<'downloadBatchM'> & Use<'getUrlStream'>,
@@ -202,8 +282,8 @@ const downloadChunkPar = () =>
   > => {
     return pipe(
       API.downloadBatch<DF.State>({
-        docwsids: chunk.map(snd).map(_ => _.docwsid),
-        zone: NA.head(chunk)[1].zone,
+        docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
+        zone: NA.head(chunk).info[1].zone,
       }),
       SRTE.chainW((downloadResponses) => {
         // const { left: zips, right: raw } = pipe(
@@ -218,24 +298,10 @@ const downloadChunkPar = () =>
 
         return SRTE.fromReaderTaskEither(pipe(
           A.zip(urls)(chunk),
-          A.map(([[path], url]) => [url, path] as const),
+          A.map(([{ localpath }, url]) => [url, localpath] as const),
           A.filter(guardFst(isDefined)),
           RTE.fromReaderTaskK(downloadUrlsPar),
         ))
       }),
     )
   }
-
-export const download = (
-  { paths }: {
-    paths: string[]
-    raw: boolean
-  },
-) => {
-  assert(A.isNonEmpty(paths))
-
-  return pipe(
-    DF.searchGlobs(paths),
-    SRTE.map(JSON.stringify),
-  )
-}
