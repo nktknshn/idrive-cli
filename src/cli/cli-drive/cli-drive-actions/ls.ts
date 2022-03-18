@@ -13,7 +13,6 @@ import {
   target,
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import * as T from '../../../icloud/drive/drive-requests/types/types'
 import { findInParentGlob, guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
 import {
   addPathToFolderTree,
@@ -21,6 +20,7 @@ import {
   showTreeWithFiles,
   treeWithFiles,
 } from '../../../icloud/drive/methods/get-folders-trees'
+import * as T from '../../../icloud/drive/requests/types/types'
 import { logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'

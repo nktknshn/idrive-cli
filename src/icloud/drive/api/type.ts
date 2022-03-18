@@ -4,17 +4,12 @@ import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { NEA, XX } from '../../../lib/types'
 import { AuthorizedState } from '../../authorization/authorize'
 import { AccountData } from '../../authorization/types'
-import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../../drive/drive-requests'
-import { DownloadResponseBody } from '../../drive/drive-requests/download'
-import { MoveItemsResponse } from '../../drive/drive-requests/moveItems'
-import { BasicState } from '../../drive/drive-requests/request'
-import * as T from '../../drive/drive-requests/types/types'
-import {
-  SingleFileResponse,
-  UpdateDocumentsRequest,
-  UpdateDocumentsResponse,
-  UploadResponse,
-} from '../../drive/drive-requests/upload'
+import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
+import { DownloadResponseBody } from '../requests/download'
+import { MoveItemsResponse } from '../requests/moveItems'
+import { BasicState } from '../requests/request'
+import * as T from '../requests/types/types'
+import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
 
 export type Dep<K extends keyof ApiDepsType> = Record<K, ApiDepsType[K]>
 

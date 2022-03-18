@@ -1,6 +1,6 @@
 import { hole, pipe } from 'fp-ts/lib/function'
-import * as RQ from '../../icloud/drive/drive-requests'
 import { parseName } from '../../icloud/drive/helpers'
+import * as RQ from '../../icloud/drive/requests'
 import { apiActionM } from '../api-action'
 
 export const retrieveTrashDetails = (argv: {

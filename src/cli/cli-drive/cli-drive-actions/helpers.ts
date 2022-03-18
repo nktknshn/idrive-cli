@@ -6,7 +6,7 @@ import { groupBy } from 'fp-ts/lib/NonEmptyArray'
 import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
 import { isDeepStrictEqual } from 'util'
-import * as T from '../../../icloud/drive/drive-requests/types/types'
+import * as T from '../../../icloud/drive/requests/types/types'
 import { logger } from '../../../lib/logging'
 import { hasOwnProperties, Path } from '../../../lib/util'
 

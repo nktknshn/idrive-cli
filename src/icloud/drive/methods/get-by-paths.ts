@@ -10,14 +10,14 @@ import { fst } from 'fp-ts/lib/Tuple'
 import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
+import * as H from '../../../lib/path-validation'
 import { NEA } from '../../../lib/types'
 import * as V from '../cache/cache-get-by-path-types'
 import * as DF from '../drive'
-import * as T from '../drive-requests/types/types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { equalsDrivewsId, findInParentFilename as lookupItemByFilename, recordFromTuples } from '../helpers'
 import { modifySubset } from '../modify-subset'
-import * as H from '../path-validation'
+import * as T from '../requests/types/types'
 
 export const getByPathsH = <R extends T.Root>(
   root: R,

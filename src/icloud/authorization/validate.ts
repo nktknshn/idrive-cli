@@ -14,7 +14,7 @@ import {
   TypeDecodingError,
 } from '../../lib/errors'
 import { tryReadJsonFile } from '../../lib/files'
-import * as AR from '../drive/drive-requests/request'
+import * as AR from '../drive/requests/request'
 import { ICloudSessionWithSessionToken } from '../session/session'
 import { AccountData } from './types'
 

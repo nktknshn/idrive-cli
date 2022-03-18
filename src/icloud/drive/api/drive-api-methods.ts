@@ -14,13 +14,13 @@ import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
 import { AccountData } from '../../authorization/types'
-import { getUrlStream as getUrlStream_ } from '../drive-requests/download'
-import { BasicState } from '../drive-requests/request'
-import * as T from '../drive-requests/types/types'
 import { getMissedFound } from '../helpers'
+import { getUrlStream as getUrlStream_ } from '../requests/download'
+import { BasicState } from '../requests/request'
+import * as T from '../requests/types/types'
 import { Dep, useApiDepRequest } from './type'
 
-/** basic icloud api requests as depended functions*/
+/** basic icloud api requests as standalone depended functions*/
 export const renameItems = flow(
   useApiDepRequest<Dep<'renameItems'>>()(_ => _.renameItems),
 )

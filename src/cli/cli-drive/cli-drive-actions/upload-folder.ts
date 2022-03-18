@@ -11,17 +11,17 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
-import * as API from '../../../icloud/drive/api/api-methods'
+import * as API from '../../../icloud/drive/api/drive-api-methods'
 import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
+import { findInParentFilename } from '../../../icloud/drive/helpers'
 import {
   DetailsAppLibrary,
   DetailsDocwsRoot,
   DetailsFolder,
   isFolderLike,
-} from '../../../icloud/drive/drive-requests/types/types'
-import { findInParentFilename } from '../../../icloud/drive/helpers'
+} from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { printerIO } from '../../../lib/logging'
 import { NEA, XXX } from '../../../lib/types'

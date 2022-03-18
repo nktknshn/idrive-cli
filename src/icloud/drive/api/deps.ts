@@ -6,8 +6,8 @@ import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { XX, XXX } from '../../../lib/types'
 import { AuthorizedState, AuthorizeEnv, authorizeSession as authorizeSession_ } from '../../authorization/authorize'
 import { AccountData } from '../../authorization/types'
-import * as RQ from '../../drive/drive-requests'
-import { BasicState, RequestEnv } from '../../drive/drive-requests/request'
+import * as RQ from '../requests'
+import { BasicState, RequestEnv } from '../requests/request'
 import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from './catch'
 import { ApiDepsType } from './type'
 
@@ -22,7 +22,7 @@ type Enh<R2> = <Args extends unknown[], A, R>(
 /** use this dependency to modify schema */
 export type SchemaMapperEnv = { schemaMapper?: (s: typeof apiDepsScheme) => typeof apiDepsScheme }
 
-/** env attached to api deps  */
+/** env used to create api deps  */
 export type ApiDepsEnv = CatchFetchEnv & CatchSessEnv & RequestEnv & AuthorizeEnv
 
 /** add this to dependency when you want to create a request with a different env*/
@@ -75,7 +75,7 @@ export const authorizeSession: R.Reader<
   }
 
 const apiDepsScheme = {
-  // base icloud api requests with fulfield dependencies and attached error handlers
+  // basic icloud api requests with fulfield dependencies and attached error handlers
   retrieveItemDetailsInFolders: pipe(
     RQ.retrieveItemDetailsInFolders,
     prepareRequest,

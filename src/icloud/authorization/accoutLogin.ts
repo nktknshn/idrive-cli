@@ -5,7 +5,7 @@ import * as t from 'io-ts'
 import { defaultCountryCode } from '../../config'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import * as AR from '../drive/drive-requests/request'
+import * as AR from '../drive/requests/request'
 import { AccountData } from './types'
 
 export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<AccountData, S> {

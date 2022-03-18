@@ -7,8 +7,8 @@ import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import micromatch from 'micromatch'
 import Path from 'path'
-import * as T from '../drive/drive-requests/types/types'
 import { DetailsOrFile } from './drive'
+import * as T from './requests/types/types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)

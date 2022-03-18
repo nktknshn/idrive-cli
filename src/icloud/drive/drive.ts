@@ -8,11 +8,10 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { logReturnS } from '../../lib/logging'
+import { Hierarchy } from '../../lib/path-validation'
 import { NEA } from '../../lib/types'
 import { AuthorizedState } from '../authorization/authorize'
-import * as T from '../drive/drive-requests/types/types'
-import { rootDrivewsid, trashDrivewsid } from '../drive/drive-requests/types/types-io'
-import * as API from './api/api-methods'
+import * as API from './api/drive-api-methods'
 import { Dep } from './api/type'
 import * as C from './cache/cache'
 import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
@@ -23,7 +22,8 @@ import { getByPaths, getByPathsH } from './methods/get-by-paths'
 import { getFoldersTrees } from './methods/get-folders-trees'
 import { searchGlobs } from './methods/search-globs'
 import { modifySubset } from './modify-subset'
-import { Hierarchy } from './path-validation'
+import * as T from './requests/types/types'
+import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
@@ -55,8 +55,6 @@ export const errS = <A>(s: string): DriveM<A> =>
     ({ state }) => SRTE.left(err(s)),
   )
 
-const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
-
 export const asksCache = <A>(f: (cache: C.Cache) => A): DriveM<A> =>
   pipe(readEnv, map(({ state: { cache } }) => f(cache)))
 
@@ -85,25 +83,6 @@ export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM
     SRTE.chainW(e => SRTE.fromEither(e)),
   )
 }
-
-const putFoundMissed = ({ found, missed }: {
-  found: T.Details[]
-  missed: string[]
-}) =>
-  pipe(
-    putDetailss(found),
-    chain(() => cacheRemoveByIds(missed)),
-  )
-
-const putDetailss = (detailss: T.Details[]): DriveM<void> =>
-  chainCache(
-    flow(
-      C.putDetailss(detailss),
-      SRTE.fromEither,
-      chain(putCache),
-      map(constVoid),
-    ),
-  )
 
 export const cacheRemoveByIds = (drivewsids: string[]): DriveM<void> => modifyCache(C.removeByIds(drivewsids))
 
@@ -264,3 +243,25 @@ export { searchGlobs }
 export { getByPathsH }
 export { getFoldersTrees }
 export { modifySubset }
+
+/** unexported cripples */
+const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
+
+const putDetailss = (detailss: T.Details[]): DriveM<void> =>
+  chainCache(
+    flow(
+      C.putDetailss(detailss),
+      SRTE.fromEither,
+      chain(putCache),
+      map(constVoid),
+    ),
+  )
+
+const putFoundMissed = ({ found, missed }: {
+  found: T.Details[]
+  missed: string[]
+}) =>
+  pipe(
+    putDetailss(found),
+    chain(() => cacheRemoveByIds(missed)),
+  )

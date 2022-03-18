@@ -10,9 +10,9 @@ import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import * as DF from '../drive'
-import * as T from '../drive-requests/types/types'
 import { guardSnd } from '../helpers'
 import { modifySubset } from '../modify-subset'
+import * as T from '../requests/types/types'
 import { getFoldersTrees, shallowFolder, zipFolderTreeWithPath } from './get-folders-trees'
 
 export const searchGlobsShallow = (

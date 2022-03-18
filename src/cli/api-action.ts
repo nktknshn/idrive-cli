@@ -3,7 +3,7 @@ import * as R from 'fp-ts/lib/Reader'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../defaults'
 import { readAccountData } from '../icloud/authorization/validate'
-import * as AM from '../icloud/drive/drive-requests/request'
+import * as AM from '../icloud/drive/requests/request'
 import { readSessionFile, saveSessionFile } from '../icloud/session/session-file'
 
 export function apiActionM<T>(
