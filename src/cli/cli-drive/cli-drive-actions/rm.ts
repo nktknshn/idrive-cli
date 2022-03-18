@@ -6,6 +6,7 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
+import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import {
@@ -19,7 +20,7 @@ import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Use<'moveItemsToTrashM'>
+type Deps = DF.DriveMEnv & Use<'moveItemsToTrash'> & SchemaEnv
 
 export const rma = (
   { paths, trash }: {
@@ -40,17 +41,18 @@ export const rma = (
 
   return pipe(
     SRTE.ask<DF.State, Deps>(),
-    SRTE.bindTo('api'),
+    SRTE.bindTo('deps'),
     SRTE.bindW('items', () =>
       pipe(
         DF.chainRoot(root => DF.getByPaths(root, npaths)),
         SRTE.filterOrElse(not(A.some(isTrashDetailsG)), () => err(`you cannot remove root`)),
         SRTE.filterOrElse(not(A.some(isCloudDocsRootDetailsG)), () => err(`you cannot remove trash`)),
       )),
-    SRTE.bindW('result', ({ items, api }) =>
+    SRTE.bindW('result', ({ items, deps }) =>
       pipe(
-        api.moveItemsToTrashM<DF.State>({ items, trash }),
-        SRTE.chain(
+        API.moveItemsToTrash<DF.State>({ items, trash }),
+        // SRTE.local(() => ({ moveItemsToTrash: api.schema.moveItemsToTrash(api.depsEnv) })),
+        SRTE.chainW(
           resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
         ),
       )),
@@ -66,6 +68,7 @@ import * as E from 'fp-ts/Either'
 import { toArray } from 'fp-ts/lib/ReadonlyArray'
 import { fst, snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as O from 'fp-ts/Option'
+import { SchemaEnv } from '../../../icloud/drive/api/basic'
 import { Path } from '../../../lib/util'
 import { ask } from './upload'
 export const rm = (
@@ -102,7 +105,7 @@ export const rm = (
         DF.chainRoot(root => DF.searchGlobs(paths)),
         SRTE.map(A.flatten),
       )),
-    SRTE.chainW(({ items, api }) =>
+    SRTE.chainW(({ items }) =>
       items.length > 0
         ? pipe(
           ask({ message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}` }),
@@ -110,14 +113,14 @@ export const rm = (
           SRTE.chain((answer) =>
             answer
               ? pipe(
-                api.moveItemsToTrashM<DF.State>({
+                API.moveItemsToTrash<DF.State>({
                   items: pipe(
                     items.map(a => a.item),
                     A.filter(isNotRootDetails),
                   ),
                   trash,
                 }),
-                SRTE.chain(
+                SRTE.chainW(
                   resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
                 ),
               )

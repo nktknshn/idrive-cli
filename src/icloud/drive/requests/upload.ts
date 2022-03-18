@@ -86,7 +86,7 @@ const updateDocumentsRequest = t.type({
   }),
 })
 
-export const uploadM = <S extends AuthorizedState, R extends AR.RequestEnv>(
+export const uploadM = <S extends AuthorizedState>(
   { zone, contentType, filename, size, type }: {
     zone: string
     contentType: string
@@ -94,7 +94,7 @@ export const uploadM = <S extends AuthorizedState, R extends AR.RequestEnv>(
     size: number
     type: 'FILE'
   },
-): AR.AuthorizedRequest<UploadResponse, S, R> =>
+): AR.AuthorizedRequest<UploadResponse, S> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData, session } }) => ({
       method: 'POST',
@@ -106,9 +106,9 @@ export const uploadM = <S extends AuthorizedState, R extends AR.RequestEnv>(
     uploadResponse.decode,
   )
 
-export const singleFileUploadM = <S extends AuthorizedState, R extends AR.RequestEnv>(
+export const singleFileUploadM = <S extends AuthorizedState>(
   { filePath, url }: { filePath: string; url: string },
-): AR.AuthorizedRequest<SingleFileResponse, S, R> => {
+): AR.AuthorizedRequest<SingleFileResponse, S> => {
   const filename = Path.parse(filePath).base
 
   return pipe(
@@ -123,9 +123,9 @@ export const singleFileUploadM = <S extends AuthorizedState, R extends AR.Reques
   )
 }
 
-export const updateDocumentsM = <S extends AuthorizedState, R extends AR.RequestEnv>(
+export const updateDocumentsM = <S extends AuthorizedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
-): AR.AuthorizedRequest<UpdateDocumentsResponse, S, R> =>
+): AR.AuthorizedRequest<UpdateDocumentsResponse, S> =>
   AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

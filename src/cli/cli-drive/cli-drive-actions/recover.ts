@@ -2,13 +2,14 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { SchemaEnv } from '../../../icloud/drive/api/basic'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Use<'putBackItemsFromTrashM'>
+type Deps = DF.DriveMEnv & Use<'putBackItemsFromTrash'> & SchemaEnv
 
 export const recover = (
   { path }: { path: string },
@@ -18,7 +19,7 @@ export const recover = (
   return pipe(
     SRTE.ask<DF.State, Deps>(),
     SRTE.bindTo('api'),
-    SRTE.bindW('item', () =>
+    SRTE.bindW('item', (api) =>
       pipe(
         DF.chainCachedTrash(trash => DF.getByPaths(trash, [npath])),
         SRTE.map(NA.head),
@@ -26,7 +27,7 @@ export const recover = (
       )),
     SRTE.chainW(({ item, api }) =>
       pipe(
-        api.putBackItemsFromTrashM<DF.State>([item]),
+        api.putBackItemsFromTrash<DF.State>([item]),
         SRTE.map(() => `Success.`),
       )
     ),

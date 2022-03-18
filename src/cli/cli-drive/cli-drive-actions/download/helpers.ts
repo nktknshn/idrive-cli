@@ -11,6 +11,7 @@ import { createWriteStream, Stats } from 'fs'
 import * as fs from 'fs/promises'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
+import * as API from '../../../../icloud/drive/api/methods'
 import { Use } from '../../../../icloud/drive/api/type'
 import { FolderTree, zipFolderTreeWithPath } from '../../../../icloud/drive/drive/get-folders-trees'
 import { guardSnd } from '../../../../icloud/drive/helpers'
@@ -84,15 +85,14 @@ export type DownloadUrlToFile<R> = (
   destpath: string,
 ) => RTE.ReaderTaskEither<R, Error, void>
 
-export const downloadUrlToFile: DownloadUrlToFile<Use<'getUrlStream'>> = (
+export const downloadUrlToFile: DownloadUrlToFile<Use<'fetchClient'>> = (
   url: string,
   destpath: string,
-): RTE.ReaderTaskEither<Use<'getUrlStream'>, Error, void> =>
+): RTE.ReaderTaskEither<Use<'fetchClient'>, Error, void> =>
   pipe(
-    RTE.ask<Use<'getUrlStream'>, Error>(),
-    RTE.bindTo('api'),
-    RTE.chainFirstIOK(() => loggerIO.debug(`getting ${destpath}`)),
-    RTE.chainTaskEitherK(({ api }) => api.getUrlStream({ url })),
+    loggerIO.debug(`getting ${destpath}`),
+    RTE.fromIO,
+    RTE.chain(() => API.getUrlStream({ url })),
     RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
     RTE.chainFirstIOK(() => printerIO.print(`writing ${destpath}`)),
     RTE.chainW(RTE.fromTaskEitherK(writeFile2(destpath))),
@@ -102,7 +102,7 @@ export const downloadUrlToFile: DownloadUrlToFile<Use<'getUrlStream'>> = (
 export const downloadUrlsPar = (
   urlDest: Array<readonly [url: string, dest: string]>,
 ): RT.ReaderTask<
-  Use<'getUrlStream'>,
+  Use<'fetchClient'>,
   [E.Either<Error, void>, readonly [string, string]][]
 > => {
   return pipe(

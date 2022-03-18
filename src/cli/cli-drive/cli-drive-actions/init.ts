@@ -2,8 +2,8 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import prompts_ from 'prompts'
-import { authorizeSessionM } from '../../../icloud/authorization'
-import { authorizeStateM3 } from '../../../icloud/authorization/authorize'
+import * as API from '../../../icloud/drive/api/methods'
+import { Use } from '../../../icloud/drive/api/type'
 import { RequestEnv } from '../../../icloud/drive/requests/request'
 import * as S from '../../../icloud/session/session'
 import { err } from '../../../lib/errors'
@@ -11,7 +11,7 @@ import { printerIO } from '../../../lib/logging'
 import { saveAccountData, saveSession } from '../../cli-action'
 import { fstat } from './download/helpers'
 
-type Deps = RequestEnv & { sessionFile: string }
+type Deps = RequestEnv & { sessionFile: string } & Use<'authorizeSession'>
 
 export const initSession = (): RTE.ReaderTaskEither<Deps, Error, void> => {
   return pipe(
@@ -38,7 +38,7 @@ export const initSession = (): RTE.ReaderTaskEither<Deps, Error, void> => {
         ),
       )
     ),
-    RTE.chainW(authorizeStateM3),
+    RTE.chainW(API.authorizeStateM3),
     RTE.chainFirstW(saveSession),
     RTE.chainFirstW(saveAccountData),
     RTE.chainW(() => RTE.ask<Deps>()),

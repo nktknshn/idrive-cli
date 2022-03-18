@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
@@ -6,7 +7,8 @@ import { cliActionM2 } from './cli/cli-action'
 import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { defaultApiEnv } from './defaults'
-import { api } from './icloud/drive/api/api'
+import { catchFetchErrorsSRTE2, createApiDeps } from './icloud/drive/api/basic'
+import { failingFetch } from './lib/http/fetch-client'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -51,17 +53,40 @@ async function main() {
 
   if (command === 'init') {
     return await pipe(
-      { ...argv, ...defaultApiEnv, ...api },
+      { ...argv, ...defaultApiEnv, ...createApiDeps(defaultApiEnv) },
       Action.initSession(),
       TE.fold(printer.errorTask, printer.printTask),
     )()
   }
 
+  // const d = { ...defaultApiEnv, fetch: failingFetch(90) }
+
   const commandFunction = commands[command]
+
+  const deps = createApiDeps({
+    fetch: defaultApiEnv.fetch,
+    // fetch: failingFetch(70),
+    getCode: defaultApiEnv.getCode,
+    retries: defaultApiEnv.retries,
+    catchSessErrors: true,
+    catchFetchErrors: true,
+    // catchFetchErrorsSRTE: catchFetchErrorsSRTE2,
+    // schemaMapper: (schema) => ({
+    //   ...schema,
+    //   authorizeSessionM: pipe(
+    //     schema.authorizeSessionM,
+    //     R.local((d) => ({ ...d, fetch: failingFetch(99) })),
+    //   ),
+    //   retrieveItemDetailsInFolders: pipe(
+    //     schema.retrieveItemDetailsInFolders,
+    //     R.local((d) => ({ ...d, fetch: failingFetch(99) })),
+    //   ),
+    // }),
+  })
 
   await pipe(
     pipe(
-      { ...argv, ...defaultApiEnv, ...api },
+      { ...argv, ...deps },
       cliActionM2(() => commandFunction(argv)),
     ),
     TE.fold(printer.errorTask, printer.printTask),

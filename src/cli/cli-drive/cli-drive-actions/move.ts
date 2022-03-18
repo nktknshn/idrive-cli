@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as NM from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
@@ -14,7 +14,7 @@ import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Use<'moveItemsM'> & Use<'renameItemsM'>
+type Deps = DF.DriveMEnv & Use<'moveItems'> & Use<'renameItems'>
 
 /**
  * move a file or a directory
@@ -90,15 +90,10 @@ const caseMove = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
   dst: T.Details,
 ): XXX<DF.State, Deps, MoveItemsResponse> => {
-  return pipe(
-    SRTE.ask<DF.State, Deps>(),
-    SRTE.chainW(({ moveItemsM }) =>
-      moveItemsM({
-        destinationDrivewsId: dst.drivewsid,
-        items: [{ drivewsid: src.drivewsid, etag: src.etag }],
-      })
-    ),
-  )
+  return API.moveItems({
+    destinationDrivewsId: dst.drivewsid,
+    items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+  })
 }
 
 const caseRename = (
@@ -106,7 +101,7 @@ const caseRename = (
   name: string,
 ): XXX<DF.State, Deps, RenameResponse> => {
   return pipe(
-    NM.renameItems({
+    API.renameItems({
       items: [
         { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
       ],
@@ -136,23 +131,18 @@ const caseMoveAndRename = (
   // )
 
   return pipe(
-    SRTE.ask<DF.State, Deps>(),
-    SRTE.chainW(({ renameItemsM, moveItemsM }) =>
-      pipe(
-        moveItemsM<DF.State>(
-          {
-            destinationDrivewsId: dst.drivewsid,
-            items: [{ drivewsid: src.drivewsid, etag: src.etag }],
-          },
-        ),
-        SRTE.chain(() =>
-          NM.renameItems({
-            items: [
-              { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
-            ],
-          })
-        ),
-      )
+    API.moveItems<DF.State>(
+      {
+        destinationDrivewsId: dst.drivewsid,
+        items: [{ drivewsid: src.drivewsid, etag: src.etag }],
+      },
+    ),
+    SRTE.chainW(() =>
+      API.renameItems({
+        items: [
+          { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
+        ],
+      })
     ),
   )
 }

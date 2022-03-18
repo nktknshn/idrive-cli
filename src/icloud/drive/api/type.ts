@@ -10,50 +10,51 @@ import { DownloadResponseBody } from '../requests/download'
 import { MoveItemsResponse } from '../requests/moveItems'
 import { BasicState } from '../requests/request'
 import * as T from './../requests/types/types'
+import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
 
-export type Use<K extends keyof ApiType> = Record<K, ApiType[K]>
-
-export type ApiType = {
+export type Use<K extends keyof ApiDepsType> = Record<K, ApiDepsType[K]>
+/** basic api functions and helpers with attached dependencies */
+export type ApiDepsType = {
   retrieveItemDetailsInFolders: <S extends AuthorizedState>(
     { drivewsids }: { drivewsids: NEA<string> },
   ) => XX<S, NEA<(T.Details | T.InvalidId)>>
 
-  downloadM: <S extends AuthorizedState>(
+  download: <S extends AuthorizedState>(
     { docwsid: documentId, zone }: {
       docwsid: string
       zone: string
     },
   ) => XX<S, DownloadResponseBody>
 
-  downloadBatchM: <S extends AuthorizedState>(
+  downloadBatch: <S extends AuthorizedState>(
     { docwsids, zone }: { docwsids: string[]; zone: string },
   ) => XX<S, DownloadResponseBody[]>
 
-  moveItemsM: <S extends AuthorizedState>(
+  moveItems: <S extends AuthorizedState>(
     { items, destinationDrivewsId }: {
       destinationDrivewsId: string
       items: { drivewsid: string; etag: string }[]
     },
   ) => XX<S, MoveItemsResponse>
 
-  renameItemsM: <S extends AuthorizedState>(
+  renameItems: <S extends AuthorizedState>(
     { items }: {
       items: { drivewsid: string; etag: string; name: string; extension?: string }[]
     },
   ) => XX<S, RenameResponse>
 
-  createFoldersM: <S extends AuthorizedState>(
+  createFolders: <S extends AuthorizedState>(
     { names, destinationDrivewsId }: {
       destinationDrivewsId: string
       names: string[]
     },
   ) => XX<S, CreateFoldersResponse>
 
-  putBackItemsFromTrashM: <S extends AuthorizedState>(
+  putBackItemsFromTrash: <S extends AuthorizedState>(
     items: [{ drivewsid: string; etag: string }],
   ) => XX<S, { items: T.DriveChildrenItem[] }>
 
-  moveItemsToTrashM: <S extends AuthorizedState>(
+  moveItemsToTrash: <S extends AuthorizedState>(
     { items, trash }: {
       items: { drivewsid: string; etag: string }[]
       trash?: boolean
@@ -61,22 +62,24 @@ export type ApiType = {
   ) => XX<S, MoveItemToTrashResponse>
 
   upload: <S extends AuthorizedState>(
-    { sourceFilePath, docwsid, fname, zone }: { zone: string; sourceFilePath: string; docwsid: string; fname?: string },
-  ) => XX<S, {
-    status: { status_code: number; error_message: string }
-    etag: string
-    zone: string
-    type: string
-    document_id: string
-    parent_id: string
-    mtime: number
-  }>
+    { zone, contentType, filename, size, type }: {
+      zone: string
+      contentType: string
+      filename: string
+      size: number
+      type: 'FILE'
+    },
+  ) => XX<S, UploadResponse>
+
+  singleFileUpload: <S extends AuthorizedState>(
+    { filePath, url }: { filePath: string; url: string },
+  ) => XX<S, SingleFileResponse>
+
+  updateDocuments: <S extends AuthorizedState>(
+    { zone, data }: { zone: string; data: UpdateDocumentsRequest },
+  ) => XX<S, UpdateDocumentsResponse>
 
   fetchClient: FetchClientEither
 
-  getUrlStream({ url }: {
-    url: string
-  }): TE.TaskEither<Error, Readable>
-
-  authorizeSessionM: <S extends BasicState>() => XX<S, AccountLoginResponseBody>
+  authorizeSession: <S extends BasicState>() => XX<S, AccountLoginResponseBody>
 }

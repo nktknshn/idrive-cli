@@ -5,6 +5,8 @@ export const defaultApiEnv = {
   retries: 3,
   fetch: fetchClient,
   getCode: () => input({ prompt: 'code: ' }),
+  catchSessErrors: true,
+  catchFetchErrors: true,
 }
 
 export const tempDir = `/tmp/`

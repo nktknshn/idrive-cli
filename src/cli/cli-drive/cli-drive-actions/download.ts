@@ -5,18 +5,18 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
-import { fst, mapFst, snd } from 'fp-ts/lib/ReadonlyTuple'
+import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { concatAll } from 'fp-ts/Monoid'
 import { MonoidSum } from 'fp-ts/number'
 import micromatch from 'micromatch'
+import { SchemaEnv } from '../../../icloud/drive/api/basic'
 import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { guardFst, isDefined, prependPath } from '../../../icloud/drive/helpers'
-import { fileName } from '../../../icloud/drive/requests/types/types'
 import { loggerIO } from '../../../lib/loggerIO'
 import { printer, printerIO } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
@@ -24,14 +24,12 @@ import { Path } from '../../../lib/util'
 import { handleLocalFilesConflicts, solvers } from './download/conflict'
 import {
   createDirsList,
-  createDirStructure,
   createEmptyFiles,
   DownloadInfo,
   DownloadStructure,
   DownloadTask,
   downloadUrlsPar,
   filterTree,
-  prepareDestinationDir,
 } from './download/helpers'
 import { normalizePath } from './helpers'
 
@@ -48,10 +46,11 @@ type Argv = {
 
 type Deps =
   & DF.DriveMEnv
-  & Use<'downloadBatchM'>
-  & Use<'getUrlStream'>
+  & Use<'downloadBatch'>
+  & Use<'fetchClient'>
+  & SchemaEnv
 
-type DownloadICloudFiles<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
+type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
   DF.State,
   R,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
@@ -80,19 +79,29 @@ export const download = (
   },
 ) => {
   return pipe(
-    recursiveDownload(
-      {
-        path: micromatch.scan(path).base,
-        dstpath,
-        dry,
-        exclude: [],
-        include: [
-          '/' + Path.join(
-            Path.basename(micromatch.scan(path).base),
-            micromatch.scan(path).glob,
-          ),
-        ],
-      },
+    downloadFolder(
+      micromatch.scan(path).isGlob
+        ? ({
+          path: micromatch.scan(path).base,
+          dstpath,
+          dry,
+          exclude: [],
+          include: [
+            '/' + Path.join(
+              Path.basename(micromatch.scan(path).base),
+              micromatch.scan(path).glob,
+            ),
+          ],
+        })
+        : ({
+          path: Path.dirname(path),
+          dstpath,
+          dry,
+          exclude: [],
+          include: [
+            path,
+          ],
+        }),
       0,
       basicDownloadTask((ds) => ({
         downloadable: ds.downloadable.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
@@ -103,11 +112,11 @@ export const download = (
   )
 }
 
-export const downloadFolder = (
-  argv: Argv,
-): XXX<DF.State, Deps, string> => {
-  return recursiveDownload(argv)
-}
+// export const downloadFolder = (
+//   argv: Argv,
+// ): XXX<DF.State, Deps, string> => {
+//   return downloadFolder(argv)
+// }
 
 const toDirMapper = (dstpath: string) =>
   (ds: DownloadStructure): DownloadTask => {
@@ -136,18 +145,24 @@ const basicDownloadTask = (_toDirMapper: (ds: DownloadStructure) => DownloadTask
     })(task)
   }
 
-const recursiveDownload = (
+export const downloadFolder = (
   { path, dstpath, dry, exclude, include }: Argv,
   depth = Infinity,
   createDownloadTask = basicDownloadTask(toDirMapper(dstpath)),
 ): XXX<DF.State, Deps, string> => {
-  printer.print(
-    { path, dstpath, dry, exclude, include },
-  )
-
   const download = downloadICloudFilesChunked({ chunkSize: 5 })
 
   const verbose = dry
+  const scan = micromatch.scan(path)
+
+  if (scan.isGlob) {
+    include = [scan.input, ...include]
+    path = scan.base
+  }
+
+  printer.print(
+    { path, dstpath, dry, exclude, include },
+  )
 
   const buildTask = pipe(
     DF.getRoot(),
@@ -178,9 +193,7 @@ const recursiveDownload = (
           ? printerIO.print(
             verbose
               ? `will be downloaded: \n${
-                [...task.downloadable, ...task.empties].map(({ info, localpath }) =>
-                  `${fileName(info[1])} into ${localpath}`
-                )
+                [...task.downloadable, ...task.empties].map(({ info, localpath }) => `${info[0]} into ${localpath}`)
                   .join(
                     '\n',
                   )
@@ -188,12 +201,12 @@ const recursiveDownload = (
               : `${task.downloadable.length + task.empties.length} files will be downloaded`,
           )
           : printerIO.print(
-            `nothing to download. ${task.initialTask.downloadable.length} files were rejected by conflict solver`,
+            `nothing to download. ${task.initialTask.downloadable.length} files were skipped by conflict solver`,
           ),
     ),
   )
 
-  const action = (task: DownloadTask) =>
+  const effect = (task: DownloadTask) =>
     pipe(
       createDirsList(task.localdirstruct),
       TE.chain(() => createEmpties(task)),
@@ -205,7 +218,7 @@ const recursiveDownload = (
     buildTask,
     dry
       ? SRTE.map(() => [])
-      : SRTE.chainW(action),
+      : SRTE.chainW(effect),
     SRTE.map((results) => {
       return {
         success: results.filter(flow(fst, E.isRight)).length,
@@ -221,15 +234,6 @@ const recursiveDownload = (
   )
 }
 
-const createDirs = (dstpath: string) =>
-  ({ localdirstruct }: DownloadTask) =>
-    pipe(
-      loggerIO.debug(`creating local dirs`),
-      TE.fromIO,
-      TE.chain(() => prepareDestinationDir(dstpath)),
-      TE.chain(() => createDirStructure(dstpath, localdirstruct)),
-    )
-
 const createEmpties = ({ empties }: DownloadTask) =>
   pipe(
     empties.length > 0
@@ -244,7 +248,7 @@ const createEmpties = ({ empties }: DownloadTask) =>
 
 const downloadICloudFilesChunked = (
   { chunkSize = 5 },
-): DownloadICloudFiles<Use<'downloadBatchM'> & Use<'getUrlStream'>> =>
+): DownloadICloudFilesFunc<Use<'downloadBatch'> & Use<'fetchClient'>> =>
   ({ downloadable }) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
@@ -277,7 +281,7 @@ const downloadChunkPar = () =>
     chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
   ): XXX<
     DF.State,
-    Use<'downloadBatchM'> & Use<'getUrlStream'>,
+    Use<'downloadBatch'> & Use<'fetchClient'>,
     [E.Either<Error, void>, readonly [url: string, path: string]][]
   > => {
     return pipe(

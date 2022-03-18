@@ -236,10 +236,20 @@ const resolveConflictsOverwrightIfSizeDifferent = (
       TE.of,
     )
 
+const resolveConflictsAsk: ConflictsSolver = (conflicts) =>
+  pipe(
+    conflicts,
+    A.map(([localfile, { info, localpath }]) =>
+      [[localfile, { info, localpath: localpath + '.new' }], 'overwright'] as const
+    ),
+    TE.of,
+  )
+
 export const solvers = {
   failOnConflicts,
   resolveConflictsSkipAll,
   resolveConflictsOverwrightAll,
   resolveConflictsRename,
   resolveConflictsOverwrightIfSizeDifferent,
+  resolveConflictsAsk,
 }

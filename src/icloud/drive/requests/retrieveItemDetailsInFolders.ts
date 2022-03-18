@@ -93,9 +93,9 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedS
 }
 import * as iot from 'io-ts-types'
 
-export function retrieveItemDetailsInFolders<S extends AuthorizedState, R extends AR.RequestEnv>(
+export function retrieveItemDetailsInFolders<S extends AuthorizedState>(
   { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<NEA<(Details | InvalidId)>, S, R> {
+): AR.AuthorizedRequest<NEA<(Details | InvalidId)>, S> {
   return pipe(
     getRetrieveItemDetailsInFoldersHttpRequest<S>(
       drivewsids.map(

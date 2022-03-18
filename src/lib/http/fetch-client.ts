@@ -1,5 +1,7 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 import FormData from 'form-data'
+import { random } from 'fp-ts'
+import { flow, pipe } from 'fp-ts/lib/function'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { httplogger } from '../logging'
@@ -110,12 +112,20 @@ export class FetchError extends Error {
   }
 }
 
-// export class FetchErrorAxios extends Error {
-//   public static is(a: unknown): a is FetchErrorAxios {
-//     return a instanceof FetchErrorAxios
-//   }
+import * as E from 'fp-ts/Either'
+import * as IO from 'fp-ts/IO'
 
-//   public static create(message: string, axiosError?: AxiosError): FetchErrorAxios {
-//     return new FetchErrorAxios(message, axiosError?: AxiosError)
-//   }
-// }
+export const failingFetch = (t = 90) =>
+  flow(
+    fetchClient,
+    TE.chainIOEitherK(resp => {
+      return pipe(
+        random.randomInt(0, 100),
+        IO.map(n =>
+          n > t
+            ? E.of(resp)
+            : E.left(FetchError.create('failingFetch failed'))
+        ),
+      )
+    }),
+  )

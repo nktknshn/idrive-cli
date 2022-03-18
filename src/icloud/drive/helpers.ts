@@ -94,7 +94,7 @@ export const findInParentGlob = <R extends T.Root>(
           ? micromatch.isMatch(
             T.fileName(item),
             glob,
-            { basename: true },
+            { basename: true, noglobstar: true },
           )
           : true,
     ),

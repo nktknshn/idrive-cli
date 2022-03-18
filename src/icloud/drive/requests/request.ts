@@ -33,7 +33,6 @@ export type AuthorizationApiRequest<R> = ApiRequest<R, AuthorizationState>
 
 export type RequestEnv = {
   fetch: FetchClientEither
-  getCode: () => TE.TaskEither<Error, string>
 }
 
 export type BasicState = {

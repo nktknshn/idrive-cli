@@ -9,6 +9,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
+import { Stats } from 'fs'
 import micromatch from 'micromatch'
 import { UploadResult } from '../../../icloud/drive/api'
 import * as API from '../../../icloud/drive/api/methods'
@@ -39,19 +40,17 @@ type Argv = {
 }
 
 type Deps =
-  & DF.DriveMEnv
-  & Use<'renameItemsM'>
-  & Use<'createFoldersM'>
-  & Use<'upload'>
-  & Use<'fetchClient'>
-  & Use<'downloadBatchM'>
-  & Use<'getUrlStream'>
+  & Use<'retrieveItemDetailsInFolders'>
+  & Use<'renameItems'>
+  & Use<'createFolders'>
+  & Use<'downloadBatch'>
+  & API.UploadMethodDeps
 
 type UploadTask = {
   dirstruct: string[]
-  uploadable: (readonly [string, LocalTreeElement])[]
-  empties: (readonly [string, LocalTreeElement])[]
-  excluded: (readonly [string, LocalTreeElement])[]
+  uploadable: (readonly [string, { path: string; stats: Stats }])[]
+  empties: (readonly [string, { path: string; stats: Stats }])[]
+  excluded: (readonly [string, { path: string; stats: Stats }])[]
 }
 
 export const uploadFolder = (
@@ -131,9 +130,9 @@ const createUploadTask = (
   tree: TR.Tree<LocalTreeElement>,
 ) => {
   dirstruct: string[]
-  uploadable: (readonly [string, LocalTreeElement])[]
-  empties: (readonly [string, LocalTreeElement])[]
-  excluded: (readonly [string, LocalTreeElement])[]
+  uploadable: (readonly [string, { path: string; stats: Stats }])[]
+  empties: (readonly [string, { path: string; stats: Stats }])[]
+  excluded: (readonly [string, { path: string; stats: Stats }])[]
 } =>
   (
     tree: TR.Tree<LocalTreeElement>,
@@ -212,8 +211,9 @@ const uploadToNewFolder = (
       SRTE.chainW(({ task, dirs }) => {
         return pipe(
           task.uploadable,
+          A.map(([remotepath, c]) => [remotepath, { ...c, path: Path.join(src, c.path) }] as const),
           A.chunksOf(5),
-          A.map(uploadChunk(src, dirs)),
+          A.map(uploadChunk(dirs)),
           A.sequence(SRTE.Applicative),
         )
       }),
@@ -245,19 +245,20 @@ const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
 }
 
 const uploadChunk = (
-  src: string,
-  dirs: Record<string, string>,
+  pathToDriwesid: Record<string, string>,
 ) =>
-  (chunk: NEA<readonly [string, LocalTreeElement]>): XXX<DF.State, Use<'upload'>, NEA<UploadResult>> =>
+  (
+    chunk: NEA<readonly [string, { path: string; stats: Stats }]>,
+  ): XXX<DF.State, API.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, element]) =>
           pipe(
             API.upload<DF.State>({
-              sourceFilePath: Path.join(src, element.path),
-              docwsid: parseDrivewsid(dirs[Path.dirname(remotepath)]).docwsid,
-              zone: parseDrivewsid(dirs[Path.dirname(remotepath)]).zone,
+              sourceFilePath: element.path,
+              docwsid: parseDrivewsid(pathToDriwesid[Path.dirname(remotepath)]).docwsid,
+              zone: parseDrivewsid(pathToDriwesid[Path.dirname(remotepath)]).zone,
             })(state),
             RTE.chainFirstIOK(() => printerIO.print(`${remotepath}`)),
           )
@@ -271,7 +272,7 @@ const uploadChunk = (
 const createDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<DF.State, Use<'createFoldersM'>, Record<string, string>> => {
+): XXX<DF.State, Use<'createFolders'>, Record<string, string>> => {
   const task = pipe(
     getSubdirsPerParent('/')(dirstruct),
     group<readonly [string, string]>({

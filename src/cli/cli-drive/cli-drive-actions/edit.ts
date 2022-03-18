@@ -7,7 +7,9 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import fs from 'fs/promises'
 import { tempDir } from '../../../defaults'
-import * as NM from '../../../icloud/drive/api/methods'
+// import * as NM from '../../../icloud/drive/api/methods'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { consumeStreamToString } from '../../../icloud/drive/requests/download'
@@ -20,12 +22,12 @@ import { upload } from '.'
 import { normalizePath } from './helpers'
 
 type Deps =
-  & DF.DriveMEnv
-  & Use<'downloadM'>
-  & Use<'getUrlStream'>
-  & Use<'renameItemsM'>
-  & Use<'upload'>
-  & Use<'moveItemsToTrashM'>
+  & Use<'retrieveItemDetailsInFolders'>
+  & Use<'download'>
+  & Use<'fetchClient'>
+  & Use<'renameItems'>
+  & Use<'moveItemsToTrash'>
+  & API.UploadMethodDeps
 
 export const edit = (
   { path }: { path: string },
@@ -48,16 +50,16 @@ export const edit = (
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.bindW('url', ({ item }) => NM.getUrl<DF.State>(item)),
-    SRTE.chainW(({ api, url }) =>
+    SRTE.bindW('url', ({ item }) => API.getItemUrl<DF.State>(item)),
+    SRTE.chainW(({ url }) =>
       pipe(
         O.fromNullable(url),
         O.match(
           () => SRTE.left(err(`cannot get url`)),
           url =>
-            SRTE.fromTaskEither(pipe(
-              api.getUrlStream({ url }),
-              TE.chain(consumeStreamToString),
+            SRTE.fromReaderTaskEither(pipe(
+              API.getUrlStream({ url }),
+              RTE.chainTaskEitherK(consumeStreamToString),
             )),
         ),
       )

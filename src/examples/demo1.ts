@@ -14,7 +14,7 @@ import prompts_ from 'prompts'
 import { saveCache } from '../cli/cli-action'
 import { defaultCacheFile, defaultSessionFile } from '../config'
 import { defaultApiEnv } from '../defaults'
-import { AuthorizedState, authorizeStateM3 } from '../icloud/authorization/authorize'
+import { AuthorizedState, AuthorizeEnv, authorizeStateM3 } from '../icloud/authorization/authorize'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData } from '../icloud/authorization/validate'
 import * as API from '../icloud/drive/api'
@@ -169,7 +169,7 @@ const loadSession = pipe(
 const loadAccountData = (
   session: S.ICloudSession,
 ): RT<
-  AR.RequestEnv & { sessionFile: string },
+  AR.RequestEnv & AuthorizeEnv & { sessionFile: string },
   Error,
   { session: S.ICloudSession; accountData: AccountLoginResponseBody }
 > =>
@@ -188,7 +188,7 @@ const loadAccountData = (
   )
 
 const getAuthorizedState: RTE.ReaderTaskEither<
-  { sessionFile: string } & API.ApiEnv & AR.RequestEnv,
+  { sessionFile: string } & API.ApiEnv & AR.RequestEnv & AuthorizeEnv,
   Error,
   AuthorizedState
 > = pipe(

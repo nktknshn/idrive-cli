@@ -1,12 +1,12 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { defaultApiEnv } from '../../../defaults'
-import * as API from '../../../icloud/drive/api'
-import { createFoldersFailing } from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { err } from '../../../lib/errors'
@@ -17,7 +17,7 @@ import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls/printing'
 
-type Deps = DF.DriveMEnv & Use<'createFoldersM'>
+type Deps = DF.DriveMEnv & Use<'createFolders'>
 
 export const mkdir = (
   { path }: { path: string },
@@ -29,13 +29,12 @@ export const mkdir = (
   const nparentPath = normalizePath(Path.dirname(path))
 
   return pipe(
-    SRTE.ask<DF.State, Deps>(),
-    SRTE.bindTo('api'),
-    SRTE.bindW('root', DF.getRoot),
+    DF.getRoot(),
+    SRTE.bindTo('root'),
     SRTE.bindW('parent', ({ root }) => DF.getByPathFolder(root, nparentPath)),
-    SRTE.bindW('result', ({ parent, api }) =>
+    SRTE.bindW('result', ({ parent }) =>
       pipe(
-        createFoldersFailing<DF.State>({
+        API.createFoldersFailing<DF.State>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),
@@ -54,7 +53,7 @@ export const mkdir = (
         ),
       )
     ),
-    SRTE.map(flow(A.lookup(1), O.flatten)),
+    SRTE.map(flow(NA.head)),
     SRTE.map(
       O.fold(
         () => `missing created folder`,

@@ -6,15 +6,13 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import prompts_ from 'prompts'
-import { defaultApiEnv } from '../../../defaults'
-import * as API from '../../../icloud/drive/api'
+import * as API from '../../../icloud/drive/api/methods'
 import { Use } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import * as H from '../../../icloud/drive/drive/validation'
-import { findInParentFilename, findInParentFilename2, parseName } from '../../../icloud/drive/helpers'
+import { findInParentFilename2, parseName } from '../../../icloud/drive/helpers'
 import {
-  Details,
   DetailsDocwsRoot,
   DriveChildrenItemFile,
   fileName,
@@ -25,16 +23,15 @@ import {
 import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { cliActionM2 } from '../../cli-action'
 import { fstat } from './download/helpers'
 import { normalizePath } from './helpers'
 type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
 type Deps =
   & DF.DriveMEnv
-  & Use<'renameItemsM'>
-  & Use<'upload'>
-  & Use<'moveItemsToTrashM'>
+  & Use<'renameItems'>
+  & Use<'moveItemsToTrash'>
+  & API.UploadMethodDeps
 
 const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
@@ -68,11 +65,10 @@ export const uploads = (
     SRTE.bindTo('api'),
     SRTE.bindW('root', DF.getRoot),
     SRTE.bindW('dst', ({ root }) => DF.getByPathFolder(root, normalizePath(dstpath))),
-    SRTE.bindW('overwright', () => SRTE.of(overwright)),
-    SRTE.chainW(({ api, dst, overwright }) =>
+    SRTE.chainW(({ dst }) =>
       pipe(
         srcpaths,
-        A.map(src => uploadToFolder({ api, dst, src, overwright: ask })),
+        A.map(src => uploadToFolder({ dst, src, overwright: overwright ? true : ask })),
         SRTE.sequenceArray,
       )
     ),
@@ -95,21 +91,20 @@ export const singleFileUpload = (
     SRTE.bindW('src', () => SRTE.of(srcpath)),
     SRTE.bindW('srcstat', () => SRTE.fromTaskEither(fstat(srcpath))),
     SRTE.bindW('overwright', () => SRTE.of(overwright)),
-    SRTE.chainW(handle),
+    SRTE.chainW(handleSingleFileUpload),
     SRTE.map(() => `Success. ${Path.basename(srcpath)}`),
   )
 }
 
 const uploadToFolder = (
-  { src, dst, overwright, api }: {
+  { src, dst, overwright }: {
     overwright:
       | boolean
       | AskingFunc
     dst: DetailsDocwsRoot | NonRootDetails
     src: string
-    api: Deps
   },
-): SRTE.StateReaderTaskEither<DF.State, DF.DriveMEnv, Error, void> => {
+): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
   const actualFile = pipe(
     findInParentFilename2(
       dst,
@@ -121,7 +116,7 @@ const uploadToFolder = (
   if (isSome(actualFile)) {
     if (typeof overwright === 'boolean') {
       if (overwright) {
-        return uploadOverwrighting({ src, dstitem: actualFile.value, parent: dst, api })
+        return uploadOverwrighting({ src, dstitem: actualFile.value, parent: dst })
       }
     }
     else {
@@ -130,35 +125,35 @@ const uploadToFolder = (
           message: `overwright ${fileName(actualFile.value)}?`,
         }),
         SRTE.fromTaskEither,
-        SRTE.chain(overwright => uploadToFolder({ src, dst, overwright, api })),
+        SRTE.chain(overwright => uploadToFolder({ src, dst, overwright })),
       )
     }
   }
   return pipe(
-    api.upload<DF.State>({ sourceFilePath: src, docwsid: dst.docwsid, zone: dst.zone }),
+    API.upload<DF.State>({ sourceFilePath: src, docwsid: dst.docwsid, zone: dst.zone }),
     SRTE.map(constVoid),
   )
 }
 
-const handle = (
+const handleSingleFileUpload = (
   { src, dst, overwright, api }: {
     dst: V.GetByPathResult<DetailsDocwsRoot>
     src: string
     overwright: boolean
     api: Deps
   },
-): DF.DriveM<void> => {
+): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
   // if the target path is presented at icloud drive
   if (dst.valid) {
     const dstitem = V.target(dst)
 
     // if it's a folder
     if (isFolderLike(dstitem)) {
-      return uploadToFolder({ src, dst: dstitem, api, overwright })
+      return uploadToFolder({ src, dst: dstitem, overwright })
     }
     // if it's a file and the overwright flag set
     else if (overwright && V.isValidWithFile(dst)) {
-      return uploadOverwrighting({ src, dstitem: dst.file.value, parent: NA.last(dst.path.details), api })
+      return uploadOverwrighting({ src, dstitem: dst.file.value, parent: NA.last(dst.path.details) })
     }
     // otherwise we cancel uploading
     else {
@@ -174,7 +169,7 @@ const handle = (
 
     if (isFolderLike(dstitem)) {
       return pipe(
-        api.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
+        API.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         SRTE.map(constVoid),
       )
     }
@@ -188,13 +183,12 @@ const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: 
 }
 
 const uploadOverwrighting = (
-  { src, parent, dstitem, api }: {
-    api: Deps
+  { src, parent, dstitem }: {
     parent: DetailsDocwsRoot | NonRootDetails
     dstitem: DriveChildrenItemFile
     src: string
   },
-) => {
+): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
   // const dstitem = V.target(dst)
   // const parent = NA.last(dst.path.details)
 
@@ -202,10 +196,10 @@ const uploadOverwrighting = (
     DF.Do,
     SRTE.bindW(
       'uploadResult',
-      () => api.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
+      () => API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
     ),
     SRTE.bindW('removeResult', () => {
-      return api.moveItemsToTrashM({
+      return API.moveItemsToTrash({
         items: [dstitem],
         trash: true,
       })
@@ -213,7 +207,7 @@ const uploadOverwrighting = (
     SRTE.chainW(({ uploadResult, removeResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        api.renameItemsM<DF.State>({
+        API.moveItemsToTrash<DF.State>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

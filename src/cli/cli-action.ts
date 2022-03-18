@@ -1,13 +1,11 @@
-import { log } from 'fp-ts/lib/Console'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { fromIO } from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { AuthorizedState, authorizeStateM3 } from '../icloud/authorization/authorize'
 import { AccountLoginResponseBody } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
-import { ApiEnv } from '../icloud/drive/api'
-import { ApiType } from '../icloud/drive/api/type'
+import { SchemaEnv } from '../icloud/drive/api/basic'
+import * as API from '../icloud/drive/api/methods'
+import { ApiDepsType, Use } from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
 import { CacheF } from '../icloud/drive/cache/cache-types'
 import * as DF from '../icloud/drive/drive'
@@ -15,8 +13,9 @@ import { RequestEnv } from '../icloud/drive/requests/request'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { err } from '../lib/errors'
+import { Getcode } from '../lib/input'
 import { loggerIO } from '../lib/loggerIO'
-import { apiLogger, logger, logReturnAs } from '../lib/logging'
+import { apiLogger, logReturnAs } from '../lib/logging'
 import { XXX } from '../lib/types'
 
 export const loadSessionFile = (deps: { sessionFile: string }) => readSessionFile(deps.sessionFile)
@@ -62,6 +61,7 @@ const loadSession = pipe(
   ),
   RTE.map(session => ({ session })),
 )
+
 const loadAccountData = (
   { session }: { session: ICloudSession },
 ) =>
@@ -72,15 +72,24 @@ const loadAccountData = (
       pipe(
         loggerIO.error(`couldn't read account data. (${e})`),
         RTE.fromIO,
-        RTE.chain(() => authorizeStateM3({ session })),
+        RTE.chain(() => API.authorizeStateM3({ session })),
+        // RTE.ask<Use<'authorizeSessionM'>>(),
+        // RTE.chainW(({ authorizeSessionM }) => authorizeSessionM()({ session })),
+        // RTE.map(([accountData, { session }]) => ({ session, accountData })),
       )
     ),
   )
 
 /** read the state and execute an action in the context */
-export function cliActionM2<T, R extends DF.DriveMEnv & ApiType>(
-  action: () => XXX<DF.State, R, T>,
-) {
+export function cliActionM2<A, R extends ApiDepsType & SchemaEnv>(
+  action: () => XXX<DF.State, R, A>,
+): RTE.ReaderTaskEither<
+  & R
+  & { sessionFile: string }
+  & { cacheFile: string; noCache: boolean },
+  Error,
+  A
+> {
   return pipe(
     loadSession,
     RTE.chain(loadAccountData),

@@ -49,3 +49,5 @@ export function input({
     TE.map((_) => _.trim()),
   )
 }
+
+export type Getcode = () => TE.TaskEither<BufferDecodingError | Error, string>

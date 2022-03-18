@@ -26,12 +26,6 @@ import { getMissedFound } from './helpers'
 import * as T from './requests/types/types'
 import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
-export { getByPaths }
-export { searchGlobs }
-export { getByPathsH }
-export { getFoldersTrees }
-export { modifySubset }
-
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
 export type DriveMEnv = Use<'retrieveItemDetailsInFolders'>
@@ -81,6 +75,29 @@ export const asksCache = <A>(f: (cache: C.Cache) => A): DriveM<A> =>
 export const chainCache = <A>(f: (cache: C.Cache) => DriveM<A>): DriveM<A> =>
   readEnvS(({ state: { cache } }) => f(cache))
 
+export const modifyCache = (f: (cache: C.Cache) => C.Cache): DriveM<void> =>
+  chainCache(flow(f, putCache, map(constVoid)))
+
+export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
+  return pipe(
+    chainCache(
+      flow(C.getFolderDetailsByIdsSeparated(drivewsids), fromEither),
+    ),
+    SRTE.chainW(({ missed }) =>
+      pipe(
+        missed,
+        A.matchW(
+          () => SRTE.of({ missed: [], found: [] }),
+          (missed) => API.retrieveItemDetailsInFoldersS<State>(missed),
+        ),
+      )
+    ),
+    chain(putFoundMissed),
+    chain(() => asksCache(C.getFolderDetailsByIds(drivewsids))),
+    chain(fromEither),
+  )
+}
+
 const putFoundMissed = ({ found, missed }: {
   found: T.Details[]
   missed: string[]
@@ -99,34 +116,8 @@ const putDetailss = (detailss: T.Details[]): DriveM<void> =>
       map(constVoid),
     ),
   )
-type MissedFoundDetails = {
-  missed: string[]
-  found: (T.Details)[]
-}
-export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
-  return pipe(
-    chainCache(
-      flow(C.getFolderDetailsByIdsSeparated(drivewsids), fromEither),
-    ),
-    SRTE.chain(({ missed }) =>
-      pipe(
-        missed,
-        A.match(
-          () => SRTE.of({ missed: [], found: [] }),
-          (missed) => API.retrieveItemDetailsInFoldersS(missed),
-        ),
-      )
-    ),
-    chain(putFoundMissed),
-    chain(() => asksCache(C.getFolderDetailsByIds(drivewsids))),
-    chain(fromEither),
-  )
-}
 
 export const removeByIds = (drivewsids: string[]): DriveM<void> => modifyCache(C.removeByIds(drivewsids))
-
-export const modifyCache = (f: (cache: C.Cache) => C.Cache): DriveM<void> =>
-  chainCache(flow(f, putCache, map(constVoid)))
 
 /** retrieve root from cache or from api if it's missing from cache and chain a computation*/
 export const chainRoot = <A>(
@@ -235,9 +226,6 @@ export const getByPathFolder = <R extends T.Root>(
   pipe(
     getByPaths(root, [path]),
     map(NA.head),
-    // chain(
-    //   // flow(A.lookup(0), fromOption(() => err(`wat`))),
-    // ),
     filterOrElse(T.isDetailsG, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
   )
 
@@ -284,3 +272,9 @@ export const getByPathsCached = <R extends T.Root>(
 
 export const getRoot = () => chainRoot(of)
 export const getTrash = () => chainCachedTrash(of)
+
+export { getByPaths }
+export { searchGlobs }
+export { getByPathsH }
+export { getFoldersTrees }
+export { modifySubset }

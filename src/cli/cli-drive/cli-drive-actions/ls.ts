@@ -123,6 +123,12 @@ export const listUnixPath2 = (
 
       const items = findInParentGlob(t, scan.glob)
 
+      if (scan.glob.indexOf('**') > -1) {
+        logger.error(
+          `${scan.input} is invalid glob since globstar is not supported for non recursive ls. use ls -R instead`,
+        )
+      }
+
       return showDetailsInfo({ path: scan.base, fullPath, printFolderInfo: true, ...opts })({
         ...t,
         items,
@@ -134,6 +140,7 @@ export const listUnixPath2 = (
 }
 
 import * as O from 'fp-ts/Option'
+import { logger } from '../../../lib/logging'
 import { getDirectoryStructure } from './download/helpers'
 import { getSubdirsPerParent } from './upload-folder'
 

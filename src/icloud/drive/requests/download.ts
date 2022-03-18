@@ -4,16 +4,8 @@ import * as t from 'io-ts'
 import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
-import { isObjectWithOwnProperty } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
-import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import { applyToSession, expectJson, ResponseWithSession } from './http'
 import * as AR from './request'
-
-type RetrieveOpts = {
-  docwsid: string
-  zone: string
-}
 
 export interface DownloadResponseBody {
   document_id: string
@@ -35,12 +27,12 @@ export interface DownloadResponseBody {
   double_etag: string
 }
 
-export function downloadM<S extends AuthorizedState, R extends AR.RequestEnv = AR.RequestEnv>(
+export function downloadM<S extends AuthorizedState>(
   { docwsid: documentId, zone }: {
     docwsid: string
     zone: string
   },
-): AR.ApiRequest<DownloadResponseBody, S, R> {
+): AR.ApiRequest<DownloadResponseBody, S> {
   return AR.basicDriveJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'GET',
@@ -76,18 +68,19 @@ export function downloadBatchM<S extends AuthorizedState>(
   )
 }
 
-export function getUrlStream(
-  { client, url }: { client: FetchClientEither; url: string },
-): TE.TaskEither<Error, Readable> {
-  return pipe(
-    client({ method: 'GET', url, headers: {}, data: undefined, responseType: 'stream' }),
-    expectResponse(
-      _ => _.status == 200,
-      _ => err(`responded ${_.status}`),
-    ),
-    TE.map(_ => _.data as Readable),
-  )
-}
+export const getUrlStream = ({ fetchClient }: { fetchClient: FetchClientEither }) =>
+  (
+    { url }: { url: string },
+  ): TE.TaskEither<Error, Readable> => {
+    return pipe(
+      fetchClient({ method: 'GET', url, headers: {}, data: undefined, responseType: 'stream' }),
+      expectResponse(
+        _ => _.status == 200,
+        _ => err(`responded ${_.status}`),
+      ),
+      TE.map(_ => _.data as Readable),
+    )
+  }
 
 export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, string> {
   return TE.fromTask<string, Error>(async () => {
