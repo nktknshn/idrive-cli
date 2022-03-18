@@ -13,80 +13,72 @@ import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
-import { AccountLoginResponseBody } from '../../authorization/types'
+import { AccountData } from '../../authorization/types'
+import { getUrlStream as getUrlStream_ } from '../drive-requests/download'
+import { BasicState } from '../drive-requests/request'
+import * as T from '../drive-requests/types/types'
 import { getMissedFound } from '../helpers'
-import { getUrlStream as getUrlStream_ } from '../requests/download'
-import { BasicState } from '../requests/request'
-import * as T from '../requests/types/types'
-import * as API from './type'
+import { Dep, useApiDepRequest } from './type'
 
-const useDepRequest = <R>() =>
-  <Args extends unknown[], S extends AuthorizedState, R1 extends R, A>(
-    f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R1, Error, A>,
-  ) =>
-    (...args: Args) =>
-      pipe(
-        SRTE.ask<S, R>(),
-        SRTE.map(f),
-        SRTE.chain(f => f(...args)),
-      )
-
-/** basic api functions as exported functions*/
-
+/** basic icloud api requests as depended functions*/
 export const renameItems = flow(
-  useDepRequest<API.Dep<'renameItems'>>()(_ => _.renameItems),
+  useApiDepRequest<Dep<'renameItems'>>()(_ => _.renameItems),
+)
+
+export const putBackItemsFromTrash = flow(
+  useApiDepRequest<Dep<'putBackItemsFromTrash'>>()(_ => _.putBackItemsFromTrash),
 )
 
 export const moveItems = flow(
-  useDepRequest<API.Dep<'moveItems'>>()(_ => _.moveItems),
+  useApiDepRequest<Dep<'moveItems'>>()(_ => _.moveItems),
 )
 
 export const moveItemsToTrash = flow(
-  useDepRequest<API.Dep<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash),
+  useApiDepRequest<Dep<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash),
 )
 
 export const retrieveItemDetailsInFolders = flow(
-  useDepRequest<API.Dep<'retrieveItemDetailsInFolders'>>()(_ => _.retrieveItemDetailsInFolders),
+  useApiDepRequest<Dep<'retrieveItemDetailsInFolders'>>()(_ => _.retrieveItemDetailsInFolders),
 )
 
 export const download = flow(
-  useDepRequest<API.Dep<'download'>>()(_ => _.download),
+  useApiDepRequest<Dep<'download'>>()(_ => _.download),
 )
 
 export const downloadBatch = flow(
-  useDepRequest<API.Dep<'downloadBatch'>>()(_ => _.downloadBatch),
+  useApiDepRequest<Dep<'downloadBatch'>>()(_ => _.downloadBatch),
 )
 
 export const createFolders = flow(
-  useDepRequest<API.Dep<'createFolders'>>()(_ => _.createFolders),
+  useApiDepRequest<Dep<'createFolders'>>()(_ => _.createFolders),
 )
 
-export const authorizeSessionM = <S extends BasicState>(): XXX<
+export const authorizeSession = <S extends BasicState>(): XXX<
   S,
-  API.Dep<'authorizeSession'>,
-  AccountLoginResponseBody
+  Dep<'authorizeSession'>,
+  AccountData
 > =>
   pipe(
-    SRTE.asksStateReaderTaskEitherW((_: API.Dep<'authorizeSession'>) => _.authorizeSession<S>()),
+    SRTE.asksStateReaderTaskEitherW((_: Dep<'authorizeSession'>) => _.authorizeSession<S>()),
   )
 
 /** higher level methods based and dependent on the basic functions */
 
-export const authorizeStateM3 = <
+export const authorizeState = <
   S extends BasicState,
 >(
   state: S,
-): RTE.ReaderTaskEither<API.Dep<'authorizeSession'>, Error, S & { accountData: AccountLoginResponseBody }> =>
+): RTE.ReaderTaskEither<Dep<'authorizeSession'>, Error, S & { accountData: AccountData }> =>
   pipe(
-    authorizeSessionM<S>()(state),
+    authorizeSession<S>()(state),
     RTE.map(([accountData, state]) => ({ ...state, accountData })),
   )
 
 export const getUrlStream = ({ url }: {
   url: string
-}): RTE.ReaderTaskEither<API.Dep<'fetchClient'>, Error, Readable> =>
+}): RTE.ReaderTaskEither<Dep<'fetchClient'>, Error, Readable> =>
   pipe(
-    RTE.ask<API.Dep<'fetchClient'>>(),
+    RTE.ask<Dep<'fetchClient'>>(),
     RTE.chainTaskEitherK(flow(getUrlStream_, apply({ url }))),
   )
 
@@ -94,7 +86,7 @@ export const retrieveItemDetailsInFoldersS = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
 ): XXX<
   S,
-  API.Dep<'retrieveItemDetailsInFolders'>,
+  Dep<'retrieveItemDetailsInFolders'>,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrash | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>
   pipe(
@@ -118,12 +110,12 @@ export const getItemUrl = flow(
 )
 
 export type UploadMethodDeps =
-  & API.Dep<'upload'>
-  & API.Dep<'singleFileUpload'>
-  & API.Dep<'updateDocuments'>
+  & Dep<'upload'>
+  & Dep<'singleFileUpload'>
+  & Dep<'updateDocuments'>
 
 export const upload = flow(
-  useDepRequest<UploadMethodDeps>()(deps =>
+  useApiDepRequest<UploadMethodDeps>()(deps =>
     <S extends AuthorizedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string

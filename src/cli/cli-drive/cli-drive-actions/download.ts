@@ -9,11 +9,9 @@ import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { concatAll } from 'fp-ts/Monoid'
-import { MonoidSum } from 'fp-ts/number'
 import micromatch from 'micromatch'
+import * as API from '../../../icloud/drive/api/api-methods'
 import { SchemaEnv } from '../../../icloud/drive/api/deps'
-import * as API from '../../../icloud/drive/api/methods'
 import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { guardFst, isDefined, prependPath } from '../../../icloud/drive/helpers'
@@ -21,7 +19,7 @@ import { loggerIO } from '../../../lib/loggerIO'
 import { printer, printerIO } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { handleLocalFilesConflicts, solvers } from './download/conflict'
+import { handleLocalFilesConflicts, solvers } from './download/download-conflict'
 import {
   createDirsList,
   createEmptyFiles,
@@ -30,10 +28,8 @@ import {
   DownloadTask,
   downloadUrlsPar,
   filterTree,
-} from './download/helpers'
+} from './download/download-helpers'
 import { normalizePath } from './helpers'
-
-const sum = concatAll(MonoidSum)
 
 type Argv = {
   path: string

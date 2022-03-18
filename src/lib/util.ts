@@ -110,3 +110,8 @@ export const isKeyOf = <R extends Record<string, unknown>>(
 
   return Object.keys(commands).includes(command)
 }
+
+import prompts_ from 'prompts'
+import { err } from './errors'
+
+export const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))

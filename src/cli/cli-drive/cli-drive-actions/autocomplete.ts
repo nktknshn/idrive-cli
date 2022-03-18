@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DF from '../../../icloud/drive/drive'
-import { fileName, fileNameAddSlash } from '../../../icloud/drive/requests/types/types'
+import { fileName, fileNameAddSlash } from '../../../icloud/drive/drive-requests/types/types'
 import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
 import { normalizePath } from './helpers'
@@ -23,16 +23,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   logger.debug(`looking for ${childName}* in ${nparentPath} (${lookupDir})`)
 
   const targetDir = lookupDir ? npath : nparentPath
-  /*   pipe(
-    DF.lsdirCachedO(targetDir)(root),
-    DF.chain(_ =>
-      O.isSome(_)
-        ? (new Date().getTime() - _.value.created.getTime()) > 3000
-          ? DF.lsdir(root, targetDir)
-          : DF.of(_.value.content)
-        : DF.lsdir(root, targetDir)
-    ),
-  ) */
+
   return pipe(
     DF.getCachedRoot(trash),
     SRTE.chain(root =>

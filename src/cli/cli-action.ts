@@ -1,19 +1,17 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { AccountLoginResponseBody } from '../icloud/authorization/types'
+import { AccountData } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
+import * as API from '../icloud/drive/api/api-methods'
 import { SchemaEnv } from '../icloud/drive/api/deps'
-import * as API from '../icloud/drive/api/methods'
-import { ApiDepsType, Dep } from '../icloud/drive/api/type'
+import { ApiDepsType } from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
 import { CacheF } from '../icloud/drive/cache/cache-types'
 import * as DF from '../icloud/drive/drive'
-import { RequestEnv } from '../icloud/drive/requests/request'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { err } from '../lib/errors'
-import { Getcode } from '../lib/input'
 import { loggerIO } from '../lib/loggerIO'
 import { apiLogger, logReturnAs } from '../lib/logging'
 import { XXX } from '../lib/types'
@@ -38,7 +36,7 @@ export const loadCache = (deps: { noCache: boolean; cacheFile: string }) =>
 export const saveSession = <S extends { session: ICloudSession }>(state: S) =>
   (deps: { sessionFile: string }) => saveSession2(state.session)(deps.sessionFile)
 
-export const saveAccountData = <S extends { accountData: AccountLoginResponseBody }>(
+export const saveAccountData = <S extends { accountData: AccountData }>(
   state: S,
 ) => (deps: { sessionFile: string }) => _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
 
@@ -72,16 +70,13 @@ const loadAccountData = (
       pipe(
         loggerIO.error(`couldn't read account data. (${e})`),
         RTE.fromIO,
-        RTE.chain(() => API.authorizeStateM3({ session })),
-        // RTE.ask<Use<'authorizeSessionM'>>(),
-        // RTE.chainW(({ authorizeSessionM }) => authorizeSessionM()({ session })),
-        // RTE.map(([accountData, { session }]) => ({ session, accountData })),
+        RTE.chain(() => API.authorizeState({ session })),
       )
     ),
   )
 
 /** read the state and execute an action in the context */
-export function cliActionM2<A, R extends ApiDepsType & SchemaEnv>(
+export function cliAction<A, R extends ApiDepsType & SchemaEnv>(
   action: () => XXX<DF.State, R, A>,
 ): RTE.ReaderTaskEither<
   & R

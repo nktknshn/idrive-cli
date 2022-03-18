@@ -1,16 +1,13 @@
 import { hole, pipe } from 'fp-ts/lib/function'
-import * as TE from 'fp-ts/lib/TaskEither'
-import * as AM from '../../icloud/drive/api'
+import * as RQ from '../../icloud/drive/drive-requests'
 import { parseName } from '../../icloud/drive/helpers'
-import * as RQ from '../../icloud/drive/requests'
 import { apiActionM } from '../api-action'
-import { hierarchyToPath } from '../cli-drive/cli-drive-actions/helpers'
 
 export const retrieveTrashDetails = (argv: {
   sessionFile: string
 }) => {
   return apiActionM(
-    () => pipe(RQ.retrieveTrashDetailsM()),
+    () => pipe(RQ.retrieveTrashDetails()),
   )({ sessionFile: argv.sessionFile })
 }
 
@@ -20,7 +17,7 @@ export const putBackItemsFromTrash = (argv: {
 }) => {
   return apiActionM(
     () =>
-      RQ.putBackItemsFromTrashM([{
+      RQ.putBackItemsFromTrash([{
         drivewsid: argv.drivewsid,
         etag: argv.etag,
       }]),
@@ -35,7 +32,7 @@ export const rename = (argv: {
   apiActionM(
     () =>
       pipe(
-        RQ.renameItemsM({
+        RQ.renameItems({
           items: [
             { drivewsid: argv.drivewsid, ...parseName(argv.name), etag: argv.etag },
           ],

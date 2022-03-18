@@ -6,7 +6,7 @@ import * as O from 'fp-ts/lib/Option'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as DF from '../drive'
+import * as DF from './drive'
 
 /** modify subset of input which is true when `refinement` applied */
 export function modifySubset<A, B extends A, C, D extends A>(

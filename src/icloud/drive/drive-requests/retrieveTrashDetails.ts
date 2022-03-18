@@ -14,7 +14,7 @@ export const scheme = t.tuple(
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
 }
 
-export const retrieveTrashDetailsM = (): AR.AuthorizedRequest<DetailsTrash> =>
+export const retrieveTrashDetails = (): AR.AuthorizedRequest<DetailsTrash> =>
   pipe(
     getRetrieveItemDetailsInFoldersHttpRequest(
       [{ 'drivewsid': 'TRASH_ROOT', 'partialData': false, 'includeHierarchy': true }],
@@ -24,7 +24,7 @@ export const retrieveTrashDetailsM = (): AR.AuthorizedRequest<DetailsTrash> =>
     )),
   )
 
-export const putBackItemsFromTrashM = <S extends AuthorizedState>(
+export const putBackItemsFromTrash = <S extends AuthorizedState>(
   items: [{ drivewsid: string; etag: string }],
 ): AR.AuthorizedRequest<{ items: DriveChildrenItem[] }, S> =>
   AR.basicDriveJsonRequest(

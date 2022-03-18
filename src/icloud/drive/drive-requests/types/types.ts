@@ -6,7 +6,7 @@ import * as T from 'fp-ts/lib/Tree'
 import { TypeOf } from 'io-ts'
 import * as t from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../../lib/util'
-import { DetailsOrFile } from '../../drive'
+import { DetailsOrFile } from '../../../drive/drive'
 import * as types from './types-io'
 
 export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>

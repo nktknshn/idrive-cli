@@ -7,7 +7,7 @@ const renameResponse = t.type({ items: t.array(childrenItem) })
 
 export interface RenameResponse extends t.TypeOf<typeof renameResponse> {}
 
-export const renameItemsM = <S extends AuthorizedState>(
+export const renameItems = <S extends AuthorizedState>(
   { items }: {
     items: { drivewsid: string; etag: string; name: string; extension?: string }[]
   },

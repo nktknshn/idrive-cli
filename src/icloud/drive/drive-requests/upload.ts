@@ -86,7 +86,7 @@ const updateDocumentsRequest = t.type({
   }),
 })
 
-export const uploadM = <S extends AuthorizedState>(
+export const upload = <S extends AuthorizedState>(
   { zone, contentType, filename, size, type }: {
     zone: string
     contentType: string
@@ -106,7 +106,7 @@ export const uploadM = <S extends AuthorizedState>(
     uploadResponse.decode,
   )
 
-export const singleFileUploadM = <S extends AuthorizedState>(
+export const singleFileUpload = <S extends AuthorizedState>(
   { filePath, url }: { filePath: string; url: string },
 ): AR.AuthorizedRequest<SingleFileResponse, S> => {
   const filename = Path.parse(filePath).base
@@ -123,7 +123,7 @@ export const singleFileUploadM = <S extends AuthorizedState>(
   )
 }
 
-export const updateDocumentsM = <S extends AuthorizedState>(
+export const updateDocuments = <S extends AuthorizedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
 ): AR.AuthorizedRequest<UpdateDocumentsResponse, S> =>
   AR.basicDriveJsonRequest(

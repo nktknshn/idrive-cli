@@ -17,22 +17,16 @@ import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/
 import { tryJsonFromResponse } from '../../../lib/http/json'
 import { apiLogger, logg } from '../../../lib/logging'
 import { AuthorizedState } from '../../authorization/authorize'
-import { AccountLoginResponseBody } from '../../authorization/types'
+import { AccountData } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
-import { DriveMEnv } from '../drive'
 
 export type AuthorizedRequest<A, S = AuthorizedState, R = RequestEnv> = ApiRequest<A, S, R>
 
 export type AuthorizationState = {
   session: ICloudSession
-  accountData: AccountLoginResponseBody
+  accountData: AccountData
 }
-
-// export type ReaderRequest<T> = R.Reader<
-//   { client: FetchClientEither; session: ICloudSessionValidated },
-//   TE.TaskEither<Error, H.ResponseWithSession<T>>
-// >
 
 export type RequestEnv = {
   fetch: FetchClientEither

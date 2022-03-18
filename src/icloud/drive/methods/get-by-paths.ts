@@ -1,6 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
@@ -11,14 +11,13 @@ import { NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
-import * as C from '../cache/cache'
 import * as V from '../cache/cache-get-by-path-types'
 import * as DF from '../drive'
+import * as T from '../drive-requests/types/types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { equalsDrivewsId, findInParentFilename as lookupItemByFilename, recordFromTuples } from '../helpers'
-import * as T from '../requests/types/types'
-import { modifySubset } from './modify-subset'
-import * as H from './path-validation'
+import { modifySubset } from '../modify-subset'
+import * as H from '../path-validation'
 
 export const getByPathsH = <R extends T.Root>(
   root: R,

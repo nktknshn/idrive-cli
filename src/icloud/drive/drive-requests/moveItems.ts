@@ -7,7 +7,7 @@ const moveItemResponse = t.type({ items: t.array(childrenItem) })
 
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
-export const moveItemsM = <S extends AuthorizedState>({ items, destinationDrivewsId }: {
+export const moveItems = <S extends AuthorizedState>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
 }): AR.AuthorizedRequest<MoveItemsResponse, S, AR.RequestEnv> =>

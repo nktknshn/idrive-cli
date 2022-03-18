@@ -1,9 +1,6 @@
 import { EmptyObject } from '../../lib/types'
-import { ICloudSession } from '../session/session'
 
-import * as AR from '../drive/requests/request'
-
-export interface AccountLoginResponseBody {
+export interface AccountData {
   dsInfo: DsInfo
   hasMinimumDeviceForPhotosWeb: boolean
   iCDPEnabled: boolean

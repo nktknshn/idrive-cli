@@ -1,27 +1,25 @@
-import { apply, constVoid, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import * as O from 'fp-ts/Option'
 import { Getcode } from '../../lib/input'
 import { authLogger } from '../../lib/logging'
-import * as AR from '../drive/requests/request'
+import * as AR from '../drive/drive-requests/request'
 import { ICloudSession } from '../session/session'
 import { requestAccoutLoginM } from './accoutLogin'
 import { requestSecurityCodeM } from './securitycode'
 import { isHsa2Required, requestSignInM } from './signin'
 import { requestTrustDeviceM } from './trust'
-import { AccountLoginResponseBody } from './types'
+import { AccountData } from './types'
 
 export interface AuthorizedState {
   session: ICloudSession
-  accountData: AccountLoginResponseBody
+  accountData: AccountData
 }
 
 export type AuthorizeEnv = AR.RequestEnv & { getCode: Getcode }
 
-export function authorizeSessionM<S extends AR.BasicState>(): AR.ApiRequest<
-  AccountLoginResponseBody,
+export function authorizeSession<S extends AR.BasicState>(): AR.ApiRequest<
+  AccountData,
   S,
   AuthorizeEnv
 > {
@@ -43,13 +41,13 @@ export function authorizeSessionM<S extends AR.BasicState>(): AR.ApiRequest<
   )
 }
 
-export function authorizeStateM3<
+export function authorizeState<
   S extends AR.BasicState,
->(state: S): RTE.ReaderTaskEither<AuthorizeEnv, Error, { accountData: AccountLoginResponseBody } & S> {
+>(state: S): RTE.ReaderTaskEither<AuthorizeEnv, Error, { accountData: AccountData } & S> {
   authLogger.debug('authorizeSession')
 
   return pipe(
-    authorizeSessionM<S>()(state),
+    authorizeSession<S>()(state),
     RTE.map(([accountData, state]) => ({ ...state, accountData })),
   )
 }

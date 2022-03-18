@@ -1,2 +1,3 @@
-export { createApiDeps as basicApi } from './deps'
-export { ApiDepsType as ApiType, Dep as Use } from './type'
+export * as API from './api-methods'
+export { createApiDeps } from './deps'
+export { ApiDepsType, Dep } from './type'

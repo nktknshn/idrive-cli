@@ -1,4 +1,4 @@
-import * as T from '../requests/types/types'
+import * as T from '../../drive/drive-requests/types/types'
 
 /** Cache is just a key-val storage for files info */
 export interface CacheF {

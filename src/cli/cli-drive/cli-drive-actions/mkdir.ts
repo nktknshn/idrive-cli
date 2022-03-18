@@ -3,7 +3,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as API from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/api-methods'
 import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { err } from '../../../lib/errors'
@@ -11,7 +11,7 @@ import { logger } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { normalizePath } from './helpers'
-import { showDetailsInfo } from './ls/printing'
+import { showDetailsInfo } from './ls/ls-printing'
 
 type Deps = DF.DriveMEnv & Dep<'createFolders'>
 

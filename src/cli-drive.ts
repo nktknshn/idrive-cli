@@ -1,14 +1,11 @@
 import { pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Reader'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import { cliActionM2 } from './cli/cli-action'
+import { cliAction } from './cli/cli-action'
 import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { defaultApiEnv } from './defaults'
 import { createApiDeps } from './icloud/drive/api/deps'
-import { failingFetch } from './lib/http/fetch-client'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
 
@@ -63,7 +60,7 @@ async function main() {
 
   const commandFunction = commands[command]
 
-  const deps = createApiDeps({
+  const apideps = createApiDeps({
     fetch: defaultApiEnv.fetch,
     // fetch: failingFetch(70),
     getCode: defaultApiEnv.getCode,
@@ -87,8 +84,8 @@ async function main() {
 
   await pipe(
     pipe(
-      { ...argv, ...deps },
-      cliActionM2(() => commandFunction(argv)),
+      { ...argv, ...apideps },
+      cliAction(() => commandFunction(argv)),
     ),
     TE.fold(printer.errorTask, printer.printTask),
   )()

@@ -5,25 +5,16 @@ import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
-import prompts_ from 'prompts'
-import * as API from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/api-methods'
 import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import * as H from '../../../icloud/drive/drive/path-validation'
-import { findInParentFilename2, parseName } from '../../../icloud/drive/helpers'
-import {
-  DetailsDocwsRoot,
-  DriveChildrenItemFile,
-  fileName,
-  isFile,
-  isFolderLike,
-  NonRootDetails,
-} from '../../../icloud/drive/requests/types/types'
-import { err } from '../../../lib/errors'
+import * as T from '../../../icloud/drive/drive-requests/types/types'
+import { findInParentFilename2, getDrivewsid, parseName } from '../../../icloud/drive/helpers'
+import * as H from '../../../icloud/drive/path-validation'
 import { NEA, XXX } from '../../../lib/types'
-import { Path } from '../../../lib/util'
-import { fstat } from './download/helpers'
+import { Path, prompts } from '../../../lib/util'
+import { fstat } from './download/download-helpers'
 import { normalizePath } from './helpers'
 
 type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
@@ -33,8 +24,6 @@ type Deps =
   & Dep<'renameItems'>
   & Dep<'moveItemsToTrash'>
   & API.UploadMethodDeps
-
-const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
 export const ask = ({ message }: { message: string }) =>
   pipe(
@@ -102,7 +91,7 @@ const uploadToFolder = (
     overwright:
       | boolean
       | AskingFunc
-    dst: DetailsDocwsRoot | NonRootDetails
+    dst: T.DetailsDocwsRoot | T.NonRootDetails
     src: string
   },
 ): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
@@ -111,7 +100,7 @@ const uploadToFolder = (
       dst,
       Path.basename(src),
     ),
-    O.filter(isFile),
+    O.filter(T.isFile),
   )
 
   if (isSome(actualFile)) {
@@ -123,7 +112,7 @@ const uploadToFolder = (
     else {
       return pipe(
         overwright({
-          message: `overwright ${fileName(actualFile.value)}?`,
+          message: `overwright ${T.fileName(actualFile.value)}?`,
         }),
         SRTE.fromTaskEither,
         SRTE.chain(overwright => uploadToFolder({ src, dst, overwright })),
@@ -137,11 +126,10 @@ const uploadToFolder = (
 }
 
 const handleSingleFileUpload = (
-  { src, dst, overwright, api }: {
-    dst: V.GetByPathResult<DetailsDocwsRoot>
+  { src, dst, overwright }: {
+    dst: V.GetByPathResult<T.DetailsDocwsRoot>
     src: string
     overwright: boolean
-    api: Deps
   },
 ): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
   // if the target path is presented at icloud drive
@@ -149,7 +137,7 @@ const handleSingleFileUpload = (
     const dstitem = V.target(dst)
 
     // if it's a folder
-    if (isFolderLike(dstitem)) {
+    if (T.isFolderLike(dstitem)) {
       return uploadToFolder({ src, dst: dstitem, overwright })
     }
     // if it's a file and the overwright flag set
@@ -168,7 +156,7 @@ const handleSingleFileUpload = (
     const dstitem = NA.last(dst.path.details)
     const fname = NA.head(dst.path.rest)
 
-    if (isFolderLike(dstitem)) {
+    if (T.isFolderLike(dstitem)) {
       return pipe(
         API.upload<DF.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         SRTE.map(constVoid),
@@ -179,14 +167,10 @@ const handleSingleFileUpload = (
   return DF.errS(`invalid destination path: ${H.showMaybeValidPath(dst.path)}`)
 }
 
-const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
-  return `${type}::${zone}::${document_id}`
-}
-
 const uploadOverwrighting = (
   { src, parent, dstitem }: {
-    parent: DetailsDocwsRoot | NonRootDetails
-    dstitem: DriveChildrenItemFile
+    parent: T.DetailsDocwsRoot | T.NonRootDetails
+    dstitem: T.DriveChildrenItemFile
     src: string
   },
 ): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
@@ -204,14 +188,14 @@ const uploadOverwrighting = (
         trash: true,
       })
     }),
-    SRTE.chainW(({ uploadResult, removeResult }) => {
+    SRTE.chainW(({ uploadResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
         API.moveItemsToTrash<DF.State>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,
-            ...parseName(fileName(dstitem)),
+            ...parseName(T.fileName(dstitem)),
           }],
         }),
         SRTE.map(constVoid),

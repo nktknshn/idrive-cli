@@ -27,7 +27,7 @@ export interface DownloadResponseBody {
   double_etag: string
 }
 
-export function downloadM<S extends AuthorizedState>(
+export function download<S extends AuthorizedState>(
   { docwsid: documentId, zone }: {
     docwsid: string
     zone: string
@@ -44,7 +44,7 @@ export function downloadM<S extends AuthorizedState>(
   )
 }
 
-export function downloadBatchM<S extends AuthorizedState>(
+export function downloadBatch<S extends AuthorizedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
 ): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestEnv> {
   return AR.basicDriveJsonRequest(

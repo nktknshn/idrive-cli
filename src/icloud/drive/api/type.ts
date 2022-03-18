@@ -1,17 +1,24 @@
+import { pipe } from 'fp-ts/lib/function'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { NEA, XX } from '../../../lib/types'
 import { AuthorizedState } from '../../authorization/authorize'
-import { AccountLoginResponseBody } from '../../authorization/types'
-import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
-import { DownloadResponseBody } from '../requests/download'
-import { MoveItemsResponse } from '../requests/moveItems'
-import { BasicState } from '../requests/request'
-import * as T from './../requests/types/types'
-import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
+import { AccountData } from '../../authorization/types'
+import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../../drive/drive-requests'
+import { DownloadResponseBody } from '../../drive/drive-requests/download'
+import { MoveItemsResponse } from '../../drive/drive-requests/moveItems'
+import { BasicState } from '../../drive/drive-requests/request'
+import * as T from '../../drive/drive-requests/types/types'
+import {
+  SingleFileResponse,
+  UpdateDocumentsRequest,
+  UpdateDocumentsResponse,
+  UploadResponse,
+} from '../../drive/drive-requests/upload'
 
 export type Dep<K extends keyof ApiDepsType> = Record<K, ApiDepsType[K]>
 
-/** basic api functions and helpers with attached dependencies */
+/** basic api functions and also helpers with attached dependencies */
 export type ApiDepsType = {
   retrieveItemDetailsInFolders: <S extends AuthorizedState>(
     { drivewsids }: { drivewsids: NEA<string> },
@@ -79,5 +86,16 @@ export type ApiDepsType = {
 
   fetchClient: FetchClientEither
 
-  authorizeSession: <S extends BasicState>() => XX<S, AccountLoginResponseBody>
+  authorizeSession: <S extends BasicState>() => XX<S, AccountData>
 }
+
+export const useApiDepRequest = <R>() =>
+  <Args extends unknown[], S extends AuthorizedState, R1 extends R, A>(
+    f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R1, Error, A>,
+  ) =>
+    (...args: Args) =>
+      pipe(
+        SRTE.ask<S, R>(),
+        SRTE.map(f),
+        SRTE.chain(f => f(...args)),
+      )

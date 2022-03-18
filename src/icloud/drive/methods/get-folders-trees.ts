@@ -10,7 +10,7 @@ import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import * as DF from '../drive'
-import * as T from '../requests/types/types'
+import * as T from '../drive-requests/types/types'
 
 export type FolderTreeDeep<T extends T.Details> = {
   readonly details: T

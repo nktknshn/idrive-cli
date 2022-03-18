@@ -13,37 +13,39 @@ import {
   target,
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
+import * as T from '../../../icloud/drive/drive-requests/types/types'
+import { findInParentGlob, guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
 import {
   addPathToFolderTree,
   filterTree,
   showTreeWithFiles,
   treeWithFiles,
-} from '../../../icloud/drive/drive/get-folders-trees'
-import { findInParentGlob, guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
-import * as T from '../../../icloud/drive/requests/types/types'
+} from '../../../icloud/drive/methods/get-folders-trees'
 import { logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 // import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
-import { showDetailsInfo, showFileInfo } from './ls/printing'
+import { showDetailsInfo, showFileInfo } from './ls/ls-printing'
+
+type Argv = {
+  recursive: boolean
+  paths: string[]
+  fullPath: boolean
+  listInfo: boolean
+  update: boolean
+  trash: boolean
+  depth: number
+  raw: boolean
+  glob: boolean
+  cached: boolean
+  etag: boolean
+  header: boolean
+  tree: boolean
+}
 
 export const listUnixPath2 = (
-  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: {
-    recursive: boolean
-    paths: string[]
-    fullPath: boolean
-    listInfo: boolean
-    update: boolean
-    trash: boolean
-    depth: number
-    raw: boolean
-    glob: boolean
-    cached: boolean
-    etag: boolean
-    header: boolean
-    tree: boolean
-  },
+  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
 ) => {
   assert(A.isNonEmpty(paths))
 

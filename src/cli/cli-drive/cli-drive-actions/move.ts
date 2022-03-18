@@ -1,15 +1,15 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as API from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/api-methods'
 import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import * as H from '../../../icloud/drive/drive/path-validation'
+import { RenameResponse } from '../../../icloud/drive/drive-requests'
+import { MoveItemsResponse } from '../../../icloud/drive/drive-requests/moveItems'
+import * as T from '../../../icloud/drive/drive-requests/types/types'
 import { parseName } from '../../../icloud/drive/helpers'
-import { RenameResponse } from '../../../icloud/drive/requests'
-import { MoveItemsResponse } from '../../../icloud/drive/requests/moveItems'
-import * as T from '../../../icloud/drive/requests/types/types'
+import * as H from '../../../icloud/drive/path-validation'
 import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
@@ -111,22 +111,6 @@ const caseMoveAndRename = (
   dst: (T.Details | T.DetailsTrash),
   name: string,
 ): XXX<DF.State, Deps, RenameResponse> => {
-  // return pipe(
-  //   API.moveItems<DF.DriveMState>(
-  //     {
-  //       destinationDrivewsId: dst.drivewsid,
-  //       items: [{ drivewsid: src.drivewsid, etag: src.etag }],
-  //     },
-  //   ),
-  //   DF.chain(() =>
-  //     API.renameItems({
-  //       items: [
-  //         { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
-  //       ],
-  //     })
-  //   ),
-  // )
-
   return pipe(
     API.moveItems<DF.State>(
       {

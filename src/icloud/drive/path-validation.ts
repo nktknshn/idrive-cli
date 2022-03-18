@@ -3,8 +3,8 @@ import { Eq } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { NEA } from '../../../lib/types'
-import * as T from '../requests/types/types'
+import { NEA } from '../../lib/types'
+import * as T from './drive-requests/types/types'
 
 /** Represents a chain of nested folders binded to root R */
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]

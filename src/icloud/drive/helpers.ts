@@ -7,8 +7,8 @@ import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import micromatch from 'micromatch'
 import Path from 'path'
+import * as T from '../drive/drive-requests/types/types'
 import { DetailsOrFile } from './drive'
-import * as T from './requests/types/types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)
@@ -152,3 +152,7 @@ export const guardThird = <A, B, C, F extends C>(refinement: Refinement<C, F>) =
 export const isDefined = <A>(a: A | undefined): a is A => !!a
 
 export const prependPath = (parent: string) => (kid: string) => Path.join(parent, kid)
+
+export const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
+  return `${type}::${zone}::${document_id}`
+}

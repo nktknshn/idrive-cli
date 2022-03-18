@@ -1,1 +1,1 @@
-export { authorizeSessionM } from './authorize'
+export { authorizeSession as authorizeSessionM } from './authorize'

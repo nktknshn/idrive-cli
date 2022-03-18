@@ -14,17 +14,17 @@ import {
   TypeDecodingError,
 } from '../../lib/errors'
 import { tryReadJsonFile } from '../../lib/files'
-import * as AR from '../drive/requests/request'
+import * as AR from '../drive/drive-requests/request'
 import { ICloudSessionWithSessionToken } from '../session/session'
-import { AccountLoginResponseBody } from './types'
+import { AccountData } from './types'
 
-const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>
+const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountData>
 
-const validateResponseJson = (json: unknown): json is AccountLoginResponseBody => isRight(decode(json))
+const validateResponseJson = (json: unknown): json is AccountData => isRight(decode(json))
 
 // export type AccountLoginResponseBodyUnsafe = Partial<AccountLoginResponseBody>
 
-export function validateSessionM(): AR.ApiRequest<O.Option<AccountLoginResponseBody>, {
+export function validateSessionM(): AR.ApiRequest<O.Option<AccountData>, {
   session: ICloudSessionWithSessionToken
 }> {
   return pipe(
@@ -35,7 +35,7 @@ export function validateSessionM(): AR.ApiRequest<O.Option<AccountLoginResponseB
     })),
     AR.handleResponse(flow(
       AR.basicJsonResponse(
-        v => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>,
+        v => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountData>,
       ),
     )),
     AR.map(O.some),
@@ -48,7 +48,7 @@ export function validateSessionM(): AR.ApiRequest<O.Option<AccountLoginResponseB
 }
 
 export function saveAccountData(
-  accountData: AccountLoginResponseBody,
+  accountData: AccountData,
   accountDataFilePath: string,
 ): TE.TaskEither<Error, void> {
   return TE.tryCatch(
@@ -61,7 +61,7 @@ export function readAccountData(
   accountDataFilePath: string,
 ): TE.TaskEither<
   FileReadingError | JsonParsingError | BufferDecodingError | TypeDecodingError,
-  AccountLoginResponseBody
+  AccountData
 > {
   return pipe(
     tryReadJsonFile(accountDataFilePath),

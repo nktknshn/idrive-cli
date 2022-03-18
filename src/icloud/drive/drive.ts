@@ -10,20 +10,20 @@ import { err } from '../../lib/errors'
 import { logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 import { AuthorizedState } from '../authorization/authorize'
-import * as API from './api/methods'
+import * as T from '../drive/drive-requests/types/types'
+import { rootDrivewsid, trashDrivewsid } from '../drive/drive-requests/types/types-io'
+import * as API from './api/api-methods'
 import { Dep } from './api/type'
 import * as C from './cache/cache'
 import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
-import { getByPaths, getByPathsH } from './drive/get-by-paths'
-import { getFoldersTrees } from './drive/get-folders-trees'
-import { modifySubset } from './drive/modify-subset'
-import { Hierarchy } from './drive/path-validation'
-import { searchGlobs } from './drive/search-globs'
 import { ItemIsNotFolderError, NotFoundError } from './errors'
 import { getMissedFound } from './helpers'
-import * as T from './requests/types/types'
-import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
+import { getByPaths, getByPathsH } from './methods/get-by-paths'
+import { getFoldersTrees } from './methods/get-folders-trees'
+import { searchGlobs } from './methods/search-globs'
+import { modifySubset } from './modify-subset'
+import { Hierarchy } from './path-validation'
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
@@ -38,7 +38,6 @@ export type DriveM<A, S extends State = State> = SRTE.StateReaderTaskEither<S, D
 const { map, chain, of, filterOrElse } = SRTE
 
 export const ado = sequenceS(SRTE.Apply)
-// const FolderLikeItemM = A.getMonoid<T.FolderLikeItem>()
 
 export const readEnv = sequenceS(SRTE.Apply)({
   state: SRTE.get<State, DriveMEnv>(),
@@ -54,11 +53,7 @@ export const logS = flow(logReturnS, map)
 export const errS = <A>(s: string): DriveM<A> =>
   readEnvS(
     ({ state }) => SRTE.left(err(s)),
-    // ({ state }) => SRTE.left({ error: err(s), state }),
   )
-
-// const putSession = (session: AuthorizedState): DriveM<void> =>
-//   readEnvS(({ state }) => SRTE.put({ ...state, ...session }))
 
 const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
 
@@ -97,7 +92,7 @@ const putFoundMissed = ({ found, missed }: {
 }) =>
   pipe(
     putDetailss(found),
-    chain(() => removeByIds(missed)),
+    chain(() => cacheRemoveByIds(missed)),
   )
 
 const putDetailss = (detailss: T.Details[]): DriveM<void> =>
@@ -110,7 +105,7 @@ const putDetailss = (detailss: T.Details[]): DriveM<void> =>
     ),
   )
 
-export const removeByIds = (drivewsids: string[]): DriveM<void> => modifyCache(C.removeByIds(drivewsids))
+export const cacheRemoveByIds = (drivewsids: string[]): DriveM<void> => modifyCache(C.removeByIds(drivewsids))
 
 /** retrieve root from cache or from api if it's missing from cache and chain a computation*/
 export const chainRoot = <A>(

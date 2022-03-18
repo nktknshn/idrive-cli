@@ -6,7 +6,7 @@ export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
 }
 
-export const moveItemsToTrashM = <S extends AuthorizedState>({ items, trash = false }: {
+export const moveItemsToTrash = <S extends AuthorizedState>({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
 }): AR.AuthorizedRequest<MoveItemToTrashResponse, S> =>

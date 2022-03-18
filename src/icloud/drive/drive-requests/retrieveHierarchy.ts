@@ -5,7 +5,7 @@ import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetail
 import { DriveDetailsPartialWithHierarchy } from './types/types'
 import { driveDetailsWithHierarchyPartial } from './types/types-io'
 
-export const retrieveHierarchyM = (
+export const retrieveHierarchy = (
   { drivewsids }: { drivewsids: string[] },
 ): AR.AuthorizedRequest<DriveDetailsPartialWithHierarchy[]> =>
   pipe(

@@ -5,10 +5,10 @@ import * as t from 'io-ts'
 import { defaultCountryCode } from '../../config'
 import { err } from '../../lib/errors'
 import { logger } from '../../lib/logging'
-import * as AR from '../drive/requests/request'
-import { AccountLoginResponseBody } from './types'
+import * as AR from '../drive/drive-requests/request'
+import { AccountData } from './types'
 
-export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<AccountLoginResponseBody, S> {
+export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<AccountData, S> {
   logger.debug('requestAccoutLogin')
 
   return pipe(
@@ -40,7 +40,7 @@ export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<Ac
         })),
         AR.handleResponse(flow(
           AR.validateHttpResponse(),
-          AR.decodeJson(v => t.type({ appsOrder: t.unknown }).decode(v) as t.Validation<AccountLoginResponseBody>),
+          AR.decodeJson(v => t.type({ appsOrder: t.unknown }).decode(v) as t.Validation<AccountData>),
           AR.applyCookies(),
           AR.map(_ => _.decoded),
         )),

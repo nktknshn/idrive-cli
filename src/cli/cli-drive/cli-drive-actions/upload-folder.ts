@@ -11,22 +11,22 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
-import * as API from '../../../icloud/drive/api/methods'
+import * as API from '../../../icloud/drive/api/api-methods'
 import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import { findInParentFilename } from '../../../icloud/drive/helpers'
 import {
   DetailsAppLibrary,
   DetailsDocwsRoot,
   DetailsFolder,
   isFolderLike,
-} from '../../../icloud/drive/requests/types/types'
+} from '../../../icloud/drive/drive-requests/types/types'
+import { findInParentFilename } from '../../../icloud/drive/helpers'
 import { err } from '../../../lib/errors'
 import { printerIO } from '../../../lib/logging'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { getDirectoryStructure, LocalTreeElement, walkDirRel } from './download/helpers'
+import { getDirectoryStructure, LocalTreeElement, walkDirRel } from './download/download-helpers'
 import { normalizePath } from './helpers'
 
 type Argv = {
@@ -39,7 +39,7 @@ type Argv = {
 }
 
 type Deps =
-  & Dep<'retrieveItemDetailsInFolders'>
+  & DF.DriveMEnv
   & Dep<'renameItems'>
   & Dep<'createFolders'>
   & Dep<'downloadBatch'>
@@ -197,13 +197,13 @@ const uploadToNewFolder = (
   task: UploadTask,
 ) => SRTE.StateReaderTaskEither<
   DF.State,
-  DF.DriveMEnv & Dep<'upload'> & Dep<'singleFileUpload'> & Dep<'updateDocuments'> & Dep<'createFolders'>,
+  Deps,
   Error,
   NEA<UploadResult>[]
 > =>
   (task: UploadTask) =>
     pipe(
-      SRTE.of<DF.State, DF.DriveMEnv & API.UploadMethodDeps & Dep<'createFolders'>, Error, UploadTask>(
+      SRTE.of<DF.State, Deps, Error, UploadTask>(
         task,
       ),
       SRTE.bindTo('task'),
