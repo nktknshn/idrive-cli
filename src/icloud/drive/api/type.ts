@@ -1,9 +1,6 @@
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { Readable } from 'stream'
-import { FetchClient, FetchClientEither } from '../../../lib/http/fetch-client'
-import { NEA, XX, XXX } from '../../../lib/types'
-import { AuthorizedState, authorizeSessionM } from '../../authorization/authorize'
+import { FetchClientEither } from '../../../lib/http/fetch-client'
+import { NEA, XX } from '../../../lib/types'
+import { AuthorizedState } from '../../authorization/authorize'
 import { AccountLoginResponseBody } from '../../authorization/types'
 import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
 import { DownloadResponseBody } from '../requests/download'
@@ -12,7 +9,8 @@ import { BasicState } from '../requests/request'
 import * as T from './../requests/types/types'
 import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
 
-export type Use<K extends keyof ApiDepsType> = Record<K, ApiDepsType[K]>
+export type Dep<K extends keyof ApiDepsType> = Record<K, ApiDepsType[K]>
+
 /** basic api functions and helpers with attached dependencies */
 export type ApiDepsType = {
   retrieveItemDetailsInFolders: <S extends AuthorizedState>(

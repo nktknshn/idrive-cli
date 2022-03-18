@@ -7,6 +7,7 @@ export const defaultApiEnv = {
   getCode: () => input({ prompt: 'code: ' }),
   catchSessErrors: true,
   catchFetchErrors: true,
+  retryDelay: 200,
 }
 
 export const tempDir = `/tmp/`

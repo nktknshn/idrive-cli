@@ -1,12 +1,5 @@
-import { pipe } from 'fp-ts/lib/function'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { FetchClientEither } from '../../../lib/http/fetch-client'
-import { apiLogger } from '../../../lib/logging'
-import { isObjectWithOwnProperty } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
-import { buildRequest } from '../../session/session-http'
-import { expectJson, ResponseWithSession } from './http'
 import * as AR from './request'
 
 export interface MoveItemToTrashResponse {

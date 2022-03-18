@@ -1,5 +1,6 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as t from 'io-ts'
 import { defaultCountryCode } from '../../config'
 import { err } from '../../lib/errors'
@@ -12,13 +13,12 @@ export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<Ac
 
   return pipe(
     AR.readEnv<S>(),
-    AR.chain(({ state }) =>
+    SRTE.chainW(({ state }) =>
       pipe(
-        state.session.sessionToken,
-        AR.fromOption(() => err(`session missing sessionToken`)),
+        AR.fromOption(() => err(`session missing sessionToken`))(state.session.sessionToken),
       )
     ),
-    AR.chain(sessionToken =>
+    SRTE.chain(sessionToken =>
       pipe(
         AR.buildRequestC<S>((
           { state: { session } },

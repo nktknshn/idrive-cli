@@ -12,9 +12,9 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { concatAll } from 'fp-ts/Monoid'
 import { MonoidSum } from 'fp-ts/number'
 import micromatch from 'micromatch'
-import { SchemaEnv } from '../../../icloud/drive/api/basic'
+import { SchemaEnv } from '../../../icloud/drive/api/deps'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { guardFst, isDefined, prependPath } from '../../../icloud/drive/helpers'
 import { loggerIO } from '../../../lib/loggerIO'
@@ -46,8 +46,8 @@ type Argv = {
 
 type Deps =
   & DF.DriveMEnv
-  & Use<'downloadBatch'>
-  & Use<'fetchClient'>
+  & Dep<'downloadBatch'>
+  & Dep<'fetchClient'>
   & SchemaEnv
 
 type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
@@ -248,7 +248,7 @@ const createEmpties = ({ empties }: DownloadTask) =>
 
 const downloadICloudFilesChunked = (
   { chunkSize = 5 },
-): DownloadICloudFilesFunc<Use<'downloadBatch'> & Use<'fetchClient'>> =>
+): DownloadICloudFilesFunc<Dep<'downloadBatch'> & Dep<'fetchClient'>> =>
   ({ downloadable }) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
@@ -281,7 +281,7 @@ const downloadChunkPar = () =>
     chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
   ): XXX<
     DF.State,
-    Use<'downloadBatch'> & Use<'fetchClient'>,
+    Dep<'downloadBatch'> & Dep<'fetchClient'>,
     [E.Either<Error, void>, readonly [url: string, path: string]][]
   > => {
     return pipe(

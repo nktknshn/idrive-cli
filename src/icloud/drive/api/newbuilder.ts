@@ -19,7 +19,7 @@ import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../
 import { headers } from '../../session/session-http-headers'
 import { getMissedFound } from '../helpers'
 import * as RQ from '../requests'
-import { reporter } from '../requests/http'
+import { reporter } from '../requests/request'
 import { AuthorizedRequest, BasicState, RequestEnv } from '../requests/request'
 import * as T from '../requests/types/types'
 

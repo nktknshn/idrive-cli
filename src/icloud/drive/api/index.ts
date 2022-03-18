@@ -1,2 +1,2 @@
-export { createApiDeps as basicApi } from './basic'
-export { ApiDepsType as ApiType, Use } from './type'
+export { createApiDeps as basicApi } from './deps'
+export { ApiDepsType as ApiType, Dep as Use } from './type'

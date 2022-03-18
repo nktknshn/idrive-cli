@@ -1,6 +1,7 @@
 import { isRight } from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as fs from 'fs/promises'
 import * as t from 'io-ts'
@@ -41,7 +42,7 @@ export function validateSessionM(): AR.ApiRequest<O.Option<AccountLoginResponseB
     AR.orElse((e) =>
       InvalidGlobalSessionError.is(e)
         ? AR.of(O.none)
-        : AR.leftE(e)
+        : SRTE.left(e)
     ),
   )
 }

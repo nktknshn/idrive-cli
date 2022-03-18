@@ -3,8 +3,8 @@ import * as A from 'fp-ts/lib/Array'
 import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TR from 'fp-ts/lib/Tree'
 import { swap } from 'fp-ts/lib/Tuple'
+import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import {
   GetByPathResult,
@@ -18,16 +18,14 @@ import {
   filterTree,
   showTreeWithFiles,
   treeWithFiles,
-  zipFolderTreeWithPath,
 } from '../../../icloud/drive/drive/get-folders-trees'
 import { findInParentGlob, guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/requests/types/types'
-import { err } from '../../../lib/errors'
+import { logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 // import { cliActionM } from '../../cli-action'
-import { Env } from '../../types'
-import { NormalizedPath, normalizePath } from './helpers'
+import { normalizePath } from './helpers'
 import { showDetailsInfo, showFileInfo } from './ls/printing'
 
 export const listUnixPath2 = (
@@ -139,11 +137,6 @@ export const listUnixPath2 = (
   )
 }
 
-import * as O from 'fp-ts/Option'
-import { logger } from '../../../lib/logging'
-import { getDirectoryStructure } from './download/helpers'
-import { getSubdirsPerParent } from './upload-folder'
-
 const recursivels = ({ paths, depth, tree }: {
   paths: NA.NonEmptyArray<string>
   depth: number
@@ -159,8 +152,8 @@ const recursivels = ({ paths, depth, tree }: {
 
   if (tree) {
     return pipe(
-      DF.Do,
-      SRTE.bind('root', DF.getRoot),
+      DF.getRoot(),
+      SRTE.bindTo('root'),
       SRTE.chain(({ root }) => DF.getByPathsFolders(root, basepaths)),
       SRTE.chain(dirs => DF.getFoldersTrees(dirs, depth)),
       SRTE.map(NA.zip(scanned)),

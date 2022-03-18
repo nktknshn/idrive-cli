@@ -1,64 +1,61 @@
 import { apply, flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { FetchClientEither, HttpResponse } from '../../../lib/http/fetch-client'
+import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
 import { AuthorizedState } from '../../authorization/authorize'
-import { ICloudSession } from '../../session/session'
-import { applyCookiesToSession, buildRequest } from '../../session/session-http'
+import { buildRequest } from '../../session/session-http'
 import {
   applyCookiesFromResponse,
-  applyToSession2,
   decodeJson,
   filterStatus,
   ResponseHandler,
   ResponseWithSession,
   returnDecodedJson,
   withResponse,
-} from './http'
-import * as AR from './request'
+} from './request'
 import { DriveItemDetails } from './types/types'
 import { itemDetails } from './types/types-io'
 
-function retrieveItemDetailsGeneric<R>(
-  client: FetchClientEither,
-  { accountData, session }: AuthorizedState,
-  props: { items: { drivewsid: string }[] },
-  app: ResponseHandler<R>,
-): TE.TaskEither<Error, ResponseWithSession<R>> {
-  apiLogger.debug(`retrieveItemDetails: [${props.items.map(_ => _.drivewsid)}]`)
+// function retrieveItemDetailsGeneric<R>(
+//   client: FetchClientEither,
+//   { accountData, session }: AuthorizedState,
+//   props: { items: { drivewsid: string }[] },
+//   app: ResponseHandler<R>,
+// ): TE.TaskEither<Error, ResponseWithSession<R>> {
+//   apiLogger.debug(`retrieveItemDetails: [${props.items.map(_ => _.drivewsid)}]`)
 
-  return pipe(
-    session,
-    buildRequest(
-      'POST',
-      `${accountData.webservices.drivews.url}/retrieveItemDetails?dsid=${accountData.dsInfo.dsid}`,
-      { addClientInfo: true, data: props },
-    ),
-    client,
-    app(session),
-  )
-}
+//   return pipe(
+//     session,
+//     buildRequest(
+//       'POST',
+//       `${accountData.webservices.drivews.url}/retrieveItemDetails?dsid=${accountData.dsInfo.dsid}`,
+//       { addClientInfo: true, data: props },
+//     ),
+//     client,
+//     app(session),
+//   )
+// }
 
-const scheme = t.type({
-  items: t.array(
-    itemDetails,
-  ),
-})
+// const scheme = t.type({
+//   items: t.array(
+//     itemDetails,
+//   ),
+// })
 
-const handleResponse = flow(
-  withResponse,
-  filterStatus(),
-  decodeJson(scheme.decode),
-  applyCookiesFromResponse(),
-  returnDecodedJson(),
-)
+// const handleResponse = flow(
+//   withResponse,
+//   filterStatus(),
+//   decodeJson(scheme.decode),
+//   applyCookiesFromResponse(),
+//   returnDecodedJson(),
+// )
 
-const handle: ResponseHandler<{ items: DriveItemDetails[] }> = (session) =>
-  flow(
-    TE.map(handleResponse),
-    TE.chain(apply(session)),
-  )
+// const handle: ResponseHandler<{ items: DriveItemDetails[] }> = (session) =>
+//   flow(
+//     TE.map(handleResponse),
+//     TE.chain(apply(session)),
+//   )
 
 // function retrieveItemDetails(
 //   client: FetchClientEither,

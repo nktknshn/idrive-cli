@@ -3,21 +3,17 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
-import { defaultApiEnv } from '../../../defaults'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { cliActionM2 } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo } from './ls/printing'
 
-type Deps = DF.DriveMEnv & Use<'createFolders'>
+type Deps = DF.DriveMEnv & Dep<'createFolders'>
 
 export const mkdir = (
   { path }: { path: string },

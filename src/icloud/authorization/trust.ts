@@ -27,8 +27,7 @@ export const requestTrustDeviceM = <S extends AR.BasicState>(): AR.ApiRequest<Tr
       AR.validateHttpResponse({ validStatuses: [200, 204] }),
       SRTE.bind('trustToken', ({ httpResponse }) =>
         pipe(
-          getTrustToken(httpResponse),
-          AR.fromOption(() => err('Missing trust token')),
+          AR.fromOption(() => err('Missing trust token'))(getTrustToken(httpResponse)),
         )),
       AR.applyToSession(({ httpResponse, trustToken }) =>
         flow(

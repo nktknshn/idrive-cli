@@ -10,7 +10,7 @@ import { tempDir } from '../../../defaults'
 // import * as NM from '../../../icloud/drive/api/methods'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { consumeStreamToString } from '../../../icloud/drive/requests/download'
 import { isFile } from '../../../icloud/drive/requests/types/types'
@@ -22,11 +22,11 @@ import { upload } from '.'
 import { normalizePath } from './helpers'
 
 type Deps =
-  & Use<'retrieveItemDetailsInFolders'>
-  & Use<'download'>
-  & Use<'fetchClient'>
-  & Use<'renameItems'>
-  & Use<'moveItemsToTrash'>
+  & Dep<'retrieveItemDetailsInFolders'>
+  & Dep<'download'>
+  & Dep<'fetchClient'>
+  & Dep<'renameItems'>
+  & Dep<'moveItemsToTrash'>
   & API.UploadMethodDeps
 
 export const edit = (

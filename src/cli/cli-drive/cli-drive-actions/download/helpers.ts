@@ -12,7 +12,7 @@ import * as fs from 'fs/promises'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
 import * as API from '../../../../icloud/drive/api/methods'
-import { Use } from '../../../../icloud/drive/api/type'
+import { Dep } from '../../../../icloud/drive/api/type'
 import { FolderTree, zipFolderTreeWithPath } from '../../../../icloud/drive/drive/get-folders-trees'
 import { guardSnd } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/requests/types/types'
@@ -85,10 +85,10 @@ export type DownloadUrlToFile<R> = (
   destpath: string,
 ) => RTE.ReaderTaskEither<R, Error, void>
 
-export const downloadUrlToFile: DownloadUrlToFile<Use<'fetchClient'>> = (
+export const downloadUrlToFile: DownloadUrlToFile<Dep<'fetchClient'>> = (
   url: string,
   destpath: string,
-): RTE.ReaderTaskEither<Use<'fetchClient'>, Error, void> =>
+): RTE.ReaderTaskEither<Dep<'fetchClient'>, Error, void> =>
   pipe(
     loggerIO.debug(`getting ${destpath}`),
     RTE.fromIO,
@@ -102,7 +102,7 @@ export const downloadUrlToFile: DownloadUrlToFile<Use<'fetchClient'>> = (
 export const downloadUrlsPar = (
   urlDest: Array<readonly [url: string, dest: string]>,
 ): RT.ReaderTask<
-  Use<'fetchClient'>,
+  Dep<'fetchClient'>,
   [E.Either<Error, void>, readonly [string, string]][]
 > => {
   return pipe(

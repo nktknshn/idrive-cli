@@ -3,7 +3,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import prompts_ from 'prompts'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import { RequestEnv } from '../../../icloud/drive/requests/request'
 import * as S from '../../../icloud/session/session'
 import { err } from '../../../lib/errors'
@@ -11,7 +11,7 @@ import { printerIO } from '../../../lib/logging'
 import { saveAccountData, saveSession } from '../../cli-action'
 import { fstat } from './download/helpers'
 
-type Deps = RequestEnv & { sessionFile: string } & Use<'authorizeSession'>
+type Deps = RequestEnv & { sessionFile: string } & Dep<'authorizeSession'>
 
 export const initSession = (): RTE.ReaderTaskEither<Deps, Error, void> => {
   return pipe(

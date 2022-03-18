@@ -11,16 +11,15 @@ import { logReturnS } from '../../lib/logging'
 import { NEA } from '../../lib/types'
 import { AuthorizedState } from '../authorization/authorize'
 import * as API from './api/methods'
-import { Use } from './api/type'
+import { Dep } from './api/type'
 import * as C from './cache/cache'
 import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
 import { getByPaths, getByPathsH } from './drive/get-by-paths'
 import { getFoldersTrees } from './drive/get-folders-trees'
-import * as ESRTE from './drive/m2'
 import { modifySubset } from './drive/modify-subset'
+import { Hierarchy } from './drive/path-validation'
 import { searchGlobs } from './drive/search-globs'
-import { Hierarchy } from './drive/validation'
 import { ItemIsNotFolderError, NotFoundError } from './errors'
 import { getMissedFound } from './helpers'
 import * as T from './requests/types/types'
@@ -28,7 +27,7 @@ import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
 
 export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
 
-export type DriveMEnv = Use<'retrieveItemDetailsInFolders'>
+export type DriveMEnv = Dep<'retrieveItemDetailsInFolders'>
 
 export type State = {
   cache: C.Cache
@@ -36,12 +35,6 @@ export type State = {
 
 export type DriveM<A, S extends State = State> = SRTE.StateReaderTaskEither<S, DriveMEnv, Error, A>
 
-export const {
-  Do,
-  fromEither,
-  fromOption,
-  fromTaskEither,
-} = ESRTE.get<State, DriveMEnv, Error>()
 const { map, chain, of, filterOrElse } = SRTE
 
 export const ado = sequenceS(SRTE.Apply)
@@ -81,9 +74,9 @@ export const modifyCache = (f: (cache: C.Cache) => C.Cache): DriveM<void> =>
 export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
   return pipe(
     chainCache(
-      flow(C.getFolderDetailsByIdsSeparated(drivewsids), fromEither),
+      cache => SRTE.fromEither(C.getFolderDetailsByIdsSeparated(drivewsids)(cache)),
     ),
-    SRTE.chainW(({ missed }) =>
+    SRTE.chain(({ missed }) =>
       pipe(
         missed,
         A.matchW(
@@ -92,9 +85,9 @@ export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM
         ),
       )
     ),
-    chain(putFoundMissed),
-    chain(() => asksCache(C.getFolderDetailsByIds(drivewsids))),
-    chain(fromEither),
+    SRTE.chain(putFoundMissed),
+    SRTE.chainW(() => asksCache(C.getFolderDetailsByIds(drivewsids))),
+    SRTE.chainW(e => SRTE.fromEither(e)),
   )
 }
 
@@ -111,7 +104,7 @@ const putDetailss = (detailss: T.Details[]): DriveM<void> =>
   chainCache(
     flow(
       C.putDetailss(detailss),
-      fromEither,
+      SRTE.fromEither,
       chain(putCache),
       map(constVoid),
     ),
@@ -125,7 +118,7 @@ export const chainRoot = <A>(
 ): DriveM<A> => {
   return pipe(
     retrieveRootAndTrashIfMissing(),
-    chain(() => chainCache(flow(C.getDocwsRootE(), fromEither))),
+    chain(() => chainCache(cache => SRTE.fromEither(C.getDocwsRootE()(cache)))),
     map(_ => _.content),
     chain(f),
   )
@@ -138,11 +131,10 @@ export const getCachedRoot = (trash: boolean): DriveM<T.DetailsTrash | T.Details
     retrieveRootAndTrashIfMissing(),
     chain(() =>
       chainCache(cache =>
-        pipe(
+        SRTE.fromEither(pipe(
           (trash ? C.getTrashE() : C.getDocwsRootE())(cache),
           E.map((_: CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails) => _.content),
-          fromEither,
-        )
+        ))
       )
     ),
   )
@@ -153,7 +145,7 @@ export const chainCachedTrash = <R>(
 ): DriveM<R> => {
   return pipe(
     retrieveRootAndTrashIfMissing(),
-    chain(() => chainCache(flow(C.getTrashE(), fromEither))),
+    chain(() => chainCache(cache => SRTE.fromEither(C.getTrashE()(cache)))),
     map(_ => _.content),
     chain(f),
   )
@@ -209,12 +201,13 @@ export function retrieveItemDetailsInFoldersSavingE(
 ): DriveM<NEA<T.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersSaving(drivewsids),
-    chain(details =>
-      pipe(
-        O.sequenceArray(details),
-        fromOption(() => err(`some of the ids was not found`)),
-        map(v => v as NEA<T.Details>),
-      )
+    SRTE.chain(
+      flow(
+        O.sequenceArray,
+        SRTE.fromOption(() => err(`some of the ids was not found`)),
+        SRTE.map(v => v as NEA<T.Details>),
+        v => v as DriveM<NEA<T.Details>>,
+      ),
     ),
   )
 }
@@ -222,7 +215,7 @@ export function retrieveItemDetailsInFoldersSavingE(
 export const getByPathFolder = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
-): ESRTE.ESRTE<State, DriveMEnv, Error, R | T.NonRootDetails> =>
+): SRTE.StateReaderTaskEither<State, DriveMEnv, Error, R | T.NonRootDetails> =>
   pipe(
     getByPaths(root, [path]),
     map(NA.head),
@@ -241,16 +234,17 @@ export const getByPathsFolders = <R extends T.Root>(
 
 export const getByPathFolderCached = <R extends T.Root>(path: NormalizedPath) =>
   (root: R): DriveM<T.Details> =>
-    chainCache(flow(
-      C.getByPathH(root, path),
-      E.chain(_ =>
-        _.valid
-          ? E.of(target(_))
-          : E.left(NotFoundError.create(`not found ${path}`))
-      ),
-      E.filterOrElse(T.isDetails, () => ItemIsNotFolderError.create()),
-      fromEither,
-    ))
+    chainCache(cache =>
+      SRTE.fromEither(pipe(
+        C.getByPathH(root, path)(cache),
+        E.chain(_ =>
+          _.valid
+            ? E.of(target(_))
+            : E.left(NotFoundError.create(`not found ${path}`))
+        ),
+        E.filterOrElse(T.isDetails, () => ItemIsNotFolderError.create()),
+      ))
+    )
 
 export const getByPathH = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<PathValidation<Hierarchy<R>>> => {
   return pipe(
@@ -264,10 +258,7 @@ export const getByPathsCached = <R extends T.Root>(
   paths: NEA<NormalizedPath>,
 ): DriveM<NEA<GetByPathResult<R>>> =>
   chainCache(
-    flow(
-      C.getByPaths(root, paths),
-      fromEither,
-    ),
+    c => SRTE.fromEither(C.getByPaths(root, paths)(c)),
   )
 
 export const getRoot = () => chainRoot(of)

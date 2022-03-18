@@ -18,7 +18,7 @@ import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../erro
 import { equalsDrivewsId, findInParentFilename as lookupItemByFilename, recordFromTuples } from '../helpers'
 import * as T from '../requests/types/types'
 import { modifySubset } from './modify-subset'
-import * as H from './validation'
+import * as H from './path-validation'
 
 export const getByPathsH = <R extends T.Root>(
   root: R,
@@ -37,26 +37,26 @@ export const getByPaths = <R extends T.Root>(
   return pipe(
     getByPathsH(root, paths),
     SRTE.chain(
-      flow(
-        NA.map(res =>
-          res.valid
-            ? E.of(V.target(res))
-            : E.left(
-              err(
-                `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
-              ),
-            )
-        ),
-        E.sequenceArray,
-        E.map(RA.toArray),
-        SRTE.fromEither,
-        SRTE.chain(a =>
-          pipe(
-            NA.fromArray(a),
-            DF.fromOption(() => err(`mystically returned empty array`)),
-          )
-        ),
-      ),
+      p =>
+        SRTE.fromEither(pipe(
+          p,
+          NA.map(res =>
+            res.valid
+              ? E.of(V.target(res))
+              : E.left(
+                err(
+                  `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
+                ),
+              )
+          ),
+          E.sequenceArray,
+          E.map(RA.toArray),
+        )),
+    ),
+    SRTE.chain(a =>
+      pipe(
+        SRTE.fromOption(() => err(`mystically returned empty array`))(NA.fromArray(a)),
+      )
     ),
   )
 }

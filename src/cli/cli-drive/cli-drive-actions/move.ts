@@ -2,10 +2,10 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import * as H from '../../../icloud/drive/drive/validation'
+import * as H from '../../../icloud/drive/drive/path-validation'
 import { parseName } from '../../../icloud/drive/helpers'
 import { RenameResponse } from '../../../icloud/drive/requests'
 import { MoveItemsResponse } from '../../../icloud/drive/requests/moveItems'
@@ -14,7 +14,7 @@ import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Use<'moveItems'> & Use<'renameItems'>
+type Deps = DF.DriveMEnv & Dep<'moveItems'> & Dep<'renameItems'>
 
 /**
  * move a file or a directory
@@ -27,11 +27,8 @@ export const move = ({ srcpath, dstpath }: {
   const ndst = normalizePath(dstpath)
 
   return pipe(
-    DF.Do,
-    SRTE.bind(
-      'srcdst',
-      () => DF.chainRoot(root => DF.getByPathsH(root, [nsrc, ndst])),
-    ),
+    DF.chainRoot(root => DF.getByPathsH(root, [nsrc, ndst])),
+    SRTE.bindTo('srcdst'),
     SRTE.chain(handle),
     SRTE.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
   )

@@ -7,10 +7,10 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import prompts_ from 'prompts'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
-import * as H from '../../../icloud/drive/drive/validation'
+import * as H from '../../../icloud/drive/drive/path-validation'
 import { findInParentFilename2, parseName } from '../../../icloud/drive/helpers'
 import {
   DetailsDocwsRoot,
@@ -25,12 +25,13 @@ import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { fstat } from './download/helpers'
 import { normalizePath } from './helpers'
+
 type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
 type Deps =
   & DF.DriveMEnv
-  & Use<'renameItems'>
-  & Use<'moveItemsToTrash'>
+  & Dep<'renameItems'>
+  & Dep<'moveItemsToTrash'>
   & API.UploadMethodDeps
 
 const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
@@ -193,10 +194,9 @@ const uploadOverwrighting = (
   // const parent = NA.last(dst.path.details)
 
   return pipe(
-    DF.Do,
-    SRTE.bindW(
+    API.upload<DF.State>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
+    SRTE.bindTo(
       'uploadResult',
-      () => API.upload({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
     ),
     SRTE.bindW('removeResult', () => {
       return API.moveItemsToTrash({

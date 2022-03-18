@@ -6,7 +6,13 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { BadRequestError, err, InvalidGlobalSessionError, MissingResponseBody } from '../../../lib/errors'
+import {
+  BadRequestError,
+  err,
+  InvalidGlobalSessionError,
+  InvalidJsonInResponse,
+  MissingResponseBody,
+} from '../../../lib/errors'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
 import { apiLogger, logg } from '../../../lib/logging'
@@ -14,8 +20,7 @@ import { AuthorizedState } from '../../authorization/authorize'
 import { AccountLoginResponseBody } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
-import * as ESRTE from '../drive/m2'
-import * as H from './http'
+import { DriveMEnv } from '../drive'
 
 export type AuthorizedRequest<A, S = AuthorizedState, R = RequestEnv> = ApiRequest<A, S, R>
 
@@ -23,8 +28,6 @@ export type AuthorizationState = {
   session: ICloudSession
   accountData: AccountLoginResponseBody
 }
-
-export type AuthorizationApiRequest<R> = ApiRequest<R, AuthorizationState>
 
 // export type ReaderRequest<T> = R.Reader<
 //   { client: FetchClientEither; session: ICloudSessionValidated },
@@ -40,7 +43,7 @@ export type BasicState = {
 }
 
 /** API context */
-export type ApiRequest<A, S, R = RequestEnv> = ESRTE.ESRTE<S, R, Error, A>
+export type ApiRequest<A, S, R = RequestEnv> = SRTE.StateReaderTaskEither<S, R, Error, A>
 
 interface ValidHttpResponseBrand {
   readonly ValidHttpResponse: unique symbol
@@ -52,18 +55,31 @@ type Filter<S extends BasicState> = (
   ma: ApiRequest<{ httpResponse: HttpResponse }, S>,
 ) => ApiRequest<{ httpResponse: HttpResponse }, S>
 
-export const { chain, leftE, fromEither, fromOption, fromTaskEither, get, left, map, of, filterOrElse } = ESRTE.get<
-  BasicState,
-  RequestEnv,
-  Error
->()
+export type ResponseWithSession<R> = {
+  session: ICloudSession
+  response: {
+    httpResponse: HttpResponse
+    body: R
+  }
+}
 
-export const Do = <S extends BasicState>() => of<{}, S>({})
+export type ResponseHandler<R, E1 = Error> = (
+  session: ICloudSession,
+) => (
+  ma: TE.TaskEither<E1, HttpResponse>,
+) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
+
+export const { chain, fromEither, fromOption, fromTaskEither, get, left, map, of, filterOrElse } = SRTE
+
+// export const Do = <S extends BasicState>() => of<{}, S>({})
 
 const ado = sequenceS(SRTE.Apply)
 
-export const readEnv = <S extends { session: ICloudSession }>() =>
-  ado({ state: get<S>(), env: SRTE.ask<S, RequestEnv>() })
+export const readEnv = <S extends BasicState>() =>
+  ado({
+    state: SRTE.get<S, RequestEnv, Error>(),
+    env: SRTE.ask<S, RequestEnv, Error>(),
+  })
 
 const putSession = <S extends { session: ICloudSession }>(session: ICloudSession): ApiRequest<void, S> =>
   pipe(
@@ -91,12 +107,6 @@ export const buildRequestC = <S extends BasicState>(
         config => apiHttpRequest(config.method, config.url, config.options)(env.state),
       )
     ),
-    // chain(config =>
-    //   pipe(
-    //     readEnv<S>(),
-    //     map(_ => apiHttpRequest(config.method, config.url, config.options)(_.state)),
-    //   )
-    // ),
   )
 
 export const buildRequestE = <S extends BasicState>(
@@ -192,12 +202,25 @@ export const decodeJson = <T extends { httpResponse: HttpResponse }, R, S extend
       SRTE.bind('decoded', ({ json }) =>
         fromEither(pipe(
           decode(json),
-          E.mapLeft(errors => err(`Error decoding json: ${H.reporter(E.left(errors))}`)),
+          E.mapLeft(errors => err(`Error decoding json: ${reporter(E.left(errors))}`)),
         ))),
       map(_ =>
         _ as ValidHttpResponse<T & { readonly json: unknown; readonly httpResponse: HttpResponse; readonly decoded: R }>
       ),
     )
+
+export const reporter = (validation: t.Validation<any>): string => {
+  return pipe(
+    validation,
+    E.fold((errors) => errors.map(errorMessage).join('\n'), () => 'ok'),
+  )
+}
+
+const errorMessage = (err: t.ValidationError) => {
+  const path = err.context.map((e) => `${e.key}`).join('/')
+
+  return `invalid value ${err.value} in ${path}`
+}
 
 export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S extends BasicState>(
   decode: (u: unknown) => t.Validation<R>,
@@ -233,7 +256,7 @@ export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S 
           E.chain(json =>
             pipe(
               decode(json),
-              E.mapLeft(errors => err(`Error decoding json: ${H.reporter(E.left(errors))}`)),
+              E.mapLeft(errors => err(`Error decoding json: ${reporter(E.left(errors))}`)),
             )
           ),
         ))),
@@ -265,7 +288,7 @@ export const applyToSession = <T extends { httpResponse: HttpResponse }>(
       ),
     )
 
-export const applyCookies = <T extends { httpResponse: HttpResponse }, S extends BasicState>() =>
+export const applyCookies = <T extends { httpResponse: HttpResponse }>() =>
   applyToSession<T>(({ httpResponse }) =>
     flow(
       applyCookiesToSession(httpResponse),
@@ -294,7 +317,7 @@ export const basicDriveJsonRequest = <S extends AuthorizedState, A>(
 }
 
 export const orElse = <R, S extends BasicState>(
-  onError: (e: ESRTE.Err<S, Error>) => ApiRequest<R, S>,
+  onError: (e: Error) => ApiRequest<R, S>,
 ) =>
   (
     ma: ApiRequest<R, S>,
@@ -305,3 +328,91 @@ export const orElse = <R, S extends BasicState>(
         RTE.orElse(e => onError(e)(s)),
       )
   }
+
+export const filterStatus = (status = 200) => filterStatuses([status])
+
+export const filterStatuses = <B extends { httpResponse: HttpResponse }>(
+  statuses = [200],
+) =>
+  (mb: TE.TaskEither<Error, B>): TE.TaskEither<Error, B> =>
+    pipe(
+      mb,
+      TE.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
+        r => InvalidGlobalSessionError.create(r.httpResponse),
+      ),
+      TE.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
+        r => BadRequestError.create(r.httpResponse),
+      ),
+      TE.filterOrElseW(
+        r => statuses.includes(r.httpResponse.status),
+        r => err(`invalid status ${r.httpResponse.status}`),
+      ),
+    )
+
+export const filterStatusesE = <B extends { httpResponse: HttpResponse }>(
+  statuses = [200],
+) =>
+  (mb: B): E.Either<Error, B> =>
+    pipe(
+      E.of(mb),
+      E.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
+        r => InvalidGlobalSessionError.create(r.httpResponse),
+      ),
+      E.filterOrElseW(
+        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
+        r => BadRequestError.create(r.httpResponse),
+      ),
+      E.filterOrElseW(
+        r => statuses.includes(r.httpResponse.status),
+        r => err(`invalid status ${r.httpResponse.status}`),
+      ),
+    )
+
+export const withResponse = (httpResponse: HttpResponse) =>
+  pipe(
+    TE.Do,
+    TE.bind('httpResponse', () => TE.of<Error, HttpResponse>(httpResponse)),
+  )
+
+export const returnDecodedJson = <
+  R,
+>() => returnS<{ httpResponse: HttpResponse; session: ICloudSession; readonly decoded: R }, R>(_ => _.decoded)
+
+export const applyCookiesFromResponse = <T extends { httpResponse: HttpResponse }>() =>
+  applyToSession2<T>(({ httpResponse }) => applyCookiesToSession(httpResponse))
+
+export function returnS<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
+  ff: (a: T) => R,
+) {
+  return (f: (session: ICloudSession) => TE.TaskEither<Error, T>) =>
+    (session: ICloudSession): TE.TaskEither<Error, ResponseWithSession<R>> =>
+      pipe(
+        f(session),
+        TE.map((a) => ({
+          session: a.session,
+          response: {
+            httpResponse: a.httpResponse,
+            body: ff(a),
+          },
+        })),
+      )
+}
+
+export function applyToSession2<T extends { httpResponse: HttpResponse }>(
+  f: (a: T) => (session: ICloudSession) => ICloudSession,
+): (te: TE.TaskEither<Error, T>) => (session: ICloudSession) => TE.TaskEither<Error, T & { session: ICloudSession }> {
+  return (te: TE.TaskEither<Error, T>) => {
+    return (session: ICloudSession) =>
+      pipe(
+        te,
+        // TE.bind('session', (a) => f(a)(session)),
+        TE.map(a => ({
+          ...a,
+          session: f(a)(session),
+        })),
+      )
+  }
+}

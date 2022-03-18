@@ -2,6 +2,7 @@ import { sequenceS, sequenceT } from 'fp-ts/lib/Apply'
 import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as R from 'fp-ts/Reader'
 import { InvalidGlobalSessionError } from '../../../lib/errors'
@@ -13,11 +14,11 @@ import { AuthorizedState, AuthorizeEnv, authorizeSessionM as authorizeSessionM_ 
 import { AccountLoginResponseBody } from '../../authorization/types'
 import * as RQ from '../requests'
 import { BasicState, RequestEnv } from '../requests/request'
-import { ApiDepsType, Use } from './type'
+import { ApiDepsType, Dep } from './type'
 
-type CatchFetchEnv = { retries: number; catchFetchErrors: boolean }
+type CatchFetchEnv = { retries: number; catchFetchErrors: boolean; retryDelay: number }
 
-const catchFetchErrorsTE = (triesLeft: number) =>
+const catchFetchErrorsTE = (triesLeft: number, retryDelay: number) =>
   <A>(
     m: TE.TaskEither<Error, A>,
   ): TE.TaskEither<Error, A> => {
@@ -30,25 +31,28 @@ const catchFetchErrorsTE = (triesLeft: number) =>
       ),
       TE.orElse((e) =>
         triesLeft > 0 && FetchError.is(e)
-          ? catchFetchErrorsTE(triesLeft - 1)(m)
+          ? pipe(
+            catchFetchErrorsTE(triesLeft - 1, retryDelay)(m),
+            T.delay(retryDelay),
+          )
           : TE.left(e)
       ),
     )
   }
 
-export const catchFetchErrorsSRTE = ({ retries, catchFetchErrors }: CatchFetchEnv) =>
+export const catchFetchErrorsSRTE = ({ retries, retryDelay, catchFetchErrors }: CatchFetchEnv) =>
   <S, R, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,
   ): SRTE.StateReaderTaskEither<S, R, Error, A> => {
-    return (s: S) => (r: R) => pipe(m(s)(r), catchFetchErrors ? catchFetchErrorsTE(retries) : identity)
+    return (s: S) => (r: R) => pipe(m(s)(r), catchFetchErrors ? catchFetchErrorsTE(retries, retryDelay) : identity)
   }
 
-export const catchFetchErrorsSRTE2 = ({ retries }: { retries: number; delay: number }) =>
-  <S, R, A>(
-    m: SRTE.StateReaderTaskEither<S, R, Error, A>,
-  ): SRTE.StateReaderTaskEither<S, R, Error, A> => {
-    return (s: S) => (r: R) => pipe(m(s)(r), catchFetchErrorsTE(retries))
-  }
+// export const catchFetchErrorsSRTE2 = ({ retries }: { retries: number; delay: number }) =>
+//   <S, R, A>(
+//     m: SRTE.StateReaderTaskEither<S, R, Error, A>,
+//   ): SRTE.StateReaderTaskEither<S, R, Error, A> => {
+//     return (s: S) => (r: R) => pipe(m(s)(r), catchFetchErrorsTE(retries))
+//   }
 
 type CatchSessEnv = { catchSessErrors: boolean }
 
@@ -127,7 +131,7 @@ const authorizeSession: R.Reader<
     )
   }
 
-const basicDepsScheme = {
+const apiDepsScheme = {
   // basic api requests with fulfield dependencies and attached error handlers
   retrieveItemDetailsInFolders: pipe(
     RQ.retrieveItemDetailsInFolders,
@@ -150,10 +154,10 @@ const basicDepsScheme = {
   fetchClient: pipe(R.ask<{ fetch: FetchClientEither }>(), R.map(_ => _.fetch)),
 } as const
 
-type SchemaMapperEnv = { schemaMapper?: (s: typeof basicDepsScheme) => typeof basicDepsScheme }
+type SchemaMapperEnv = { schemaMapper?: (s: typeof apiDepsScheme) => typeof apiDepsScheme }
 
 export type DepsEnv = CatchFetchEnv & CatchSessEnv & RequestEnv & AuthorizeEnv
-export type SchemaEnv = { schema: typeof basicDepsScheme; depsEnv: DepsEnv }
+export type SchemaEnv = { schema: typeof apiDepsScheme; depsEnv: DepsEnv }
 
 export const createApiDeps: R.Reader<
   DepsEnv & SchemaMapperEnv,
@@ -161,7 +165,7 @@ export const createApiDeps: R.Reader<
 > = pipe(
   R.asksReaderW(({ schemaMapper }: SchemaMapperEnv) =>
     pipe(
-      R.of(schemaMapper ? schemaMapper(basicDepsScheme) : basicDepsScheme),
+      R.of(schemaMapper ? schemaMapper(apiDepsScheme) : apiDepsScheme),
       R.bindTo('schema'),
       R.bind('deps', ({ schema }) => seqS(schema)),
       R.bind('depsEnv', () => R.ask<DepsEnv>()),

@@ -4,12 +4,14 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
+import * as iot from 'io-ts-types'
 import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { apiLogger } from '../../../lib/logging'
+import { NEA } from '../../../lib/types'
 import { AuthorizedState } from '../../authorization/authorize'
-import { applyCookiesToSession, buildRequest } from '../../session/session-http'
-import { applyToSession, decodeJson, filterStatus, ResponseHandler, ResponseWithSession, withResponse } from './http'
+import { buildRequest } from '../../session/session-http'
 import * as AR from './request'
+import { ResponseHandler, ResponseWithSession } from './request'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 
@@ -55,31 +57,6 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWi
   )),
 )
 
-// export function retrieveItemDetailsInFoldersHierarchy(
-//   client: FetchClientEither,
-//   { accountData, session }: ICloudSessionValidated,
-//   props: { drivewsids: string[] },
-// ): TE.TaskEither<Error, ResponseWithSession<(DriveDetailsWithHierarchy | InvalidId)[]>> {
-//   return retrieveItemDetailsInFoldersGeneric(
-//     client,
-//     { accountData, session },
-//     pipe(
-//       props.drivewsids.map((drivewsid) => [
-//         { drivewsid, partialData: false, includeHierarchy: false },
-//         { drivewsid, partialData: true, includeHierarchy: true },
-//       ]),
-//       A.flatten,
-//     ),
-//     session =>
-//       TE.chain(flow(
-//         withResponse,
-//         filterStatus(),
-//         decodeJson(decodeWithHierarchy),
-//         applyToSession(({ httpResponse }) => applyCookiesToSession(httpResponse)(session)),
-//       )),
-//   )
-// }
-
 export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ) => {
@@ -91,7 +68,6 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedS
     })),
   )
 }
-import * as iot from 'io-ts-types'
 
 export function retrieveItemDetailsInFolders<S extends AuthorizedState>(
   { drivewsids }: { drivewsids: string[] },
@@ -140,5 +116,3 @@ export const retrieveItemDetailsInFoldersHierarchyM = (
       decodeWithHierarchy,
     )),
   )
-
-import { NEA } from '../../../lib/types'

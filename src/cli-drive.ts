@@ -7,7 +7,7 @@ import { cliActionM2 } from './cli/cli-action'
 import * as Action from './cli/cli-drive/cli-drive-actions'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { defaultApiEnv } from './defaults'
-import { catchFetchErrorsSRTE2, createApiDeps } from './icloud/drive/api/basic'
+import { createApiDeps } from './icloud/drive/api/deps'
 import { failingFetch } from './lib/http/fetch-client'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 import { isKeyOf } from './lib/util'
@@ -68,18 +68,19 @@ async function main() {
     // fetch: failingFetch(70),
     getCode: defaultApiEnv.getCode,
     retries: defaultApiEnv.retries,
+    retryDelay: 200,
     catchSessErrors: true,
     catchFetchErrors: true,
     // catchFetchErrorsSRTE: catchFetchErrorsSRTE2,
     // schemaMapper: (schema) => ({
     //   ...schema,
-    //   authorizeSessionM: pipe(
-    //     schema.authorizeSessionM,
+    //   authorizeSession: pipe(
+    //     schema.authorizeSession,
     //     R.local((d) => ({ ...d, fetch: failingFetch(99) })),
     //   ),
     //   retrieveItemDetailsInFolders: pipe(
     //     schema.retrieveItemDetailsInFolders,
-    //     R.local((d) => ({ ...d, fetch: failingFetch(99) })),
+    //     R.local((d) => ({ ...d, fetch: failingFetch(99), catchFetchErrors: true })),
     //   ),
     // }),
   })

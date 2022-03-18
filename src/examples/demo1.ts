@@ -188,7 +188,7 @@ const loadAccountData = (
   )
 
 const getAuthorizedState: RTE.ReaderTaskEither<
-  { sessionFile: string } & API.ApiEnv & AR.RequestEnv & AuthorizeEnv,
+  { sessionFile: string } & { retries: number } & AR.RequestEnv & AuthorizeEnv,
   Error,
   AuthorizedState
 > = pipe(
@@ -197,7 +197,7 @@ const getAuthorizedState: RTE.ReaderTaskEither<
 )
 
 type TreeNode = T.Details | T.DriveChildrenItemFile
-type Deps = NT.Use<'retrieveItemDetailsInFolders'>
+type Deps = NT.Dep<'retrieveItemDetailsInFolders'>
 
 const getTrees = <S extends AuthorizedState & { someth: number }>(
   drivewsids: NEA<string>,

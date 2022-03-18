@@ -1,26 +1,22 @@
 import assert from 'assert'
+import * as E from 'fp-ts/Either'
 import * as A from 'fp-ts/lib/Array'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
+import { SchemaEnv } from '../../../icloud/drive/api/deps'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
-import {
-  fileName,
-  isCloudDocsRootDetailsG,
-  isFile,
-  isNotRootDetails,
-  isTrashDetailsG,
-} from '../../../icloud/drive/requests/types/types'
+import { isCloudDocsRootDetailsG, isNotRootDetails, isTrashDetailsG } from '../../../icloud/drive/requests/types/types'
 import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { normalizePath } from './helpers'
+import { ask } from './upload'
 
-type Deps = DF.DriveMEnv & Use<'moveItemsToTrash'> & SchemaEnv
+type Deps = DF.DriveMEnv & Dep<'moveItemsToTrash'> & SchemaEnv
 
 export const rma = (
   { paths, trash }: {
@@ -31,13 +27,6 @@ export const rma = (
   assert(A.isNonEmpty(paths))
 
   const npaths = pipe(paths, NA.map(normalizePath))
-
-  const scanned = pipe(
-    paths as NEA<string>,
-    NA.map(micromatch.scan),
-  )
-
-  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
   return pipe(
     SRTE.ask<DF.State, Deps>(),
@@ -51,7 +40,7 @@ export const rma = (
     SRTE.bindW('result', ({ items, deps }) =>
       pipe(
         API.moveItemsToTrash<DF.State>({ items, trash }),
-        // SRTE.local(() => ({ moveItemsToTrash: api.schema.moveItemsToTrash(api.depsEnv) })),
+        // SRTE.local(() => ({ moveItemsToTrash: deps.schema.moveItemsToTrash(deps.depsEnv) })),
         SRTE.chainW(
           resp => DF.removeByIds(resp.items.map(_ => _.drivewsid)),
         ),
@@ -64,13 +53,6 @@ export const rma = (
     // })),
   )
 }
-import * as E from 'fp-ts/Either'
-import { toArray } from 'fp-ts/lib/ReadonlyArray'
-import { fst, snd } from 'fp-ts/lib/ReadonlyTuple'
-import * as O from 'fp-ts/Option'
-import { SchemaEnv } from '../../../icloud/drive/api/basic'
-import { Path } from '../../../lib/util'
-import { ask } from './upload'
 export const rm = (
   { paths, trash }: {
     paths: string[]
@@ -79,23 +61,10 @@ export const rm = (
 ): XXX<DF.State, Deps, void> => {
   assert(A.isNonEmpty(paths))
 
-  const npaths = pipe(paths, NA.map(normalizePath))
-
   const scanned = pipe(
     paths,
     NA.map(micromatch.scan),
   )
-
-  const { left: directs, right: globs } = pipe(
-    scanned,
-    A.partitionMap(scan =>
-      scan.glob.length == 0
-        ? E.left(scan.input)
-        : E.right(scan.input)
-    ),
-  )
-
-  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
   return pipe(
     SRTE.ask<DF.State, Deps>(),

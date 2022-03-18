@@ -1,30 +1,26 @@
+import { apply } from 'fp-ts/function'
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { Stats } from 'fs'
 import * as fs from 'fs/promises'
+import mime from 'mime-types'
+import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { AuthorizedState, AuthorizeEnv } from '../../authorization/authorize'
+import { AuthorizedState } from '../../authorization/authorize'
+import { AccountLoginResponseBody } from '../../authorization/types'
 import { getMissedFound } from '../helpers'
+import { getUrlStream as getUrlStream_ } from '../requests/download'
+import { BasicState } from '../requests/request'
 import * as T from '../requests/types/types'
 import * as API from './type'
 
-import { apply } from 'fp-ts/function'
-import * as R from 'fp-ts/lib/Reader'
-import { Stats } from 'fs'
-import mime from 'mime-types'
-import { Readable } from 'stream'
-import { expectResponse } from '../../../lib/http/fetch-client'
-import { authLogger } from '../../../lib/logging'
-import { AccountLoginResponseBody } from '../../authorization/types'
-import { getUrlStream as getUrlStream_ } from '../requests/download'
-import { BasicState } from '../requests/request'
-
-const useRequest = <R>() =>
+const useDepRequest = <R>() =>
   <Args extends unknown[], S extends AuthorizedState, R1 extends R, A>(
     f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R1, Error, A>,
   ) =>
@@ -38,47 +34,49 @@ const useRequest = <R>() =>
 /** basic api functions as exported functions*/
 
 export const renameItems = flow(
-  useRequest<API.Use<'renameItems'>>()(_ => _.renameItems),
+  useDepRequest<API.Dep<'renameItems'>>()(_ => _.renameItems),
 )
 
 export const moveItems = flow(
-  useRequest<API.Use<'moveItems'>>()(_ => _.moveItems),
+  useDepRequest<API.Dep<'moveItems'>>()(_ => _.moveItems),
 )
 
 export const moveItemsToTrash = flow(
-  useRequest<API.Use<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash),
+  useDepRequest<API.Dep<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash),
 )
 
 export const retrieveItemDetailsInFolders = flow(
-  useRequest<API.Use<'retrieveItemDetailsInFolders'>>()(_ => _.retrieveItemDetailsInFolders),
+  useDepRequest<API.Dep<'retrieveItemDetailsInFolders'>>()(_ => _.retrieveItemDetailsInFolders),
 )
 
 export const download = flow(
-  useRequest<API.Use<'download'>>()(_ => _.download),
+  useDepRequest<API.Dep<'download'>>()(_ => _.download),
 )
 
 export const downloadBatch = flow(
-  useRequest<API.Use<'downloadBatch'>>()(_ => _.downloadBatch),
+  useDepRequest<API.Dep<'downloadBatch'>>()(_ => _.downloadBatch),
 )
 
 export const createFolders = flow(
-  useRequest<API.Use<'createFolders'>>()(_ => _.createFolders),
+  useDepRequest<API.Dep<'createFolders'>>()(_ => _.createFolders),
 )
 
 export const authorizeSessionM = <S extends BasicState>(): XXX<
   S,
-  API.Use<'authorizeSession'>,
+  API.Dep<'authorizeSession'>,
   AccountLoginResponseBody
 > =>
   pipe(
-    SRTE.asksStateReaderTaskEitherW((_: API.Use<'authorizeSession'>) => _.authorizeSession<S>()),
+    SRTE.asksStateReaderTaskEitherW((_: API.Dep<'authorizeSession'>) => _.authorizeSession<S>()),
   )
 
-/** higher level methods based and dependent on basic functions */
+/** higher level methods based and dependent on the basic functions */
 
 export const authorizeStateM3 = <
   S extends BasicState,
->(state: S): RTE.ReaderTaskEither<API.Use<'authorizeSession'>, Error, S & { accountData: AccountLoginResponseBody }> =>
+>(
+  state: S,
+): RTE.ReaderTaskEither<API.Dep<'authorizeSession'>, Error, S & { accountData: AccountLoginResponseBody }> =>
   pipe(
     authorizeSessionM<S>()(state),
     RTE.map(([accountData, state]) => ({ ...state, accountData })),
@@ -86,9 +84,9 @@ export const authorizeStateM3 = <
 
 export const getUrlStream = ({ url }: {
   url: string
-}): RTE.ReaderTaskEither<API.Use<'fetchClient'>, Error, Readable> =>
+}): RTE.ReaderTaskEither<API.Dep<'fetchClient'>, Error, Readable> =>
   pipe(
-    RTE.ask<API.Use<'fetchClient'>>(),
+    RTE.ask<API.Dep<'fetchClient'>>(),
     RTE.chainTaskEitherK(flow(getUrlStream_, apply({ url }))),
   )
 
@@ -96,7 +94,7 @@ export const retrieveItemDetailsInFoldersS = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
 ): XXX<
   S,
-  API.Use<'retrieveItemDetailsInFolders'>,
+  API.Dep<'retrieveItemDetailsInFolders'>,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrash | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>
   pipe(
@@ -120,12 +118,12 @@ export const getItemUrl = flow(
 )
 
 export type UploadMethodDeps =
-  & API.Use<'upload'>
-  & API.Use<'singleFileUpload'>
-  & API.Use<'updateDocuments'>
+  & API.Dep<'upload'>
+  & API.Dep<'singleFileUpload'>
+  & API.Dep<'updateDocuments'>
 
 export const upload = flow(
-  useRequest<UploadMethodDeps>()(deps =>
+  useDepRequest<UploadMethodDeps>()(deps =>
     <S extends AuthorizedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string

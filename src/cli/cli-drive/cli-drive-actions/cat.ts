@@ -5,7 +5,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { consumeStreamToString } from '../../../icloud/drive/requests/download'
 import { isFile } from '../../../icloud/drive/requests/types/types'
@@ -19,7 +19,7 @@ export const cat = (
   return cat2({ path })
 }
 
-type Deps = DF.DriveMEnv & Use<'download'> & Use<'fetchClient'>
+type Deps = DF.DriveMEnv & Dep<'download'> & Dep<'fetchClient'>
 
 export const cat2 = (
   { path }: { path: string },

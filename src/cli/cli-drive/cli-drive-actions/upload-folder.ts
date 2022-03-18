@@ -11,9 +11,8 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
-import { UploadResult } from '../../../icloud/drive/api'
 import * as API from '../../../icloud/drive/api/methods'
-import { Use } from '../../../icloud/drive/api/type'
+import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as DF from '../../../icloud/drive/drive'
 import { findInParentFilename } from '../../../icloud/drive/helpers'
@@ -40,10 +39,10 @@ type Argv = {
 }
 
 type Deps =
-  & Use<'retrieveItemDetailsInFolders'>
-  & Use<'renameItems'>
-  & Use<'createFolders'>
-  & Use<'downloadBatch'>
+  & Dep<'retrieveItemDetailsInFolders'>
+  & Dep<'renameItems'>
+  & Dep<'createFolders'>
+  & Dep<'downloadBatch'>
   & API.UploadMethodDeps
 
 type UploadTask = {
@@ -51,6 +50,16 @@ type UploadTask = {
   uploadable: (readonly [string, { path: string; stats: Stats }])[]
   empties: (readonly [string, { path: string; stats: Stats }])[]
   excluded: (readonly [string, { path: string; stats: Stats }])[]
+}
+
+export type UploadResult = {
+  status: { status_code: number; error_message: string }
+  etag: string
+  zone: string
+  type: string
+  document_id: string
+  parent_id: string
+  mtime: number
 }
 
 export const uploadFolder = (
@@ -184,13 +193,22 @@ const uploadToNewFolder = (
   dstitem: DetailsDocwsRoot | DetailsFolder | DetailsAppLibrary,
   dirname: string,
   src: string,
-) =>
+): (
+  task: UploadTask,
+) => SRTE.StateReaderTaskEither<
+  DF.State,
+  DF.DriveMEnv & Dep<'upload'> & Dep<'singleFileUpload'> & Dep<'updateDocuments'> & Dep<'createFolders'>,
+  Error,
+  NEA<UploadResult>[]
+> =>
   (task: UploadTask) =>
     pipe(
-      DF.Do,
-      SRTE.bindW('task', () => SRTE.of(task)),
+      SRTE.of<DF.State, DF.DriveMEnv & API.UploadMethodDeps & Dep<'createFolders'>, Error, UploadTask>(
+        task,
+      ),
+      SRTE.bindTo('task'),
       SRTE.bindW('uploadRoot', () =>
-        API.createFoldersFailing({
+        API.createFoldersFailing<DF.State>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })),
@@ -272,7 +290,7 @@ const uploadChunk = (
 const createDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<DF.State, Use<'createFolders'>, Record<string, string>> => {
+): XXX<DF.State, Dep<'createFolders'>, Record<string, string>> => {
   const task = pipe(
     getSubdirsPerParent('/')(dirstruct),
     group<readonly [string, string]>({
