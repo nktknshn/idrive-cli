@@ -13,14 +13,22 @@ import micromatch from 'micromatch'
 import { Readable } from 'stream'
 import * as API from '../../../../icloud/drive/api/drive-api-methods'
 import { Dep } from '../../../../icloud/drive/api/type'
+import * as DF from '../../../../icloud/drive/drive'
 import { guardSnd } from '../../../../icloud/drive/helpers'
 import { FolderTree, zipFolderTreeWithPath } from '../../../../icloud/drive/methods/get-folders-trees'
 import * as T from '../../../../icloud/drive/requests/types/types'
 import { err, SomeError } from '../../../../lib/errors'
 import { loggerIO } from '../../../../lib/loggerIO'
 import { printerIO } from '../../../../lib/logging'
+import { XXX } from '../../../../lib/types'
 import { hasOwnProperty, Path } from '../../../../lib/util'
 import { normalizePath, stripTrailingSlash } from '../helpers'
+
+export type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
+  DF.State,
+  R,
+  [E.Either<Error, void>, readonly [url: string, path: string]][]
+>
 
 export type DownloadInfo = (readonly [remotepath: string, remotefile: T.DriveChildrenItemFile])
 
@@ -210,7 +218,7 @@ export const getDirectoryStructure = (paths: string[]) => {
   )
 }
 
-export const filterTree = (
+export const filterFolderTree = (
   { exclude, include }: { include: string[]; exclude: string[] },
 ) =>
   (tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>): FilterTreeResult => {

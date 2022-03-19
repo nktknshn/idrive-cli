@@ -4,18 +4,18 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import * as H from '../../../lib/path-validation'
-import { DetailsAppLibrary, DetailsFolder, DriveChildrenItemFile, fileName, Root } from '../requests/types/types'
+import * as T from '../requests/types/types'
 
 export type PathValid<H> = {
   valid: true
   path: H.Valid<H>
-  file: O.Option<DriveChildrenItemFile>
+  file: O.Option<T.DriveChildrenItemFile>
 }
 
 export type PathValidWithFile<H> = {
   valid: true
   path: H.Valid<H>
-  file: O.Some<DriveChildrenItemFile>
+  file: O.Some<T.DriveChildrenItemFile>
 }
 
 export type PathInvalid<H> = { valid: false; path: H.Partial<H>; error: Error }
@@ -24,11 +24,11 @@ export type PathValidation<H> =
   | PathValid<H>
   | PathInvalid<H>
 
-export type GetByPathResult<R extends Root> = PathValidation<H.Hierarchy<R>>
+export type GetByPathResult<R extends T.Root> = PathValidation<H.Hierarchy<R>>
 
-export const target = <R extends Root>(
+export const target = <R extends T.Root>(
   res: PathValid<H.Hierarchy<R>>,
-): R | DetailsFolder | DetailsAppLibrary | DriveChildrenItemFile => {
+): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile => {
   return pipe(
     res.file,
     O.foldW(() => NA.last(res.path.details), identity),
@@ -46,16 +46,16 @@ export const isInvalid = <H>(res: PathValidation<H>): res is PathValid<H> => {
   return res.valid === false
 }
 
-export const validPath = <R extends Root>(
+export const validPath = <R extends T.Root>(
   path: H.Hierarchy<R>,
-  file: O.Option<DriveChildrenItemFile> = O.none,
+  file: O.Option<T.DriveChildrenItemFile> = O.none,
 ): PathValidation<H.Hierarchy<R>> => ({
   valid: true,
   path: H.validPath(path),
   file,
 })
 
-export const invalidPath = <R extends Root>(
+export const invalidPath = <R extends T.Root>(
   path: H.Partial<H.Hierarchy<R>>,
   error: Error,
 ): PathInvalid<H.Hierarchy<R>> => ({
@@ -64,18 +64,18 @@ export const invalidPath = <R extends Root>(
   error,
 })
 
-export const showGetByPathResult = <R extends Root>(p: PathValidation<H.Hierarchy<R>>) => {
+export const showGetByPathResult = <R extends T.Root>(p: PathValidation<H.Hierarchy<R>>) => {
   if (p.valid) {
-    return `valid: ${p.path.details.map(fileName)} file: ${pipe(p.file, O.fold(() => `none`, fileName))}`
+    return `valid: ${p.path.details.map(T.fileName)} file: ${pipe(p.file, O.fold(() => `none`, T.fileName))}`
   }
-  return `invalid (${p.error.message}). valid part ${p.path.details.map(fileName)}, rest: ${p.path.rest}`
+  return `invalid (${p.error.message}). valid part ${p.path.details.map(T.fileName)}, rest: ${p.path.rest}`
 }
 
-export const asString = <R extends Root>(result: PathValid<H.Hierarchy<R>>) => {
+export const asString = <R extends T.Root>(result: PathValid<H.Hierarchy<R>>) => {
   return normalizePath(
     [
-      ...result.path.details.map(fileName),
-      ...pipe(result.file, O.fold(() => [], flow(fileName, A.of))),
+      ...result.path.details.map(T.fileName),
+      ...pipe(result.file, O.fold(() => [], flow(T.fileName, A.of))),
     ].join('/'),
   )
 }

@@ -84,7 +84,7 @@ export type ApiDepsType = {
   authorizeSession: <S extends BasicState>() => XX<S, AccountData>
 }
 
-export const useApiDepRequest = <R>() =>
+export const useDepRequest = <R>() =>
   <Args extends unknown[], S extends AuthorizedState, R1 extends R, A>(
     f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R1, Error, A>,
   ) =>

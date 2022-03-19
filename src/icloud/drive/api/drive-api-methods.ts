@@ -18,48 +18,27 @@ import { getMissedFound } from '../helpers'
 import { getUrlStream as getUrlStream_ } from '../requests/download'
 import { BasicState } from '../requests/request'
 import * as T from '../requests/types/types'
-import { Dep, useApiDepRequest } from './type'
+import { Dep, useDepRequest } from './type'
 
 /** basic icloud api requests as standalone depended functions*/
-export const renameItems = flow(
-  useApiDepRequest<Dep<'renameItems'>>()(_ => _.renameItems),
+export const renameItems = useDepRequest<Dep<'renameItems'>>()(_ => _.renameItems)
+export const putBackItemsFromTrash = useDepRequest<Dep<'putBackItemsFromTrash'>>()(_ => _.putBackItemsFromTrash)
+export const moveItems = useDepRequest<Dep<'moveItems'>>()(_ => _.moveItems)
+export const moveItemsToTrash = useDepRequest<Dep<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash)
+export const retrieveItemDetailsInFolders = useDepRequest<Dep<'retrieveItemDetailsInFolders'>>()(_ =>
+  _.retrieveItemDetailsInFolders
 )
-
-export const putBackItemsFromTrash = flow(
-  useApiDepRequest<Dep<'putBackItemsFromTrash'>>()(_ => _.putBackItemsFromTrash),
-)
-
-export const moveItems = flow(
-  useApiDepRequest<Dep<'moveItems'>>()(_ => _.moveItems),
-)
-
-export const moveItemsToTrash = flow(
-  useApiDepRequest<Dep<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash),
-)
-
-export const retrieveItemDetailsInFolders = flow(
-  useApiDepRequest<Dep<'retrieveItemDetailsInFolders'>>()(_ => _.retrieveItemDetailsInFolders),
-)
-
-export const download = flow(
-  useApiDepRequest<Dep<'download'>>()(_ => _.download),
-)
-
-export const downloadBatch = flow(
-  useApiDepRequest<Dep<'downloadBatch'>>()(_ => _.downloadBatch),
-)
-
-export const createFolders = flow(
-  useApiDepRequest<Dep<'createFolders'>>()(_ => _.createFolders),
-)
+export const download = useDepRequest<Dep<'download'>>()(_ => _.download)
+export const downloadBatch = useDepRequest<Dep<'downloadBatch'>>()(_ => _.downloadBatch)
+export const createFolders = useDepRequest<Dep<'createFolders'>>()(_ => _.createFolders)
 
 export const authorizeSession = <S extends BasicState>(): XXX<
   S,
   Dep<'authorizeSession'>,
   AccountData
 > =>
-  pipe(
-    SRTE.asksStateReaderTaskEitherW((_: Dep<'authorizeSession'>) => _.authorizeSession<S>()),
+  SRTE.asksStateReaderTaskEitherW(
+    (_: Dep<'authorizeSession'>) => _.authorizeSession<S>(),
   )
 
 /** higher level methods based and dependent on the basic functions */
@@ -102,6 +81,7 @@ export const retrieveItemDetailsInFolder = (drivewsid: string) =>
     ),
   )
 
+/** .data_token?.url ?? _.package_token?.url */
 export const getItemUrl = flow(
   download,
   SRTE.map(
@@ -115,7 +95,7 @@ export type UploadMethodDeps =
   & Dep<'updateDocuments'>
 
 export const upload = flow(
-  useApiDepRequest<UploadMethodDeps>()(deps =>
+  useDepRequest<UploadMethodDeps>()(deps =>
     <S extends AuthorizedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string

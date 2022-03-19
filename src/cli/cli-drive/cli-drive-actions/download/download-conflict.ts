@@ -1,24 +1,18 @@
+import * as E from 'fp-ts/Either'
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
-import { boolean } from 'yargs'
-import { guardSnd, guardSndRO } from '../../../../icloud/drive/helpers'
+import * as RA from 'fp-ts/ReadonlyArray'
+import * as Task from 'fp-ts/Task'
+import { guardSndRO } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/requests/types/types'
 import { err } from '../../../../lib/errors'
 import { loggerIO } from '../../../../lib/loggerIO'
 import { Path } from '../../../../lib/util'
-import {
-  DownloadInfo,
-  DownloadStructure,
-  DownloadTask,
-  FilterTreeResult,
-  fstat,
-  LocalTreeElement,
-  walkDirRel,
-} from './download-helpers'
+import { DownloadInfo, DownloadTask, fstat, LocalTreeElement } from './download-helpers'
 
 export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpath: string }]
 
@@ -102,9 +96,6 @@ const applySoultion = (
       initialTask: { downloadable, empties, localdirstruct },
     }
   }
-import * as E from 'fp-ts/Either'
-import * as RA from 'fp-ts/ReadonlyArray'
-import * as Task from 'fp-ts/Task'
 
 const lookForConflicts2 = (
   { downloadable, empties }: DownloadTask,
@@ -137,18 +128,6 @@ const lookForConflicts2 = (
         }, c]),
       )
     ),
-    // TE.ap
-    // A.filter(_ => _.type === 'file'),
-    // flow(
-    //   A.map(f =>
-    //     [
-    //       f,
-    //       pipe(remotes, A.findFirst((p) => p.localpath === f.path)),
-    //     ] as const
-    //   ),
-    //   A.filter(guardSndRO(O.isSome)),
-    //   A.map(mapSnd(_ => _.value)),
-    // ),
   )
 }
 
@@ -163,20 +142,6 @@ export const handleLocalFilesConflicts = ({ conflictsSolver }: {
   DownloadTask & { initialTask: DownloadTask }
 > =>
   (initialtask: DownloadTask) => {
-    // const dst = Path.normalize(dstpath)
-
-    // const conflicts = pipe(
-    //   fstat(dst),
-    //   TE.fold(
-    //     (e) => TE.of([]),
-    //     () =>
-    //       pipe(
-    //         walkDirRel(dst),
-    //         TE.map(localtree => lookForConflicts(localtree, initialtask)),
-    //       ),
-    //   ),
-    // )
-
     return pipe(
       lookForConflicts2(initialtask),
       TE.fromTask,

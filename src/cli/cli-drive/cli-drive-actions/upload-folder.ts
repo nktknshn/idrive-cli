@@ -27,7 +27,7 @@ import { printerIO } from '../../../lib/logging'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { getDirectoryStructure, LocalTreeElement, walkDirRel } from './download/download-helpers'
-import { normalizePath } from './helpers'
+import { normalizePath, parseDrivewsid } from './helpers'
 
 type Argv = {
   localpath: string
@@ -52,7 +52,7 @@ type UploadTask = {
   excluded: (readonly [string, { path: string; stats: Stats }])[]
 }
 
-export type UploadResult = {
+type UploadResult = {
   status: { status_code: number; error_message: string }
   etag: string
   zone: string
@@ -71,12 +71,12 @@ export const uploadFolder = (
     SRTE.bindW('dst', ({ root }) => DF.getByPathH(root, normalizePath(remotepath))),
     SRTE.bindW('src', () => SRTE.of(localpath)),
     SRTE.bindW('args', () => SRTE.of({ localpath, remotepath, include, exclude, dry })),
-    SRTE.chainW(handle),
+    SRTE.chainW(handleUploadFolder),
     SRTE.map((res) => `Success.`),
   )
 }
 
-const handle = (
+const handleUploadFolder = (
   { src, dst, args }: {
     src: string
     dst: V.GetByPathResult<DetailsDocwsRoot>
@@ -135,17 +135,13 @@ const handle = (
 
 const createUploadTask = (
   { exclude, include }: { include: string[]; exclude: string[] },
-): (
-  tree: TR.Tree<LocalTreeElement>,
-) => {
-  dirstruct: string[]
-  uploadable: (readonly [string, { path: string; stats: Stats }])[]
-  empties: (readonly [string, { path: string; stats: Stats }])[]
-  excluded: (readonly [string, { path: string; stats: Stats }])[]
-} =>
-  (
-    tree: TR.Tree<LocalTreeElement>,
-  ) => {
+) =>
+  (tree: TR.Tree<LocalTreeElement>): {
+    dirstruct: string[]
+    uploadable: (readonly [string, { path: string; stats: Stats }])[]
+    empties: (readonly [string, { path: string; stats: Stats }])[]
+    excluded: (readonly [string, { path: string; stats: Stats }])[]
+  } => {
     const flatTree = pipe(
       tree,
       TR.reduce([] as (readonly [string, LocalTreeElement])[], (acc, cur) => [...acc, [cur.path, cur] as const]),
@@ -195,12 +191,7 @@ const uploadToNewFolder = (
   src: string,
 ): (
   task: UploadTask,
-) => SRTE.StateReaderTaskEither<
-  DF.State,
-  Deps,
-  Error,
-  NEA<UploadResult>[]
-> =>
+) => XXX<DF.State, Deps, NEA<UploadResult>[]> =>
   (task: UploadTask) =>
     pipe(
       SRTE.of<DF.State, Deps, Error, UploadTask>(
@@ -266,7 +257,9 @@ const uploadChunk = (
   pathToDriwesid: Record<string, string>,
 ) =>
   (
-    chunk: NEA<readonly [string, { path: string; stats: Stats }]>,
+    chunk: NEA<
+      readonly [remotepath: string, element: { path: string; stats: Stats }]
+    >,
   ): XXX<DF.State, API.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
@@ -328,9 +321,4 @@ const createDirStructure = (
         ),
     ),
   )
-}
-
-const parseDrivewsid = (drivewsid: string) => {
-  const [type, zone, docwsid] = drivewsid.split('::')
-  return { type, zone, docwsid }
 }

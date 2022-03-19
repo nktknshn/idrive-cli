@@ -15,7 +15,7 @@ import * as H from '../../../lib/path-validation'
 import { NEA, XXX } from '../../../lib/types'
 import { Path, prompts } from '../../../lib/util'
 import { fstat } from './download/download-helpers'
-import { normalizePath } from './helpers'
+import { askConfirmation, normalizePath } from './helpers'
 
 type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
@@ -24,20 +24,6 @@ type Deps =
   & Dep<'renameItems'>
   & Dep<'moveItemsToTrash'>
   & API.UploadMethodDeps
-
-export const ask = ({ message }: { message: string }) =>
-  pipe(
-    prompts({
-      type: 'confirm',
-      name: 'value',
-      message,
-    }, {
-      onCancel: () => process.exit(1),
-    }),
-    TE.map(_ => {
-      return _.value as boolean
-    }),
-  )
 
 export const uploads = (
   { args, overwright }: {
@@ -51,14 +37,19 @@ export const uploads = (
   const srcpaths = NA.init(args as NEA<string>)
 
   return pipe(
-    SRTE.ask<DF.State, Deps>(),
-    SRTE.bindTo('api'),
-    SRTE.bindW('root', DF.getRoot),
+    DF.getRoot(),
+    SRTE.bindTo('root'),
     SRTE.bindW('dst', ({ root }) => DF.getByPathFolder(root, normalizePath(dstpath))),
     SRTE.chainW(({ dst }) =>
       pipe(
         srcpaths,
-        A.map(src => uploadToFolder({ dst, src, overwright: overwright ? true : ask })),
+        A.map(src =>
+          uploadToFolder({
+            dst,
+            src,
+            overwright: overwright ? true : askConfirmation,
+          })
+        ),
         SRTE.sequenceArray,
       )
     ),
@@ -74,54 +65,14 @@ export const singleFileUpload = (
   },
 ): XXX<DF.State, Deps, string> => {
   return pipe(
-    SRTE.ask<DF.State, Deps>(),
-    SRTE.bindTo('api'),
-    SRTE.bindW('root', DF.getRoot),
+    DF.getRoot(),
+    SRTE.bindTo('root'),
     SRTE.bindW('dst', ({ root }) => DF.getByPathH(root, normalizePath(dstpath))),
     SRTE.bindW('src', () => SRTE.of(srcpath)),
     SRTE.bindW('srcstat', () => SRTE.fromTaskEither(fstat(srcpath))),
     SRTE.bindW('overwright', () => SRTE.of(overwright)),
     SRTE.chainW(handleSingleFileUpload),
     SRTE.map(() => `Success. ${Path.basename(srcpath)}`),
-  )
-}
-
-const uploadToFolder = (
-  { src, dst, overwright }: {
-    overwright:
-      | boolean
-      | AskingFunc
-    dst: T.DetailsDocwsRoot | T.NonRootDetails
-    src: string
-  },
-): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
-  const actualFile = pipe(
-    findInParentFilename2(
-      dst,
-      Path.basename(src),
-    ),
-    O.filter(T.isFile),
-  )
-
-  if (isSome(actualFile)) {
-    if (typeof overwright === 'boolean') {
-      if (overwright) {
-        return uploadOverwrighting({ src, dstitem: actualFile.value, parent: dst })
-      }
-    }
-    else {
-      return pipe(
-        overwright({
-          message: `overwright ${T.fileName(actualFile.value)}?`,
-        }),
-        SRTE.fromTaskEither,
-        SRTE.chain(overwright => uploadToFolder({ src, dst, overwright })),
-      )
-    }
-  }
-  return pipe(
-    API.upload<DF.State>({ sourceFilePath: src, docwsid: dst.docwsid, zone: dst.zone }),
-    SRTE.map(constVoid),
   )
 }
 
@@ -165,6 +116,45 @@ const handleSingleFileUpload = (
   }
 
   return DF.errS(`invalid destination path: ${H.showMaybeValidPath(dst.path)}`)
+}
+
+const uploadToFolder = (
+  { src, dst, overwright }: {
+    overwright:
+      | boolean
+      | AskingFunc
+    dst: T.DetailsDocwsRoot | T.NonRootDetails
+    src: string
+  },
+): SRTE.StateReaderTaskEither<DF.State, Deps, Error, void> => {
+  const actualFile = pipe(
+    findInParentFilename2(
+      dst,
+      Path.basename(src),
+    ),
+    O.filter(T.isFile),
+  )
+
+  if (isSome(actualFile)) {
+    if (typeof overwright === 'boolean') {
+      if (overwright) {
+        return uploadOverwrighting({ src, dstitem: actualFile.value, parent: dst })
+      }
+    }
+    else {
+      return pipe(
+        overwright({
+          message: `overwright ${T.fileName(actualFile.value)}?`,
+        }),
+        SRTE.fromTaskEither,
+        SRTE.chain(overwright => uploadToFolder({ src, dst, overwright })),
+      )
+    }
+  }
+  return pipe(
+    API.upload<DF.State>({ sourceFilePath: src, docwsid: dst.docwsid, zone: dst.zone }),
+    SRTE.map(constVoid),
+  )
 }
 
 const uploadOverwrighting = (

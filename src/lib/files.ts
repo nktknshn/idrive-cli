@@ -13,6 +13,8 @@ export const tryDecodeBuffer = (buf: ArrayBufferLike, fatal = true): E.Either<Bu
     BufferDecodingError.create,
   )
 
+export type ReadJsonFileError = BufferDecodingError | FileReadingError | JsonParsingError
+
 export function tryReadJsonFile(
   file: string,
 ): TE.TaskEither<

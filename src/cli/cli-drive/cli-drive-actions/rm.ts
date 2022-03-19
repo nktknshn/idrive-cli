@@ -7,7 +7,7 @@ import { Dep } from '../../../icloud/drive/api/type'
 import * as DF from '../../../icloud/drive/drive'
 import { isNotRootDetails } from '../../../icloud/drive/requests/types/types'
 import { XXX } from '../../../lib/types'
-import { ask } from './upload'
+import { askConfirmation } from './helpers'
 
 type Deps = DF.DriveMEnv & Dep<'moveItemsToTrash'>
 
@@ -25,7 +25,9 @@ export const rm = (
     SRTE.chainW((items) =>
       items.length > 0
         ? pipe(
-          ask({ message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}` }),
+          askConfirmation({
+            message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}`,
+          }),
           SRTE.fromTaskEither,
           SRTE.chain((answer) =>
             answer

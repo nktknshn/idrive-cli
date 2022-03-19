@@ -1,7 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import { Eq } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as T from '../icloud/drive/requests/types/types'
 import { NEA } from './types'

@@ -19,6 +19,8 @@ import { equalsDrivewsId, findInParentFilename as lookupItemByFilename, recordFr
 import { modifySubset } from '../modify-subset'
 import * as T from '../requests/types/types'
 
+/** close the tab */
+
 export const getByPathsH = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,

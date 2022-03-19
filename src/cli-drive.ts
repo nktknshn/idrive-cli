@@ -68,7 +68,6 @@ async function main() {
     retryDelay: 200,
     catchSessErrors: true,
     catchFetchErrors: true,
-    // catchFetchErrorsSRTE: catchFetchErrorsSRTE2,
     // schemaMapper: (schema) => ({
     //   ...schema,
     //   authorizeSession: pipe(

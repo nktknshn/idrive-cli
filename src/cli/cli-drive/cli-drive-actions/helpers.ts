@@ -5,10 +5,11 @@ import { pipe } from 'fp-ts/lib/function'
 import { groupBy } from 'fp-ts/lib/NonEmptyArray'
 import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
+import * as TE from 'fp-ts/TaskEither'
 import { isDeepStrictEqual } from 'util'
 import * as T from '../../../icloud/drive/requests/types/types'
 import { logger } from '../../../lib/logging'
-import { hasOwnProperties, Path } from '../../../lib/util'
+import { hasOwnProperties, Path, prompts } from '../../../lib/util'
 
 export const compareHierarchies = (cached: T.Hierarchy, actual: T.Hierarchy) => {
   logger.debug(JSON.stringify({ cached, actual }))
@@ -255,3 +256,21 @@ export const itemWithHierarchyToPath = (item: T.HasName & { hierarchy: T.Hierarc
     normalizePath,
   )
 }
+
+export const parseDrivewsid = (drivewsid: string) => {
+  const [type, zone, docwsid] = drivewsid.split('::')
+  return { type, zone, docwsid }
+}
+export const askConfirmation = ({ message }: { message: string }) =>
+  pipe(
+    prompts({
+      type: 'confirm',
+      name: 'value',
+      message,
+    }, {
+      onCancel: () => process.exit(1),
+    }),
+    TE.map(_ => {
+      return _.value as boolean
+    }),
+  )

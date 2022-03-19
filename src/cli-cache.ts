@@ -63,8 +63,8 @@ async function main() {
             isDrivewsid(argv.path)
               ? C.getByIdWithPath(argv.path)
               : pipe(
-                C.getByPathH(root.content, normalizePath(argv.path))(cache),
-                E.fold((e) => `Error: ${e.message}`, GetByPathResultValid.showGetByPathResult),
+                C.getByPath(root.content, normalizePath(argv.path))(cache),
+                // E.fold((e) => `Error: ${e.message}`, GetByPathResultValid.showGetByPathResult),
                 // logReturnAs('result'),
               ),
           )

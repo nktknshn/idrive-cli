@@ -37,7 +37,7 @@ export const move = ({ srcpath, dstpath }: {
 /*
   dstitem must be either
   - an existing folder. then we move src item into it
-  - partially valid path with path equal to the path of src and a singleton rest. Then we rename the item
+  - partially valid path with path equal to the path of src and a single rest. Then we rename the item
   - partially valid path with path *not* equal to the path of src and a singleton rest. Then we move the item into the path *and* rename the item
 */
 const handle = (

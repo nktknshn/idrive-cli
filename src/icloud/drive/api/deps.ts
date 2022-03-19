@@ -11,7 +11,7 @@ import { BasicState, RequestEnv } from '../requests/request'
 import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from './catch'
 import { ApiDepsType } from './type'
 
-const seqS = sequenceS(R.Apply)
+const seqs = sequenceS(R.Apply)
 
 type Enh<R2> = <Args extends unknown[], A, R>(
   req: <S extends AuthorizedState>(...args: Args) => XXX<S, R, A>,
@@ -52,7 +52,7 @@ const addErrorHandlers = <Args extends unknown[], A, R>(
   }
 
 // : Enh<CatchFetchEnv & RequestEnv & AuthorizeEnv & CatchSessEnv>
-const prepareRequest = flow(
+const fromRequest = flow(
   addErrorHandlers,
   R.chainW(attachDeps),
 )
@@ -78,19 +78,19 @@ const apiDepsScheme = {
   // basic icloud api requests with fulfield dependencies and attached error handlers
   retrieveItemDetailsInFolders: pipe(
     RQ.retrieveItemDetailsInFolders,
-    prepareRequest,
+    fromRequest,
     // R.local((a) => ({ ...a, catchSessErrors: false })),
   ),
-  createFolders: prepareRequest(RQ.createFolders),
-  downloadBatch: prepareRequest(RQ.downloadBatch),
-  download: prepareRequest(RQ.download),
-  renameItems: prepareRequest(RQ.renameItems),
-  putBackItemsFromTrash: prepareRequest(RQ.putBackItemsFromTrash),
-  moveItems: prepareRequest(RQ.moveItems),
-  moveItemsToTrash: prepareRequest(RQ.moveItemsToTrash),
-  upload: prepareRequest(RQ.upload),
-  singleFileUpload: prepareRequest(RQ.singleFileUpload),
-  updateDocuments: prepareRequest(RQ.updateDocuments),
+  createFolders: fromRequest(RQ.createFolders),
+  downloadBatch: fromRequest(RQ.downloadBatch),
+  download: fromRequest(RQ.download),
+  renameItems: fromRequest(RQ.renameItems),
+  putBackItemsFromTrash: fromRequest(RQ.putBackItemsFromTrash),
+  moveItems: fromRequest(RQ.moveItems),
+  moveItemsToTrash: fromRequest(RQ.moveItemsToTrash),
+  upload: fromRequest(RQ.upload),
+  singleFileUpload: fromRequest(RQ.singleFileUpload),
+  updateDocuments: fromRequest(RQ.updateDocuments),
   // authorization
   authorizeSession,
   // utility
@@ -105,7 +105,7 @@ export const createApiDeps: R.Reader<
     pipe(
       R.of((schemaMapper ?? identity)(apiDepsScheme)),
       R.bindTo('schema'),
-      R.bind('deps', ({ schema }) => seqS(schema)),
+      R.bind('deps', ({ schema }) => seqs(schema)),
       R.bind('depsEnv', () => R.ask<ApiDepsEnv>()),
       R.map(_ => ({ ..._.deps, schema: _.schema, depsEnv: _.depsEnv })),
     )

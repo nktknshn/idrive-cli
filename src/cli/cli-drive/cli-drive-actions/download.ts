@@ -23,11 +23,12 @@ import { handleLocalFilesConflicts, solvers } from './download/download-conflict
 import {
   createDirsList,
   createEmptyFiles,
+  DownloadICloudFilesFunc,
   DownloadInfo,
   DownloadStructure,
   DownloadTask,
   downloadUrlsPar,
-  filterTree,
+  filterFolderTree,
 } from './download/download-helpers'
 import { normalizePath } from './helpers'
 
@@ -45,12 +46,6 @@ type Deps =
   & Dep<'downloadBatch'>
   & Dep<'fetchClient'>
   & SchemaEnv
-
-type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
-  DF.State,
-  R,
-  [E.Either<Error, void>, readonly [url: string, path: string]][]
->
 
 export const downloads = (
   { paths }: {
@@ -169,7 +164,7 @@ export const downloadFolder = (
         SRTE.map(NA.head),
       )
     ),
-    SRTE.map(filterTree({ include, exclude })),
+    SRTE.map(filterFolderTree({ include, exclude })),
     SRTE.chainFirstIOK(
       (task) =>
         () => {
@@ -248,7 +243,7 @@ const downloadICloudFilesChunked = (
   ({ downloadable }) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
-      A.map(downloadChunkPar()),
+      A.map(downloadChunkPar),
       SRTE.sequenceArray,
       SRTE.map(flow(RA.toArray, A.flatten)),
     )
@@ -272,36 +267,35 @@ const splitIntoChunks = (
   return filesChunks
 }
 
-const downloadChunkPar = () =>
-  (
-    chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
-  ): XXX<
-    DF.State,
-    Dep<'downloadBatch'> & Dep<'fetchClient'>,
-    [E.Either<Error, void>, readonly [url: string, path: string]][]
-  > => {
-    return pipe(
-      API.downloadBatch<DF.State>({
-        docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
-        zone: NA.head(chunk).info[1].zone,
-      }),
-      SRTE.chainW((downloadResponses) => {
-        // const { left: zips, right: raw } = pipe(
-        //   downloadResponses,
-        //   A.partition(_ => _.data_token !== undefined),
-        // )
+const downloadChunkPar = (
+  chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
+): XXX<
+  DF.State,
+  Dep<'downloadBatch'> & Dep<'fetchClient'>,
+  [E.Either<Error, void>, readonly [url: string, path: string]][]
+> => {
+  return pipe(
+    API.downloadBatch<DF.State>({
+      docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
+      zone: NA.head(chunk).info[1].zone,
+    }),
+    SRTE.chainW((downloadResponses) => {
+      // const { left: zips, right: raw } = pipe(
+      //   downloadResponses,
+      //   A.partition(_ => _.data_token !== undefined),
+      // )
 
-        const urls = pipe(
-          downloadResponses,
-          A.map(_ => _.data_token?.url ?? _.package_token?.url),
-        )
+      const urls = pipe(
+        downloadResponses,
+        A.map(_ => _.data_token?.url ?? _.package_token?.url),
+      )
 
-        return SRTE.fromReaderTaskEither(pipe(
-          A.zip(urls)(chunk),
-          A.map(([{ localpath }, url]) => [url, localpath] as const),
-          A.filter(guardFst(isDefined)),
-          RTE.fromReaderTaskK(downloadUrlsPar),
-        ))
-      }),
-    )
-  }
+      return SRTE.fromReaderTaskEither(pipe(
+        A.zip(urls)(chunk),
+        A.map(([{ localpath }, url]) => [url, localpath] as const),
+        A.filter(guardFst(isDefined)),
+        RTE.fromReaderTaskK(downloadUrlsPar),
+      ))
+    }),
+  )
+}
