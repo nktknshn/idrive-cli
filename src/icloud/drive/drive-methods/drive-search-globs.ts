@@ -12,7 +12,7 @@ import { guardSnd, Path } from '../../../lib/util'
 import { Drive } from '..'
 import { modifySubset } from '../modify-subset'
 import * as T from '../types'
-import { getFoldersTrees, shallowFolder, zipFolderTreeWithPath } from './get-folders-trees'
+import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder } from './drive-get-folders-trees'
 
 export const searchGlobsShallow = (
   globs: NEA<string>,
@@ -68,7 +68,7 @@ export const searchGlobs = (
               : [],
           tree =>
             pipe(
-              zipFolderTreeWithPath(Path.dirname(scan.base), tree),
+              flattenFolderTreeWithPath(Path.dirname(scan.base), tree),
               A.filterMap(([path, item]) => {
                 if (scan.glob.length == 0) {
                   if (normalizePath(path) == normalizePath(globpattern)) {

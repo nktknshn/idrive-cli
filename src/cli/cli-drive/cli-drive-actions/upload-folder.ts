@@ -4,9 +4,7 @@ import { isSome } from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
-import { Stats } from 'fs'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as API from '../../../icloud/drive/deps/api-methods'
 import { DepApi, DepFs } from '../../../icloud/drive/deps/deps'
@@ -19,7 +17,7 @@ import { normalizePath } from '../../../lib/normalize-path'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { walkDirRel } from './download/walkdir'
-import { createRemoteDirStructure, createUploadTask, uploadChunk } from './upload/upload-helpers'
+import { createRemoteDirStructure, createUploadTask, uploadChunk, UploadTask } from './upload/upload-helpers'
 
 type Argv = {
   localpath: string
@@ -37,13 +35,6 @@ type Deps =
   & DepApi<'downloadBatch'>
   & API.UploadMethodDeps
   & DepFs<'fstat' | 'opendir'>
-
-type UploadTask = {
-  dirstruct: string[]
-  uploadable: (readonly [string, { path: string; stats: Stats }])[]
-  empties: (readonly [string, { path: string; stats: Stats }])[]
-  excluded: (readonly [string, { path: string; stats: Stats }])[]
-}
 
 export type UploadResult = {
   status: { status_code: number; error_message: string }

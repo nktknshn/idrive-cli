@@ -1,28 +1,26 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constUndefined, constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
+// import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RT from 'fp-ts/lib/ReaderTask'
-import { fst } from 'fp-ts/lib/ReadonlyTuple'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Eq } from 'fp-ts/lib/string'
 import * as TE from 'fp-ts/lib/TaskEither'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
 import { Api, Drive } from '../../../../icloud/drive'
 import { DepApi, DepFetchClient, DepFs } from '../../../../icloud/drive/deps/deps'
-import * as DF from '../../../../icloud/drive/drive'
-import { FolderTree, zipFolderTreeWithPath } from '../../../../icloud/drive/drive-methods/get-folders-trees'
+import { flattenFolderTreeWithPath, FolderTree } from '../../../../icloud/drive/drive-methods/drive-get-folders-trees'
 import { prependPath } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/types'
-import { err, SomeError } from '../../../../lib/errors'
-// import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { err } from '../../../../lib/errors'
 import { loggerIO } from '../../../../lib/loggerIO'
 import { printerIO } from '../../../../lib/logging'
-import { normalizePath, stripTrailingSlash } from '../../../../lib/normalize-path'
+import { stripTrailingSlash } from '../../../../lib/normalize-path'
 import { XXX } from '../../../../lib/types'
 import { guardFst, guardSnd, hasOwnProperty, isDefined, Path } from '../../../../lib/util'
 import { handleLocalFilesConflicts, solvers } from './download-conflict'
@@ -34,32 +32,12 @@ import {
   DownloadUrlToFile,
   FilterTreeResult,
 } from './types'
-// export const mkdirTask = (path: string) =>
-//   pipe(
-//     TE.fromIO<void, SomeError>(loggerIO.debug(`creating ${path}`)),
-//     TE.chain(() => mkdir(path)),
-//   )
-
-// export const writeFile = (destpath: string) =>
-//   (readble: Readable) =>
-//     TE.tryCatch(
-//       () => {
-//         // const writer = createWriteStream(destpath)
-//         // readble.pipe(writer)
-//         // return TE.taskify(stream.finished)(writer)()
-//         return writeFile(destpath, readble)
-//       },
-//       e => err(`error writing file ${destpath}: ${e}`),
-//     )
 
 export const writeFileFromReadable = (destpath: string) =>
   (readble: Readable): (deps: DepFs<'createWriteStream'>) => TE.TaskEither<Error, void> =>
     deps =>
       TE.tryCatch(
         () => {
-          // const writer = createWriteStream(destpath)
-          // readble.pipe(writer)
-          // return TE.taskify(stream.finished)(writer)()
           return new Promise(
             (resolve, reject) => {
               const stream = deps.fs.createWriteStream(destpath)
@@ -73,7 +51,7 @@ export const writeFileFromReadable = (destpath: string) =>
 export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'createWriteStream'>> = (
   url: string,
   destpath: string,
-): RTE.ReaderTaskEither<DepFetchClient & DepFs<'createWriteStream'>, Error, void> =>
+) =>
   pipe(
     loggerIO.debug(`getting ${destpath}`),
     RTE.fromIO,
@@ -107,10 +85,6 @@ export const createEmptyFiles = (paths: string[]): RTE.ReaderTaskEither<DepFs<'w
       A.sequence(TE.ApplicativePar),
     )
 }
-
-const isEnoentError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'ENOENT'
-
-const isEexistError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'EEXIST'
 
 export const createDirsList = (
   dirs: string[],
@@ -159,7 +133,7 @@ export const filterFolderTree = (
   { exclude, include }: { include: string[]; exclude: string[] },
 ) =>
   (tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>): FilterTreeResult => {
-    const flatTree = zipFolderTreeWithPath('/', tree)
+    const flatTree = flattenFolderTreeWithPath('/', tree)
 
     const files = pipe(
       flatTree,
@@ -215,9 +189,9 @@ export const toDirMapper = (dstpath: string) =>
     }
   }
 
-export const basicDownloadTask = (_toDirMapper: (ds: DownloadStructure) => DownloadTask) =>
+export const basicDownloadTask = (toDirMapper: (ds: DownloadStructure) => DownloadTask) =>
   (ds: DownloadStructure) => {
-    const task = _toDirMapper(ds)
+    const task = toDirMapper(ds)
 
     return handleLocalFilesConflicts({
       // conflictsSolver: resolveConflictsRename,
@@ -282,11 +256,6 @@ export const downloadChunkPar = (
       zone: NA.head(chunk).info[1].zone,
     }),
     SRTE.chainW((downloadResponses) => {
-      // const { left: zips, right: raw } = pipe(
-      //   downloadResponses,
-      //   A.partition(_ => _.data_token !== undefined),
-      // )
-
       const urls = pipe(
         downloadResponses,
         A.map(_ => _.data_token?.url ?? _.package_token?.url),
@@ -301,3 +270,7 @@ export const downloadChunkPar = (
     }),
   )
 }
+
+const isEnoentError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'ENOENT'
+
+const isEexistError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'EEXIST'

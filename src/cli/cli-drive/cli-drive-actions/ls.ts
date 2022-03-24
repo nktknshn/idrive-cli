@@ -17,7 +17,7 @@ import {
   addPathToFolderTree,
   showTreeWithFiles,
   treeWithFiles,
-} from '../../../icloud/drive/drive-methods/get-folders-trees'
+} from '../../../icloud/drive/drive-methods/drive-get-folders-trees'
 import { findInParentGlob, recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'

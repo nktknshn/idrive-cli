@@ -9,18 +9,18 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
-import * as API from '../../../../icloud/drive/deps/api-methods'
+import { Api } from '../../../../icloud/drive'
 import { DepApi } from '../../../../icloud/drive/deps/deps'
 import * as Drive from '../../../../icloud/drive/drive'
+import { parseDrivewsid } from '../../../../icloud/drive/helpers'
 import { printerIO } from '../../../../lib/logging'
 import { NEA, XXX } from '../../../../lib/types'
 import { Path } from '../../../../lib/util'
 import { getDirectoryStructure } from '../download/download-helpers'
 import { LocalTreeElement } from '../download/walkdir'
-import { parseDrivewsid } from '../helpers'
 import { UploadResult } from '../upload-folder'
 
-type UploadTask = {
+export type UploadTask = {
   dirstruct: string[]
   uploadable: (readonly [string, { path: string; stats: Stats }])[]
   empties: (readonly [string, { path: string; stats: Stats }])[]
@@ -30,9 +30,9 @@ type UploadTask = {
 export const createUploadTask = (
   { exclude, include }: { include: string[]; exclude: string[] },
 ) =>
-  (tree: TR.Tree<LocalTreeElement>): UploadTask => {
+  (reltree: TR.Tree<LocalTreeElement>): UploadTask => {
     const flatTree = pipe(
-      tree,
+      reltree,
       TR.reduce([] as (readonly [string, LocalTreeElement])[], (acc, cur) => [...acc, [cur.path, cur] as const]),
     )
 
@@ -41,10 +41,6 @@ export const createUploadTask = (
       A.filter(flow(snd, _ => _.type === 'file')),
     )
 
-    // const folders = pipe(
-    //   flatTree,
-    //   A.filter(flow(snd, _ => _.type === 'directory')),
-    // )
     const { left: excluded, right: valid } = pipe(
       files,
       A.partition(
@@ -73,52 +69,28 @@ export const createUploadTask = (
     }
   }
 
-export const getSubdirsPerParent = (parent: string) =>
-  (struct: string[]): (readonly [string, string])[] => {
-    const kids = pipe(
-      struct,
-      A.map(Path.parse),
-      A.filter(_ => _.dir == parent),
-      A.map(_ => [parent, _.base] as const),
-    )
-
-    const subkids = pipe(
-      kids,
-      A.map(([p, k]) => getSubdirsPerParent(Path.join(p, k))(struct)),
-      A.flatten,
-    )
-
-    return [...kids, ...subkids]
-  }
-
-const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
-  return A.chop(as => {
-    const { init, rest } = pipe(as, A.spanLeft((a: A) => S.equals(a, as[0])))
-    return [init, rest]
-  })
-}
-
 export const uploadChunk = (
-  pathToDriwesid: Record<string, string>,
+  pathToDrivewsid: Record<string, string>,
 ) =>
   (
     chunk: NEA<
       readonly [remotepath: string, element: { path: string; stats: Stats }]
     >,
-  ): XXX<Drive.State, API.UploadMethodDeps, NEA<UploadResult>> =>
+  ): XXX<Drive.State, Api.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
-        NA.map(([remotepath, element]) =>
-          pipe(
-            API.upload<Drive.State>({
+        NA.map(([remotepath, element]) => {
+          const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
+          return pipe(
+            Api.upload<Drive.State>({
               sourceFilePath: element.path,
-              docwsid: parseDrivewsid(pathToDriwesid[Path.dirname(remotepath)]).docwsid,
-              zone: parseDrivewsid(pathToDriwesid[Path.dirname(remotepath)]).zone,
+              docwsid: d.docwsid,
+              zone: d.zone,
             })(state),
             RTE.chainFirstIOK(() => printerIO.print(`${remotepath}`)),
           )
-        ),
+        }),
         NA.sequence(RTE.ApplicativePar),
         RTE.map(
           results => [NA.unzip(results)[0], NA.last(results)[1]],
@@ -148,9 +120,9 @@ export const createRemoteDirStructure = (
       (acc, [parent, names]) =>
         pipe(
           acc,
-          SRTE.chainFirst(() => SRTE.fromIO(printerIO.print(`creating ${names} in ${parent}`))),
+          SRTE.chainFirstIOK(() => printerIO.print(`creating ${names} in ${parent}`)),
           SRTE.chain((dirToIdMap) =>
-            API.createFoldersFailing<Drive.State>({
+            Api.createFoldersFailing<Drive.State>({
               destinationDrivewsId: dirToIdMap[parent],
               names,
             })
@@ -166,4 +138,29 @@ export const createRemoteDirStructure = (
         ),
     ),
   )
+}
+
+export const getSubdirsPerParent = (parent: string) =>
+  (struct: string[]): (readonly [string, string])[] => {
+    const kids = pipe(
+      struct,
+      A.map(Path.parse),
+      A.filter(_ => _.dir == parent),
+      A.map(_ => [parent, _.base] as const),
+    )
+
+    const subkids = pipe(
+      kids,
+      A.map(([p, k]) => getSubdirsPerParent(Path.join(p, k))(struct)),
+      A.flatten,
+    )
+
+    return [...kids, ...subkids]
+  }
+
+const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
+  return A.chop(as => {
+    const { init, rest } = pipe(as, A.spanLeft((a: A) => S.equals(a, as[0])))
+    return [init, rest]
+  })
 }

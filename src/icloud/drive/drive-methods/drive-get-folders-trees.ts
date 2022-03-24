@@ -60,6 +60,30 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   )
 }
 
+export const shallowFolder = <T extends T.Details>(details: T): FolderTree<T> =>
+  TR.make(
+    {
+      details,
+      deep: false,
+    },
+  )
+
+export const deepFolder = <T extends T.Details | T.NonRootDetails>(
+  details: T,
+  children: TR.Forest<FolderTreeValue<T>>,
+): FolderTree<T> =>
+  TR.make({
+    details,
+    deep: true,
+  }, children)
+
+export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
+  return pipe(
+    tree,
+    TR.map(_ => T.fileNameAddSlash(_.details)),
+    TR.drawTree,
+  )
+}
 export const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
   const files: (T | T.DriveChildrenItemFile)[] = pipe(
     tree.value.details.items,
@@ -67,9 +91,9 @@ export const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree
   )
 
   return TR.make(
-    tree.value.details as T | T.DriveChildrenItemFile,
+    tree.value.details,
     pipe(
-      tree.forest.map(f => treeWithFiles(f)),
+      tree.forest.map(treeWithFiles),
       A.concat(
         files.map(f => TR.make(f)),
       ),
@@ -104,7 +128,7 @@ export const showTreeWithFiles = (
   )
 }
 
-export const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
+const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
   pipe(
     folders,
     A.map(folder => pipe(folder.items, A.filter(T.isFolderLikeItem))),
@@ -112,7 +136,7 @@ export const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
     // A.reduce([], A.getSemigroup<T.FolderLikeItem>().concat),
   )
 
-export const zipFolderTreeWithPath = <T extends T.Details>(
+export const flattenFolderTreeWithPath = <T extends T.Details>(
   parentPath: string,
   tree: FolderTree<T>,
 ): [string, T.DetailsOrFile<T>][] => {
@@ -133,7 +157,7 @@ export const zipFolderTreeWithPath = <T extends T.Details>(
 
   const subfolders = pipe(
     tree.forest,
-    A.map(t => zipFolderTreeWithPath(path, t)),
+    A.map(t => flattenFolderTreeWithPath(path, t)),
     A.flatten,
   )
 
@@ -178,31 +202,6 @@ const groupBy = <T>(f: (item: T) => string): (items: T[]) => Record<string, T[]>
 
     return result
   }
-
-export const shallowFolder = <T extends T.Details>(details: T): FolderTree<T> =>
-  TR.make(
-    {
-      details,
-      deep: false,
-    },
-  )
-
-export const deepFolder = <T extends T.Details | T.NonRootDetails>(
-  details: T,
-  children: TR.Forest<FolderTreeValue<T>>,
-): FolderTree<T> =>
-  TR.make({
-    details,
-    deep: true,
-  }, children)
-
-export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
-  return pipe(
-    tree,
-    TR.map(_ => T.fileNameAddSlash(_.details)),
-    TR.drawTree,
-  )
-}
 
 export const drawFilesTree = <T extends T.Details>(tree: FolderTree<T>) => {
   const getSubTrees = (tree: FolderTree<T>): TR.Tree<T.HasName> => {

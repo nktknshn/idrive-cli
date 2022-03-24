@@ -1,7 +1,7 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { API } from '../../../icloud/drive/deps'
+import { Api } from '../../../icloud/drive'
 import { DepApi, DepFs } from '../../../icloud/drive/deps/deps'
 import * as S from '../../../icloud/session/session'
 import { err } from '../../../lib/errors'
@@ -29,22 +29,13 @@ export const initSession = (): RTE.ReaderTaskEither<InitSessionDeps, Error, void
           )),
       )
     ),
-    RTE.chain(({ sessionFile }) => RTE.fromIO(printerIO.print(`initializing session in ${sessionFile}`))),
-    RTE.chainTaskEitherK(() =>
-      pipe(
-        TE.Do,
-        TE.bind('username', askUsername),
-        TE.bind('password', askPassword),
-        TE.map(
-          ({ username, password }) => ({ session: S.session(username.value, password.value) }),
-        ),
-      )
-    ),
-    RTE.chainW(API.authorizeState),
+    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`initializing session in ${sessionFile}`))),
+    RTE.chainTaskEitherK(() => sessionQuest),
+    RTE.chainW(Api.authorizeState),
     RTE.chainFirstW(saveSession),
     RTE.chainFirstW(saveAccountData),
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
-    RTE.chain(({ sessionFile }) => RTE.fromIO(printerIO.print(`session initiated in ${sessionFile}`))),
+    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`session initiated in ${sessionFile}`))),
     RTE.map(constVoid),
   )
 }
@@ -66,3 +57,14 @@ const askPassword = () =>
   }, {
     onCancel: () => process.exit(1),
   })
+
+const sessionQuest: TE.TaskEither<Error, {
+  session: S.ICloudSession
+}> = pipe(
+  TE.Do,
+  TE.bind('username', askUsername),
+  TE.bind('password', askPassword),
+  TE.map(
+    ({ username, password }) => ({ session: S.session(username.value, password.value) }),
+  ),
+)

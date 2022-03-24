@@ -26,7 +26,7 @@ export type SessionFileReadingResult = TE.TaskEither<
 //       ),
 //     )
 
-export const saveSession2 = (session: ICloudSession) =>
+export const saveSession = (session: ICloudSession) =>
   (file: string): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
     ({ fs: { writeFile } }) =>
       pipe(

@@ -6,7 +6,7 @@ import { defaultApiEnv } from '../defaults'
 import { readAccountData } from '../icloud/authorization/validate'
 import { DepFetchClient, DepFs } from '../icloud/drive/deps/deps'
 import * as AM from '../icloud/drive/requests/request'
-import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
+import { readSessionFile, saveSession } from '../icloud/session/session-file'
 
 export function apiActionM<T>(
   action: () => AM.AuthorizedRequest<T>,
@@ -28,7 +28,7 @@ export function apiActionM<T>(
         RTE.chainW(
           ([result, { session, accountData }]) =>
             pipe(
-              saveSession2(session)(deps.sessionFile)(deps),
+              saveSession(session)(deps.sessionFile)(deps),
               TE.map(constant(result)),
               RTE.fromTaskEither,
             ),

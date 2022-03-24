@@ -15,7 +15,7 @@ import { getMissedFound } from '../helpers'
 import { getUrlStream as getUrlStream_ } from '../requests/download'
 import { BasicState } from '../requests/request'
 import * as T from '../types'
-import { useApi as useApi } from './api-type'
+import { useApi } from './api-type'
 import { DepApi, DepFetchClient, DepFs } from './deps'
 
 /** basic icloud api requests as standalone depended functions*/

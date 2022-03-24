@@ -7,6 +7,7 @@ import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import micromatch from 'micromatch'
 import Path from 'path'
+import { NormalizedPath, normalizePath } from '../../lib/normalize-path'
 import * as T from './types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
@@ -107,4 +108,24 @@ export const prependPath = (parent: string) => (kid: string) => Path.join(parent
 
 export const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
   return `${type}::${zone}::${document_id}`
+}
+
+export const hierarchyToPath = (hierarchy: T.Hierarchy): NormalizedPath => {
+  return pipe(
+    hierarchy,
+    A.map(hitem =>
+      T.isHierarchyItemRoot(hitem)
+        ? '/'
+        : T.isHierarchyItemTrash(hitem)
+        ? 'TRASH_ROOT/'
+        : T.fileName(hitem)
+    ),
+    _ => _.length > 0 ? _.join('/') : '/',
+    normalizePath,
+  )
+}
+
+export const parseDrivewsid = (drivewsid: string) => {
+  const [type, zone, docwsid] = drivewsid.split('::')
+  return { type, zone, docwsid }
 }

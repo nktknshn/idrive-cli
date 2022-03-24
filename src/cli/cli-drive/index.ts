@@ -4,6 +4,8 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../../defaults'
+import { apiCreator } from '../../icloud/drive/deps/api-creator'
+import { failingFetch } from '../../lib/http/fetch-client'
 import { printer } from '../../lib/logging'
 import { isKeyOf } from '../../lib/util'
 import { driveAction, DriveActionDeps } from '../cli-action'
@@ -42,7 +44,14 @@ type ActionsArgv = LLLL extends (...args: infer Args) => SRTE.StateReaderTaskEit
 export const runCommand = (
   command: ValidCommand,
 ) => {
-  const deps = cliActionsDependancies(defaultApiEnv)
+  const deps = pipe(
+    {
+      ...defaultApiEnv,
+      apiCreator,
+      fetchClient: failingFetch(90),
+    },
+    cliActionsDependancies(),
+  )
 
   if (command === 'init') {
     return (argv: { sessionFile: string }) =>

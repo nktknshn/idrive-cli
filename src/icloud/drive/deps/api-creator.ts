@@ -7,7 +7,8 @@ import * as RQ from '../requests'
 import { BasicState } from '../requests/request'
 import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from './api-catch'
 import { ApiType } from './api-type'
-import { ReqWrapper, wrapRequests } from './wrapper'
+import { ReqWrapper, wrapRequests } from './request-wrapper'
+
 const seqs = sequenceS(R.Apply)
 
 export const basic: ReqWrapper<

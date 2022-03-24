@@ -5,11 +5,10 @@ import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
-import { Api } from '../../../icloud/drive'
+import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps/deps'
-import * as Drive from '../../../icloud/drive/drive'
-import { findInParentFilename2, getDrivewsid, parseName } from '../../../icloud/drive/helpers'
+import { findInParentFilename2, getDrivewsid } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/types'
 import { normalizePath } from '../../../lib/normalize-path'
 import * as H from '../../../lib/path-validation'
@@ -41,9 +40,9 @@ export const uploads = (
   return pipe(
     Drive.getDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bindW('dst', ({ root }) => Drive.getByPathFolder(root, normalizePath(dstpath))),
+    SRTE.bind('dst', ({ root }) => Drive.getByPathFolder(root, normalizePath(dstpath))),
     SRTE.bindW('deps', () => SRTE.ask<Drive.State, UploadActionDeps>()),
-    SRTE.chainW(({ dst, deps }) =>
+    SRTE.chain(({ dst, deps }) =>
       pipe(
         srcpaths,
         A.map(src =>
@@ -70,11 +69,11 @@ export const singleFileUpload = (
   return pipe(
     Drive.getDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bindW('dst', ({ root }) => Drive.getByPath(root, normalizePath(dstpath))),
-    SRTE.bindW('src', () => SRTE.of(srcpath)),
-    SRTE.bindW('srcstat', () => SRTE.fromReaderTaskEither((deps: UploadActionDeps) => deps.fs.fstat(srcpath))),
-    SRTE.bindW('overwright', () => SRTE.of(overwright)),
-    SRTE.chainW(handleSingleFileUpload),
+    SRTE.bind('dst', ({ root }) => Drive.getByPath(root, normalizePath(dstpath))),
+    SRTE.bind('src', () => SRTE.of(srcpath)),
+    SRTE.bind('srcstat', () => SRTE.fromReaderTaskEither((deps: UploadActionDeps) => deps.fs.fstat(srcpath))),
+    SRTE.bind('overwright', () => SRTE.of(overwright)),
+    SRTE.chain(handleSingleFileUpload),
     SRTE.map(() => `Success. ${Path.basename(srcpath)}`),
   )
 }
