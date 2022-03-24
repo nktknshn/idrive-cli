@@ -14,7 +14,6 @@ type Deps =
   & Drive.Deps
   & DepApi<'download'>
   & DepFetchClient
-// & SchemaEnv
 
 export const cat = (
   { path }: { path: string },
@@ -31,7 +30,7 @@ export const cat = (
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.bindW('url', ({ item, deps }) =>
+    SRTE.bindW('url', ({ item }) =>
       pipe(
         Api.getItemUrl<Drive.State>(item),
         // deps.retrieveItemDetailsInFoldersRTE({drivewsids: [1]})

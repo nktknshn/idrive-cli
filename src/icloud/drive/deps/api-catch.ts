@@ -33,6 +33,7 @@ const catchFetchErrorsTE = (triesLeft: number, retryDelay: number) =>
       ),
     )
   }
+
 export const catchFetchErrorsSRTE = ({ retries, retryDelay, catchFetchErrors }: CatchFetchEnv) =>
   <S, R, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,

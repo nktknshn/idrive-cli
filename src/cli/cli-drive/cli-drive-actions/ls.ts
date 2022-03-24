@@ -44,7 +44,7 @@ type Argv = {
   tree: boolean
 }
 
-export const listUnixPath2 = (
+export const listUnixPath = (
   { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
 ): Drive.Effect<string> => {
   assert(A.isNonEmpty(paths))

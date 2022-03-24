@@ -9,7 +9,7 @@ import * as TR from 'fp-ts/lib/Tree'
 import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import * as DF from '../drive'
+import * as Drive from '../drive'
 import * as T from '../types'
 
 export type FolderTreeDeep<T extends T.Details> = {
@@ -29,15 +29,15 @@ export type FolderTreeValue<T extends T.Details> = FolderTreeDeep<T> | FolderTre
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<T.NonRootDetails>,
   depth: number,
-): DF.Effect<NEA<FolderTree<T.NonRootDetails>>>
+): Drive.Effect<NEA<FolderTree<T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DF.Effect<NEA<FolderTree<R | T.NonRootDetails>>>
+): Drive.Effect<NEA<FolderTree<R | T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DF.Effect<NEA<FolderTree<R | T.NonRootDetails>>> {
+): Drive.Effect<NEA<FolderTree<R | T.NonRootDetails>>> {
   const subfolders = getSubfolders(folders)
   const doGoDeeper = depth > 0 && subfolders.length > 0
   const depthExceed = subfolders.length > 0 && depth == 0
@@ -45,7 +45,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   return pipe(
     A.isNonEmpty(subfolders) && doGoDeeper
       ? pipe(
-        DF.retrieveItemDetailsInFoldersSavingStrict(
+        Drive.retrieveItemDetailsInFoldersSavingStrict(
           pipe(subfolders, NA.map(_ => _.drivewsid)),
         ),
         SRTE.chain(details => getFoldersTrees(details, depth - 1)),

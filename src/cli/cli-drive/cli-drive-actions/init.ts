@@ -7,18 +7,18 @@ import * as S from '../../../icloud/session/session'
 import { err } from '../../../lib/errors'
 import { DepFs } from '../../../lib/fs'
 import { printerIO } from '../../../lib/logging'
-import { prompts } from '../../../lib/util'
+import { prompts } from '../../../lib/prompts'
 import { saveAccountData, saveSession } from '../../cli-action'
 
-type Deps =
+export type InitSessionDeps =
   & { sessionFile: string }
   & DepApi<'authorizeSession'>
   & DepFs<'fstat'>
   & DepFs<'writeFile'>
 
-export const initSession = (): RTE.ReaderTaskEither<Deps, Error, void> => {
+export const initSession = (): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
   return pipe(
-    RTE.ask<Deps>(),
+    RTE.ask<InitSessionDeps>(),
     RTE.chainFirst(({ sessionFile, fs }) =>
       pipe(
         RTE.fromTaskEither(fs.fstat(sessionFile)),
@@ -44,7 +44,7 @@ export const initSession = (): RTE.ReaderTaskEither<Deps, Error, void> => {
     RTE.chainW(API.authorizeState),
     RTE.chainFirstW(saveSession),
     RTE.chainFirstW(saveAccountData),
-    RTE.chainW(() => RTE.ask<Deps>()),
+    RTE.chainW(() => RTE.ask<InitSessionDeps>()),
     RTE.chain(({ sessionFile }) => RTE.fromIO(printerIO.print(`session initiated in ${sessionFile}`))),
     RTE.map(constVoid),
   )

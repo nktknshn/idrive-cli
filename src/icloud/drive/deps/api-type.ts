@@ -11,7 +11,7 @@ import { BasicState } from '../requests/request'
 import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
 import * as T from '../types'
 
-/** basic api functions and also helpers with attached dependencies */
+/** basic api functions with attached dependencies */
 export type ApiType = {
   retrieveItemDetailsInFolders: <S extends AuthorizedState>(
     { drivewsids }: { drivewsids: NEA<string> },
@@ -86,18 +86,20 @@ export type ApiType = {
   authorizeSession: <S extends BasicState>() => XX<S, AccountData>
 }
 
-export const useDepRequest = <R>() =>
-  <Args extends unknown[], S extends AuthorizedState, R1 extends R, A>(
-    f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R1, Error, A>,
-  ) =>
-    (...args: Args) =>
-      pipe(
-        SRTE.ask<S, R>(),
-        SRTE.map(f),
-        SRTE.chain(f => f(...args)),
-      )
-
-export type DepApi<K extends keyof ApiType, RootKey extends string | number | symbol = 'api'> = Record<
+export type DepApi<
+  K extends keyof ApiType,
+  RootKey extends string | number | symbol = 'api',
+> = Record<
   RootKey,
   Pick<ApiType, K>
 >
+
+export const useApi = <Args extends unknown[], S, R, A>(
+  f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
+) =>
+  (...args: Args) =>
+    pipe(
+      SRTE.ask<S, R>(),
+      SRTE.map(f),
+      SRTE.chain(f => f(...args)),
+    )

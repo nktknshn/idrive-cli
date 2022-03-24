@@ -82,12 +82,6 @@ const eitherAsTuple = <E, A>(
   )
 }
 
-const taskEitherasTuple = <E, A>(
-  e: TE.TaskEither<E, A>,
-): T.Task<readonly [undefined, A] | readonly [E, undefined]> => {
-  return () => e().then(eitherAsTuple)
-}
-
 export const arrayFromOption = <T>(opt: O.Option<T>) => pipe(opt, O.fold(() => [], (v) => [v]))
 
 export function splitPair(
@@ -112,11 +106,7 @@ export const isKeyOf = <R extends Record<string, unknown>>(
 }
 
 import { Refinement } from 'fp-ts/lib/Refinement'
-import prompts_ from 'prompts'
 import { Readable } from 'stream'
-import { err } from './errors'
-
-export const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
 export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, string> {
   return TE.fromTask<string, Error>(async () => {

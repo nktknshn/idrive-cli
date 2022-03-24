@@ -4,48 +4,41 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
 import { Stats } from 'fs'
 import mime from 'mime-types'
 import { Readable } from 'stream'
-import { buffer } from 'stream/consumers'
 import { err } from '../../../lib/errors'
 import { DepFs } from '../../../lib/fs'
-import { NEA, XXX } from '../../../lib/types'
+import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
-import { AccountData } from '../../authorization/types'
 import { getMissedFound } from '../helpers'
 import { getUrlStream as getUrlStream_ } from '../requests/download'
 import { BasicState } from '../requests/request'
 import * as T from '../types'
-import { DepApi, useDepRequest as useApi } from './api-type'
+import { DepApi, useApi as useApi } from './api-type'
 import { DepFetchClient } from './util'
 
 /** basic icloud api requests as standalone depended functions*/
-export const renameItems = useApi<DepApi<'renameItems'>>()(_ => _.api.renameItems)
+export const renameItems = useApi((_: DepApi<'renameItems'>) => _.api.renameItems)
 
-export const putBackItemsFromTrash = useApi<DepApi<'putBackItemsFromTrash'>>()(_ => _.api.putBackItemsFromTrash)
+export const putBackItemsFromTrash = useApi((_: DepApi<'putBackItemsFromTrash'>) => _.api.putBackItemsFromTrash)
 
-export const moveItems = useApi<DepApi<'moveItems'>>()(_ => _.api.moveItems)
+export const moveItems = useApi((_: DepApi<'moveItems'>) => _.api.moveItems)
 
-export const moveItemsToTrash = useApi<DepApi<'moveItemsToTrash'>>()(_ => _.api.moveItemsToTrash)
+export const moveItemsToTrash = useApi((_: DepApi<'moveItemsToTrash'>) => _.api.moveItemsToTrash)
 
-export const retrieveItemDetailsInFolders = useApi<DepApi<'retrieveItemDetailsInFolders'>>()(_ =>
+export const retrieveItemDetailsInFolders = useApi((_: DepApi<'retrieveItemDetailsInFolders'>) =>
   _.api.retrieveItemDetailsInFolders
 )
 
-export const download = useApi<DepApi<'download'>>()(_ => _.api.download)
+export const download = useApi((_: DepApi<'download'>) => _.api.download)
 
-export const downloadBatch = useApi<DepApi<'downloadBatch'>>()(_ => _.api.downloadBatch)
+export const downloadBatch = useApi((_: DepApi<'downloadBatch'>) => _.api.downloadBatch)
 
-export const createFolders = useApi<DepApi<'createFolders'>>()(_ => _.api.createFolders)
+export const createFolders = useApi((_: DepApi<'createFolders'>) => _.api.createFolders)
 
-export const authorizeSession = <S extends BasicState>(): XXX<
-  S,
-  DepApi<'authorizeSession'>,
-  AccountData
-> =>
+export const authorizeSession = <S extends BasicState>() =>
   SRTE.asksStateReaderTaskEitherW(
     (_: DepApi<'authorizeSession'>) => _.api.authorizeSession<S>(),
   )
@@ -56,7 +49,7 @@ export const authorizeState = <
   S extends BasicState,
 >(
   state: S,
-): RTE.ReaderTaskEither<DepApi<'authorizeSession'>, Error, S & { accountData: AccountData }> =>
+) =>
   pipe(
     authorizeSession<S>()(state),
     RTE.map(([accountData, state]) => ({ ...state, accountData })),
@@ -72,11 +65,7 @@ export const getUrlStream = ({ url }: {
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
-): XXX<
-  S,
-  DepApi<'retrieveItemDetailsInFolders'>,
-  { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrash | T.DetailsFolder | T.DetailsAppLibrary)[] }
-> =>
+) =>
   pipe(
     retrieveItemDetailsInFolders<S>({ drivewsids }),
     SRTE.map(ds => getMissedFound(drivewsids, ds)),
@@ -106,7 +95,7 @@ export type UploadMethodDeps =
   & DepFs<'readFile'>
 
 export const upload = flow(
-  useApi<UploadMethodDeps>()(deps =>
+  useApi((deps: UploadMethodDeps) =>
     <S extends AuthorizedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string

@@ -3,10 +3,13 @@ import * as A from 'fp-ts/lib/Array'
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Api, DepApi, Drive } from '../../../icloud/drive'
+import { DepAskConfirmation } from '../../../icloud/drive/deps/util'
 import { isNotRootDetails } from '../../../icloud/drive/types'
-import { askConfirmation } from './helpers'
 
-type Deps = Drive.Deps & DepApi<'moveItemsToTrash'>
+type Deps =
+  & Drive.Deps
+  & DepApi<'moveItemsToTrash'>
+  & DepAskConfirmation
 
 export const rm = (
   { paths, trash }: {
@@ -22,10 +25,10 @@ export const rm = (
     SRTE.chainW((items) =>
       items.length > 0
         ? pipe(
-          askConfirmation({
+          SRTE.ask<Drive.State, Deps>(),
+          SRTE.chainTaskEitherK(deps => (deps.askConfirmation({
             message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}`,
-          }),
-          SRTE.fromTaskEither,
+          }))),
           SRTE.chain((answer) =>
             answer
               ? pipe(

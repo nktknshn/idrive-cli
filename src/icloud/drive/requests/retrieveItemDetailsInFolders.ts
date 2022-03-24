@@ -83,36 +83,3 @@ export function retrieveItemDetailsInFolders<S extends AuthorizedState>(
     )),
   )
 }
-
-export function retrieveItemDetailsInFoldersRTE(
-  { drivewsids }: { drivewsids: string[] },
-) {
-  return pipe(
-    getRetrieveItemDetailsInFoldersHttpRequest(
-      drivewsids.map(
-        (drivewsid) => ({ drivewsid, partialData: false, includeHierarchy: false }),
-      ),
-    ),
-    AR.handleResponse(AR.basicJsonResponse(
-      t.array(t.union([driveDetails, invalidIdItem])).decode,
-    )),
-  )
-}
-
-export const retrieveItemDetailsInFoldersHierarchyM = (
-  { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<(DriveDetailsWithHierarchy | InvalidId)[]> =>
-  pipe(
-    getRetrieveItemDetailsInFoldersHttpRequest(
-      pipe(
-        drivewsids.map((drivewsid) => [
-          { drivewsid, partialData: false, includeHierarchy: false },
-          { drivewsid, partialData: true, includeHierarchy: true },
-        ]),
-        A.flatten,
-      ),
-    ),
-    AR.handleResponse(AR.basicJsonResponse(
-      decodeWithHierarchy,
-    )),
-  )

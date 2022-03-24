@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as DF from '../../../icloud/drive/drive'
+import * as Drive from '../../../icloud/drive/drive'
 import { fileName, fileNameAddSlash } from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'
 import { Path } from '../../../lib/util'
@@ -12,7 +12,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   file: boolean
   dir: boolean
   cached: boolean
-}) => {
+}): Drive.Effect<string> => {
   const npath = normalizePath(path)
   const nparentPath = normalizePath(Path.dirname(path))
 
@@ -25,12 +25,12 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   const targetDir = lookupDir ? npath : nparentPath
 
   return pipe(
-    DF.getCachedRoot(trash),
+    Drive.getCachedRoot(trash),
     SRTE.chain(root =>
       pipe(
         cached
-          ? DF.getByPathFolderFromCache(targetDir)(root)
-          : DF.getByPathFolder(root, targetDir),
+          ? Drive.getByPathFolderFromCache(targetDir)(root)
+          : Drive.getByPathFolder(root, targetDir),
         SRTE.map(parent =>
           lookupDir
             ? parent.items
@@ -38,7 +38,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
               f => fileName(f).startsWith(childName),
             )
         ),
-        DF.logS(
+        Drive.logS(
           result => `suggestions: ${result.map(fileName)}`,
         ),
         SRTE.map((result) =>

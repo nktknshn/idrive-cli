@@ -9,13 +9,13 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import * as Task from 'fp-ts/Task'
-import { Stats } from 'fs'
 import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../lib/errors'
-import { DepFs, DepFsType } from '../../../../lib/fs'
+import { DepFs } from '../../../../lib/fs'
 import { loggerIO } from '../../../../lib/loggerIO'
 import { guardSndRO, Path } from '../../../../lib/util'
-import { DownloadInfo, DownloadTask, LocalTreeElement } from './download-helpers'
+import { DownloadInfo, DownloadTask } from './types'
+import { LocalTreeElement } from './walkdir'
 
 export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpath: string }]
 
@@ -25,41 +25,6 @@ export type Solution = (readonly [Conflict, SolutionAction])[]
 export type ConflictsSolver = (
   conflicts: Conflict[],
 ) => TE.TaskEither<Error, (readonly [Conflict, SolutionAction])[]>
-
-const lookForConflicts = (
-  localTree: TR.Tree<LocalTreeElement>,
-  { downloadable, empties }: DownloadTask,
-): Conflict[] => {
-  const remotes = pipe(
-    [...downloadable, ...empties],
-  )
-
-  const flat = pipe(
-    localTree.forest,
-    A.map(
-      TR.reduce([] as LocalTreeElement[], (acc, cur) => [...acc, cur]),
-    ),
-    A.flatten,
-  )
-  // console.log(
-  //   remotes.map(_ => _[0]),
-  // )
-
-  return pipe(
-    flat,
-    A.filter(_ => _.type === 'file'),
-    flow(
-      A.map(f =>
-        [
-          f,
-          pipe(remotes, A.findFirst((p) => p.localpath === f.path)),
-        ] as const
-      ),
-      A.filter(guardSndRO(O.isSome)),
-      A.map(mapSnd(_ => _.value)),
-    ),
-  )
-}
 
 export const showConflict = ([localfile, { info, localpath }]: Conflict) =>
   `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${info[1].size} bytes)`
@@ -100,7 +65,7 @@ const applySoultion = (
     }
   }
 
-const lookForConflicts2 = (
+const lookForConflicts = (
   { downloadable, empties }: DownloadTask,
 ): RT.ReaderTask<DepFs<'fstat'>, Conflict[]> => {
   const remotes = pipe(
@@ -150,7 +115,7 @@ export const handleLocalFilesConflicts = ({ conflictsSolver }: {
 > =>
   (initialtask: DownloadTask) => {
     return pipe(
-      RTE.fromReaderTaskK(lookForConflicts2)(initialtask),
+      RTE.fromReaderTaskK(lookForConflicts)(initialtask),
       RTE.chainW(flow(conflictsSolver, RTE.fromTaskEither)),
       RTE.chainFirstIOK(
         (solution) =>

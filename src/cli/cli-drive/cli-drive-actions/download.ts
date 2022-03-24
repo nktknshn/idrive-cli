@@ -1,34 +1,26 @@
-import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
-import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
 import micromatch from 'micromatch'
-import { Api, DepApi, Drive } from '../../../icloud/drive'
+import { DepApi, Drive } from '../../../icloud/drive'
 import { DepFetchClient } from '../../../icloud/drive/deps/util'
-import { prependPath } from '../../../icloud/drive/helpers'
 import { DepFs } from '../../../lib/fs'
-import { loggerIO } from '../../../lib/loggerIO'
 import { printer, printerIO } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
-import { guardFst, isDefined, Path } from '../../../lib/util'
-import { handleLocalFilesConflicts, solvers } from './download/download-conflict'
+import { guardFst, Path } from '../../../lib/util'
 import {
+  basicDownloadTask,
   createDirsList,
-  createEmptyFiles,
-  DownloadICloudFilesFunc,
-  DownloadInfo,
-  DownloadStructure,
-  DownloadTask,
-  downloadUrlsPar,
+  createEmpties,
+  downloadICloudFilesChunked,
   filterFolderTree,
+  toDirMapper,
 } from './download/download-helpers'
+import { CreateDownloadTask, DownloadTask } from './download/types'
 import { normalizePath } from './helpers'
 
 type Argv = {
@@ -40,28 +32,13 @@ type Argv = {
   // silent: boolean
 }
 
-type Deps = DownloadFolderDeps
 // & SchemaEnv
 
-type DownloadFolderDeps =
+type Deps =
   & Drive.Deps
   & DepApi<'downloadBatch'>
   & DepFetchClient
   & DepFs<'fstat' | 'opendir' | 'mkdir' | 'writeFile'>
-
-export const downloads = (
-  { paths }: {
-    paths: string[]
-    raw: boolean
-  },
-) => {
-  assert(A.isNonEmpty(paths))
-
-  return pipe(
-    Drive.searchGlobs(paths),
-    SRTE.map(JSON.stringify),
-  )
-}
 
 export const downloadFolder = (argv: Argv): XXX<Drive.State, Deps, string> => {
   return _downloadFolder(
@@ -121,46 +98,11 @@ export const download = (
 //   return downloadFolder(argv)
 // }
 
-const toDirMapper = (dstpath: string) =>
-  (ds: DownloadStructure): DownloadTask => {
-    return {
-      downloadable: ds.downloadable.map(([remotepath, file]) => ({
-        info: [remotepath, file],
-        localpath: prependPath(dstpath)(remotepath),
-      })),
-      empties: ds.empties.map(([remotepath, file]) => ({
-        info: [remotepath, file],
-        localpath: prependPath(dstpath)(remotepath),
-      })),
-      localdirstruct: [dstpath, ...ds.dirstruct.map(prependPath(dstpath))],
-    }
-  }
-
-const basicDownloadTask = (_toDirMapper: (ds: DownloadStructure) => DownloadTask) =>
-  (ds: DownloadStructure) => {
-    const task = _toDirMapper(ds)
-
-    return handleLocalFilesConflicts({
-      // conflictsSolver: resolveConflictsRename,
-      conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
-        file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
-      ),
-    })(task)
-  }
-
-type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEither<
-  R,
-  Error,
-  DownloadTask & {
-    initialTask: DownloadTask
-  }
->
-
 const _downloadFolder = <R>(
   { path, dstpath, dry, exclude, include }: Argv,
   depth = Infinity,
   createDownloadTask: CreateDownloadTask<R>,
-): XXX<Drive.State, DownloadFolderDeps & R, string> => {
+): XXX<Drive.State, Deps & R, string> => {
   const download = downloadICloudFilesChunked({ chunkSize: 5 })
 
   const verbose = dry
@@ -252,80 +194,5 @@ const _downloadFolder = <R>(
       }
     }),
     SRTE.map(JSON.stringify),
-  )
-}
-
-const createEmpties = ({ empties }: DownloadTask) =>
-  pipe(
-    empties.length > 0
-      ? pipe(
-        loggerIO.debug(`creating empty ${empties.length} files`),
-        RTE.fromIO,
-        RTE.chain(() => createEmptyFiles(empties.map(_ => _.localpath))),
-        RTE.map(constVoid),
-      )
-      : RTE.of(constVoid()),
-  )
-
-const downloadICloudFilesChunked = (
-  { chunkSize = 5 },
-): DownloadICloudFilesFunc<DepApi<'downloadBatch'> & DepFetchClient> =>
-  ({ downloadable }) => {
-    return pipe(
-      splitIntoChunks(downloadable, chunkSize),
-      A.map(downloadChunkPar),
-      SRTE.sequenceArray,
-      SRTE.map(flow(RA.toArray, A.flatten)),
-    )
-  }
-
-const splitIntoChunks = (
-  files: { info: DownloadInfo; localpath: string }[],
-  chunkSize = 5,
-): NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>[] => {
-  const filesChunks = []
-
-  const byZone = pipe(
-    files,
-    NA.groupBy((c) => c.info[1].zone),
-  )
-
-  for (const zone of R.keys(byZone)) {
-    filesChunks.push(...A.chunksOf(chunkSize)(byZone[zone]))
-  }
-
-  return filesChunks
-}
-
-const downloadChunkPar = (
-  chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
-): XXX<
-  Drive.State,
-  DepApi<'downloadBatch'> & DepFetchClient,
-  [E.Either<Error, void>, readonly [url: string, path: string]][]
-> => {
-  return pipe(
-    Api.downloadBatch<Drive.State>({
-      docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
-      zone: NA.head(chunk).info[1].zone,
-    }),
-    SRTE.chainW((downloadResponses) => {
-      // const { left: zips, right: raw } = pipe(
-      //   downloadResponses,
-      //   A.partition(_ => _.data_token !== undefined),
-      // )
-
-      const urls = pipe(
-        downloadResponses,
-        A.map(_ => _.data_token?.url ?? _.package_token?.url),
-      )
-
-      return SRTE.fromReaderTaskEither(pipe(
-        A.zip(urls)(chunk),
-        A.map(([{ localpath }, url]) => [url, localpath] as const),
-        A.filter(guardFst(isDefined)),
-        RTE.fromReaderTaskK(downloadUrlsPar),
-      ))
-    }),
   )
 }
