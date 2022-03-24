@@ -74,7 +74,10 @@ export const uploadChunk = (
 ) =>
   (
     chunk: NEA<
-      readonly [remotepath: string, element: { path: string; stats: Stats }]
+      readonly [
+        remotepath: string,
+        element: { path: string; stats: Stats },
+      ]
     >,
   ): XXX<Drive.State, Api.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
@@ -109,27 +112,27 @@ export const createRemoteDirStructure = (
     A.map(chunk => [chunk[0][0], A.map(snd)(chunk)] as const),
   )
 
-  const dirToIdMap: Record<string, string> = {
+  const pathToDrivewsid: Record<string, string> = {
     '/': dstitemDrivewsid,
   }
 
   return pipe(
     task,
     A.reduce(
-      SRTE.of(dirToIdMap),
-      (acc, [parent, names]) =>
+      SRTE.of(pathToDrivewsid),
+      (acc, [parent, subdirs]) =>
         pipe(
           acc,
-          SRTE.chainFirstIOK(() => printerIO.print(`creating ${names} in ${parent}`)),
+          SRTE.chainFirstIOK(() => printerIO.print(`creating ${subdirs} in ${parent}`)),
           SRTE.chain((dirToIdMap) =>
             Api.createFoldersFailing<Drive.State>({
               destinationDrivewsId: dirToIdMap[parent],
-              names,
+              names: subdirs,
             })
           ),
           SRTE.map(flow(
-            A.zip(names),
-            A.reduce(dirToIdMap, (a, [item, name]) =>
+            A.zip(subdirs),
+            A.reduce(pathToDrivewsid, (a, [item, name]) =>
               R.upsertAt(
                 Path.join(parent, name),
                 item.drivewsid as string,

@@ -1,6 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
@@ -10,13 +10,14 @@ import { fst } from 'fp-ts/lib/Tuple'
 import { err } from '../../../lib/errors'
 import { logg, logger } from '../../../lib/logging'
 import { NormalizedPath } from '../../../lib/normalize-path'
-import * as H from '../../../lib/path-validation'
 import { NEA } from '../../../lib/types'
+import { recordFromTuples } from '../../../lib/util'
 import { Drive } from '..'
 import * as V from '../cache/cache-get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import { equalsDrivewsId, findInParentFilename as lookupItemByFilename, recordFromTuples } from '../helpers'
+import { equalsDrivewsId, findInParentFilename as lookupItemByFilename } from '../helpers'
 import { modifySubset } from '../modify-subset'
+import * as H from '../path-validation'
 import * as T from '../types'
 
 export const getByPaths = <R extends T.Root>(
@@ -36,22 +37,20 @@ export const getByPathsStrict = <R extends T.Root>(
 ): Drive.Effect<NEA<T.DetailsOrFile<R>>> => {
   return pipe(
     getByPaths(root, paths),
-    SRTE.chain(
-      p =>
-        SRTE.fromEither(pipe(
-          p,
-          NA.map(res =>
-            res.valid
-              ? E.of(V.target(res))
-              : E.left(
-                err(
-                  `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
-                ),
-              )
-          ),
-          E.sequenceArray,
-          E.map(RA.toArray),
-        )),
+    SRTE.chainEitherK(
+      flow(
+        NA.map(res =>
+          res.valid
+            ? E.of(V.target(res))
+            : E.left(
+              err(
+                `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
+              ),
+            )
+        ),
+        E.sequenceArray,
+        E.map(RA.toArray),
+      ),
     ),
     SRTE.chain(a =>
       pipe(

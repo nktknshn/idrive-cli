@@ -3,7 +3,7 @@ import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../lib/normalize-path'
-import * as H from '../../../lib/path-validation'
+import * as H from '../path-validation'
 import * as T from '../types'
 
 export type PathValid<H> = {

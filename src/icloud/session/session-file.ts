@@ -13,32 +13,21 @@ export type SessionFileReadingResult = TE.TaskEither<
   ICloudSession
 >
 
-// export const saveSessionFile = (file: string) =>
-//   (session: ICloudSession): TE.TaskEither<Error, void> =>
-//     pipe(
-//       TE.fromEither(J.stringify(session)),
-//       TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying session: ${e}`)),
-//       TE.chainW((content) =>
-//         TE.tryCatch(
-//           () => fs.writeFile(file, content),
-//           (e) => err(`Error writing session ${String(e)}`),
-//         )
-//       ),
-//     )
-
 export const saveSession = (session: ICloudSession) =>
-  (file: string): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
+  ({ sessionFile }: { sessionFile: string }): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
     ({ fs: { writeFile } }) =>
       pipe(
         TE.fromEither(J.stringify(session)),
         TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying session: ${e}`)),
-        TE.chainW((content) => writeFile(file, content)),
+        TE.chainW((content) => writeFile(sessionFile, content)),
       )
 
-export function readSessionFile(file: string): (deps: DepFs<'readFile'>) => SessionFileReadingResult {
+export function readSessionFile(
+  { sessionFile }: { sessionFile: string },
+): (deps: DepFs<'readFile'>) => SessionFileReadingResult {
   return (deps) =>
     pipe(
-      tryReadJsonFile(file)(deps),
+      tryReadJsonFile(sessionFile)(deps),
       TE.map(
         flow(
           sessionScheme.decode,

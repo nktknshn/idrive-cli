@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../../defaults'
-import { apiCreator } from '../../icloud/drive/deps/api-creator'
+import { defaultApiCreator } from '../../icloud/drive/deps/api-creator'
 import { failingFetch } from '../../lib/http/fetch-client'
 import { printer } from '../../lib/logging'
 import { isKeyOf } from '../../lib/util'
@@ -29,42 +29,30 @@ const driveActions = {
   uf: Action.uploadFolder,
 }
 
-type ValidCommand = (keyof typeof driveActions | 'init')
-
-type LLLL = typeof driveActions extends { [key: string]: infer V } ? V : never
-
-type ActionsDeps = LLLL extends (...args: infer Args) => SRTE.StateReaderTaskEither<infer S, infer R, infer E, infer A>
-  ? R
-  : never
-
-type ActionsArgv = LLLL extends (...args: infer Args) => SRTE.StateReaderTaskEither<infer S, infer R, infer E, infer A>
-  ? Args[0]
-  : never
+const actionsDeps = pipe(
+  {
+    ...defaultApiEnv,
+    apiCreator: defaultApiCreator,
+    // fetchClient: failingFetch(90),
+  },
+  cliActionsDependancies(),
+)
 
 export const runCommand = (
   command: ValidCommand,
 ) => {
-  const deps = pipe(
-    {
-      ...defaultApiEnv,
-      apiCreator,
-      fetchClient: failingFetch(90),
-    },
-    cliActionsDependancies(),
-  )
-
   if (command === 'init') {
     return (argv: { sessionFile: string }) =>
       pipe(
-        Action.initSession()({ ...deps, ...argv }),
+        Action.initSession()({ ...actionsDeps, ...argv }),
       )
   }
 
   return (
-    argv: ActionsArgv & Omit<ActionsDeps & DriveActionDeps, keyof (typeof deps & ActionsArgv)>,
+    argv: ActionsArgv & Omit<ActionsDeps & DriveActionDeps, keyof (typeof actionsDeps & ActionsArgv)>,
   ) =>
     pipe(
-      { ...deps, ...argv },
+      { ...actionsDeps, ...argv },
       driveAction<unknown, ActionsDeps>(
         () => driveActions[command](argv),
       ),
@@ -73,3 +61,15 @@ export const runCommand = (
 
 export const isValidCommand = (command: string): command is ValidCommand =>
   isKeyOf(driveActions, command) || command === 'init'
+
+type ValidCommand = (keyof typeof driveActions | 'init')
+
+type Actions = typeof driveActions extends { [key: string]: infer V } ? V : never
+
+type ActionsDeps = Actions extends
+  (...args: infer Args) => SRTE.StateReaderTaskEither<infer S, infer R, infer E, infer A> ? R
+  : never
+
+type ActionsArgv = Actions extends
+  (...args: infer Args) => SRTE.StateReaderTaskEither<infer S, infer R, infer E, infer A> ? Args[0]
+  : never

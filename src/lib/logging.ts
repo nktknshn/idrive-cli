@@ -167,7 +167,7 @@ export const cacheLogger = winston.createLogger({
   ),
 })
 
-const httplogger = winston.createLogger({
+const httpfilelogger = winston.createLogger({
   level: 'debug',
   transports: [
     new winston.transports.File({
@@ -229,4 +229,4 @@ export const initLoggers = (
   }
 }
 
-export { httplogger, logger, printer }
+export { httpfilelogger, logger, printer }

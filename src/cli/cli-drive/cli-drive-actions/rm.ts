@@ -26,9 +26,11 @@ export const rm = (
       items.length > 0
         ? pipe(
           SRTE.ask<Drive.State, Deps>(),
-          SRTE.chainTaskEitherK(deps => (deps.askConfirmation({
-            message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}`,
-          }))),
+          SRTE.chainTaskEitherK(deps =>
+            deps.askConfirmation({
+              message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}`,
+            })
+          ),
           SRTE.chain((answer) =>
             answer
               ? pipe(

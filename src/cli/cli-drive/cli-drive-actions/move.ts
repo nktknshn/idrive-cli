@@ -5,11 +5,11 @@ import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi } from '../../../icloud/drive/deps/deps'
 import { parseName } from '../../../icloud/drive/helpers'
+import * as H from '../../../icloud/drive/path-validation'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/requests'
 import * as T from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { normalizePath } from '../../../lib/normalize-path'
-import * as H from '../../../lib/path-validation'
 import { NEA } from '../../../lib/types'
 
 type Deps =

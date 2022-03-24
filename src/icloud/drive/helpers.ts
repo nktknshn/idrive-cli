@@ -32,16 +32,6 @@ export const getMissedFound = <T>(
   )
 }
 
-export const recordFromTuples = <T, K extends string>(ts: (readonly [K, T])[]): Record<string, T> => {
-  const obj: any = {}
-
-  for (const [k, v] of ts) {
-    obj[k] = v
-  }
-
-  return obj
-}
-
 export const parseName = (fileName: string): { name: string; extension?: string } => {
   const extension = pipe(
     Path.extname(fileName),

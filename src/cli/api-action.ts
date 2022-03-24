@@ -20,7 +20,7 @@ export function apiActionM<T>(
   return pipe(
     RTE.ask<{ sessionFile: string } & DepFs<'writeFile' | 'readFile'>>(),
     RTE.bindTo('deps'),
-    RTE.bindW('session', ({ deps }) => readSessionFile(deps.sessionFile)),
+    RTE.bindW('session', ({ deps }) => readSessionFile(deps)),
     RTE.bindW('accountData', ({ deps }) => readAccountData(`${deps.sessionFile}-accountData`)),
     RTE.chainW(({ accountData, deps, session }) =>
       pipe(
@@ -28,7 +28,7 @@ export function apiActionM<T>(
         RTE.chainW(
           ([result, { session, accountData }]) =>
             pipe(
-              saveSession(session)(deps.sessionFile)(deps),
+              saveSession(session)(deps)(deps),
               TE.map(constant(result)),
               RTE.fromTaskEither,
             ),

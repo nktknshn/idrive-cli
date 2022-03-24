@@ -2,8 +2,8 @@ import * as A from 'fp-ts/lib/Array'
 import { Eq } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import * as T from '../icloud/drive/types'
-import { NEA } from './types'
+import { NEA } from '../../lib/types'
+import * as T from './types'
 
 /** Represents a chain of nested folders binded to root R */
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]

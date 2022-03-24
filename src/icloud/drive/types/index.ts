@@ -101,27 +101,6 @@ export const isFolderDrivewsid = (driwewsid: string) => driwewsid.startsWith('FO
 
 export interface PartialItem extends TypeOf<typeof types.partialItem> {}
 
-export type FolderTree = T.Tree<
-  {
-    readonly details: Details
-    readonly deep: true
-  } | {
-    readonly details: Details
-    readonly deep: false
-  }
->
-
-export type RecursiveFolder =
-  | {
-    readonly details: Details
-    readonly deep: true
-    readonly children: RecursiveFolder[]
-  }
-  | {
-    readonly details: Details
-    readonly deep: false
-  }
-
 export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
 export const isRegularDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is
@@ -130,10 +109,6 @@ export const isRegularDetails = (details: Details | DetailsTrash | DriveChildren
 
 export const isCloudDocsRootDetails = (
   details: Details | DetailsTrash | DriveChildrenItem,
-): details is DetailsDocwsRoot => details.drivewsid === types.rootDrivewsid
-
-export const isCloudDocsRootDetailsG = <T extends { drivewsid: string }>(
-  details: DetailsDocwsRoot | T,
 ): details is DetailsDocwsRoot => details.drivewsid === types.rootDrivewsid
 
 export const isTrashDetails = (details: DetailsTrash | DetailsDocwsRoot | DriveChildrenItem): details is DetailsTrash =>
@@ -163,17 +138,6 @@ export const isFolderLike = (
   entity.drivewsid === types.trashDrivewsid
   || hasOwnProperty(entity, 'type') && entity.type === 'APP_LIBRARY'
   || hasOwnProperty(entity, 'type') && entity.type === 'FOLDER'
-
-export const partitionFoldersFiles = (
-  items: DriveChildrenItem[],
-): {
-  readonly left: (DriveChildrenItemFolder | DriveChildrenItemAppLibrary)[]
-  readonly right: DriveChildrenItemFile[]
-} =>
-  pipe(items, A.partition(isFileItem), ({ left, right }) => ({
-    left: left as (DriveChildrenItemFolder | DriveChildrenItemAppLibrary)[],
-    right,
-  }))
 
 export const isDetails = (
   entity: Details | DriveChildrenItem,
@@ -250,12 +214,4 @@ export const fileNameAddSlash = (item: HasName | DetailsTrash) => {
   }
 
   return fname
-}
-
-export const itemType = (item: { type: string } | DetailsTrash) => {
-  if ('type' in item) {
-    return item.type
-  }
-
-  return 'TRASH_ROOT'
 }

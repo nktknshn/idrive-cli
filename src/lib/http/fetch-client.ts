@@ -4,7 +4,7 @@ import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/lib/function'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { httplogger } from '../logging'
+import { httpfilelogger } from '../logging'
 
 export interface HttpRequest extends AxiosRequestConfig {
   data: unknown
@@ -48,7 +48,7 @@ export class HttpRequest implements HttpRequest {
 export const fetchClient: FetchClientEither = (config) =>
   TE.tryCatch(
     async () => {
-      httplogger.debug({
+      httpfilelogger.debug({
         url: config.url,
         // headers: config.headers,
         request: config.data,
@@ -56,7 +56,7 @@ export const fetchClient: FetchClientEither = (config) =>
 
       const res = await _client(config)
 
-      httplogger.debug({
+      httpfilelogger.debug({
         status: res.status,
         // headers: res.headers,
         response: res.data,
@@ -65,9 +65,9 @@ export const fetchClient: FetchClientEither = (config) =>
       return res
     },
     (error) => {
-      httplogger.debug('error')
+      httpfilelogger.debug('error')
       if (axios.isAxiosError(error)) {
-        httplogger.debug(error.response)
+        httpfilelogger.debug(error.response)
         return FetchError.create(`Error fetching: ${String(error)}`, error)
       }
       return FetchError.create(`Error fetching: ${String(error)}`)

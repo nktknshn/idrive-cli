@@ -22,6 +22,11 @@ import { getMissedFound as createMissedFound } from './helpers'
 import { modifySubset } from './modify-subset'
 import * as T from './types'
 import { rootDrivewsid, trashDrivewsid } from './types/types-io'
+export { getByPathsStrict }
+export { searchGlobs }
+export { getByPaths }
+export { getFoldersTrees }
+export { modifySubset }
 
 const { map, chain, of, filterOrElse } = SRTE
 
@@ -40,39 +45,6 @@ const env = () => SRTE.ask<State, Deps>()
 export const logS = flow(logReturnS, SRTE.map)
 
 export const errS = <A>(s: string): Effect<A> => SRTE.left(err(s))
-
-const putCache = (cache: C.Cache): Effect<void> =>
-  pipe(
-    SRTE.gets(
-      (state: State) => SRTE.put({ ...state, cache }),
-    ),
-    SRTE.map(constVoid),
-  )
-
-const putDetailss = (detailss: T.Details[]): Effect<void> =>
-  chainCache(
-    flow(
-      C.putDetailss(detailss),
-      SRTE.fromEither,
-      chain(putCache),
-      map(constVoid),
-    ),
-  )
-
-const putMissedFound = ({ found, missed }: {
-  found: T.Details[]
-  missed: string[]
-}): Effect<void> =>
-  pipe(
-    putDetailss(found),
-    chain(() => removeByIdsFromCache(missed)),
-  )
-
-const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
-
-const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> => pipe(state(), chain(({ cache }) => f(cache)))
-
-const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> => chainCache(flow(f, putCache, map(constVoid)))
 
 export const removeByIdsFromCache = (drivewsids: string[]): Effect<void> => modifyCache(C.removeByIds(drivewsids))
 
@@ -247,8 +219,35 @@ export const getByPathsFromCache = <R extends T.Root>(
 export const getDocwsRoot = () => chainCachedDocwsRoot(of)
 export const getTrash = () => chainCachedTrash(of)
 
-export { getByPathsStrict }
-export { searchGlobs }
-export { getByPaths }
-export { getFoldersTrees }
-export { modifySubset }
+const putCache = (cache: C.Cache): Effect<void> =>
+  pipe(
+    SRTE.gets(
+      (state: State) => SRTE.put({ ...state, cache }),
+    ),
+    SRTE.map(constVoid),
+  )
+
+const putDetailss = (detailss: T.Details[]): Effect<void> =>
+  chainCache(
+    flow(
+      C.putDetailss(detailss),
+      SRTE.fromEither,
+      chain(putCache),
+      map(constVoid),
+    ),
+  )
+
+const putMissedFound = ({ found, missed }: {
+  found: T.Details[]
+  missed: string[]
+}): Effect<void> =>
+  pipe(
+    putDetailss(found),
+    chain(() => removeByIdsFromCache(missed)),
+  )
+
+const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
+
+const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> => pipe(state(), chain(({ cache }) => f(cache)))
+
+const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> => chainCache(flow(f, putCache, map(constVoid)))

@@ -69,17 +69,14 @@ import { isString } from 'fp-ts/lib/string'
 import { last } from 'fp-ts/Semigroup'
 
 export const buildRecord = R.fromFoldable(last<string>(), A.Foldable)
+export const recordFromTuples = <T, K extends string>(ts: (readonly [K, T])[]): Record<string, T> => {
+  const obj: any = {}
 
-const eitherAsTuple = <E, A>(
-  e: E.Either<E, A>,
-): readonly [undefined, A] | readonly [E, undefined] => {
-  return pipe(
-    e,
-    E.foldW(
-      (e) => [e, undefined] as const,
-      (v) => [undefined, v] as const,
-    ),
-  )
+  for (const [k, v] of ts) {
+    obj[k] = v
+  }
+
+  return obj
 }
 
 export const arrayFromOption = <T>(opt: O.Option<T>) => pipe(opt, O.fold(() => [], (v) => [v]))

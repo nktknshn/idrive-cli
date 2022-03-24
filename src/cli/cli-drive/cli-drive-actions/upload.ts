@@ -9,9 +9,9 @@ import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps/deps'
 import { findInParentFilename2, getDrivewsid } from '../../../icloud/drive/helpers'
+import * as H from '../../../icloud/drive/path-validation'
 import * as T from '../../../icloud/drive/types'
 import { normalizePath } from '../../../lib/normalize-path'
-import * as H from '../../../lib/path-validation'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 
@@ -85,7 +85,7 @@ const handleSingleFileUpload = (
     overwright: boolean
   },
 ): XXX<Drive.State, UploadActionDeps, void> => {
-  // if the target path is presented at icloud drive
+  // if the target path already exists at icloud drive
   if (dst.valid) {
     const dstitem = V.target(dst)
 

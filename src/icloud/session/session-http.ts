@@ -77,22 +77,6 @@ export function apiHttpRequest(
   )
 }
 
-export function buildRequestR2(
-  method: Method,
-  url: string,
-  { data = undefined, headers = [_headers.default], clientInfo = defaultClientInfo, addClientInfo }: {
-    data?: unknown
-    headers?: ((session: ICloudSession) => Header[])[]
-    /** add appIdentifier etc to the url */
-    addClientInfo: boolean
-    clientInfo?: ClientInfo
-  },
-): R.Reader<{ session: ICloudSession }, HttpRequest> {
-  return pipe(
-    R.asks(({ session }) => buildRequest(method, url, { data, headers, clientInfo, addClientInfo })(session)),
-  )
-}
-
 export const applyCookiesToSession = (httpResponse: HttpResponse) =>
   (session: ICloudSession): ICloudSession => {
     const [errors, setCookies] = getCookies(httpResponse)

@@ -25,6 +25,25 @@ type Deps =
   & DepFetchClient
   & { tempdir: string }
 
+const spawnVim = ({ tempFile }: { tempFile: string }) =>
+  (): Promise<NodeJS.Signals | null> => {
+    return new Promise(
+      (resolve, reject) => {
+        child_process
+          .spawn(`vim`, [tempFile], {
+            // shell: true,
+            stdio: 'inherit',
+          })
+          .on('close', (code, signal) => {
+            if (code === 0) {
+              return resolve(signal)
+            }
+            return reject(code)
+          })
+      },
+    )
+  }
+
 export const edit = (
   { path }: { path: string },
 ): Drive.Effect<string, Deps> => {
@@ -47,7 +66,7 @@ export const edit = (
       pipe(
         O.fromNullable(url),
         O.match(
-          () => SRTE.left(err(`cannot get url`)),
+          () => SRTE.left(err(`empty file url returnes`)),
           url =>
             SRTE.fromReaderTaskEither(pipe(
               Api.getUrlStream({ url }),
@@ -60,31 +79,14 @@ export const edit = (
       pipe(
         SRTE.of<Drive.State, Deps, Error, { data: string }>({ data }),
         SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
-        SRTE.bindW('writeRrsult', ({ data, tempFile }) =>
+        SRTE.bind('writeRrsult', ({ data, tempFile }) =>
           SRTE.fromReaderTaskEither(
             ({ fs }: Deps) => (fs.writeFile(tempFile, data)),
           )),
-        SRTE.bind('signal', ({ tempFile }) => {
-          return SRTE.fromTask(
-            (): Promise<NodeJS.Signals | null> => {
-              return new Promise(
-                (resolve, reject) => {
-                  child_process
-                    .spawn(`vim`, [tempFile], {
-                      // shell: true,
-                      stdio: 'inherit',
-                    })
-                    .on('close', (code, signal) => {
-                      if (code === 0) {
-                        return resolve(signal)
-                      }
-                      return reject(code)
-                    })
-                },
-              )
-            },
-          )
-        }),
+        SRTE.bind(
+          'signal',
+          (s) => SRTE.fromTask(spawnVim(s)),
+        ),
         SRTE.chainW(({ signal, tempFile }) => {
           return singleFileUpload({
             overwright: true,

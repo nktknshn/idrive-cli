@@ -211,9 +211,20 @@ const nSymbols = (n: number, s: string) => {
 
   return res.join('')
 }
+export type RecursiveFolder =
+  | {
+    readonly details: T.Details
+    readonly deep: true
+    readonly children: RecursiveFolder[]
+  }
+  | {
+    readonly details: T.Details
+    readonly deep: false
+  }
+
 const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
 const showRecursive = ({ ident = 0 }) =>
-  (folder: T.RecursiveFolder): string => {
+  (folder: RecursiveFolder): string => {
     const folderName = T.fileName(folder.details)
 
     const fileNames = pipe(

@@ -5,11 +5,11 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
+import { Api } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as API from '../../../icloud/drive/deps/api-methods'
 import { DepApi, DepFs } from '../../../icloud/drive/deps/deps'
 import * as Drive from '../../../icloud/drive/drive'
-import { findInParentFilename } from '../../../icloud/drive/helpers'
+import { findInParentFilename, findInParentFilename2 } from '../../../icloud/drive/helpers'
 import { DetailsAppLibrary, DetailsDocwsRoot, DetailsFolder, isFolderLike } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { printerIO } from '../../../lib/logging'
@@ -33,7 +33,7 @@ type Deps =
   & DepApi<'renameItems'>
   & DepApi<'createFolders'>
   & DepApi<'downloadBatch'>
-  & API.UploadMethodDeps
+  & Api.UploadMethodDeps
   & DepFs<'fstat' | 'opendir'>
 
 export type UploadResult = {
@@ -92,7 +92,7 @@ const handleUploadFolder = (
     const dstitem = V.target(dst)
 
     if (isFolderLike(dstitem)) {
-      if (isSome(findInParentFilename(dstitem, dirname))) {
+      if (isSome(findInParentFilename2(dstitem, dirname))) {
         return SRTE.left(err(`${args.remotepath} already contains an item named ${dirname}`))
       }
 
@@ -131,7 +131,7 @@ const uploadToNewFolder = (
       ),
       SRTE.bindTo('task'),
       SRTE.bindW('uploadRoot', () =>
-        API.createFoldersFailing<Drive.State>({
+        Api.createFoldersFailing({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })),
@@ -152,7 +152,12 @@ const uploadToNewFolder = (
       SRTE.chainW(({ task, dirs }) => {
         return pipe(
           task.uploadable,
-          A.map(([remotepath, c]) => [remotepath, { ...c, path: Path.join(src, c.path) }] as const),
+          A.map(([remotepath, c]) =>
+            [
+              remotepath,
+              { ...c, path: Path.join(src, c.path) },
+            ] as const
+          ),
           A.chunksOf(5),
           A.map(uploadChunk(dirs)),
           A.sequence(SRTE.Applicative),

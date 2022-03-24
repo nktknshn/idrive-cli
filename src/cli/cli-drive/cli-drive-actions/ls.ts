@@ -18,12 +18,12 @@ import {
   showTreeWithFiles,
   treeWithFiles,
 } from '../../../icloud/drive/drive-methods/drive-get-folders-trees'
-import { findInParentGlob, recordFromTuples } from '../../../icloud/drive/helpers'
+import { findInParentGlob } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'
 import { filterTree } from '../../../lib/tree'
 import { NEA } from '../../../lib/types'
-import { guardFst, Path } from '../../../lib/util'
+import { guardFst, Path, recordFromTuples } from '../../../lib/util'
 // import { cliActionM } from '../../cli-action'
 import { normalizePath } from '../../../lib/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls/ls-printing'
@@ -147,7 +147,11 @@ const recursivels = ({ paths, depth, tree }: {
   const scanned = pipe(
     paths,
     NA.map(micromatch.scan),
-    NA.map(scan => scan.isGlob ? scan : micromatch.scan(Path.join(scan.base, '**/*'))),
+    NA.map(scan =>
+      scan.isGlob
+        ? scan
+        : micromatch.scan(Path.join(scan.base, '**/*'))
+    ),
   )
 
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
