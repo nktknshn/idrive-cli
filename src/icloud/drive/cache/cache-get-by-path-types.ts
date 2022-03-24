@@ -4,7 +4,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import * as H from '../../../lib/path-validation'
-import * as T from '../requests/types/types'
+import * as T from '../types'
 
 export type PathValid<H> = {
   valid: true

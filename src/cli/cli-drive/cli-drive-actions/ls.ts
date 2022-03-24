@@ -6,24 +6,24 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { swap } from 'fp-ts/lib/Tuple'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
+import { Drive } from '../../../icloud/drive'
 import {
   GetByPathResult,
   isValid,
   showGetByPathResult,
   target,
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/drive'
-import { findInParentGlob, guardFst, recordFromTuples } from '../../../icloud/drive/helpers'
 import {
   addPathToFolderTree,
   filterTree,
   showTreeWithFiles,
   treeWithFiles,
-} from '../../../icloud/drive/methods/get-folders-trees'
-import * as T from '../../../icloud/drive/requests/types/types'
+} from '../../../icloud/drive/drive-methods/get-folders-trees'
+import { findInParentGlob, recordFromTuples } from '../../../icloud/drive/helpers'
+import * as T from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
-import { Path } from '../../../lib/util'
+import { guardFst, Path } from '../../../lib/util'
 // import { cliActionM } from '../../cli-action'
 import { normalizePath } from './helpers'
 import { showDetailsInfo, showFileInfo } from './ls/ls-printing'
@@ -46,7 +46,7 @@ type Argv = {
 
 export const listUnixPath2 = (
   { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
-) => {
+): Drive.Effect<string> => {
   assert(A.isNonEmpty(paths))
 
   const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
@@ -95,22 +95,22 @@ export const listUnixPath2 = (
     )
 
   // return pipe(
-  //   DF.getCachedRoot(trash),
+  //   Drive.getCachedRoot(trash),
   //   SRTE.chain(root =>
   //     cached
-  //       ? DF.getByPathsCached(root, npaths)
-  //       : DF.getByPathsH(root, npaths)
+  //       ? Drive.getByPathsCached(root, npaths)
+  //       : Drive.getByPathsH(root, npaths)
   //   ),
   //   SRTE.map(raw ? showRaw : showConsole),
   // )
 
   return pipe(
-    // DF.searchGlobs(paths as NEA<string>),
-    DF.getCachedRoot(trash),
+    // Drive.searchGlobs(paths as NEA<string>),
+    Drive.getCachedRoot(trash),
     SRTE.chain(root =>
       cached
-        ? DF.getByPathsCached(root, basepaths)
-        : DF.getByPathsH(root, basepaths)
+        ? Drive.getByPathsFromCache(root, basepaths)
+        : Drive.getByPaths(root, basepaths)
     ),
     SRTE.map(NA.zip(scanned)),
     SRTE.map(A.filter(guardFst(isValid))),
@@ -154,10 +154,10 @@ const recursivels = ({ paths, depth, tree }: {
 
   if (tree) {
     return pipe(
-      DF.getRoot(),
+      Drive.getDocwsRoot(),
       SRTE.bindTo('root'),
-      SRTE.chain(({ root }) => DF.getByPathsFolders(root, basepaths)),
-      SRTE.chain(dirs => DF.getFoldersTrees(dirs, depth)),
+      SRTE.chain(({ root }) => Drive.getByPathsFolders(root, basepaths)),
+      SRTE.chain(dirs => Drive.getFoldersTrees(dirs, depth)),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([tree, scan]) =>
         pipe(
@@ -175,7 +175,7 @@ const recursivels = ({ paths, depth, tree }: {
   }
 
   return pipe(
-    DF.searchGlobs(pipe(scanned, NA.map(_ => _.input))),
+    Drive.searchGlobs(pipe(scanned, NA.map(_ => _.input))),
     SRTE.map(NA.map(A.map(_ => _.path))),
     SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),

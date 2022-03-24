@@ -31,54 +31,54 @@ function parseArgs() {
 
 const isDrivewsid = (path: string) => /^([A-Z]+?)::([a-zA-Z0-9\\.]+?)::([A-Z0-9\\-]+?)$/.test(path)
 
-async function main() {
-  const { argv, showHelp } = parseArgs()
+// async function main() {
+//   const { argv, showHelp } = parseArgs()
 
-  logger.add(
-    argv.debug
-      ? loggingLevels.debug
-      : loggingLevels.info,
-  )
+//   logger.add(
+//     argv.debug
+//       ? loggingLevels.debug
+//       : loggingLevels.info,
+//   )
 
-  cacheLogger.add(
-    loggingLevels.info,
-  )
+//   cacheLogger.add(
+//     loggingLevels.info,
+//   )
 
-  // logger.debug(argv)
+//   // logger.debug(argv)
 
-  const [command] = argv._
+//   const [command] = argv._
 
-  switch (command) {
-    case 'ls':
-      await pipe(
-        TE.Do,
-        TE.bind('cache', () =>
-          pipe(
-            C.tryReadFromFile(argv.cacheFile),
-            TE.map(C.cachef),
-          )),
-        TE.bind('root', ({ cache }) => TE.fromEither(C.getDocwsRootE()(cache))),
-        TE.map(({ cache, root }) =>
-          pipe(
-            isDrivewsid(argv.path)
-              ? C.getByIdWithPath(argv.path)
-              : pipe(
-                C.getByPath(root.content, normalizePath(argv.path))(cache),
-                // E.fold((e) => `Error: ${e.message}`, GetByPathResultValid.showGetByPathResult),
-                // logReturnAs('result'),
-              ),
-          )
-        ),
-        // TE.chain(flow(J.stringify, TE.fromEither)),
-        // TE.mapLeft(ensureError),
-        TE.fold(printer.errorTask, printer.printTask),
-      )()
-      break
-    default:
-      command && printer.error(`invalid command ${command}`)
-      showHelp()
-      break
-  }
-}
+//   switch (command) {
+//     case 'ls':
+//       await pipe(
+//         TE.Do,
+//         TE.bind('cache', () =>
+//           pipe(
+//             C.tryReadFromFile(argv.cacheFile),
+//             TE.map(C.cachef),
+//           )),
+//         TE.bind('root', ({ cache }) => TE.fromEither(C.getDocwsRoot(cache))),
+//         TE.map(({ cache, root }) =>
+//           pipe(
+//             isDrivewsid(argv.path)
+//               ? C.getByIdWithPath(argv.path)
+//               : pipe(
+//                 C.getByPath(root.content, normalizePath(argv.path))(cache),
+//                 // E.fold((e) => `Error: ${e.message}`, GetByPathResultValid.showGetByPathResult),
+//                 // logReturnAs('result'),
+//               ),
+//           )
+//         ),
+//         // TE.chain(flow(J.stringify, TE.fromEither)),
+//         // TE.mapLeft(ensureError),
+//         TE.fold(printer.errorTask, printer.printTask),
+//       )()
+//       break
+//     default:
+//       command && printer.error(`invalid command ${command}`)
+//       showHelp()
+//       break
+//   }
+// }
 
-main()
+// main()

@@ -10,7 +10,7 @@ import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import * as DF from '../drive'
-import * as T from '../requests/types/types'
+import * as T from '../types'
 
 export type FolderTreeDeep<T extends T.Details> = {
   readonly details: T
@@ -29,15 +29,15 @@ export type FolderTreeValue<T extends T.Details> = FolderTreeDeep<T> | FolderTre
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<T.NonRootDetails>,
   depth: number,
-): DF.DriveM<NEA<FolderTree<T.NonRootDetails>>>
+): DF.Effect<NEA<FolderTree<T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DF.DriveM<NEA<FolderTree<R | T.NonRootDetails>>>
+): DF.Effect<NEA<FolderTree<R | T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DF.DriveM<NEA<FolderTree<R | T.NonRootDetails>>> {
+): DF.Effect<NEA<FolderTree<R | T.NonRootDetails>>> {
   const subfolders = getSubfolders(folders)
   const doGoDeeper = depth > 0 && subfolders.length > 0
   const depthExceed = subfolders.length > 0 && depth == 0
@@ -45,7 +45,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   return pipe(
     A.isNonEmpty(subfolders) && doGoDeeper
       ? pipe(
-        DF.retrieveItemDetailsInFoldersSavingE(
+        DF.retrieveItemDetailsInFoldersSavingStrict(
           pipe(subfolders, NA.map(_ => _.drivewsid)),
         ),
         SRTE.chain(details => getFoldersTrees(details, depth - 1)),
@@ -132,7 +132,7 @@ export const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
 export const zipFolderTreeWithPath = <T extends T.Details>(
   parentPath: string,
   tree: FolderTree<T>,
-): [string, DF.DetailsOrFile<T>][] => {
+): [string, T.DetailsOrFile<T>][] => {
   const name = T.fileName(tree.value.details)
   const path = Path.join(parentPath, name) + '/'
 

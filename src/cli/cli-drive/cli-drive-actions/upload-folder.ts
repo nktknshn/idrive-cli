@@ -11,18 +11,14 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
-import * as API from '../../../icloud/drive/api/drive-api-methods'
-import { Dep } from '../../../icloud/drive/api/type'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import * as DF from '../../../icloud/drive/drive'
+import * as API from '../../../icloud/drive/deps/api-methods'
+import { DepApi } from '../../../icloud/drive/deps/api-type'
+import * as Drive from '../../../icloud/drive/drive'
 import { findInParentFilename } from '../../../icloud/drive/helpers'
-import {
-  DetailsAppLibrary,
-  DetailsDocwsRoot,
-  DetailsFolder,
-  isFolderLike,
-} from '../../../icloud/drive/requests/types/types'
+import { DetailsAppLibrary, DetailsDocwsRoot, DetailsFolder, isFolderLike } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
+import { DepFs } from '../../../lib/fs'
 import { printerIO } from '../../../lib/logging'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
@@ -39,11 +35,12 @@ type Argv = {
 }
 
 type Deps =
-  & DF.DriveMEnv
-  & Dep<'renameItems'>
-  & Dep<'createFolders'>
-  & Dep<'downloadBatch'>
+  & Drive.Deps
+  & DepApi<'renameItems'>
+  & DepApi<'createFolders'>
+  & DepApi<'downloadBatch'>
   & API.UploadMethodDeps
+  & DepFs<'fstat' | 'opendir'>
 
 type UploadTask = {
   dirstruct: string[]
@@ -64,11 +61,11 @@ type UploadResult = {
 
 export const uploadFolder = (
   { localpath, remotepath, include, exclude, dry }: Argv,
-): XXX<DF.State, Deps, unknown> => {
+): XXX<Drive.State, Deps, unknown> => {
   return pipe(
-    DF.getRoot(),
+    Drive.getDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bindW('dst', ({ root }) => DF.getByPathH(root, normalizePath(remotepath))),
+    SRTE.bindW('dst', ({ root }) => Drive.getByPath(root, normalizePath(remotepath))),
     SRTE.bindW('src', () => SRTE.of(localpath)),
     SRTE.bindW('args', () => SRTE.of({ localpath, remotepath, include, exclude, dry })),
     SRTE.chainW(handleUploadFolder),
@@ -82,18 +79,18 @@ const handleUploadFolder = (
     dst: V.GetByPathResult<DetailsDocwsRoot>
     args: Argv
   },
-): XXX<DF.State, Deps, unknown> => {
+): XXX<Drive.State, Deps, unknown> => {
   const dirname = Path.parse(src).base
 
   const uploadTask = pipe(
     walkDirRel(src),
-    TE.map(createUploadTask(args)),
+    RTE.map(createUploadTask(args)),
   )
 
   if (args.dry) {
-    return SRTE.fromTaskEither(pipe(
+    return SRTE.fromReaderTaskEither(pipe(
       uploadTask,
-      TE.chainIOK(
+      RTE.chainIOK(
         ({ uploadable, excluded, empties }) =>
           printerIO.print(
             `excluded:\n${excluded.map(fst).join('\n').length} items\n\nempties:\n${
@@ -114,7 +111,7 @@ const handleUploadFolder = (
 
       return pipe(
         uploadTask,
-        SRTE.fromTaskEither,
+        SRTE.fromReaderTaskEither,
         SRTE.chain(uploadToNewFolder(dstitem, dirname, src)),
       )
     }
@@ -125,7 +122,7 @@ const handleUploadFolder = (
 
     return pipe(
       uploadTask,
-      SRTE.fromTaskEither,
+      SRTE.fromReaderTaskEither,
       SRTE.chain(uploadToNewFolder(dstitem, dirname, src)),
     )
   }
@@ -191,15 +188,15 @@ const uploadToNewFolder = (
   src: string,
 ): (
   task: UploadTask,
-) => XXX<DF.State, Deps, NEA<UploadResult>[]> =>
+) => XXX<Drive.State, Deps, NEA<UploadResult>[]> =>
   (task: UploadTask) =>
     pipe(
-      SRTE.of<DF.State, Deps, Error, UploadTask>(
+      SRTE.of<Drive.State, Deps, Error, UploadTask>(
         task,
       ),
       SRTE.bindTo('task'),
       SRTE.bindW('uploadRoot', () =>
-        API.createFoldersFailing<DF.State>({
+        API.createFoldersFailing<Drive.State>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })),
@@ -260,13 +257,13 @@ const uploadChunk = (
     chunk: NEA<
       readonly [remotepath: string, element: { path: string; stats: Stats }]
     >,
-  ): XXX<DF.State, API.UploadMethodDeps, NEA<UploadResult>> =>
+  ): XXX<Drive.State, API.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, element]) =>
           pipe(
-            API.upload<DF.State>({
+            API.upload<Drive.State>({
               sourceFilePath: element.path,
               docwsid: parseDrivewsid(pathToDriwesid[Path.dirname(remotepath)]).docwsid,
               zone: parseDrivewsid(pathToDriwesid[Path.dirname(remotepath)]).zone,
@@ -283,7 +280,7 @@ const uploadChunk = (
 const createDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<DF.State, Dep<'createFolders'>, Record<string, string>> => {
+): XXX<Drive.State, DepApi<'createFolders'>, Record<string, string>> => {
   const task = pipe(
     getSubdirsPerParent('/')(dirstruct),
     group<readonly [string, string]>({
@@ -305,7 +302,7 @@ const createDirStructure = (
           acc,
           SRTE.chainFirst(() => SRTE.fromIO(printerIO.print(`creating ${names} in ${parent}`))),
           SRTE.chain((dirToIdMap) =>
-            API.createFoldersFailing<DF.State>({
+            API.createFoldersFailing<Drive.State>({
               destinationDrivewsId: dirToIdMap[parent],
               names,
             })

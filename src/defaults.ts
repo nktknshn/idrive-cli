@@ -3,7 +3,7 @@ import { input } from './lib/input'
 
 export const defaultApiEnv = {
   retries: 3,
-  fetch: fetchClient,
+  fetchClient,
   getCode: () => input({ prompt: 'code: ' }),
   catchSessErrors: true,
   catchFetchErrors: true,

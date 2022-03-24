@@ -7,7 +7,7 @@ import * as Ord from 'fp-ts/lib/Ord'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/TaskEither'
 import { isDeepStrictEqual } from 'util'
-import * as T from '../../../icloud/drive/requests/types/types'
+import * as T from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'
 import { hasOwnProperties, Path, prompts } from '../../../lib/util'
 

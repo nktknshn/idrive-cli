@@ -81,13 +81,3 @@ export const getUrlStream = ({ fetchClient }: { fetchClient: FetchClientEither }
       TE.map(_ => _.data as Readable),
     )
   }
-
-export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, string> {
-  return TE.fromTask<string, Error>(async () => {
-    let data = ''
-    for await (const chunk of readable) {
-      data += chunk
-    }
-    return data
-  })
-}

@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
 import { AuthorizedState } from '../../authorization/authorize'
+import { childrenItem } from '../types/types-io'
 import * as AR from './request'
-import { childrenItem } from './types/types-io'
 
 const renameResponse = t.type({ items: t.array(childrenItem) })
 

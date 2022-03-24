@@ -11,21 +11,21 @@ import * as DF from './drive'
 export function modifySubset<A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
-  f: ((v: NA.NonEmptyArray<B>) => DF.DriveM<C[]>),
+  f: ((v: NA.NonEmptyArray<B>) => DF.Effect<C[]>),
   fac: (a: D) => C,
-): DF.DriveM<NA.NonEmptyArray<C>>
+): DF.Effect<NA.NonEmptyArray<C>>
 export function modifySubset<A, C>(
   input: NA.NonEmptyArray<A>,
   predicate: Predicate<A>,
-  f: ((v: NA.NonEmptyArray<A>) => DF.DriveM<C[]>),
+  f: ((v: NA.NonEmptyArray<A>) => DF.Effect<C[]>),
   fac: (a: A) => C,
-): DF.DriveM<NA.NonEmptyArray<C>>
+): DF.Effect<NA.NonEmptyArray<C>>
 export function modifySubset<A, C>(
   input: NA.NonEmptyArray<A>,
   refinement: Predicate<A>,
-  f: ((v: NA.NonEmptyArray<A>) => DF.DriveM<C[]>),
+  f: ((v: NA.NonEmptyArray<A>) => DF.Effect<C[]>),
   fac: (a: A) => C,
-): DF.DriveM<NA.NonEmptyArray<C>> {
+): DF.Effect<NA.NonEmptyArray<C>> {
   const subset = pipe(
     input,
     A.filterMapWithIndex(
@@ -34,7 +34,7 @@ export function modifySubset<A, C>(
   )
 
   return pipe(
-    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.State, DF.DriveMEnv, Error, C[]>([]), f)),
+    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.State, DF.Deps, Error, C[]>([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
     SRTE.map(res => projectIndexes(input, res, fac)),

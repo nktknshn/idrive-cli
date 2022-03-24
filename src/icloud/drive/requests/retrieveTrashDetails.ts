@@ -2,10 +2,10 @@ import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import { AuthorizedState } from '../../authorization/authorize'
+import { DetailsTrash, DriveChildrenItem } from '../types'
+import { detailsItem, detailsTrash } from '../types/types-io'
 import * as AR from './request'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
-import { DetailsTrash, DriveChildrenItem } from './types/types'
-import { detailsItem, detailsTrash } from './types/types-io'
 
 export const scheme = t.tuple(
   [detailsTrash],

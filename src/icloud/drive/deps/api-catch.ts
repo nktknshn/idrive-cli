@@ -1,4 +1,4 @@
-import { constVoid, identity, pipe } from 'fp-ts/lib/function'
+import { apply, constVoid, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
@@ -6,12 +6,11 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { InvalidGlobalSessionError } from '../../../lib/errors'
 import { FetchError } from '../../../lib/http/fetch-client'
 import { loggerIO } from '../../../lib/loggerIO'
-import { AuthorizedState, AuthorizeEnv } from '../../authorization/authorize'
-import { authorizeSession } from './deps'
+import { AuthorizedState, AuthorizeEnv, authorizeSession } from '../../authorization/authorize'
 
 export type CatchFetchEnv = { retries: number; catchFetchErrors: boolean; retryDelay: number }
 
-export type CatchSessEnv = { catchSessErrors: boolean }
+export type CatchSessEnv = AuthorizeEnv & { catchSessErrors: boolean }
 
 const catchFetchErrorsTE = (triesLeft: number, retryDelay: number) =>
   <A>(
@@ -51,7 +50,10 @@ export const catchSessErrorsSRTE = (deps: CatchFetchEnv & AuthorizeEnv & CatchSe
         RTE.orElse(e =>
           deps.catchSessErrors && InvalidGlobalSessionError.is(e)
             ? pipe(
-              authorizeSession(deps)<S>()(s),
+              authorizeSession<S>(),
+              catchFetchErrorsSRTE(deps),
+              apply(s),
+              RTE.local(() => (deps)),
               RTE.chain(
                 ([accountData, state]) => m({ ...state, accountData }),
               ),

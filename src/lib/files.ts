@@ -1,9 +1,11 @@
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import * as fs from 'fs/promises'
+// import * as fs from 'fs/promises'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { TextDecoder } from 'util'
 import { BufferDecodingError, FileReadingError, JsonParsingError } from './errors'
+import { DepFs } from './fs'
 import { tryParseJson } from './json'
 
 // ERR_ENCODING_INVALID_ENCODED_DATA
@@ -17,13 +19,16 @@ export type ReadJsonFileError = BufferDecodingError | FileReadingError | JsonPar
 
 export function tryReadJsonFile(
   file: string,
-): TE.TaskEither<
+): RTE.ReaderTaskEither<
+  DepFs<'readFile'>,
   BufferDecodingError | FileReadingError | JsonParsingError,
   unknown
 > {
-  return pipe(
-    TE.tryCatch(() => fs.readFile(file), FileReadingError.create),
-    TE.chainW(flow(tryDecodeBuffer, TE.fromEither)),
-    TE.chainW(flow(tryParseJson, TE.fromEither)),
-  )
+  return ({ fs: { readFile } }) =>
+    pipe(
+      readFile(file),
+      TE.mapLeft(FileReadingError.create),
+      TE.chainW(flow(tryDecodeBuffer, TE.fromEither)),
+      TE.chainW(flow(tryParseJson, TE.fromEither)),
+    )
 }

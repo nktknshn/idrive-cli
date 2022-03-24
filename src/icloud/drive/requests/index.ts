@@ -1,6 +1,6 @@
 export { createFoldersM as createFolders, CreateFoldersResponse } from './create-folders'
 export { download, downloadBatch } from './download'
-export { moveItems } from './moveItems'
+export { moveItems, MoveItemsResponse } from './moveItems'
 export { moveItemsToTrash, MoveItemToTrashResponse } from './moveItemsToTrash'
 export { renameItems, RenameResponse } from './rename'
 export { retrieveHierarchy } from './retrieveHierarchy'

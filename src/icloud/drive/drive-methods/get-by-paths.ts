@@ -13,30 +13,29 @@ import { logg, logger } from '../../../lib/logging'
 import * as H from '../../../lib/path-validation'
 import { NEA } from '../../../lib/types'
 import * as V from '../cache/cache-get-by-path-types'
-import * as DF from '../drive'
+import * as Drive from '../drive'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { equalsDrivewsId, findInParentFilename as lookupItemByFilename, recordFromTuples } from '../helpers'
 import { modifySubset } from '../modify-subset'
-import * as T from '../requests/types/types'
+import * as T from '../types'
 
-/** close the tab */
-
-export const getByPathsH = <R extends T.Root>(
+export const getByPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<V.GetByPathResult<R>>> =>
+): Drive.Effect<NEA<V.GetByPathResult<R>>> =>
   pipe(
     validateCachedPaths(root, paths),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
 
-export const getByPaths = <R extends T.Root>(
+/** fails if some of the paths are not valid */
+export const getByPathsStrict = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<DF.DetailsOrFile<R>>> => {
+): Drive.Effect<NEA<T.DetailsOrFile<R>>> => {
   return pipe(
-    getByPathsH(root, paths),
+    getByPaths(root, paths),
     SRTE.chain(
       p =>
         SRTE.fromEither(pipe(
@@ -65,11 +64,11 @@ export const getByPaths = <R extends T.Root>(
 const validateCachedPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DF.DriveM<NEA<V.GetByPathResult<R>>> => {
+): Drive.Effect<NEA<V.GetByPathResult<R>>> => {
   logg(`validateCachedPaths: ${paths}`)
   return pipe(
-    DF.getByPathsCached(root, paths),
-    DF.logS((cached) => `cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
+    Drive.getByPathsFromCache(root, paths),
+    Drive.logS((cached) => `cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
     SRTE.chain((cached) =>
       pipe(
         validateCachedHierarchies(pipe(cached, NA.map(_ => _.path.details))),
@@ -77,7 +76,7 @@ const validateCachedPaths = <R extends T.Root>(
         SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
       )
     ),
-    DF.logS(paths => `result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
+    Drive.logS(paths => `result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
   )
 }
 
@@ -86,7 +85,7 @@ Given cached root and a cached hierarchy determine which part of the hierarchy i
  */
 const validateCachedHierarchies = <R extends T.Root>(
   cachedHierarchies: NEA<H.Hierarchy<R>>,
-): DF.DriveM<NEA<H.WithDetails<H.Hierarchy<R>>>> => {
+): Drive.Effect<NEA<H.WithDetails<H.Hierarchy<R>>>> => {
   const toActual = (
     cachedPath: T.NonRootDetails[],
     actualsRecord: Record<string, O.Option<T.NonRootDetails>>,
@@ -110,7 +109,7 @@ const validateCachedHierarchies = <R extends T.Root>(
   return pipe(
     logg(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
     () =>
-      DF.retrieveItemDetailsInFoldersSaving<R>([
+      Drive.retrieveItemDetailsInFoldersSaving<R>([
         cachedRoot.drivewsid,
         ...drivewsids,
       ]),
@@ -200,7 +199,7 @@ const concatCachedWithValidated = <R extends T.Root>(
 
 const getActuals = <R extends T.Root>(
   validationResults: NEA<[V.PathValidation<H.Hierarchy<R>>, NormalizedPath]>,
-): DF.DriveM<NEA<V.PathValidation<H.Hierarchy<R>>>> => {
+): Drive.Effect<NEA<V.PathValidation<H.Hierarchy<R>>>> => {
   logger.debug(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )
@@ -226,12 +225,12 @@ type DeeperFolders<R extends T.Root> =
 
 const handleInvalidPaths = <R extends T.Root>(
   partialPaths: NEA<V.PathInvalid<H.Hierarchy<R>>>,
-): DF.DriveM<NEA<V.PathValidation<H.Hierarchy<R>>>> => {
+): Drive.Effect<NEA<V.PathValidation<H.Hierarchy<R>>>> => {
   logger.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)
 
   const handleSubfolders = <R extends T.Root>(
     subfolders: NEA<DeeperFolders<R>>,
-  ): DF.DriveM<NEA<V.GetByPathResult<R>>> => {
+  ): Drive.Effect<NEA<V.GetByPathResult<R>>> => {
     logger.debug(`handleFolders: ${
       subfolders.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}. rest: [${rest}]`
@@ -244,7 +243,7 @@ const handleInvalidPaths = <R extends T.Root>(
     )
 
     return pipe(
-      DF.retrieveItemDetailsInFoldersSavingE(foldersToRetrieve),
+      Drive.retrieveItemDetailsInFoldersSavingStrict(foldersToRetrieve),
       SRTE.map(NA.zip(subfolders)),
       SRTE.chain((details) => {
         return modifySubset(
@@ -310,7 +309,7 @@ const handleInvalidPaths = <R extends T.Root>(
 
   const handleFoundItems = <R extends T.Root>(
     found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<H.Hierarchy<R>>]]>,
-  ): DF.DriveM<V.GetByPathResult<R>[]> => {
+  ): Drive.Effect<V.GetByPathResult<R>[]> => {
     logger.debug(`handleItems. ${
       found.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}.`

@@ -24,24 +24,24 @@ const actions = {
   putBackItemsFromTrash,
 }
 
-async function main() {
-  const { argv, showHelp } = parseArgs()
-  const [command] = argv._
+// async function main() {
+//   const { argv, showHelp } = parseArgs()
+//   const [command] = argv._
 
-  initLoggers(argv, [logger, cacheLogger, apiLogger, stderrLogger])
+//   initLoggers(argv, [logger, cacheLogger, apiLogger, stderrLogger])
 
-  if (!isKeyOf(actions, command)) {
-    showHelp()
-    sys.exit(1)
-    return
-  }
+//   if (!isKeyOf(actions, command)) {
+//     showHelp()
+//     sys.exit(1)
+//     return
+//   }
 
-  await pipe(
-    <TE.TaskEither<Error, unknown>> actions[command](argv),
-    TE.chain(flow(J.stringify, TE.fromEither)),
-    TE.mapLeft(ensureError),
-    TE.fold(printer.errorTask, printer.printTask),
-  )()
-}
+//   await pipe(
+//     <TE.TaskEither<Error, unknown>> actions[command](argv),
+//     TE.chain(flow(J.stringify, TE.fromEither)),
+//     TE.mapLeft(ensureError),
+//     TE.fold(printer.errorTask, printer.printTask),
+//   )()
+// }
 
-main()
+// main()

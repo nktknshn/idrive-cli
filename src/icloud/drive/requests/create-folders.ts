@@ -1,8 +1,8 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import { AuthorizedState } from '../../authorization/authorize'
+import { itemFolder } from '../types/types-io'
 import * as AR from './request'
-import { itemFolder } from './types/types-io'
 
 const createFolderResponse = t.type({
   destinationDrivewsId: t.string,

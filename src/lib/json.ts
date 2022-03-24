@@ -3,8 +3,10 @@ import { pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
-import * as fs from 'fs/promises'
+// import * as fs from 'fs/promises'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { err, JsonParsingError, MissingResponseBody } from './errors'
+import { DepFs } from './fs'
 import { HttpResponse } from './http/fetch-client'
 
 export function tryParseJson(
@@ -17,14 +19,10 @@ export function tryParseJson(
 }
 
 export const saveJson = (file: string) =>
-  (json: unknown): TE.TaskEither<Error, void> =>
-    pipe(
-      TE.fromEither(J.stringify(json)),
-      TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying json: ${e}`)),
-      TE.chainW((content) =>
-        TE.tryCatch(
-          () => fs.writeFile(file, content),
-          (e) => err(`Error writing json ${String(e)}`),
-        )
-      ),
-    )
+  (json: unknown): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
+    ({ fs }) =>
+      pipe(
+        TE.fromEither(J.stringify(json)),
+        TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying json: ${e}`)),
+        TE.chain((content) => fs.writeFile(file, content)),
+      )

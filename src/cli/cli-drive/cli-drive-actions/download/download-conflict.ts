@@ -1,18 +1,21 @@
 import * as E from 'fp-ts/Either'
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
+import * as RT from 'fp-ts/lib/ReaderTask'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import * as Task from 'fp-ts/Task'
-import { guardSndRO } from '../../../../icloud/drive/helpers'
-import * as T from '../../../../icloud/drive/requests/types/types'
+import { Stats } from 'fs'
+import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../lib/errors'
+import { DepFs, DepFsType } from '../../../../lib/fs'
 import { loggerIO } from '../../../../lib/loggerIO'
-import { Path } from '../../../../lib/util'
-import { DownloadInfo, DownloadTask, fstat, LocalTreeElement } from './download-helpers'
+import { guardSndRO, Path } from '../../../../lib/util'
+import { DownloadInfo, DownloadTask, LocalTreeElement } from './download-helpers'
 
 export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpath: string }]
 
@@ -99,35 +102,38 @@ const applySoultion = (
 
 const lookForConflicts2 = (
   { downloadable, empties }: DownloadTask,
-) => {
+): RT.ReaderTask<DepFs<'fstat'>, Conflict[]> => {
   const remotes = pipe(
     [...downloadable, ...empties],
   )
 
-  return pipe(
-    remotes,
-    A.map(
-      (c) =>
+  return RT.asksReaderTask(({ fs: { fstat } }) =>
+    pipe(
+      remotes,
+      A.map(
+        (c) =>
+          pipe(
+            fstat(c.localpath),
+            TE.match((e) => E.right(c), s => E.left({ c, s })),
+          ),
+        //
+      ),
+      Task.sequenceSeqArray,
+      Task.map(RA.toArray),
+      Task.map(A.separate),
+      Task.map(({ left }) =>
         pipe(
-          fstat(c.localpath),
-          TE.match((e) => E.right(c), s => E.left({ c, s })),
-        ),
-      //
-    ),
-    Task.sequenceSeqArray,
-    Task.map(RA.toArray),
-    Task.map(A.separate),
-    Task.map(({ left }) =>
-      pipe(
-        left,
-        A.map(({ c, s }): Conflict => [{
-          type: s.isDirectory() ? 'directory' as const : 'file' as const,
-          stats: s,
-          path: c.localpath,
-          name: Path.basename(c.localpath),
-        }, c]),
-      )
-    ),
+          left,
+          A.map(({ c, s }): Conflict => [{
+            type: s.isDirectory() ? 'directory' as const : 'file' as const,
+            stats: s,
+            path: c.localpath,
+            name: Path.basename(c.localpath),
+          }, c]),
+        )
+      ),
+      RT.fromTask,
+    )
   )
 }
 
@@ -137,16 +143,16 @@ export const handleLocalFilesConflicts = ({ conflictsSolver }: {
   // downloader: DownloadICloudFiles
 }): (
   initialtask: DownloadTask,
-) => TE.TaskEither<
+) => RTE.ReaderTaskEither<
+  DepFs<'fstat'>,
   Error,
   DownloadTask & { initialTask: DownloadTask }
 > =>
   (initialtask: DownloadTask) => {
     return pipe(
-      lookForConflicts2(initialtask),
-      TE.fromTask,
-      TE.chain(conflictsSolver),
-      TE.chainFirstIOK(
+      RTE.fromReaderTaskK(lookForConflicts2)(initialtask),
+      RTE.chainW(flow(conflictsSolver, RTE.fromTaskEither)),
+      RTE.chainFirstIOK(
         (solution) =>
           loggerIO.debug(
             `conflicts: \n${
@@ -154,7 +160,7 @@ export const handleLocalFilesConflicts = ({ conflictsSolver }: {
             }\n`,
           ),
       ),
-      TE.map(applySoultion(initialtask)),
+      RTE.map(applySoultion(initialtask)),
     )
   }
 

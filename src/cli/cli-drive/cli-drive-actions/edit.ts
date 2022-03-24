@@ -6,31 +6,32 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import fs from 'fs/promises'
 import { tempDir } from '../../../defaults'
-import * as API from '../../../icloud/drive/api/drive-api-methods'
-import { Dep } from '../../../icloud/drive/api/type'
-import * as DF from '../../../icloud/drive/drive'
-import { consumeStreamToString } from '../../../icloud/drive/requests/download'
-import { isFile } from '../../../icloud/drive/requests/types/types'
+import * as API from '../../../icloud/drive/deps/api-methods'
+import { DepApi } from '../../../icloud/drive/deps/api-type'
+import { DepFetchClient } from '../../../icloud/drive/deps/util'
+import * as Drive from '../../../icloud/drive/drive'
+import { isFile } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
+import { DepFs } from '../../../lib/fs'
 import { logger } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
-import { Path } from '../../../lib/util'
+import { consumeStreamToString, Path } from '../../../lib/util'
 import { upload } from '.'
 import { normalizePath } from './helpers'
 
 type Deps =
-  & DF.DriveMEnv
-  & Dep<'download'>
-  & Dep<'fetchClient'>
-  & Dep<'renameItems'>
-  & Dep<'moveItemsToTrash'>
+  & Drive.Deps
+  & DepApi<'download'>
+  & DepApi<'renameItems'>
+  & DepApi<'moveItemsToTrash'>
   & API.UploadMethodDeps
+  & DepFetchClient
+  & DepFs<'fstat' | 'writeFile'>
 
 export const edit = (
   { path }: { path: string },
-): XXX<DF.State, Deps, string> => {
+): XXX<Drive.State, Deps, string> => {
   const npath = pipe(path, normalizePath)
 
   const tempFile = Path.join(
@@ -41,10 +42,10 @@ export const edit = (
   logger.debug(`temp file: ${tempFile}`)
 
   return pipe(
-    DF.chainRoot(root => DF.getByPaths(root, [npath])),
+    Drive.chainCachedDocwsRoot(root => Drive.getByPathsStrict(root, [npath])),
     SRTE.map(NA.head),
     SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
-    SRTE.chainW((item) => API.getItemUrl<DF.State>(item)),
+    SRTE.chainW((item) => API.getItemUrl<Drive.State>(item)),
     SRTE.chainW((url) =>
       pipe(
         O.fromNullable(url),
@@ -58,8 +59,10 @@ export const edit = (
         ),
       )
     ),
-    SRTE.chainTaskK((data) => () => fs.writeFile(tempFile, data)),
-    SRTE.chainW((): DF.DriveM<NodeJS.Signals | null> => {
+    SRTE.chainReaderTaskEitherK(
+      (data) => RTE.asks(({ fs }: Deps) => fs.writeFile(tempFile, data)),
+    ),
+    SRTE.chainW((): Drive.Effect<NodeJS.Signals | null> => {
       return SRTE.fromTask(
         (): Promise<NodeJS.Signals | null> => {
           return new Promise(

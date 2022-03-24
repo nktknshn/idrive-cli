@@ -1,4 +1,3 @@
-import { sequenceS } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
@@ -8,62 +7,121 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath } from '../../cli/cli-drive/cli-drive-actions/helpers'
 import { err } from '../../lib/errors'
 import { logReturnS } from '../../lib/logging'
-import { Hierarchy } from '../../lib/path-validation'
 import { NEA } from '../../lib/types'
 import { AuthorizedState } from '../authorization/authorize'
-import * as API from './api/drive-api-methods'
-import { Dep } from './api/type'
 import * as C from './cache/cache'
-import { GetByPathResult, PathValidation, target } from './cache/cache-get-by-path-types'
+import { GetByPathResult, target } from './cache/cache-get-by-path-types'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
+import * as API from './deps/api-methods'
+import { DepApi } from './deps/api-type'
+import { getByPaths, getByPathsStrict } from './drive-methods/get-by-paths'
+import { getFoldersTrees } from './drive-methods/get-folders-trees'
+import { searchGlobs } from './drive-methods/search-globs'
 import { ItemIsNotFolderError, NotFoundError } from './errors'
-import { getMissedFound } from './helpers'
-import { getByPaths, getByPathsH } from './methods/get-by-paths'
-import { getFoldersTrees } from './methods/get-folders-trees'
-import { searchGlobs } from './methods/search-globs'
+import { getMissedFound as createMissedFound } from './helpers'
 import { modifySubset } from './modify-subset'
-import * as T from './requests/types/types'
-import { rootDrivewsid, trashDrivewsid } from './requests/types/types-io'
+import * as T from './types'
+import { rootDrivewsid, trashDrivewsid } from './types/types-io'
 
-export type DetailsOrFile<R> = (R | T.NonRootDetails | T.DriveChildrenItemFile)
+const { map, chain, of, filterOrElse } = SRTE
 
-export type DriveMEnv = Dep<'retrieveItemDetailsInFolders'>
+export type Deps = DepApi<'retrieveItemDetailsInFolders'>
 
-export type State = {
-  cache: C.Cache
-} & AuthorizedState
+export type State = { cache: C.Cache } & AuthorizedState
 
-export type DriveM<A, S extends State = State> = SRTE.StateReaderTaskEither<S, DriveMEnv, Error, A>
+export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<State, R, Error, A>
+export type Action<R, A> = SRTE.StateReaderTaskEither<State, R, Error, A>
 
-export const ado = sequenceS(SRTE.Apply)
+// export type DriveEffect<R, A> = SRTE.StateReaderTaskEither<State, R, Error, A>
 
-export const readEnv = sequenceS(SRTE.Apply)({
-  state: SRTE.get<State, DriveMEnv>(),
-  env: SRTE.ask<State, DriveMEnv>(),
-})
-
-export const readEnvS = <A>(
-  f: (e: { state: State; env: DriveMEnv }) => DriveM<A>,
-) => pipe(readEnv, chain(f))
+const state = () => SRTE.get<State, Deps>()
+const env = () => SRTE.ask<State, Deps>()
 
 export const logS = flow(logReturnS, SRTE.map)
 
-export const errS = <A>(s: string): DriveM<A> =>
-  readEnvS(
-    ({ state }) => SRTE.left(err(s)),
+export const errS = <A>(s: string): Effect<A> => SRTE.left(err(s))
+
+const putCache = (cache: C.Cache): Effect<void> =>
+  pipe(
+    SRTE.gets(
+      (state: State) => SRTE.put({ ...state, cache }),
+    ),
+    SRTE.map(constVoid),
   )
 
-export const asksCache = <A>(f: (cache: C.Cache) => A): DriveM<A> =>
-  pipe(readEnv, map(({ state: { cache } }) => f(cache)))
+const putDetailss = (detailss: T.Details[]): Effect<void> =>
+  chainCache(
+    flow(
+      C.putDetailss(detailss),
+      SRTE.fromEither,
+      chain(putCache),
+      map(constVoid),
+    ),
+  )
 
-export const chainCache = <A>(f: (cache: C.Cache) => DriveM<A>): DriveM<A> =>
-  readEnvS(({ state: { cache } }) => f(cache))
+const putMissedFound = ({ found, missed }: {
+  found: T.Details[]
+  missed: string[]
+}): Effect<void> =>
+  pipe(
+    putDetailss(found),
+    chain(() => removeByIdsFromCache(missed)),
+  )
 
-export const modifyCache = (f: (cache: C.Cache) => C.Cache): DriveM<void> =>
-  chainCache(flow(f, putCache, map(constVoid)))
+const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
+
+const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> => pipe(state(), chain(({ cache }) => f(cache)))
+
+const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> => chainCache(flow(f, putCache, map(constVoid)))
+
+export const removeByIdsFromCache = (drivewsids: string[]): Effect<void> => modifyCache(C.removeByIds(drivewsids))
+
+/** retrieve root from cache or from api if it's missing from cache and chain a computation*/
+export const chainCachedDocwsRoot = <A>(
+  f: (root: T.DetailsDocwsRoot) => Effect<A>,
+): Effect<A> => {
+  return pipe(
+    retrieveRootAndTrashIfMissing(),
+    chain(() => chainCache(cache => SRTE.fromEither(C.getDocwsRoot(cache)))),
+    map(_ => _.content),
+    chain(f),
+  )
+}
+
+export const getCachedRoot = (trash: boolean): Effect<T.Root> => {
+  return pipe(
+    retrieveRootAndTrashIfMissing(),
+    chain(() =>
+      chainCache(cache =>
+        SRTE.fromEither(pipe(
+          (trash ? C.getTrash : C.getDocwsRoot)(cache),
+          E.map((_: CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails) => _.content),
+        ))
+      )
+    ),
+  )
+}
+
+export const chainCachedTrash = <A>(
+  f: (root: T.DetailsTrash) => Effect<A>,
+): Effect<A> => {
+  return pipe(
+    retrieveRootAndTrashIfMissing(),
+    chain(() => chainCache(SRTE.fromEitherK(C.getTrash))),
+    map(_ => _.content),
+    chain(f),
+  )
+}
+
+const retrieveRootAndTrashIfMissing = (): Effect<void> => {
+  return pipe(
+    retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
+    map(constVoid),
+  )
+}
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
-export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM<T.MaybeNotFound<T.Details>[]> => {
+const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): Effect<T.MaybeInvalidId<T.Details>[]> => {
   return pipe(
     chainCache(
       SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(drivewsids)),
@@ -73,113 +131,61 @@ export const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): DriveM
         missed,
         A.matchW(
           () => SRTE.of({ missed: [], found: [] }),
-          (missed) => API.retrieveItemDetailsInFoldersS<State>(missed),
+          (missed) => API.retrieveItemDetailsInFoldersSeparated<State>(missed),
         ),
       )
     ),
-    SRTE.chain(putFoundMissed),
+    SRTE.chain(putMissedFound),
     SRTE.chainW(() => asksCache(C.getFoldersDetailsByIds(drivewsids))),
     SRTE.chainW(e => SRTE.fromEither(e)),
   )
 }
 
-export const cacheRemoveByIds = (drivewsids: string[]): DriveM<void> => modifyCache(C.removeByIds(drivewsids))
-
-/** retrieve root from cache or from api if it's missing from cache and chain a computation*/
-export const chainRoot = <A>(
-  f: (root: T.DetailsDocwsRoot) => DriveM<A>,
-): DriveM<A> => {
-  return pipe(
-    retrieveRootAndTrashIfMissing(),
-    chain(() => chainCache(cache => SRTE.fromEither(C.getDocwsRootE()(cache)))),
-    map(_ => _.content),
-    chain(f),
-  )
-}
-
-// export const getRoot = () => chainRoot(root => of(root))
-
-export const getCachedRoot = (trash: boolean): DriveM<T.DetailsTrash | T.DetailsDocwsRoot> => {
-  return pipe(
-    retrieveRootAndTrashIfMissing(),
-    chain(() =>
-      chainCache(cache =>
-        SRTE.fromEither(pipe(
-          (trash ? C.getTrashE() : C.getDocwsRootE())(cache),
-          E.map((_: CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails) => _.content),
-        ))
-      )
-    ),
-  )
-}
-
-export const chainCachedTrash = <R>(
-  f: (root: T.DetailsTrash) => DriveM<R>,
-): DriveM<R> => {
-  return pipe(
-    retrieveRootAndTrashIfMissing(),
-    chain(() => chainCache(SRTE.fromEitherK(C.getTrashE()))),
-    map(_ => _.content),
-    chain(f),
-  )
-}
-
-const retrieveRootAndTrashIfMissing = (): DriveM<void> => {
-  return pipe(
-    retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
-    map(constVoid),
-  )
-}
-
+/** retrieves actual drivewsids saving valid ones to cache and removing those that were not found */
 export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...T.NonRootDrivewsid[]],
-): DriveM<[O.Some<R>, ...O.Option<T.NonRootDetails>[]]>
+): Effect<[O.Some<R>, ...O.Option<T.NonRootDetails>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof rootDrivewsid, ...string[]],
-): DriveM<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
+): Effect<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof trashDrivewsid, ...string[]],
-): DriveM<[O.Some<T.DetailsTrash>, ...O.Option<T.Details>[]]>
+): Effect<[O.Some<T.DetailsTrash>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...string[]],
-): DriveM<[O.Some<R>, ...O.Option<T.Details>[]]>
+): Effect<[O.Some<R>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
-): DriveM<NEA<O.Option<T.Details>>>
+): Effect<NEA<O.Option<T.Details>>>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
-): DriveM<NEA<O.Option<T.Details>>> {
-  return _retrieveItemDetailsInFoldersSaving(drivewsids) as DriveM<NEA<O.Option<T.Details>>>
-}
-
-const _retrieveItemDetailsInFoldersSaving = (
-  drivewsids: string[],
-): DriveM<O.Option<T.Details>[]> =>
-  pipe(
-    readEnv,
-    SRTE.bindW('details', ({ env }) => env.retrieveItemDetailsInFolders({ drivewsids: drivewsids as NEA<string> })),
-    chain(({ details }) =>
+): Effect<NEA<O.Option<T.Details>>> {
+  return pipe(
+    API.retrieveItemDetailsInFolders<State>({ drivewsids }),
+    chain((details) =>
       pipe(
-        putFoundMissed(getMissedFound(drivewsids, details)),
-        chain(() => of(A.map(T.invalidIdToOption)(details))),
+        createMissedFound(drivewsids, details),
+        putMissedFound,
+        chain(() => of(NA.map(T.invalidIdToOption)(details))),
       )
     ),
   )
+}
 
-export function retrieveItemDetailsInFoldersSavingE(
+/** fails if some of the ids were not found */
+export function retrieveItemDetailsInFoldersSavingStrict(
   drivewsids: NEA<T.NonRootDrivewsid>,
-): DriveM<NEA<T.NonRootDetails>>
-export function retrieveItemDetailsInFoldersSavingE(
+): Effect<NEA<T.NonRootDetails>>
+export function retrieveItemDetailsInFoldersSavingStrict(
   drivewsids: NEA<string>,
-): DriveM<NEA<T.Details>> {
+): Effect<NEA<T.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersSaving(drivewsids),
     SRTE.chain(
       flow(
         O.sequenceArray,
         SRTE.fromOption(() => err(`some of the ids was not found`)),
-        SRTE.map(v => v as NEA<T.Details>),
-        v => v as DriveM<NEA<T.Details>>,
+        v => v as Effect<NEA<T.Details>>,
       ),
     ),
   )
@@ -188,25 +194,30 @@ export function retrieveItemDetailsInFoldersSavingE(
 export const getByPathFolder = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
-): SRTE.StateReaderTaskEither<State, DriveMEnv, Error, R | T.NonRootDetails> =>
+): Effect<R | T.NonRootDetails> =>
   pipe(
-    getByPaths(root, [path]),
+    getByPathsStrict(root, [path]),
     map(NA.head),
-    filterOrElse(T.isDetailsG, () => ItemIsNotFolderError.create(`${path} is not a folder`)),
+    filterOrElse(
+      T.isDetailsG,
+      () => ItemIsNotFolderError.create(`${path} is not a folder`),
+    ),
   )
 
 export const getByPathsFolders = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): SRTE.StateReaderTaskEither<State, DriveMEnv, ItemIsNotFolderError, NEA<R | T.NonRootDetails>> =>
+): Effect<NEA<R | T.NonRootDetails>> =>
   pipe(
-    getByPaths(root, paths),
-    filterOrElse((items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items), (e) =>
-      ItemIsNotFolderError.create(`is not a folder`)),
+    getByPathsStrict(root, paths),
+    filterOrElse(
+      (items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items),
+      (e) => ItemIsNotFolderError.create(`some of the paths are not folders`),
+    ),
   )
 
-export const getByPathFolderCached = <R extends T.Root>(path: NormalizedPath) =>
-  (root: R): DriveM<T.Details> =>
+export const getByPathFolderFromCache = <R extends T.Root>(path: NormalizedPath) =>
+  (root: R): Effect<T.Details> =>
     chainCache(cache =>
       SRTE.fromEither(pipe(
         C.getByPath(root, path)(cache),
@@ -218,50 +229,26 @@ export const getByPathFolderCached = <R extends T.Root>(path: NormalizedPath) =>
       ))
     )
 
-export const getByPathH = <R extends T.Root>(root: R, path: NormalizedPath): DriveM<PathValidation<Hierarchy<R>>> => {
+export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Effect<GetByPathResult<R>> => {
   return pipe(
-    getByPathsH(root, [path]),
+    getByPaths(root, [path]),
     map(NA.head),
   )
 }
 
-export const getByPathsCached = <R extends T.Root>(
+export const getByPathsFromCache = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DriveM<NEA<GetByPathResult<R>>> =>
+): Effect<NEA<GetByPathResult<R>>> =>
   asksCache(
     C.getByPaths(root, paths),
   )
 
-export const getRoot = () => chainRoot(of)
+export const getDocwsRoot = () => chainCachedDocwsRoot(of)
 export const getTrash = () => chainCachedTrash(of)
 
-export { getByPaths }
+export { getByPathsStrict }
 export { searchGlobs }
-export { getByPathsH }
+export { getByPaths }
 export { getFoldersTrees }
 export { modifySubset }
-
-/** unexported cripples */
-const { map, chain, of, filterOrElse } = SRTE
-
-const putCache = (cache: C.Cache): DriveM<void> => readEnvS(({ state }) => SRTE.put({ ...state, cache }))
-
-const putDetailss = (detailss: T.Details[]): DriveM<void> =>
-  chainCache(
-    flow(
-      C.putDetailss(detailss),
-      SRTE.fromEither,
-      chain(putCache),
-      map(constVoid),
-    ),
-  )
-
-const putFoundMissed = ({ found, missed }: {
-  found: T.Details[]
-  missed: string[]
-}): DriveM<void, State> =>
-  pipe(
-    putDetailss(found),
-    chain(() => cacheRemoveByIds(missed)),
-  )

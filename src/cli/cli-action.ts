@@ -3,48 +3,62 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { AccountData } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
-import { SchemaEnv } from '../icloud/drive/api/deps'
-import * as API from '../icloud/drive/api/drive-api-methods'
-import { ApiDepsType } from '../icloud/drive/api/type'
 import * as C from '../icloud/drive/cache/cache'
 import { CacheF } from '../icloud/drive/cache/cache-types'
+import * as API from '../icloud/drive/deps/api-methods'
+import { ApiType, DepApi } from '../icloud/drive/deps/api-type'
 import * as DF from '../icloud/drive/drive'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { err } from '../lib/errors'
+import { ReadJsonFileError } from '../lib/files'
+import { DepFs } from '../lib/fs'
 import { loggerIO } from '../lib/loggerIO'
 import { apiLogger, logReturnAs } from '../lib/logging'
 import { XXX } from '../lib/types'
 
-export const loadSessionFile = (deps: { sessionFile: string }) => readSessionFile(deps.sessionFile)
+export const loadSessionFile = RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
+  readSessionFile(deps.sessionFile)
+)
 
-export const _loadAccountData = (deps: { sessionFile: string }) =>
-  pipe(
-    readAccountData(`${deps.sessionFile}-accountData`),
-  )
+export const _loadAccountData = RTE.asksReaderTaskEitherW(
+  (deps: { sessionFile: string }) => readAccountData(`${deps.sessionFile}-accountData`),
+)
 
-export const loadCache = (deps: { noCache: boolean; cacheFile: string }) =>
+export const loadCache: RTE.ReaderTaskEither<
+  {
+    noCache: boolean
+    cacheFile: string
+  } & DepFs<'readFile'>,
+  Error | ReadJsonFileError,
+  CacheF
+> = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache
-      ? TE.of(C.cachef())
+      ? RTE.of(C.cachef())
       : C.tryReadFromFile(deps.cacheFile),
-    TE.orElseW(
-      (e) => pipe(e, logReturnAs('error'), () => TE.of(C.cachef())),
+    RTE.orElse(
+      (e) => RTE.of(C.cachef()),
     ),
   )
+)
 
 export const saveSession = <S extends { session: ICloudSession }>(state: S) =>
-  (deps: { sessionFile: string }) => saveSession2(state.session)(deps.sessionFile)
+  RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) => saveSession2(state.session)(deps.sessionFile))
 
 export const saveAccountData = <S extends { accountData: AccountData }>(
   state: S,
-) => (deps: { sessionFile: string }) => _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
+) =>
+  RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
+    _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
+  )
 
 export const saveCache = <S extends { cache: CacheF }>(state: S) =>
-  (deps: { cacheFile: string; noCache: boolean }) =>
+  RTE.asksReaderTaskEitherW((deps: { cacheFile: string; noCache: boolean }) =>
     deps.noCache
-      ? TE.of(constVoid())
+      ? RTE.of(constVoid())
       : C.trySaveFile(state.cache)(deps.cacheFile)
+  )
 
 const loadSession = pipe(
   loadSessionFile,
@@ -75,13 +89,19 @@ const loadAccountData = (
     ),
   )
 
+type CliActionDeps =
+  & { sessionFile: string }
+  & { cacheFile: string; noCache: boolean }
+  & DepApi<'authorizeSession'>
+  & DepFs<'writeFile'>
+  & DepFs<'readFile'>
+
 /** read the state and execute an action in the context */
-export function cliAction<A, R extends ApiDepsType & SchemaEnv>(
+export function cliAction<A, R>(
   action: () => XXX<DF.State, R, A>,
 ): RTE.ReaderTaskEither<
   & R
-  & { sessionFile: string }
-  & { cacheFile: string; noCache: boolean },
+  & CliActionDeps,
   Error,
   A
 > {

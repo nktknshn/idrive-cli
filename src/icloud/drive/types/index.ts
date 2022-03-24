@@ -5,9 +5,10 @@ import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/Tree'
 import { TypeOf } from 'io-ts'
 import * as t from 'io-ts'
-import { hasOwnProperty, isObjectWithOwnProperty } from '../../../../lib/util'
-import { DetailsOrFile } from '../../drive'
+import { hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
 import * as types from './types-io'
+
+export type DetailsOrFile<R> = (R | NonRootDetails | DriveChildrenItemFile)
 
 export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>
 
@@ -47,7 +48,7 @@ export interface Icon extends TypeOf<typeof types.icon> {}
 
 export interface InvalidId extends TypeOf<typeof types.invalidIdItem> {}
 
-export type MaybeNotFound<T> = InvalidId | T
+export type MaybeInvalidId<T> = InvalidId | T
 
 export const isNotInvalidId = <T>(i: T | InvalidId): i is T => !types.invalidIdItem.is(i)
 export const isInvalidId = <T>(i: T | InvalidId): i is InvalidId => types.invalidIdItem.is(i)

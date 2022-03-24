@@ -6,10 +6,11 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Stats } from 'fs'
-import * as fs from 'fs/promises'
 import mime from 'mime-types'
 import { Readable } from 'stream'
+import { buffer } from 'stream/consumers'
 import { err } from '../../../lib/errors'
+import { DepFs } from '../../../lib/fs'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
@@ -17,28 +18,36 @@ import { AccountData } from '../../authorization/types'
 import { getMissedFound } from '../helpers'
 import { getUrlStream as getUrlStream_ } from '../requests/download'
 import { BasicState } from '../requests/request'
-import * as T from '../requests/types/types'
-import { Dep, useDepRequest } from './type'
+import * as T from '../types'
+import { DepApi, useDepRequest as useApi } from './api-type'
+import { DepFetchClient } from './util'
 
 /** basic icloud api requests as standalone depended functions*/
-export const renameItems = useDepRequest<Dep<'renameItems'>>()(_ => _.renameItems)
-export const putBackItemsFromTrash = useDepRequest<Dep<'putBackItemsFromTrash'>>()(_ => _.putBackItemsFromTrash)
-export const moveItems = useDepRequest<Dep<'moveItems'>>()(_ => _.moveItems)
-export const moveItemsToTrash = useDepRequest<Dep<'moveItemsToTrash'>>()(_ => _.moveItemsToTrash)
-export const retrieveItemDetailsInFolders = useDepRequest<Dep<'retrieveItemDetailsInFolders'>>()(_ =>
-  _.retrieveItemDetailsInFolders
+export const renameItems = useApi<DepApi<'renameItems'>>()(_ => _.api.renameItems)
+
+export const putBackItemsFromTrash = useApi<DepApi<'putBackItemsFromTrash'>>()(_ => _.api.putBackItemsFromTrash)
+
+export const moveItems = useApi<DepApi<'moveItems'>>()(_ => _.api.moveItems)
+
+export const moveItemsToTrash = useApi<DepApi<'moveItemsToTrash'>>()(_ => _.api.moveItemsToTrash)
+
+export const retrieveItemDetailsInFolders = useApi<DepApi<'retrieveItemDetailsInFolders'>>()(_ =>
+  _.api.retrieveItemDetailsInFolders
 )
-export const download = useDepRequest<Dep<'download'>>()(_ => _.download)
-export const downloadBatch = useDepRequest<Dep<'downloadBatch'>>()(_ => _.downloadBatch)
-export const createFolders = useDepRequest<Dep<'createFolders'>>()(_ => _.createFolders)
+
+export const download = useApi<DepApi<'download'>>()(_ => _.api.download)
+
+export const downloadBatch = useApi<DepApi<'downloadBatch'>>()(_ => _.api.downloadBatch)
+
+export const createFolders = useApi<DepApi<'createFolders'>>()(_ => _.api.createFolders)
 
 export const authorizeSession = <S extends BasicState>(): XXX<
   S,
-  Dep<'authorizeSession'>,
+  DepApi<'authorizeSession'>,
   AccountData
 > =>
   SRTE.asksStateReaderTaskEitherW(
-    (_: Dep<'authorizeSession'>) => _.authorizeSession<S>(),
+    (_: DepApi<'authorizeSession'>) => _.api.authorizeSession<S>(),
   )
 
 /** higher level methods based and dependent on the basic functions */
@@ -47,7 +56,7 @@ export const authorizeState = <
   S extends BasicState,
 >(
   state: S,
-): RTE.ReaderTaskEither<Dep<'authorizeSession'>, Error, S & { accountData: AccountData }> =>
+): RTE.ReaderTaskEither<DepApi<'authorizeSession'>, Error, S & { accountData: AccountData }> =>
   pipe(
     authorizeSession<S>()(state),
     RTE.map(([accountData, state]) => ({ ...state, accountData })),
@@ -55,17 +64,17 @@ export const authorizeState = <
 
 export const getUrlStream = ({ url }: {
   url: string
-}): RTE.ReaderTaskEither<Dep<'fetchClient'>, Error, Readable> =>
+}): RTE.ReaderTaskEither<DepFetchClient, Error, Readable> =>
   pipe(
-    RTE.ask<Dep<'fetchClient'>>(),
+    RTE.ask<DepFetchClient>(),
     RTE.chainTaskEitherK(flow(getUrlStream_, apply({ url }))),
   )
 
-export const retrieveItemDetailsInFoldersS = <S extends AuthorizedState>(
+export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
 ): XXX<
   S,
-  Dep<'retrieveItemDetailsInFolders'>,
+  DepApi<'retrieveItemDetailsInFolders'>,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrash | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>
   pipe(
@@ -90,12 +99,14 @@ export const getItemUrl = flow(
 )
 
 export type UploadMethodDeps =
-  & Dep<'upload'>
-  & Dep<'singleFileUpload'>
-  & Dep<'updateDocuments'>
+  & DepApi<'upload'>
+  & DepApi<'singleFileUpload'>
+  & DepApi<'updateDocuments'>
+  & DepFs<'fstat'>
+  & DepFs<'readFile'>
 
 export const upload = flow(
-  useDepRequest<UploadMethodDeps>()(deps =>
+  useApi<UploadMethodDeps>()(deps =>
     <S extends AuthorizedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string
@@ -124,16 +135,13 @@ export const upload = flow(
 
       return pipe(
         SRTE.fromTaskEither<Error, Stats, S, unknown>(
-          TE.tryCatch(
-            () => fs.stat(sourceFilePath),
-            (e) => err(`error getting file info: ${JSON.stringify(e)}`),
-          ),
+          deps.fs.fstat(sourceFilePath),
         ),
         // () =>
         // SRTE.bindTo('fstats'),
         SRTE.bind('uploadResult', (fstats) => {
           return pipe(
-            deps.upload<S>({
+            deps.api.upload<S>({
               contentType: getContentType(parsedSource.ext),
               filename: parsedSource.base,
               size: fstats.size,
@@ -146,14 +154,20 @@ export const upload = flow(
         SRTE.bind(
           'singleFileUploadResult',
           ({ uploadResult }) =>
-            deps.singleFileUpload(
-              { filePath: sourceFilePath, url: uploadResult[0].url },
+            pipe(
+              deps.fs.readFile(sourceFilePath),
+              SRTE.fromTaskEither,
+              SRTE.chain(buffer =>
+                deps.api.singleFileUpload<S>(
+                  { filename: parsedSource.base, buffer, url: uploadResult[0].url },
+                )
+              ),
             ),
         ),
         SRTE.bind(
           'updateDocumentsResult',
           ({ uploadResult, singleFileUploadResult }) =>
-            deps.updateDocuments(
+            deps.api.updateDocuments(
               {
                 zone,
                 data: {

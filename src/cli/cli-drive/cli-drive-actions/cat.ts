@@ -3,37 +3,38 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { SchemaEnv } from '../../../icloud/drive/api/deps'
-import * as API from '../../../icloud/drive/api/drive-api-methods'
-import { Dep } from '../../../icloud/drive/api/type'
-import * as DF from '../../../icloud/drive/drive'
-import { consumeStreamToString } from '../../../icloud/drive/requests/download'
-import { isFile } from '../../../icloud/drive/requests/types/types'
+import { Api, DepApi, Drive } from '../../../icloud/drive'
+import { DepFetchClient } from '../../../icloud/drive/deps/util'
+import { isFile } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
-import { failingFetch } from '../../../lib/http/fetch-client'
-import { XXX } from '../../../lib/types'
+import { consumeStreamToString } from '../../../lib/util'
 import { normalizePath } from './helpers'
 
-type Deps = DF.DriveMEnv & Dep<'download'> & Dep<'fetchClient'> & SchemaEnv
+type Deps =
+  & Drive.Deps
+  & DepApi<'download'>
+  & DepFetchClient
+// & SchemaEnv
 
 export const cat = (
   { path }: { path: string },
-): XXX<DF.State, Deps, string> => {
+): Drive.Effect<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    SRTE.ask<DF.State, Deps>(),
+    SRTE.ask<Drive.State, Deps>(),
     SRTE.bindTo('deps'),
-    SRTE.bindW('root', () => DF.getRoot()),
+    SRTE.bindW('root', () => Drive.getDocwsRoot()),
     SRTE.bindW('item', ({ root }) =>
       pipe(
-        DF.getByPaths(root, [npath]),
+        Drive.getByPathsStrict(root, [npath]),
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
     SRTE.bindW('url', ({ item, deps }) =>
       pipe(
-        API.getItemUrl<DF.State>(item),
+        Api.getItemUrl<Drive.State>(item),
+        // deps.retrieveItemDetailsInFoldersRTE({drivewsids: [1]})
         // SRTE.local(() => ({
         //   download: deps.schema.download({ ...deps.depsEnv, fetch: failingFetch(99) }),
         // })),
@@ -46,7 +47,7 @@ export const cat = (
           (url) =>
             SRTE.fromReaderTaskEither(
               pipe(
-                API.getUrlStream({ url }),
+                Api.getUrlStream({ url }),
                 RTE.chainTaskEitherK(consumeStreamToString),
               ),
             ),

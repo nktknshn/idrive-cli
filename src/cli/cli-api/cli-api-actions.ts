@@ -8,7 +8,7 @@ export const retrieveTrashDetails = (argv: {
 }) => {
   return apiActionM(
     () => pipe(RQ.retrieveTrashDetails()),
-  )({ sessionFile: argv.sessionFile })
+  )
 }
 
 export const putBackItemsFromTrash = (argv: {

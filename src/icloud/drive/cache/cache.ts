@@ -17,8 +17,8 @@ import { NEA } from '../../../lib/types'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { parsePath } from '../helpers'
-import * as T from '../requests/types/types'
-import { rootDrivewsid, trashDrivewsid } from '../requests/types/types-io'
+import * as T from '../types'
+import { rootDrivewsid, trashDrivewsid } from '../types/types-io'
 import { getFromCacheByPath } from './cache-get-by-path'
 import { GetByPathResult } from './cache-get-by-path-types'
 import * as cacheEntityFolderRootDetails from './cache-io-types'
@@ -61,23 +61,21 @@ const cacheEntityFromItem = (
     : new C.CacheEntityAppLibraryItem(item)
 }
 
-export const getDocwsRootE = () =>
-  (cache: C.CacheF): E.Either<MissinRootError, C.CacheEntityFolderRootDetails> =>
-    pipe(
-      cache.byDrivewsid,
-      R.lookup(rootDrivewsid),
-      E.fromOption(() => MissinRootError.create(`getDocwsRootE(): missing root`)),
-      E.filterOrElse(C.isDocwsRootCacheEntity, () => err('getDocwsRootE(): invalid root details')),
-    )
+export const getDocwsRoot = (cache: C.CacheF): E.Either<MissinRootError, C.CacheEntityFolderRootDetails> =>
+  pipe(
+    cache.byDrivewsid,
+    R.lookup(rootDrivewsid),
+    E.fromOption(() => MissinRootError.create(`getDocwsRootE(): missing root`)),
+    E.filterOrElse(C.isDocwsRootCacheEntity, () => err('getDocwsRootE(): invalid root details')),
+  )
 
-export const getTrashE = () =>
-  (cache: C.CacheF): E.Either<Error, C.CacheEntityFolderTrashDetails> =>
-    pipe(
-      cache.byDrivewsid,
-      R.lookup(trashDrivewsid),
-      E.fromOption(() => MissinRootError.create(`getTrashE(): missing trash`)),
-      E.filterOrElse(C.isTrashCacheEntity, () => err('getTrashE(): invalid trash details')),
-    )
+export const getTrash = (cache: C.CacheF): E.Either<Error, C.CacheEntityFolderTrashDetails> =>
+  pipe(
+    cache.byDrivewsid,
+    R.lookup(trashDrivewsid),
+    E.fromOption(() => MissinRootError.create(`getTrashE(): missing trash`)),
+    E.filterOrElse(C.isTrashCacheEntity, () => err('getTrashE(): invalid trash details')),
+  )
 
 const assertFolderWithDetailsEntity = (
   entity: C.CacheEntity,
@@ -191,11 +189,11 @@ export const getFoldersDetailsByIdsSeparated = (
 export const getFoldersDetailsByIds = (
   drivewsids: string[],
 ) =>
-  (cache: C.CacheF): E.Either<Error, T.MaybeNotFound<T.Details>[]> => {
+  (cache: C.CacheF): E.Either<Error, T.MaybeInvalidId<T.Details>[]> => {
     return pipe(
       drivewsids,
       A.map(id => getFolderDetailsByIdO(id)(cache)),
-      A.map(O.fold(() => E.right<Error, T.MaybeNotFound<T.Details>>(T.invalidId), E.map(v => v.content))),
+      A.map(O.fold(() => E.right<Error, T.MaybeInvalidId<T.Details>>(T.invalidId), E.map(v => v.content))),
       E.sequenceArray,
       E.map(RA.toArray),
     )
@@ -346,7 +344,7 @@ export const removeByIds = (drivewsids: string[]) =>
 export const trySaveFile = (
   cache: Cache,
 ) =>
-  (cacheFilePath: string): TE.TaskEither<Error, void> => {
+  (cacheFilePath: string) => {
     cacheLogger.debug(`saving cache: ${R.keys(cache.byDrivewsid).length} items`)
 
     return pipe(
@@ -359,13 +357,15 @@ export const trySaveFile = (
 // export const validateCacheJson = (json: unknown): json is C.CacheF => {
 //   return isObjectWithOwnProperty(json, 'byDrivewsid')
 // }
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import { DepFs } from '../../../lib/fs'
 
 export const tryReadFromFile = (
   accountDataFilePath: string,
-): TE.TaskEither<Error | ReadJsonFileError, C.CacheF> => {
+): RTE.ReaderTaskEither<DepFs<'readFile'>, Error | ReadJsonFileError, C.CacheF> => {
   return pipe(
     tryReadJsonFile(accountDataFilePath),
-    TE.chainEitherKW(flow(
+    RTE.chainEitherKW(flow(
       cacheEntityFolderRootDetails.cache.decode,
       E.mapLeft(es => TypeDecodingError.create(es, 'wrong ICloudDriveCache json')),
       // E.mapLeft(flow(A.map(errorMessage), _ => _.join(', '), err)),

@@ -10,15 +10,14 @@ import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import micromatch from 'micromatch'
-import { SchemaEnv } from '../../../icloud/drive/api/deps'
-import * as API from '../../../icloud/drive/api/drive-api-methods'
-import { Dep } from '../../../icloud/drive/api/type'
-import * as DF from '../../../icloud/drive/drive'
-import { guardFst, isDefined, prependPath } from '../../../icloud/drive/helpers'
+import { Api, DepApi, Drive } from '../../../icloud/drive'
+import { DepFetchClient } from '../../../icloud/drive/deps/util'
+import { prependPath } from '../../../icloud/drive/helpers'
+import { DepFs } from '../../../lib/fs'
 import { loggerIO } from '../../../lib/loggerIO'
 import { printer, printerIO } from '../../../lib/logging'
 import { XXX } from '../../../lib/types'
-import { Path } from '../../../lib/util'
+import { guardFst, isDefined, Path } from '../../../lib/util'
 import { handleLocalFilesConflicts, solvers } from './download/download-conflict'
 import {
   createDirsList,
@@ -41,11 +40,14 @@ type Argv = {
   // silent: boolean
 }
 
-type Deps =
-  & DF.DriveMEnv
-  & Dep<'downloadBatch'>
-  & Dep<'fetchClient'>
-  & SchemaEnv
+type Deps = DownloadFolderDeps
+// & SchemaEnv
+
+type DownloadFolderDeps =
+  & Drive.Deps
+  & DepApi<'downloadBatch'>
+  & DepFetchClient
+  & DepFs<'fstat' | 'opendir' | 'mkdir' | 'writeFile'>
 
 export const downloads = (
   { paths }: {
@@ -56,8 +58,16 @@ export const downloads = (
   assert(A.isNonEmpty(paths))
 
   return pipe(
-    DF.searchGlobs(paths),
+    Drive.searchGlobs(paths),
     SRTE.map(JSON.stringify),
+  )
+}
+
+export const downloadFolder = (argv: Argv): XXX<Drive.State, Deps, string> => {
+  return _downloadFolder(
+    argv,
+    Infinity,
+    basicDownloadTask(toDirMapper(argv.dstpath)),
   )
 }
 
@@ -68,31 +78,33 @@ export const download = (
     raw: boolean
     dry: boolean
   },
-) => {
+): XXX<Drive.State, Deps, string> => {
+  const globInput = {
+    path: micromatch.scan(path).base,
+    dstpath,
+    dry,
+    exclude: [],
+    include: [
+      '/' + Path.join(
+        Path.basename(micromatch.scan(path).base),
+        micromatch.scan(path).glob,
+      ),
+    ],
+  }
+
+  const basicInput = {
+    path: Path.dirname(path),
+    dstpath,
+    dry,
+    exclude: [],
+    include: [
+      path,
+    ],
+  }
+
   return pipe(
-    downloadFolder(
-      micromatch.scan(path).isGlob
-        ? ({
-          path: micromatch.scan(path).base,
-          dstpath,
-          dry,
-          exclude: [],
-          include: [
-            '/' + Path.join(
-              Path.basename(micromatch.scan(path).base),
-              micromatch.scan(path).glob,
-            ),
-          ],
-        })
-        : ({
-          path: Path.dirname(path),
-          dstpath,
-          dry,
-          exclude: [],
-          include: [
-            path,
-          ],
-        }),
+    _downloadFolder(
+      micromatch.scan(path).isGlob ? globInput : basicInput,
       0,
       basicDownloadTask((ds) => ({
         downloadable: ds.downloadable.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
@@ -136,11 +148,19 @@ const basicDownloadTask = (_toDirMapper: (ds: DownloadStructure) => DownloadTask
     })(task)
   }
 
-export const downloadFolder = (
+type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEither<
+  R,
+  Error,
+  DownloadTask & {
+    initialTask: DownloadTask
+  }
+>
+
+const _downloadFolder = <R>(
   { path, dstpath, dry, exclude, include }: Argv,
   depth = Infinity,
-  createDownloadTask = basicDownloadTask(toDirMapper(dstpath)),
-): XXX<DF.State, Deps, string> => {
+  createDownloadTask: CreateDownloadTask<R>,
+): XXX<Drive.State, DownloadFolderDeps & R, string> => {
   const download = downloadICloudFilesChunked({ chunkSize: 5 })
 
   const verbose = dry
@@ -156,11 +176,11 @@ export const downloadFolder = (
   )
 
   const buildTask = pipe(
-    DF.getRoot(),
-    SRTE.chain((root) =>
+    Drive.getDocwsRoot(),
+    SRTE.chainW((root) =>
       pipe(
-        DF.getByPathFolder(root, normalizePath(path)),
-        SRTE.chain(dir => DF.getFoldersTrees([dir], depth)),
+        Drive.getByPathFolder(root, normalizePath(path)),
+        SRTE.chain(dir => Drive.getFoldersTrees([dir], depth)),
         SRTE.map(NA.head),
       )
     ),
@@ -175,8 +195,8 @@ export const downloadFolder = (
           }
         },
     ),
-    SRTE.chainTaskEitherK(
-      createDownloadTask,
+    SRTE.chainW(
+      v => SRTE.fromReaderTaskEither(createDownloadTask(v)),
     ),
     SRTE.chainFirstIOK(
       (task) =>
@@ -197,12 +217,22 @@ export const downloadFolder = (
     ),
   )
 
-  const effect = (task: DownloadTask) =>
+  const effect = (
+    task: DownloadTask,
+  ) =>
     pipe(
-      createDirsList(task.localdirstruct),
-      TE.chain(() => createEmpties(task)),
-      SRTE.fromTaskEither,
-      SRTE.chain(() => download(task)),
+      SRTE.fromReaderTaskEither<
+        DepFs<'mkdir' | 'writeFile'>,
+        Error,
+        void,
+        Drive.State
+      >(
+        pipe(
+          createDirsList(task.localdirstruct),
+          RTE.chainW(() => createEmpties(task)),
+        ),
+      ),
+      SRTE.chainW(() => download(task)),
     )
 
   return pipe(
@@ -230,16 +260,16 @@ const createEmpties = ({ empties }: DownloadTask) =>
     empties.length > 0
       ? pipe(
         loggerIO.debug(`creating empty ${empties.length} files`),
-        TE.fromIO,
-        TE.chain(() => createEmptyFiles(empties.map(_ => _.localpath))),
-        TE.map(constVoid),
+        RTE.fromIO,
+        RTE.chain(() => createEmptyFiles(empties.map(_ => _.localpath))),
+        RTE.map(constVoid),
       )
-      : TE.of(constVoid()),
+      : RTE.of(constVoid()),
   )
 
 const downloadICloudFilesChunked = (
   { chunkSize = 5 },
-): DownloadICloudFilesFunc<Dep<'downloadBatch'> & Dep<'fetchClient'>> =>
+): DownloadICloudFilesFunc<DepApi<'downloadBatch'> & DepFetchClient> =>
   ({ downloadable }) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
@@ -270,12 +300,12 @@ const splitIntoChunks = (
 const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
 ): XXX<
-  DF.State,
-  Dep<'downloadBatch'> & Dep<'fetchClient'>,
+  Drive.State,
+  DepApi<'downloadBatch'> & DepFetchClient,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 > => {
   return pipe(
-    API.downloadBatch<DF.State>({
+    Api.downloadBatch<Drive.State>({
       docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
       zone: NA.head(chunk).info[1].zone,
     }),

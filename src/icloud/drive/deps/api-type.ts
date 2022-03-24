@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { FetchClientEither } from '../../../lib/http/fetch-client'
 import { NEA, XX } from '../../../lib/types'
 import { AuthorizedState } from '../../authorization/authorize'
 import { AccountData } from '../../authorization/types'
@@ -8,16 +8,18 @@ import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '
 import { DownloadResponseBody } from '../requests/download'
 import { MoveItemsResponse } from '../requests/moveItems'
 import { BasicState } from '../requests/request'
-import * as T from '../requests/types/types'
 import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
-
-export type Dep<K extends keyof ApiDepsType> = Record<K, ApiDepsType[K]>
+import * as T from '../types'
 
 /** basic api functions and also helpers with attached dependencies */
-export type ApiDepsType = {
+export type ApiType = {
   retrieveItemDetailsInFolders: <S extends AuthorizedState>(
     { drivewsids }: { drivewsids: NEA<string> },
   ) => XX<S, NEA<(T.Details | T.InvalidId)>>
+
+  // retrieveItemDetailsInFoldersRTE: <S extends AuthorizedState>(
+  //   { drivewsids }: { drivewsids: NEA<string> },
+  // ) => RTE.ReaderTaskEither<{}, Error, [S, NEA<(T.Details | T.InvalidId)>]>
 
   download: <S extends AuthorizedState>(
     { docwsid: documentId, zone }: {
@@ -72,14 +74,14 @@ export type ApiDepsType = {
   ) => XX<S, UploadResponse>
 
   singleFileUpload: <S extends AuthorizedState>(
-    { filePath, url }: { filePath: string; url: string },
+    { filename, buffer, url }: { filename: string; buffer: Buffer; url: string },
   ) => XX<S, SingleFileResponse>
 
   updateDocuments: <S extends AuthorizedState>(
     { zone, data }: { zone: string; data: UpdateDocumentsRequest },
   ) => XX<S, UpdateDocumentsResponse>
 
-  fetchClient: FetchClientEither
+  // fetchClient: FetchClientEither
 
   authorizeSession: <S extends BasicState>() => XX<S, AccountData>
 }
@@ -94,3 +96,8 @@ export const useDepRequest = <R>() =>
         SRTE.map(f),
         SRTE.chain(f => f(...args)),
       )
+
+export type DepApi<K extends keyof ApiType, RootKey extends string | number | symbol = 'api'> = Record<
+  RootKey,
+  Pick<ApiType, K>
+>

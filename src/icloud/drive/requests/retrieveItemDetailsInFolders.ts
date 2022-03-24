@@ -10,10 +10,10 @@ import { apiLogger } from '../../../lib/logging'
 import { NEA } from '../../../lib/types'
 import { AuthorizedState } from '../../authorization/authorize'
 import { buildRequest } from '../../session/session-http'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../types/types-io'
 import * as AR from './request'
 import { ResponseHandler, ResponseWithSession } from './request'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeNotFound } from './types/types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './types/types-io'
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,
@@ -35,7 +35,7 @@ export function retrieveItemDetailsInFoldersGeneric<R>(
   )
 }
 
-export const decodeWithHierarchy: t.Decode<unknown, MaybeNotFound<DriveDetailsWithHierarchy>[]> = flow(
+export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsWithHierarchy>[]> = flow(
   t.array(t.UnknownRecord).decode,
   E.chain(flow(
     A.chunksOf(2),

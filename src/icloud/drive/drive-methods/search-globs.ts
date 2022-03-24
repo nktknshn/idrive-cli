@@ -8,18 +8,17 @@ import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { NEA } from '../../../lib/types'
-import { Path } from '../../../lib/util'
-import * as DF from '../drive'
-import { guardSnd } from '../helpers'
+import { guardSnd, Path } from '../../../lib/util'
+import { Drive } from '..'
 import { modifySubset } from '../modify-subset'
-import * as T from '../requests/types/types'
+import * as T from '../types'
 import { getFoldersTrees, shallowFolder, zipFolderTreeWithPath } from './get-folders-trees'
 
 export const searchGlobsShallow = (
   globs: NEA<string>,
-): DF.DriveM<
+): Drive.Effect<
   NA.NonEmptyArray<
-    { path: string; item: DF.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
+    { path: string; item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
   >
 > => {
   return searchGlobs(globs, 0)
@@ -28,16 +27,18 @@ export const searchGlobsShallow = (
 export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
-): DF.DriveM<
+): Drive.Effect<
   NA.NonEmptyArray<
-    { path: string; item: DF.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
+    { path: string; item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
   >
 > => {
   const scanned = pipe(globs, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
   return pipe(
-    DF.chainRoot(root => DF.getByPaths(root, basepaths)),
+    Drive.chainCachedDocwsRoot(
+      root => Drive.getByPathsStrict(root, basepaths),
+    ),
     SRTE.chain((bases) => {
       return modifySubset(
         NA.zip(bases)(scanned),

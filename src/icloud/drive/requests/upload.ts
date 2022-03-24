@@ -1,10 +1,11 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import * as fs from 'fs/promises'
 import * as t from 'io-ts'
 import Path from 'path'
 import { err } from '../../../lib/errors'
-import { uploadFileRequest } from '../../../lib/http/fetch-client'
+import { DepFs } from '../../../lib/fs'
+import { HttpRequest, uploadFileRequest } from '../../../lib/http/fetch-client'
 import { apiLogger, logf } from '../../../lib/logging'
 import { AuthorizedState } from '../../authorization/authorize'
 import { readWebauthToken } from '../../session/session-cookies'
@@ -107,19 +108,23 @@ export const upload = <S extends AuthorizedState>(
   )
 
 export const singleFileUpload = <S extends AuthorizedState>(
-  { filePath, url }: { filePath: string; url: string },
-): AR.AuthorizedRequest<SingleFileResponse, S> => {
-  const filename = Path.parse(filePath).base
-
+  { buffer, url, filename }: { buffer: Buffer; url: string; filename: string },
+): AR.AuthorizedRequest<SingleFileResponse, S, AR.RequestEnv> => {
+  // const filename = Path.parse(filePath).base
   return pipe(
-    TE.tryCatch(
-      () => fs.readFile(filePath),
-      (e) => err(`error opening file ${String(e)}`),
+    // SRTE.asksStateReaderTaskEither<AR.RequestEnv & DepFs<'readFile'>, S, Error, HttpRequest>((
+    //   { readFile },
+    // ) =>
+    //   SRTE.fromTaskEither(pipe(
+    //     readFile(filePath),
+    //     logf(`singleFileUpload.`, apiLogger.debug),
+    //     TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
+    //   ))
+    // ),
+    AR.of<S, AR.RequestEnv, Error, HttpRequest>(uploadFileRequest(url, filename, buffer)),
+    AR.handleResponse<SingleFileResponse, S, AR.RequestEnv>(
+      AR.basicJsonResponse(singleFileResponse.decode),
     ),
-    logf(`singleFileUpload.`, apiLogger.debug),
-    TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
-    AR.fromTaskEither,
-    AR.handleResponse(AR.basicJsonResponse(singleFileResponse.decode)),
   )
 }
 

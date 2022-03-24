@@ -29,7 +29,7 @@ export type AuthorizationState = {
 }
 
 export type RequestEnv = {
-  fetch: FetchClientEither
+  fetchClient: FetchClientEither
 }
 
 export type BasicState = {
@@ -45,9 +45,9 @@ interface ValidHttpResponseBrand {
 
 type ValidHttpResponse<R extends { httpResponse: HttpResponse }> = t.Branded<R, ValidHttpResponseBrand>
 
-type Filter<S extends BasicState> = (
-  ma: ApiRequest<{ httpResponse: HttpResponse }, S>,
-) => ApiRequest<{ httpResponse: HttpResponse }, S>
+type Filter<S extends BasicState, R extends RequestEnv> = (
+  ma: ApiRequest<{ httpResponse: HttpResponse }, S, R>,
+) => ApiRequest<{ httpResponse: HttpResponse }, S, R>
 
 export type ResponseWithSession<R> = {
   session: ICloudSession
@@ -69,15 +69,17 @@ export const { chain, fromEither, fromOption, fromTaskEither, get, left, map, of
 
 const ado = sequenceS(SRTE.Apply)
 
-export const readEnv = <S extends BasicState>() =>
+export const readEnv = <S extends BasicState, R extends RequestEnv = RequestEnv>() =>
   ado({
-    state: SRTE.get<S, RequestEnv, Error>(),
-    env: SRTE.ask<S, RequestEnv, Error>(),
+    state: SRTE.get<S, R, Error>(),
+    env: SRTE.ask<S, R, Error>(),
   })
 
-const putSession = <S extends { session: ICloudSession }>(session: ICloudSession): ApiRequest<void, S> =>
+const putSession = <S extends { session: ICloudSession }, R extends RequestEnv>(
+  session: ICloudSession,
+): ApiRequest<void, S, R> =>
   pipe(
-    readEnv<S>(),
+    readEnv<S, R>(),
     chain(({ state }) => SRTE.put({ ...state, session })),
   )
 
@@ -90,11 +92,11 @@ export const buildRequest = <S extends BasicState>(
     chain(reader => pipe(readEnv<S>(), map(reader))),
   )
 
-export const buildRequestC = <S extends BasicState>(
-  f: (a: { state: S; env: RequestEnv }) => HttpRequestConfig,
-): ApiRequest<HttpRequest, S> =>
+export const buildRequestC = <S extends BasicState, R extends RequestEnv = RequestEnv>(
+  f: (a: { state: S; env: R }) => HttpRequestConfig,
+): ApiRequest<HttpRequest, S, R> =>
   pipe(
-    readEnv<S>(),
+    readEnv<S, R>(),
     map(env =>
       pipe(
         f(env),
@@ -118,34 +120,40 @@ export const fetch = <S extends BasicState>(
   return pipe(
     readEnv<S>(),
     SRTE.bindW('req', () => req),
-    chain(({ req, env: { fetch } }) => fromTaskEither(fetch(req))),
+    chain(({ req, env: { fetchClient: fetch } }) => fromTaskEither(fetch(req))),
   )
 }
 
-export const handleResponse = <A, S extends BasicState>(
-  f: (ma: ApiRequest<{ httpResponse: HttpResponse }, S>) => ApiRequest<A, S>,
+export const handleResponse = <A, S extends BasicState, R extends RequestEnv>(
+  f: (
+    ma: ApiRequest<{ httpResponse: HttpResponse }, S, R>,
+  ) => ApiRequest<A, S, R>,
 ) =>
   (
-    req: ApiRequest<HttpRequest, S>,
-  ): ApiRequest<A, S> =>
+    req: ApiRequest<HttpRequest, S, R>,
+  ): ApiRequest<A, S, R> =>
     pipe(
-      readEnv<S>(),
+      readEnv<S, R>(),
       SRTE.bind('req', () => req),
-      chain(({ env: { fetch }, req }) =>
-        fromTaskEither(pipe(
+      SRTE.chainW(({ env: { fetchClient: fetch }, req }) =>
+        SRTE.fromTaskEither(pipe(
           logg(`${req.url.replace(/\?.+/, '')} ${JSON.stringify(req.data)}`, apiLogger.debug),
           () => fetch(req),
           TE.map(httpResponse => ({ httpResponse })),
         ))
       ),
-      f,
+      m => f(m),
     )
 
-export const filterHttpResponse = <R extends { httpResponse: HttpResponse }, S extends BasicState>(
-  f: (r: R) => E.Either<Error, R>,
-) => (ma: ApiRequest<R, S>) => pipe(ma, chain(a => fromEither(f(a))))
+export const filterHttpResponse = <
+  Resp extends { httpResponse: HttpResponse },
+  S extends BasicState,
+  R extends RequestEnv,
+>(
+  f: (r: Resp) => E.Either<Error, Resp>,
+) => (ma: ApiRequest<Resp, S, R>) => pipe(ma, chain(a => fromEither(f(a))))
 
-export const handleInvalidSession = <S extends BasicState>(): Filter<S> =>
+export const handleInvalidSession = <S extends BasicState, R extends RequestEnv>(): Filter<S, R> =>
   filterHttpResponse(
     (r) =>
       r.httpResponse.status == 421
@@ -153,7 +161,7 @@ export const handleInvalidSession = <S extends BasicState>(): Filter<S> =>
         : E.of(r),
   )
 
-export const handleBadRequest = <S extends BasicState>(): Filter<S> =>
+export const handleBadRequest = <S extends BasicState, R extends RequestEnv>(): Filter<S, R> =>
   filterHttpResponse(
     (r) =>
       r.httpResponse.status == 400
@@ -161,34 +169,39 @@ export const handleBadRequest = <S extends BasicState>(): Filter<S> =>
         : E.of(r),
   )
 
-const handleStatus = <R extends { httpResponse: HttpResponse }, S extends BasicState>(validStatuses: number[]) =>
-  filterHttpResponse<R, S>(
+const handleStatus = <Resp extends { httpResponse: HttpResponse }, S extends BasicState, R extends RequestEnv>(
+  validStatuses: number[],
+) =>
+  filterHttpResponse<Resp, S, R>(
     (r) =>
       validStatuses.includes(r.httpResponse.status)
         ? E.of(r)
         : E.left(err(`invalid status ${r.httpResponse.status} ${JSON.stringify(r.httpResponse.data)}`)),
   )
 
-export const validateHttpResponse = <R extends { httpResponse: HttpResponse }, S extends BasicState>(
+export const validateHttpResponse = <
+  Resp extends { httpResponse: HttpResponse },
+>(
   { validStatuses }: { validStatuses: number[] } = { validStatuses: [200, 204] },
 ) =>
-  (ma: ApiRequest<R, S>): ApiRequest<ValidHttpResponse<R>, S> =>
+  <S extends BasicState, R extends RequestEnv>(ma: ApiRequest<Resp, S, R>): ApiRequest<ValidHttpResponse<Resp>, S, R> =>
     pipe(
       ma,
-      handleInvalidSession(),
+      handleInvalidSession<S, R>(),
       handleBadRequest(),
       handleStatus(validStatuses),
-      map(_ => _ as ValidHttpResponse<R>),
+      map(_ => _ as ValidHttpResponse<Resp>),
     )
 
-export const decodeJson = <T extends { httpResponse: HttpResponse }, R, S extends BasicState>(
-  decode: (u: unknown) => t.Validation<R>,
+export const decodeJson = <T extends { httpResponse: HttpResponse }, Resp>(
+  decode: (u: unknown) => t.Validation<Resp>,
 ) =>
-  (
-    ma: ApiRequest<ValidHttpResponse<T>, S>,
+  <S extends BasicState, R extends RequestEnv>(
+    ma: ApiRequest<ValidHttpResponse<T>, S, R>,
   ): ApiRequest<
-    ValidHttpResponse<T & { readonly json: unknown; readonly httpResponse: HttpResponse; readonly decoded: R }>,
-    S
+    ValidHttpResponse<T & { readonly json: unknown; readonly httpResponse: HttpResponse; readonly decoded: Resp }>,
+    S,
+    R
   > =>
     pipe(
       ma,
@@ -199,7 +212,9 @@ export const decodeJson = <T extends { httpResponse: HttpResponse }, R, S extend
           E.mapLeft(errors => err(`Error decoding json: ${reporter(E.left(errors))}`)),
         ))),
       map(_ =>
-        _ as ValidHttpResponse<T & { readonly json: unknown; readonly httpResponse: HttpResponse; readonly decoded: R }>
+        _ as ValidHttpResponse<
+          T & { readonly json: unknown; readonly httpResponse: HttpResponse; readonly decoded: Resp }
+        >
       ),
     )
 
@@ -268,14 +283,14 @@ export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S 
 export const applyToSession = <T extends { httpResponse: HttpResponse }>(
   f: (a: ValidHttpResponse<T>) => (session: ICloudSession) => ICloudSession,
 ) =>
-  <S extends BasicState>(
-    ma: ApiRequest<ValidHttpResponse<T>, S>,
+  <S extends BasicState, R extends RequestEnv>(
+    ma: ApiRequest<ValidHttpResponse<T>, S, R>,
   ) =>
     pipe(
       ma,
       chain(r =>
         pipe(
-          readEnv<S>(),
+          readEnv<S, R>(),
           chain(({ state: { session } }) => putSession(f(r)(session))),
           map(constant(r)),
         )
@@ -289,24 +304,32 @@ export const applyCookies = <T extends { httpResponse: HttpResponse }>() =>
     )
   )
 
-export const basicJsonResponse = <T extends { httpResponse: HttpResponse }, S extends BasicState, R>(
-  jsonDecoder: t.Decode<unknown, R>,
-) => {
-  return flow(
-    validateHttpResponse<T, S>(),
-    decodeJson(jsonDecoder),
-    applyCookies(),
-    map(_ => _.decoded),
-  )
-}
-
-export const basicDriveJsonRequest = <S extends AuthorizedState, A>(
-  f: (a: { state: S; env: RequestEnv }) => HttpRequestConfig,
+export const basicJsonResponse = <
+  T extends { httpResponse: HttpResponse },
+  A,
+>(
   jsonDecoder: t.Decode<unknown, A>,
 ) => {
+  return <S extends BasicState, R extends RequestEnv>(
+    ma: ApiRequest<T, S, R>,
+  ): ApiRequest<A, S, R> =>
+    pipe(
+      ma,
+      validateHttpResponse<T>(),
+      decodeJson(jsonDecoder),
+      applyCookies(),
+      map(_ => _.decoded),
+    )
+}
+
+export const basicDriveJsonRequest = <S extends AuthorizedState, A, R extends RequestEnv>(
+  f: (a: { state: S; env: R }) => HttpRequestConfig,
+  jsonDecoder: t.Decode<unknown, A>,
+): ApiRequest<A, S, R> => {
+  const p = basicJsonResponse(jsonDecoder)
   return pipe(
-    buildRequestC<S>(f),
-    handleResponse(basicJsonResponse(jsonDecoder)),
+    buildRequestC<S, R>(f),
+    handleResponse<A, S, R>(p),
   )
 }
 

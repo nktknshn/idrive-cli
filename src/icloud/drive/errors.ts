@@ -1,4 +1,4 @@
-import { DriveChildrenItem, DriveChildrenItemFile, fileName, HasName } from './requests/types/types'
+import { DriveChildrenItem, DriveChildrenItemFile, fileName, HasName } from './types'
 
 export class NotFoundError extends Error {
   static is(e: Error): e is NotFoundError {
