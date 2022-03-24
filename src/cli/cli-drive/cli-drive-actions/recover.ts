@@ -3,12 +3,12 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { API } from '../../../icloud/drive/deps'
-import { DepApi } from '../../../icloud/drive/deps/api-type'
+import { DepApi } from '../../../icloud/drive/deps/deps'
 import * as Drive from '../../../icloud/drive/drive'
 import { isTrashDetailsG } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
+import { normalizePath } from '../../../lib/normalize-path'
 import { XXX } from '../../../lib/types'
-import { normalizePath } from './helpers'
 
 type Deps = Drive.Deps & DepApi<'putBackItemsFromTrash'>
 

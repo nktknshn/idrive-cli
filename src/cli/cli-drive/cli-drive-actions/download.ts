@@ -6,10 +6,10 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { DepApi, Drive } from '../../../icloud/drive'
-import { DepFetchClient } from '../../../icloud/drive/deps/util'
-import { DepFs } from '../../../lib/fs'
+import { Drive } from '../../../icloud/drive'
+import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps/deps'
 import { printer, printerIO } from '../../../lib/logging'
+import { normalizePath } from '../../../lib/normalize-path'
 import { XXX } from '../../../lib/types'
 import { guardFst, Path } from '../../../lib/util'
 import {
@@ -21,7 +21,6 @@ import {
   toDirMapper,
 } from './download/download-helpers'
 import { CreateDownloadTask, DownloadTask } from './download/types'
-import { normalizePath } from './helpers'
 
 type Argv = {
   path: string
@@ -38,7 +37,7 @@ type Deps =
   & Drive.Deps
   & DepApi<'downloadBatch'>
   & DepFetchClient
-  & DepFs<'fstat' | 'opendir' | 'mkdir' | 'writeFile'>
+  & DepFs<'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'>
 
 export const downloadFolder = (argv: Argv): XXX<Drive.State, Deps, string> => {
   return _downloadFolder(
@@ -92,12 +91,6 @@ export const download = (
   )
 }
 
-// export const downloadFolder = (
-//   argv: Argv,
-// ): XXX<DF.State, Deps, string> => {
-//   return downloadFolder(argv)
-// }
-
 const _downloadFolder = <R>(
   { path, dstpath, dry, exclude, include }: Argv,
   depth = Infinity,
@@ -137,8 +130,10 @@ const _downloadFolder = <R>(
           }
         },
     ),
-    SRTE.chainW(
-      v => SRTE.fromReaderTaskEither(createDownloadTask(v)),
+    SRTE.chainW(ds =>
+      SRTE.fromReaderTaskEither(
+        createDownloadTask(ds),
+      )
     ),
     SRTE.chainFirstIOK(
       (task) =>

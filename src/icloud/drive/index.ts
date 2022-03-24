@@ -1,2 +1,2 @@
-export { API as Api, DepApi } from './deps'
+export { API as Api } from './deps'
 export * as Drive from './drive'

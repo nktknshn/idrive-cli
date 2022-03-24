@@ -4,10 +4,9 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../defaults'
 import { readAccountData } from '../icloud/authorization/validate'
-import { DepFetchClient } from '../icloud/drive/deps/util'
+import { DepFetchClient, DepFs } from '../icloud/drive/deps/deps'
 import * as AM from '../icloud/drive/requests/request'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
-import { DepFs } from '../lib/fs'
 
 export function apiActionM<T>(
   action: () => AM.AuthorizedRequest<T>,

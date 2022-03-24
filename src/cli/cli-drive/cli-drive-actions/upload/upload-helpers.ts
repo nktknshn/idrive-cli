@@ -10,7 +10,7 @@ import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
 import * as API from '../../../../icloud/drive/deps/api-methods'
-import { DepApi } from '../../../../icloud/drive/deps/api-type'
+import { DepApi } from '../../../../icloud/drive/deps/deps'
 import * as Drive from '../../../../icloud/drive/drive'
 import { printerIO } from '../../../../lib/logging'
 import { NEA, XXX } from '../../../../lib/types'
@@ -20,15 +20,17 @@ import { LocalTreeElement } from '../download/walkdir'
 import { parseDrivewsid } from '../helpers'
 import { UploadResult } from '../upload-folder'
 
+type UploadTask = {
+  dirstruct: string[]
+  uploadable: (readonly [string, { path: string; stats: Stats }])[]
+  empties: (readonly [string, { path: string; stats: Stats }])[]
+  excluded: (readonly [string, { path: string; stats: Stats }])[]
+}
+
 export const createUploadTask = (
   { exclude, include }: { include: string[]; exclude: string[] },
 ) =>
-  (tree: TR.Tree<LocalTreeElement>): {
-    dirstruct: string[]
-    uploadable: (readonly [string, { path: string; stats: Stats }])[]
-    empties: (readonly [string, { path: string; stats: Stats }])[]
-    excluded: (readonly [string, { path: string; stats: Stats }])[]
-  } => {
+  (tree: TR.Tree<LocalTreeElement>): UploadTask => {
     const flatTree = pipe(
       tree,
       TR.reduce([] as (readonly [string, LocalTreeElement])[], (acc, cur) => [...acc, [cur.path, cur] as const]),
@@ -88,12 +90,14 @@ export const getSubdirsPerParent = (parent: string) =>
 
     return [...kids, ...subkids]
   }
+
 const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
   return A.chop(as => {
     const { init, rest } = pipe(as, A.spanLeft((a: A) => S.equals(a, as[0])))
     return [init, rest]
   })
 }
+
 export const uploadChunk = (
   pathToDriwesid: Record<string, string>,
 ) =>
@@ -120,7 +124,8 @@ export const uploadChunk = (
           results => [NA.unzip(results)[0], NA.last(results)[1]],
         ),
       )
-export const createDirStructure = (
+
+export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
 ): XXX<Drive.State, DepApi<'createFolders'>, Record<string, string>> => {

@@ -8,7 +8,6 @@ import { Stats } from 'fs'
 import mime from 'mime-types'
 import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
-import { DepFs } from '../../../lib/fs'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { AuthorizedState } from '../../authorization/authorize'
@@ -16,8 +15,8 @@ import { getMissedFound } from '../helpers'
 import { getUrlStream as getUrlStream_ } from '../requests/download'
 import { BasicState } from '../requests/request'
 import * as T from '../types'
-import { DepApi, useApi as useApi } from './api-type'
-import { DepFetchClient } from './util'
+import { useApi as useApi } from './api-type'
+import { DepApi, DepFetchClient, DepFs } from './deps'
 
 /** basic icloud api requests as standalone depended functions*/
 export const renameItems = useApi((_: DepApi<'renameItems'>) => _.api.renameItems)
@@ -80,7 +79,7 @@ export const retrieveItemDetailsInFolder = (drivewsid: string) =>
   )
 
 /** .data_token?.url ?? _.package_token?.url */
-export const getItemUrl = flow(
+export const getICloudItemUrl = flow(
   download,
   SRTE.map(
     _ => _.data_token?.url ?? _.package_token?.url,

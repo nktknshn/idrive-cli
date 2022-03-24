@@ -5,8 +5,8 @@ import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 // import * as fs from 'fs/promises'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import { DepFs } from '../icloud/drive/deps/deps'
 import { err, JsonParsingError, MissingResponseBody } from './errors'
-import { DepFs } from './fs'
 import { HttpResponse } from './http/fetch-client'
 
 export function tryParseJson(

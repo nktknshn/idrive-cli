@@ -15,17 +15,17 @@ import {
 } from '../../../icloud/drive/cache/cache-get-by-path-types'
 import {
   addPathToFolderTree,
-  filterTree,
   showTreeWithFiles,
   treeWithFiles,
 } from '../../../icloud/drive/drive-methods/get-folders-trees'
 import { findInParentGlob, recordFromTuples } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'
+import { filterTree } from '../../../lib/tree'
 import { NEA } from '../../../lib/types'
 import { guardFst, Path } from '../../../lib/util'
 // import { cliActionM } from '../../cli-action'
-import { normalizePath } from './helpers'
+import { normalizePath } from '../../../lib/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls/ls-printing'
 
 type Argv = {

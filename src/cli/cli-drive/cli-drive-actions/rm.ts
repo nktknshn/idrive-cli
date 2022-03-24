@@ -2,8 +2,8 @@ import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Api, DepApi, Drive } from '../../../icloud/drive'
-import { DepAskConfirmation } from '../../../icloud/drive/deps/util'
+import { Api, Drive } from '../../../icloud/drive'
+import { DepApi, DepAskConfirmation } from '../../../icloud/drive/deps/deps'
 import { isNotRootDetails } from '../../../icloud/drive/types'
 
 type Deps =

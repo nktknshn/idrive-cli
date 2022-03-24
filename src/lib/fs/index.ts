@@ -1,5 +1,6 @@
 import * as TE from 'fp-ts/TaskEither'
 import { Dir, MakeDirectoryOptions, Mode, PathLike, Stats } from 'fs'
+import { createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
 import { err } from '../errors'
 
@@ -12,15 +13,8 @@ export type FsType = {
     options?: Mode | MakeDirectoryOptions | null | undefined,
   ) => TE.TaskEither<Error, string | undefined>
   readFile: (path: PathLike) => TE.TaskEither<Error, Buffer>
+  createWriteStream: typeof createWriteStream
 }
-
-export type DepFs<
-  K extends keyof FsType,
-  RootKey extends string | number | symbol = 'fs',
-> = Record<
-  RootKey,
-  Pick<FsType, K>
->
 
 export const opendir = (path: string) =>
   TE.tryCatch(
@@ -49,3 +43,5 @@ export const readFile = (path: PathLike) =>
     () => fs.readFile(path),
     (e) => e instanceof Error ? e : err(`error fs.readFile: ${e}`),
   )
+
+export { createWriteStream }

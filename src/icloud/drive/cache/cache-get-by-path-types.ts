@@ -2,7 +2,7 @@ import * as A from 'fp-ts/lib/Array'
 import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
+import { normalizePath } from '../../../lib/normalize-path'
 import * as H from '../../../lib/path-validation'
 import * as T from '../types'
 

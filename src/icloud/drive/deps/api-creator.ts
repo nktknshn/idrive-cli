@@ -6,17 +6,9 @@ import { AuthorizedState, AuthorizeEnv, authorizeSession } from '../../authoriza
 import * as RQ from '../requests'
 import { BasicState } from '../requests/request'
 import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from './api-catch'
+import { ApiType } from './api-type'
 import { ReqWrapper, wrapRequests } from './wrapper'
 const seqs = sequenceS(R.Apply)
-
-export const authorized: ReqWrapper<
-  CatchFetchEnv & CatchSessEnv & AuthorizeEnv,
-  AuthorizedState
-> = (deps) =>
-  flow(
-    basic(deps),
-    catchSessErrorsSRTE(deps),
-  )
 
 export const basic: ReqWrapper<
   CatchFetchEnv & AuthorizeEnv,
@@ -27,7 +19,18 @@ export const basic: ReqWrapper<
     catchFetchErrorsSRTE(deps),
   )
 
-export const apiCreator = seqs(
+export const authorized: ReqWrapper<
+  CatchFetchEnv & CatchSessEnv & AuthorizeEnv,
+  AuthorizedState
+> = (deps) =>
+  flow(
+    basic(deps),
+    catchSessErrorsSRTE(deps),
+  )
+
+export type ApiCreator<Env> = R.Reader<Env, ApiType>
+
+export const apiCreator: ApiCreator<CatchFetchEnv & CatchSessEnv & AuthorizeEnv> = seqs(
   {
     ...wrapRequests(RQ)(authorized),
     ...wrapRequests({ authorizeSession })(basic),

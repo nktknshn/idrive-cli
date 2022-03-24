@@ -9,18 +9,17 @@ import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import * as API from '../../../icloud/drive/deps/api-methods'
-import { DepApi } from '../../../icloud/drive/deps/api-type'
+import { DepApi, DepFs } from '../../../icloud/drive/deps/deps'
 import * as Drive from '../../../icloud/drive/drive'
 import { findInParentFilename } from '../../../icloud/drive/helpers'
 import { DetailsAppLibrary, DetailsDocwsRoot, DetailsFolder, isFolderLike } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
-import { DepFs } from '../../../lib/fs'
 import { printerIO } from '../../../lib/logging'
+import { normalizePath } from '../../../lib/normalize-path'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import { walkDirRel } from './download/walkdir'
-import { normalizePath } from './helpers'
-import { createDirStructure, createUploadTask, uploadChunk } from './upload/upload-helpers'
+import { createRemoteDirStructure, createUploadTask, uploadChunk } from './upload/upload-helpers'
 
 type Argv = {
   localpath: string
@@ -152,7 +151,7 @@ const uploadToNewFolder = (
             printerIO.print(`creating dir structure`),
             SRTE.fromIO,
             SRTE.chain(() =>
-              createDirStructure(
+              createRemoteDirStructure(
                 uploadRoot[0].drivewsid,
                 task.dirstruct,
               )

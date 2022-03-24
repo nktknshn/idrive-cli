@@ -3,22 +3,21 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { AccountData } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
+import { Drive } from '../icloud/drive'
 import * as C from '../icloud/drive/cache/cache'
 import { CacheF } from '../icloud/drive/cache/cache-types'
 import * as API from '../icloud/drive/deps/api-methods'
-import { DepApi } from '../icloud/drive/deps/api-type'
-import * as DF from '../icloud/drive/drive'
+import { DepApi, DepFs } from '../icloud/drive/deps/deps'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession2 } from '../icloud/session/session-file'
 import { err } from '../lib/errors'
 import { ReadJsonFileError } from '../lib/files'
-import { DepFs } from '../lib/fs'
 import { loggerIO } from '../lib/loggerIO'
 import { apiLogger } from '../lib/logging'
 import { XXX } from '../lib/types'
 
-export const loadSessionFile = RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
-  readSessionFile(deps.sessionFile)
+export const loadSessionFile = RTE.asksReaderTaskEitherW(
+  (deps: { sessionFile: string }) => readSessionFile(deps.sessionFile),
 )
 
 export const _loadAccountData = RTE.asksReaderTaskEitherW(
@@ -89,7 +88,7 @@ const loadAccountData = (
     ),
   )
 
-type DriveActionDeps =
+export type DriveActionDeps =
   & { sessionFile: string }
   & { cacheFile: string; noCache: boolean }
   & DepApi<'authorizeSession'>
@@ -98,7 +97,7 @@ type DriveActionDeps =
 
 /** read the state and execute an action in the context */
 export function driveAction<A, R>(
-  action: () => XXX<DF.State, R, A>,
+  action: () => XXX<Drive.State, R, A>,
 ): RTE.ReaderTaskEither<
   & R
   & DriveActionDeps,

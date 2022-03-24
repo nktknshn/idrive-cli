@@ -3,12 +3,12 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { Api, DepApi, Drive } from '../../../icloud/drive'
-import { DepFetchClient } from '../../../icloud/drive/deps/util'
+import { Api, Drive } from '../../../icloud/drive'
+import { DepApi, DepFetchClient } from '../../../icloud/drive/deps/deps'
 import { isFile } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
+import { normalizePath } from '../../../lib/normalize-path'
 import { consumeStreamToString } from '../../../lib/util'
-import { normalizePath } from './helpers'
 
 type Deps =
   & Drive.Deps
@@ -32,7 +32,7 @@ export const cat = (
       )),
     SRTE.bindW('url', ({ item }) =>
       pipe(
-        Api.getItemUrl<Drive.State>(item),
+        Api.getICloudItemUrl<Drive.State>(item),
         // deps.retrieveItemDetailsInFoldersRTE({drivewsids: [1]})
         // SRTE.local(() => ({
         //   download: deps.schema.download({ ...deps.depsEnv, fetch: failingFetch(99) }),

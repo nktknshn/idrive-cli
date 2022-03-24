@@ -2,11 +2,10 @@ import * as A from 'fp-ts/lib/Array'
 import { apply, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { Predicate } from 'fp-ts/lib/Predicate'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
-import { normalizePath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
+import { normalizePath } from '../../../lib/normalize-path'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
 import * as Drive from '../drive'
@@ -60,22 +59,6 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
       : SRTE.of(pipe(folders, NA.map(f => deepFolder(f, [])))),
   )
 }
-
-export const filterTree = <T>(predicate: Predicate<T>) =>
-  (tree: TR.Tree<T>): O.Option<TR.Tree<T>> => {
-    const forestopts = pipe(
-      tree.forest,
-      A.map(filterTree(predicate)),
-      A.filter(O.isSome),
-      A.map(_ => _.value),
-    )
-
-    if (predicate(tree.value) || forestopts.length > 0) {
-      return O.some(TR.make(tree.value, forestopts))
-    }
-
-    return O.none
-  }
 
 export const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
   const files: (T | T.DriveChildrenItemFile)[] = pipe(

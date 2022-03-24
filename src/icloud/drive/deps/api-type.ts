@@ -86,14 +86,6 @@ export type ApiType = {
   authorizeSession: <S extends BasicState>() => XX<S, AccountData>
 }
 
-export type DepApi<
-  K extends keyof ApiType,
-  RootKey extends string | number | symbol = 'api',
-> = Record<
-  RootKey,
-  Pick<ApiType, K>
->
-
 export const useApi = <Args extends unknown[], S, R, A>(
   f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
 ) =>

@@ -8,11 +8,12 @@ import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import * as m from 'monocle-ts'
-import { hierarchyToPath, NormalizedPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
+import { hierarchyToPath } from '../../../cli/cli-drive/cli-drive-actions/helpers'
 import { err, TypeDecodingError } from '../../../lib/errors'
 import { ReadJsonFileError, tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
 import { cacheLogger } from '../../../lib/logging'
+import { NormalizedPath } from '../../../lib/normalize-path'
 import { NEA } from '../../../lib/types'
 import { isObjectWithOwnProperty } from '../../../lib/util'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
@@ -358,7 +359,7 @@ export const trySaveFile = (
 //   return isObjectWithOwnProperty(json, 'byDrivewsid')
 // }
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { DepFs } from '../../../lib/fs'
+import { DepFs } from '../deps/deps'
 
 export const tryReadFromFile = (
   accountDataFilePath: string,

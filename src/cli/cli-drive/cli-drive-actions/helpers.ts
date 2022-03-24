@@ -9,6 +9,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { isDeepStrictEqual } from 'util'
 import * as T from '../../../icloud/drive/types'
 import { logger } from '../../../lib/logging'
+import { NormalizedPath, normalizePath } from '../../../lib/normalize-path'
 import { prompts } from '../../../lib/prompts'
 import { hasOwnProperties, Path } from '../../../lib/util'
 
@@ -211,43 +212,6 @@ export const hierarchyToPath = (hierarchy: T.Hierarchy): NormalizedPath => {
     _ => _.length > 0 ? _.join('/') : '/',
     normalizePath,
   )
-}
-
-declare const _brand: unique symbol
-
-export interface Brand<B> {
-  readonly [_brand]: B
-}
-
-export interface NormalizedPathBrand {
-  readonly NormalizedPath: unique symbol
-}
-
-export interface NonRootDrivewsidBrand {
-  readonly NonRootDrivewsid: unique symbol
-}
-
-export type Branded<A, B> = A & Brand<B>
-
-/**
- * NormalizedPath has Path.normalize applied and no trailing slash
- */
-export type NormalizedPath = Branded<string, NormalizedPathBrand>
-
-// export type NonRootDrivewsid = Branded<string, NonRootDrivewsidBrand>
-
-// export const isNonRootDrivewsid = (drivewsid: string): drivewsid is NonRootDrivewsid => {
-//   return drivewsid !== rootDrivewsid && drivewsid !== trashDrivewsid
-// }
-
-export const stripTrailingSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
-const addSlash = (s: string) => s.startsWith('/') ? s : `/${s}`
-
-/**
- * NormalizedPath has Path.normalize applied and no trailing slash
- */
-export const normalizePath = (path: string): NormalizedPath => {
-  return pipe(Path.normalize(path), stripTrailingSlash, addSlash) as NormalizedPath
 }
 
 export const itemWithHierarchyToPath = (item: T.HasName & { hierarchy: T.Hierarchy }) => {

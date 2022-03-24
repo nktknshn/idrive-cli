@@ -1,15 +1,16 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Api, DepApi, Drive } from '../../../icloud/drive'
+import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
+import { DepApi } from '../../../icloud/drive/deps/deps'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/requests'
 import * as T from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
+import { normalizePath } from '../../../lib/normalize-path'
 import * as H from '../../../lib/path-validation'
 import { NEA } from '../../../lib/types'
-import { normalizePath } from './helpers'
 
 type Deps =
   & Drive.Deps

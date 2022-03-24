@@ -7,16 +7,14 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import { Api } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import { DepApi } from '../../../icloud/drive/deps/api-type'
-import { DepAskConfirmation } from '../../../icloud/drive/deps/util'
+import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps/deps'
 import * as Drive from '../../../icloud/drive/drive'
 import { findInParentFilename2, getDrivewsid, parseName } from '../../../icloud/drive/helpers'
 import * as T from '../../../icloud/drive/types'
-import { DepFs } from '../../../lib/fs'
+import { normalizePath } from '../../../lib/normalize-path'
 import * as H from '../../../lib/path-validation'
 import { NEA, XXX } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { normalizePath } from './helpers'
 
 type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
