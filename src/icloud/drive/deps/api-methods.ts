@@ -10,13 +10,13 @@ import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { NEA } from '../../../lib/types'
 import { Path } from '../../../lib/util'
-import { AuthorizedState } from '../../authorization/authorize'
 import { getMissedFound } from '../helpers'
+import { CreateFoldersResponse } from '../requests'
 import { getUrlStream as getUrlStream_ } from '../requests/download'
-import { BasicState } from '../requests/request'
+import { AuthorizedState, BasicState } from '../requests/request'
 import * as T from '../types'
+import { DepApi, DepFetchClient, DepFs } from '.'
 import { useApi } from './api-type'
-import { DepApi, DepFetchClient, DepFs } from './deps'
 
 /** basic icloud api requests as standalone depended functions*/
 export const renameItems = useApi((_: DepApi<'renameItems'>) => _.api.renameItems)
@@ -190,11 +190,20 @@ export const upload = flow(
   ),
 )
 
+export const createFoldersNEA = <S extends AuthorizedState>(args: {
+  destinationDrivewsId: string
+  names: NEA<string>
+}) =>
+  pipe(
+    createFolders<S>(args),
+    SRTE.map(_ => _.folders),
+    SRTE.filterOrElse(A.isNonEmpty, () => err(`createFolders returned empty response`)),
+  )
+
 export const createFoldersFailing = flow(
-  createFolders,
-  SRTE.map(_ => _.folders),
+  createFoldersNEA,
   SRTE.filterOrElse(
-    (folders): folders is T.DriveChildrenItemFolder[] => pipe(folders, A.every((folder) => folder.status === 'OK')),
-    () => err(`createFoldersM returned incorrect response. Existing directory?`),
+    (folders): folders is NEA<T.DriveChildrenItemFolder> => pipe(folders, A.every((folder) => folder.status === 'OK')),
+    () => err(`createFolders couldn't create some folder. Existing directory?`),
   ),
 )

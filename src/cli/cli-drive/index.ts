@@ -1,16 +1,11 @@
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Reader'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { defaultApiEnv } from '../../defaults'
+import { defaultApiEnv, defaultFileEditor, defaultTempDir } from '../../defaults'
 import { defaultApiCreator } from '../../icloud/drive/deps/api-creator'
-import { failingFetch } from '../../lib/http/fetch-client'
-import { printer } from '../../lib/logging'
+import * as fs from '../../lib/fs'
+import { askConfirmation } from '../../lib/prompts'
 import { isKeyOf } from '../../lib/util'
-import { driveAction, DriveActionDeps } from '../cli-action'
+import { cliAction } from '../cli-action'
 import * as Action from './cli-drive-actions'
-import { cliActionsDependancies } from './cli-drive-deps'
 
 const driveActions = {
   ls: Action.listUnixPath,
@@ -29,40 +24,38 @@ const driveActions = {
   uf: Action.uploadFolder,
 }
 
-const actionsDeps = pipe(
-  {
-    ...defaultApiEnv,
-    apiCreator: defaultApiCreator,
-    // fetchClient: failingFetch(90),
-  },
-  cliActionsDependancies(),
-)
+export const cliActionDeps = (argv: {
+  sessionFile: string
+  cacheFile: string
+  noCache: boolean
+  tempdir?: string
+  fileEditor?: string
+}) => ({
+  api: defaultApiCreator(defaultApiEnv),
+  fs,
+  ...defaultApiEnv,
+  sessionFile: argv.sessionFile,
+  cacheFile: argv.cacheFile,
+  noCache: argv.noCache,
+  askConfirmation,
+  tempdir: argv.tempdir ?? defaultTempDir,
+  fileEditor: argv.fileEditor ?? defaultFileEditor,
+})
 
-export const runCommand = (
-  command: ValidCommand,
+export const runCliAction = (
+  action: ValidAction,
 ) => {
-  if (command === 'init') {
-    return (argv: { sessionFile: string }) =>
-      pipe(
-        Action.initSession()({ ...actionsDeps, ...argv }),
-      )
+  if (action === 'init') {
+    return Action.initSession
   }
 
-  return (
-    argv: ActionsArgv & Omit<ActionsDeps & DriveActionDeps, keyof (typeof actionsDeps & ActionsArgv)>,
-  ) =>
-    pipe(
-      { ...actionsDeps, ...argv },
-      driveAction<unknown, ActionsDeps>(
-        () => driveActions[command](argv),
-      ),
-    )
+  return cliAction<unknown, ActionsDeps, [ActionsArgv & { skipLogin: boolean }]>(driveActions[action])
 }
 
-export const isValidCommand = (command: string): command is ValidCommand =>
-  isKeyOf(driveActions, command) || command === 'init'
+export const isValidAction = (action: unknown): action is ValidAction =>
+  typeof action === 'string' && isKeyOf(driveActions, action) || action === 'init'
 
-type ValidCommand = (keyof typeof driveActions | 'init')
+type ValidAction = (keyof typeof driveActions | 'init')
 
 type Actions = typeof driveActions extends { [key: string]: infer V } ? V : never
 

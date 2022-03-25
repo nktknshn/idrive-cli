@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../authorization/authorize'
 import { childrenItem } from '../types/types-io'
+import { AuthorizedState } from './request'
 import * as AR from './request'
 
 const moveItemResponse = t.type({ items: t.array(childrenItem) })

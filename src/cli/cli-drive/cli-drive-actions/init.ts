@@ -1,13 +1,15 @@
-import { constVoid, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { Api } from '../../../icloud/drive'
-import { DepApi, DepFs } from '../../../icloud/drive/deps/deps'
+import { DepApi, DepFs } from '../../../icloud/drive/deps'
 import * as S from '../../../icloud/session/session'
 import { err } from '../../../lib/errors'
 import { printerIO } from '../../../lib/logging'
 import { prompts } from '../../../lib/prompts'
 import { saveAccountData, saveSession } from '../../cli-action'
+
+type Argv = { skipLogin: boolean }
 
 export type InitSessionDeps =
   & { sessionFile: string }
@@ -15,7 +17,7 @@ export type InitSessionDeps =
   & DepFs<'fstat'>
   & DepFs<'writeFile'>
 
-export const initSession = (): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
+export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
   return pipe(
     RTE.ask<InitSessionDeps>(),
     RTE.chainFirst(({ sessionFile, fs }) =>
@@ -31,9 +33,13 @@ export const initSession = (): RTE.ReaderTaskEither<InitSessionDeps, Error, void
     ),
     RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`initializing session in ${sessionFile}`))),
     RTE.chainTaskEitherK(() => sessionQuest),
-    RTE.chainW(Api.authorizeState),
+    !skipLogin
+      ? flow(
+        RTE.chainW(Api.authorizeState),
+        RTE.chainFirstW(saveAccountData),
+      )
+      : RTE.map(identity),
     RTE.chainFirstW(saveSession),
-    RTE.chainFirstW(saveAccountData),
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
     RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`session initiated in ${sessionFile}`))),
     RTE.map(constVoid),

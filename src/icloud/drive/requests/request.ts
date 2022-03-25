@@ -11,29 +11,25 @@ import {
   err,
   InvalidGlobalSessionError,
   InvalidJsonInResponse,
+  InvalidResponseStatusError,
   MissingResponseBody,
 } from '../../../lib/errors'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/fetch-client'
 import { tryJsonFromResponse } from '../../../lib/http/json'
 import { apiLogger, logg } from '../../../lib/logging'
-import { AuthorizedState } from '../../authorization/authorize'
 import { AccountData } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
-
-export type AuthorizedRequest<A, S = AuthorizedState, R = RequestEnv> = ApiRequest<A, S, R>
-
-export type AuthorizationState = {
+export type BasicState = {
   session: ICloudSession
+}
+export type AuthorizedState = BasicState & {
   accountData: AccountData
 }
+export type AuthorizedRequest<A, S = AuthorizedState, R = RequestEnv> = ApiRequest<A, S, R>
 
 export type RequestEnv = {
   fetchClient: FetchClientEither
-}
-
-export type BasicState = {
-  session: ICloudSession
 }
 
 /** API context */
@@ -176,7 +172,12 @@ const handleStatus = <Resp extends { httpResponse: HttpResponse }, S extends Bas
     (r) =>
       validStatuses.includes(r.httpResponse.status)
         ? E.of(r)
-        : E.left(err(`invalid status ${r.httpResponse.status} ${JSON.stringify(r.httpResponse.data)}`)),
+        : E.left(
+          InvalidResponseStatusError.create(
+            r.httpResponse,
+            `invalid status ${r.httpResponse.status} ${JSON.stringify(r.httpResponse.data)}`,
+          ),
+        ),
   )
 
 export const validateHttpResponse = <

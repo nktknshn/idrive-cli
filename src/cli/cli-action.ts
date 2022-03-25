@@ -5,8 +5,8 @@ import { AccountData } from '../icloud/authorization/types'
 import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
 import { Api, Drive } from '../icloud/drive'
 import * as C from '../icloud/drive/cache/cache'
-import { DepApi, DepFs } from '../icloud/drive/deps/deps'
-import { AuthorizationState, BasicState } from '../icloud/drive/requests/request'
+import { DepApi, DepFs } from '../icloud/drive/deps'
+import { AuthorizedState, BasicState } from '../icloud/drive/requests/request'
 import { ICloudSession } from '../icloud/session/session'
 import { readSessionFile, saveSession as _saveSession } from '../icloud/session/session-file'
 import { err } from '../lib/errors'
@@ -22,40 +22,34 @@ export type DriveActionDeps =
   & DepFs<'readFile'>
 
 /** read the state from files and executes the action in the context */
-export function driveAction<A, R>(
-  action: () => Drive.Effect<A, R>,
-): RTE.ReaderTaskEither<
-  & R
-  & DriveActionDeps,
-  Error,
-  A
-> {
-  return pipe(
-    loadDriveState,
-    RTE.bindW('result', action()),
-    RTE.chainFirst(({ result: [, { cache }] }) =>
-      RTE.fromIO(
-        () => cacheLogger.debug(`saving cache: ${Object.keys(cache.byDrivewsid).length} items`),
-      )
-    ),
-    RTE.chainFirstW(({ result: [, state] }) =>
-      pipe(
-        RTE.of(state),
-        RTE.chainFirstW(saveSession),
-        RTE.chainFirstW(saveAccountData),
-        RTE.chainFirstW(saveCache),
-      )
-    ),
-    RTE.map(_ => _.result[0]),
-  )
+export function cliAction<A, R, Args extends unknown[]>(
+  action: (...args: Args) => Drive.Effect<A, R>,
+): (...args: Args) => RTE.ReaderTaskEither<R & DriveActionDeps, Error, A> {
+  return (...args: Args) =>
+    pipe(
+      loadDriveState,
+      RTE.bindW('result', action(...args)),
+      RTE.chainFirst(({ result: [, { cache }] }) =>
+        RTE.fromIO(
+          () => cacheLogger.debug(`saving cache: ${Object.keys(cache.byDrivewsid).length} items`),
+        )
+      ),
+      RTE.chainFirstW(({ result: [, state] }) =>
+        pipe(
+          RTE.of(state),
+          RTE.chainFirstW(saveSession),
+          RTE.chainFirstW(saveAccountData),
+          RTE.chainFirstW(saveCache),
+        )
+      ),
+      RTE.map(_ => _.result[0]),
+    )
 }
 
-const loadSessionFile = RTE.asksReaderTaskEitherW(
-  readSessionFile,
-)
-
 const loadSession = pipe(
-  loadSessionFile,
+  RTE.asksReaderTaskEitherW(
+    readSessionFile,
+  ),
   RTE.orElse(
     (e) =>
       ({ sessionFile }) =>
@@ -73,10 +67,12 @@ const loadAccountData = (
 ): RTE.ReaderTaskEither<
   DepApi<'authorizeSession'> & { sessionFile: string } & DepFs<'readFile'>,
   Error,
-  AuthorizationState
+  AuthorizedState
 > =>
   pipe(
-    _loadAccountDataFromFile,
+    RTE.asksReaderTaskEitherW(
+      (deps: { sessionFile: string }) => readAccountData(`${deps.sessionFile}-accountData`),
+    ),
     RTE.map(accountData => ({ session, accountData })),
     RTE.orElseW(e =>
       pipe(
@@ -91,10 +87,6 @@ const loadDriveState = pipe(
   loadSession,
   RTE.chain(loadAccountData),
   RTE.bindW('cache', () => loadCache),
-)
-
-const _loadAccountDataFromFile = RTE.asksReaderTaskEitherW(
-  (deps: { sessionFile: string }) => readAccountData(`${deps.sessionFile}-accountData`),
 )
 
 const loadCache: RTE.ReaderTaskEither<

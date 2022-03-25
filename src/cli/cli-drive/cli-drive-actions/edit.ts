@@ -9,7 +9,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 // import { tempDir } from '../../../defaults'
 import { Api, Drive } from '../../../icloud/drive'
-import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps/deps'
+import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps'
 import { isFile } from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
 import { logger } from '../../../lib/logging'
@@ -23,14 +23,15 @@ type Deps =
   & UploadActionDeps
   & DepFs<'fstat' | 'writeFile'>
   & DepFetchClient
+  & { fileEditor: string }
   & { tempdir: string }
 
-const spawnVim = ({ tempFile }: { tempFile: string }) =>
+const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: string }) =>
   (): Promise<NodeJS.Signals | null> => {
     return new Promise(
       (resolve, reject) => {
         child_process
-          .spawn(`vim`, [tempFile], {
+          .spawn(fileEditor, [tempFile], {
             // shell: true,
             stdio: 'inherit',
           })
@@ -79,6 +80,7 @@ export const edit = (
       pipe(
         SRTE.of<Drive.State, Deps, Error, { data: string }>({ data }),
         SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
+        SRTE.bind('fileEditor', () => SRTE.asks(s => s.fileEditor)),
         SRTE.bind('writeRrsult', ({ data, tempFile }) =>
           SRTE.fromReaderTaskEither(
             ({ fs }: Deps) => (fs.writeFile(tempFile, data)),

@@ -1,5 +1,5 @@
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../authorization/authorize'
+import { AuthorizedState } from './request'
 import * as AR from './request'
 
 export interface MoveItemToTrashResponse {

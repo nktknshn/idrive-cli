@@ -44,25 +44,29 @@ export const parseName = (fileName: string): { name: string; extension?: string 
   }
 }
 
-export const findInParentFilename = <R extends T.Root>(
-  parent: T.NonRootDetails | R,
-  itemName: string,
-): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> => {
-  return pipe(
-    parent.items,
-    A.findFirst((item: T.DriveChildrenItem | T.DriveChildrenTrashItem) => T.fileName(item) == itemName),
-  )
-}
+// export const findInParentFilename = <R extends T.Root>(
+//   parent: T.NonRootDetails | R,
+//   itemName: string,
+// ): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> => {
+//   return pipe(
+//     parent.items,
+//     A.findFirst((item: T.DriveChildrenItem | T.DriveChildrenTrashItem) => T.fileName(item) == itemName),
+//   )
+// }
 
-export function findInParentFilename2(
+export function findInParentFilename(
   parent: T.NonRootDetails | T.DetailsDocwsRoot,
   itemName: string,
 ): O.Option<T.DriveChildrenItem>
-export function findInParentFilename2(
+export function findInParentFilename(
   parent: T.NonRootDetails | T.DetailsTrash,
   itemName: string,
 ): O.Option<T.DriveChildrenTrashItem>
-export function findInParentFilename2(
+export function findInParentFilename<R extends T.Root>(
+  parent: T.NonRootDetails | R,
+  itemName: string,
+): O.Option<R extends T.DetailsDocwsRoot ? T.DriveChildrenItem : T.DriveChildrenTrashItem>
+export function findInParentFilename(
   parent: T.NonRootDetails | T.DetailsTrash | T.DetailsDocwsRoot,
   itemName: string,
 ): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> {

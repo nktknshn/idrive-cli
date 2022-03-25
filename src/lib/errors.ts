@@ -49,6 +49,26 @@ export class UnexpectedResponse extends Error {
   }
 }
 
+export class InvalidResponseStatusError extends Error {
+  readonly tag = 'InvalidResponseStatusError'
+  constructor(
+    public readonly httpResponse: HttpResponse,
+    public readonly message = 'InvalidResponseStatusError',
+  ) {
+    super(message)
+  }
+
+  static is(error: Error): error is InvalidResponseStatusError {
+    return (
+      isObjectWithOwnProperty(error, 'tag') && error.tag === 'InvalidResponseStatusError'
+    )
+  }
+
+  static create(httpResponse: HttpResponse, message: string): InvalidResponseStatusError {
+    return new InvalidResponseStatusError(httpResponse, message)
+  }
+}
+
 export class FileReadingError extends Error {
   readonly tag = 'FileReadingError'
 

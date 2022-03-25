@@ -7,8 +7,8 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps/deps'
-import { findInParentFilename2, getDrivewsid } from '../../../icloud/drive/helpers'
+import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps'
+import { findInParentFilename, getDrivewsid } from '../../../icloud/drive/helpers'
 import * as H from '../../../icloud/drive/path-validation'
 import * as T from '../../../icloud/drive/types'
 import { normalizePath } from '../../../lib/normalize-path'
@@ -27,15 +27,15 @@ export type UploadActionDeps =
   & DepAskConfirmation
 
 export const uploads = (
-  { args, overwright }: {
-    args: string[]
+  { uploadsargs, overwright }: {
+    uploadsargs: string[]
     overwright:
       | boolean
       | AskingFunc
   },
 ): XXX<Drive.State, UploadActionDeps, string> => {
-  const dstpath = NA.last(args as NEA<string>)
-  const srcpaths = NA.init(args as NEA<string>)
+  const dstpath = NA.last(uploadsargs as NEA<string>)
+  const srcpaths = NA.init(uploadsargs as NEA<string>)
 
   return pipe(
     Drive.getDocwsRoot(),
@@ -130,7 +130,7 @@ const uploadToFolder = (
   },
 ): XXX<Drive.State, UploadActionDeps, void> => {
   const actualFile = pipe(
-    findInParentFilename2(
+    findInParentFilename(
       dst,
       Path.basename(src),
     ),

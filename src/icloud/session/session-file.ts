@@ -5,7 +5,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { BufferDecodingError, err, FileReadingError, JsonParsingError, TypeDecodingError } from '../../lib/errors'
 import { tryReadJsonFile } from '../../lib/files'
-import { DepFs } from '../drive/deps/deps'
+import { DepFs } from '../drive/deps'
 import { ICloudSession, sessionScheme } from './session'
 
 export type SessionFileReadingResult = TE.TaskEither<

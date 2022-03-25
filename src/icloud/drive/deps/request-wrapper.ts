@@ -18,10 +18,11 @@ export const wrapRequests = <
 >(
   reqs: Rec,
 ) =>
-  <WR, WRS>(wrapper: ReqWrapper<WR, WRS>): {
+  <WR, WRS, WRR>(wrapper: ReqWrapper<WR, WRS, WRR>): {
     [K in keyof Rec]: Rec[K] extends
       (...args: infer Args) => SRTE.StateReaderTaskEither<infer _S, infer R, infer E, infer A>
-      ? (deps: R & WR) => <S extends _S>(...args: Args) => XX<S, A>
+      ? R extends WRR ? (deps: R & WR) => <S extends _S>(...args: Args) => XX<S, A>
+      : never
       : never
   } => {
     let r: any = {}
@@ -33,6 +34,6 @@ export const wrapRequests = <
     return r
   }
 
-export type ReqWrapper<WR, SS> = <R>(r: R & WR) => <A, S extends SS>(
+export type ReqWrapper<WR, SS, RR = any> = <R extends RR>(r: R & WR) => <A, S extends SS>(
   req: SRTE.StateReaderTaskEither<S, R, Error, A>,
 ) => SRTE.StateReaderTaskEither<S, {}, Error, A>

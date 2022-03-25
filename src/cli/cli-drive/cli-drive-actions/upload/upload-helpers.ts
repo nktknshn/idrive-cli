@@ -9,16 +9,27 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
+import { string } from 'yargs'
 import { Api } from '../../../../icloud/drive'
-import { DepApi } from '../../../../icloud/drive/deps/deps'
+import { DepApi } from '../../../../icloud/drive/deps'
 import * as Drive from '../../../../icloud/drive/drive'
 import { parseDrivewsid } from '../../../../icloud/drive/helpers'
+import { err } from '../../../../lib/errors'
 import { printerIO } from '../../../../lib/logging'
 import { NEA, XXX } from '../../../../lib/types'
-import { Path } from '../../../../lib/util'
+import { guardSndRO, Path } from '../../../../lib/util'
 import { getDirectoryStructure } from '../download/download-helpers'
 import { LocalTreeElement } from '../download/walkdir'
-import { UploadResult } from '../upload-folder'
+
+export type UploadResult = {
+  status: { status_code: number; error_message: string }
+  etag: string
+  zone: string
+  type: string
+  document_id: string
+  parent_id: string
+  mtime: number
+}
 
 export type UploadTask = {
   dirstruct: string[]
@@ -27,7 +38,7 @@ export type UploadTask = {
   excluded: (readonly [string, { path: string; stats: Stats }])[]
 }
 
-export const createUploadTask = (
+export const getUploadTask = (
   { exclude, include }: { include: string[]; exclude: string[] },
 ) =>
   (reltree: TR.Tree<LocalTreeElement>): UploadTask => {
@@ -69,25 +80,25 @@ export const createUploadTask = (
     }
   }
 
-export const uploadChunk = (
+export const uploadChunkPar = (
   pathToDrivewsid: Record<string, string>,
 ) =>
   (
     chunk: NEA<
       readonly [
         remotepath: string,
-        element: { path: string; stats: Stats },
+        local: { path: string; stats: Stats },
       ]
     >,
   ): XXX<Drive.State, Api.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
-        NA.map(([remotepath, element]) => {
+        NA.map(([remotepath, local]) => {
           const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
           return pipe(
             Api.upload<Drive.State>({
-              sourceFilePath: element.path,
+              sourceFilePath: local.path,
               docwsid: d.docwsid,
               zone: d.zone,
             })(state),
@@ -100,17 +111,24 @@ export const uploadChunk = (
         ),
       )
 
+export const getDirStructTask = (
+  dirstruct: string[],
+) => {
+  return pipe(
+    getSubdirsPerParent('/')(dirstruct),
+    group<readonly [parent: string, kid: string]>({
+      equals: ([p1], [p2]) => p1 == p2,
+    }),
+    A.map(parentKid => [parentKid[0][0], A.map(snd)(parentKid)] as const),
+    A.filter(guardSndRO(A.isNonEmpty)),
+  )
+}
+
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
 ): XXX<Drive.State, DepApi<'createFolders'>, Record<string, string>> => {
-  const task = pipe(
-    getSubdirsPerParent('/')(dirstruct),
-    group<readonly [string, string]>({
-      equals: (a, b) => a[0] == b[0],
-    }),
-    A.map(chunk => [chunk[0][0], A.map(snd)(chunk)] as const),
-  )
+  const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {
     '/': dstitemDrivewsid,
@@ -124,20 +142,26 @@ export const createRemoteDirStructure = (
         pipe(
           acc,
           SRTE.chainFirstIOK(() => printerIO.print(`creating ${subdirs} in ${parent}`)),
-          SRTE.chain((dirToIdMap) =>
-            Api.createFoldersFailing<Drive.State>({
-              destinationDrivewsId: dirToIdMap[parent],
-              names: subdirs,
-            })
+          SRTE.chain(acc =>
+            pipe(
+              R.lookup(parent)(acc),
+              SRTE.fromOption(() => err(`pathToDrivewsid missing ${parent}`)),
+              SRTE.chain(destinationDrivewsId =>
+                Api.createFoldersFailing<Drive.State>({
+                  destinationDrivewsId,
+                  names: subdirs,
+                })
+              ),
+              SRTE.map(flow(
+                A.zip(subdirs),
+                A.reduce(acc, (a, [item, name]) =>
+                  R.upsertAt(
+                    Path.join(parent, name),
+                    item.drivewsid as string,
+                  )(a)),
+              )),
+            )
           ),
-          SRTE.map(flow(
-            A.zip(subdirs),
-            A.reduce(pathToDrivewsid, (a, [item, name]) =>
-              R.upsertAt(
-                Path.join(parent, name),
-                item.drivewsid as string,
-              )(a)),
-          )),
         ),
     ),
   )

@@ -4,41 +4,61 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { InvalidGlobalSessionError } from '../../../lib/errors'
-import { FetchError } from '../../../lib/http/fetch-client'
+import { FetchError, HttpResponse } from '../../../lib/http/fetch-client'
 import { loggerIO } from '../../../lib/loggerIO'
-import { AuthorizedState, AuthorizeEnv, authorizeSession } from '../../authorization/authorize'
+import { AuthorizeEnv, authorizeSession } from '../../authorization/authorize'
+import { AuthorizedState } from '../requests/request'
 
-export type CatchFetchEnv = { retries: number; catchFetchErrors: boolean; retryDelay: number }
+export type CatchFetchEnv = {
+  catchFetchErrorsRetries: number
+  catchFetchErrors: boolean
+  catchFetchErrorsRetryDelay: number
+  isFetchError: (e: Error) => boolean
+}
 
-export type CatchSessEnv = AuthorizeEnv & { catchSessErrors: boolean }
+export type CatchSessEnv = { catchSessErrors: boolean }
 
-const catchFetchErrorsTE = (triesLeft: number, retryDelay: number) =>
+const catchFetchErrorsTE = (
+  { isFetchError, catchFetchErrorsRetries, catchFetchErrorsRetryDelay, catchFetchErrors }: CatchFetchEnv,
+) =>
   <A>(
     m: TE.TaskEither<Error, A>,
   ): TE.TaskEither<Error, A> => {
     return pipe(
       m,
       TE.orElseFirst((e) =>
-        FetchError.is(e)
-          ? TE.fromIO(loggerIO.error(`try failed (${e}). retries left: ${triesLeft}`))
+        isFetchError(e)
+          ? TE.fromIO(loggerIO.error(`try failed (${e}). retries left: ${catchFetchErrorsRetries}`))
           : TE.of(constVoid())
       ),
       TE.orElse((e) =>
-        triesLeft > 0 && FetchError.is(e)
+        catchFetchErrorsRetries > 0 && isFetchError(e)
           ? pipe(
-            catchFetchErrorsTE(triesLeft - 1, retryDelay)(m),
-            T.delay(retryDelay),
+            catchFetchErrorsTE({
+              isFetchError,
+              catchFetchErrorsRetries: catchFetchErrorsRetries - 1,
+              catchFetchErrorsRetryDelay,
+              catchFetchErrors,
+            })(m),
+            T.delay(catchFetchErrorsRetryDelay),
           )
           : TE.left(e)
       ),
     )
   }
 
-export const catchFetchErrorsSRTE = ({ retries, retryDelay, catchFetchErrors }: CatchFetchEnv) =>
+export const catchFetchErrorsSRTE = (
+  env: CatchFetchEnv,
+) =>
   <S, R, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,
   ): SRTE.StateReaderTaskEither<S, R, Error, A> => {
-    return (s: S) => (r: R) => pipe(m(s)(r), catchFetchErrors ? catchFetchErrorsTE(retries, retryDelay) : identity)
+    return (s: S) =>
+      (r: R) =>
+        pipe(
+          m(s)(r),
+          env.catchFetchErrors ? catchFetchErrorsTE(env) : identity,
+        )
   }
 
 export const catchSessErrorsSRTE = (deps: CatchFetchEnv & AuthorizeEnv & CatchSessEnv) =>

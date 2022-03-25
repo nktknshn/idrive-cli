@@ -15,7 +15,7 @@ import { recordFromTuples } from '../../../lib/util'
 import { Drive } from '..'
 import * as V from '../cache/cache-get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import { equalsDrivewsId, findInParentFilename as lookupItemByFilename } from '../helpers'
+import { equalsDrivewsId, findInParentFilename } from '../helpers'
 import { modifySubset } from '../modify-subset'
 import * as H from '../path-validation'
 import * as T from '../types'
@@ -145,7 +145,7 @@ const concatCachedWithValidated = <R extends T.Root>(
         const parent = NA.last(validated.details)
 
         return pipe(
-          lookupItemByFilename(parent, T.fileName(cached.file.value)),
+          findInParentFilename(parent, T.fileName(cached.file.value)),
           O.fold(
             () => E.left(NotFoundError.createTemplate(fname, parent.drivewsid)),
             (actualFileItem) =>
@@ -328,7 +328,7 @@ const handleInvalidPaths = <R extends T.Root>(
 
   const nextItems = pipe(
     partialPaths,
-    NA.map(_ => lookupItemByFilename(NA.last(_.path.details), NA.head(_.path.rest))),
+    NA.map(_ => findInParentFilename(NA.last(_.path.details), NA.head(_.path.rest))),
     NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.path.rest)), NA.zip(partialPaths))),
   )
 

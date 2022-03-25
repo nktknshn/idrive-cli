@@ -4,7 +4,6 @@ import * as t from 'io-ts'
 import { Readable } from 'stream'
 import { err } from '../../../lib/errors'
 import { expectResponse, FetchClientEither } from '../../../lib/http/fetch-client'
-import { AuthorizedState } from '../../authorization/authorize'
 import * as AR from './request'
 
 export interface DownloadResponseBody {
@@ -27,7 +26,7 @@ export interface DownloadResponseBody {
   double_etag: string
 }
 
-export function download<S extends AuthorizedState>(
+export function download<S extends AR.AuthorizedState>(
   { docwsid: documentId, zone }: {
     docwsid: string
     zone: string
@@ -44,7 +43,7 @@ export function download<S extends AuthorizedState>(
   )
 }
 
-export function downloadBatch<S extends AuthorizedState>(
+export function downloadBatch<S extends AR.AuthorizedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
 ): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestEnv> {
   return AR.basicDriveJsonRequest(

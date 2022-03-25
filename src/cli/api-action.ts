@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { defaultApiEnv } from '../defaults'
 import { readAccountData } from '../icloud/authorization/validate'
-import { DepFetchClient, DepFs } from '../icloud/drive/deps/deps'
+import { DepFetchClient, DepFs } from '../icloud/drive/deps'
 import * as AM from '../icloud/drive/requests/request'
 import { readSessionFile, saveSession } from '../icloud/session/session-file'
 

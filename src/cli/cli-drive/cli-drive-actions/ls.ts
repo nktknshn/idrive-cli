@@ -44,21 +44,7 @@ type Argv = {
   tree: boolean
 }
 
-export const listUnixPath = (
-  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
-): Drive.Effect<string> => {
-  assert(A.isNonEmpty(paths))
-
-  const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
-
-  const npaths = NA.map(normalizePath)(paths)
-
-  const scanned = pipe(paths, NA.map(micromatch.scan))
-  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
-
-  if (recursive) {
-    return recursivels({ paths, depth, tree })
-  }
+/*
 
   const showRaw = (result: NEA<GetByPathResult<T.DetailsDocwsRoot | T.DetailsTrash>>) =>
     pipe(
@@ -104,6 +90,24 @@ export const listUnixPath = (
   //   SRTE.map(raw ? showRaw : showConsole),
   // )
 
+*/
+
+export const listUnixPath = (
+  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
+): Drive.Effect<string> => {
+  assert(A.isNonEmpty(paths))
+
+  const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
+
+  const npaths = NA.map(normalizePath)(paths)
+
+  const scanned = pipe(paths, NA.map(micromatch.scan))
+  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+
+  if (recursive) {
+    return recursivels({ paths, depth, tree })
+  }
+
   return pipe(
     // Drive.searchGlobs(paths as NEA<string>),
     Drive.getCachedRoot(trash),
@@ -125,7 +129,7 @@ export const listUnixPath = (
 
       if (scan.glob.indexOf('**') > -1) {
         logger.error(
-          `${scan.input} is invalid glob since globstar is not supported for non recursive ls. use ls -R instead`,
+          `${scan.input} globstar is not supported for non recursive ls. use ls -R instead`,
         )
       }
 

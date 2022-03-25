@@ -3,7 +3,7 @@ import yargs from 'yargs/yargs'
 import { defaultCacheFile, defaultSessionFile } from '../../config'
 
 export function parseArgs() {
-  return yargs(hideBin(process.argv))
+  const y = yargs(hideBin(process.argv))
     .options({
       sessionFile: { alias: ['s', 'session'], default: defaultSessionFile },
       cacheFile: { alias: ['c', 'cache'], default: defaultCacheFile },
@@ -12,7 +12,24 @@ export function parseArgs() {
       debug: { alias: 'd', default: false, type: 'boolean' },
       update: { alias: 'u', default: false, type: 'boolean' },
     })
-    .command('ls [paths..]', 'list files in a folder', _ =>
+    .command<{
+      sessionFile: string
+      cacheFile: string
+      noCache: boolean
+      raw: boolean
+      debug: boolean
+      update: boolean
+      fullPath: boolean
+      listInfo: boolean
+      header: boolean
+      trash: boolean
+      tree: boolean
+      etag: boolean
+      glob: boolean
+      recursive: boolean
+      depth: number
+      cached: boolean
+    }>('ls [paths..]', 'list files in a folder', _ =>
       _
         .positional('paths', { type: 'string', array: true, default: ['/'] })
         .options({
@@ -27,14 +44,6 @@ export function parseArgs() {
           depth: { alias: ['D'], default: Infinity, type: 'number', demandOption: 'recursive' },
           cached: { default: false, type: 'boolean' },
         }))
-    // .command('update [path]', 'update cache', _ =>
-    //   _
-    //     .positional('path', { type: 'string', default: '/' })
-    //     .options({
-    //       fullPath: { alias: ['f'], default: false, type: 'boolean' },
-    //       recursive: { alias: ['R'], default: false, type: 'boolean' },
-    //       depth: { alias: ['D'], default: 0, type: 'number', demandOption: 'recursive' },
-    //     }))
     .command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
     // .command('check', 'check updates', (_) => _.positional('path', { type: 'string', default: '/' }))
     .command(
@@ -44,6 +53,7 @@ export function parseArgs() {
         _.positional('paths', { type: 'string', array: true, demandOption: true })
           .options({
             trash: { alias: ['t'], default: true, type: 'boolean' },
+            recursive: { alias: ['R'], default: false, type: 'boolean' },
           }),
     )
     .command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
@@ -65,19 +75,17 @@ export function parseArgs() {
           }),
     )
     .command(
-      'uploads <args..>',
+      'uploads <uploadsargs..>',
       'uploads',
       (_) =>
-        _.positional('args', { type: 'string', array: true, demandOption: true })
-          // _.positional('srcpath', { type: 'string', demandOption: true })
-          // .positional('dstpath', { type: 'string', demandOption: true })
+        _.positional('uploadsargs', { type: 'string', array: true, demandOption: true })
           .options({
             overwright: { default: false, type: 'boolean' },
           })
           .check((argv, options) => {
-            const args = argv.args
+            const uploadsargs = argv.uploadsargss
 
-            if (args.length < 2) {
+            if (Array.isArray(uploadsargs) && uploadsargs.length < 2) {
               throw new Error(`e ti che`)
             }
 
@@ -96,11 +104,6 @@ export function parseArgs() {
             cached: { default: false, type: 'boolean' },
           }),
     )
-    // .command(
-    //   'recover <path>',
-    //   'recover',
-    //   (_) => _.positional('path', { type: 'string', demandOption: true }),
-    // )
     .command(
       'download <path> <dstpath>',
       'download',
@@ -123,12 +126,7 @@ export function parseArgs() {
           .options({
             include: { default: [], type: 'string', array: false },
             exclude: { default: [], type: 'string', array: false },
-            // exclude: { default: false, type: 'boolean' },
-            // silent: { default: true, type: 'boolean' },
-            // overwright: { default: true, type: 'boolean' },
-            // raw: { default: true, type: 'boolean' },
             dry: { default: false, type: 'boolean' },
-            // destination: { alias: ['D'], type: 'string', demandOption: true },
           }),
     )
     .command(
@@ -140,13 +138,14 @@ export function parseArgs() {
           .options({
             include: { default: [], type: 'string', array: false },
             exclude: { default: [], type: 'string', array: false },
-            // exclude: { default: false, type: 'boolean' },
-            // silent: { default: true, type: 'boolean' },
-            // overwright: { default: true, type: 'boolean' },
-            // raw: { default: true, type: 'boolean' },
             dry: { default: false, type: 'boolean' },
-            // destination: { alias: ['D'], type: 'string', demandOption: true },
+            parChunks: { default: 2, type: 'number' },
           }),
+    )
+    .command(
+      'init',
+      'init',
+      a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
     )
     .command(
       'edit <path>',
@@ -158,9 +157,7 @@ export function parseArgs() {
             structured: { default: true, type: 'boolean' },
           }),
     )
-    .command(
-      'init',
-      'init',
-    )
     .help()
+
+  return y
 }

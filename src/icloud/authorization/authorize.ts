@@ -4,17 +4,11 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Getcode } from '../../lib/input'
 import { authLogger } from '../../lib/logging'
 import * as AR from '../drive/requests/request'
-import { ICloudSession } from '../session/session'
 import { requestAccoutLoginM } from './accoutLogin'
 import { requestSecurityCodeM } from './securitycode'
 import { isHsa2Required, requestSignInM } from './signin'
 import { requestTrustDeviceM } from './trust'
 import { AccountData } from './types'
-
-export interface AuthorizedState {
-  session: ICloudSession
-  accountData: AccountData
-}
 
 export type AuthorizeEnv = AR.RequestEnv & { getCode: Getcode }
 

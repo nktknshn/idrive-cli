@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../authorization/authorize'
 import { itemFolder } from '../types/types-io'
+import { AuthorizedState } from './request'
 import * as AR from './request'
 
 const createFolderResponse = t.type({
