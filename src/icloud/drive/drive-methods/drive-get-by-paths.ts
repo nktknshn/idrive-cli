@@ -1,6 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
@@ -8,16 +8,17 @@ import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 import { err } from '../../../lib/errors'
+import { loggerIO } from '../../../lib/loggerIO'
 import { logg, logger } from '../../../lib/logging'
 import { NormalizedPath } from '../../../lib/normalize-path'
 import { NEA } from '../../../lib/types'
-import { recordFromTuples } from '../../../lib/util'
+import { guardFst, guardFstRO, recordFromTuples, sequenceArrayNEA } from '../../../lib/util'
 import { Drive } from '..'
+import { getByIdO } from '../cache/cache'
 import * as V from '../cache/cache-get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { equalsDrivewsId, findInParentFilename } from '../helpers'
 import { modifySubset } from '../modify-subset'
-import * as H from '../path-validation'
 import * as T from '../types'
 
 export const getByPaths = <R extends T.Root>(
@@ -37,26 +38,15 @@ export const getByPathsStrict = <R extends T.Root>(
 ): Drive.Effect<NEA<T.DetailsOrFile<R>>> => {
   return pipe(
     getByPaths(root, paths),
-    SRTE.chainEitherK(
-      flow(
-        NA.map(res =>
-          res.valid
-            ? E.of(V.target(res))
-            : E.left(
-              err(
-                `error: ${res.error}. validPart=${res.path.details.map(T.fileName)} rest=[${res.path.rest}]`,
-              ),
-            )
-        ),
-        E.sequenceArray,
-        E.map(RA.toArray),
+    SRTE.map(NA.map(
+      V.asEither(
+        (res) =>
+          err(
+            `error: ${res.error}. validPart=${res.details.map(T.fileName)} rest=[${res.rest}]`,
+          ),
       ),
-    ),
-    SRTE.chain(a =>
-      pipe(
-        SRTE.fromOption(() => err(`mystically returned empty array`))(NA.fromArray(a)),
-      )
-    ),
+    )),
+    SRTE.chainEitherK(sequenceArrayNEA),
   )
 }
 
@@ -67,15 +57,17 @@ const validateCachedPaths = <R extends T.Root>(
   logg(`validateCachedPaths: ${paths}`)
   return pipe(
     Drive.getByPathsFromCache(root, paths),
-    Drive.logS((cached) => `cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`),
+    SRTE.chainFirstIOK((cached) =>
+      loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`)
+    ),
     SRTE.chain((cached) =>
       pipe(
-        validateCachedHierarchies(pipe(cached, NA.map(_ => _.path.details))),
+        validateCachedHierarchies(pipe(cached, NA.map(_ => _.details))),
         SRTE.map(NA.zip(cached)),
         SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
       )
     ),
-    Drive.logS(paths => `result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
+    SRTE.chainFirstIOK(paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`)),
   )
 }
 
@@ -83,8 +75,8 @@ const validateCachedPaths = <R extends T.Root>(
 Given cached root and a cached hierarchy determine which part of the hierarchy is unchanged
  */
 const validateCachedHierarchies = <R extends T.Root>(
-  cachedHierarchies: NEA<H.Hierarchy<R>>,
-): Drive.Effect<NEA<H.WithDetails<H.Hierarchy<R>>>> => {
+  cachedHierarchies: NEA<V.Hierarchy<R>>,
+): Drive.Effect<NEA<V.PathValidation<R>>> => {
   const toActual = (
     cachedPath: T.NonRootDetails[],
     actualsRecord: Record<string, O.Option<T.NonRootDetails>>,
@@ -96,8 +88,8 @@ const validateCachedHierarchies = <R extends T.Root>(
     )
   }
 
-  const cachedRoot = H.root(NA.head(cachedHierarchies))
-  const cachedRests = pipe(cachedHierarchies, NA.map(H.tail))
+  const cachedRoot = V.root(NA.head(cachedHierarchies))
+  const cachedRests = pipe(cachedHierarchies, NA.map(V.tail))
 
   const drivewsids = pipe(
     A.flatten(cachedRests),
@@ -120,7 +112,7 @@ const validateCachedHierarchies = <R extends T.Root>(
       return pipe(
         cachedRests,
         NA.map(cachedPath =>
-          H.getValidHierarchyPart<R>(
+          getValidHierarchyPart<R>(
             [cachedRoot, ...cachedPath],
             [actualRoot.value, ...toActual(cachedPath, detailsRecord)],
           )
@@ -132,12 +124,12 @@ const validateCachedHierarchies = <R extends T.Root>(
 
 const concatCachedWithValidated = <R extends T.Root>(
   cached: V.GetByPathResult<R>,
-  validated: H.PathValidation<H.Hierarchy<R>>,
-): V.PathValidation<H.Hierarchy<R>> => {
+  validated: V.PathValidation<R>,
+): V.PathValidation<R> => {
   // if cached is valid
   if (cached.valid) {
     // and its validation
-    if (H.isValid(validated)) {
+    if (V.isValidPath(validated)) {
       // if original path was targeting a file
       // try to find it in the actual details
       if (O.isSome(cached.file)) {
@@ -156,7 +148,8 @@ const concatCachedWithValidated = <R extends T.Root>(
           E.fold(
             (e) =>
               V.invalidPath(
-                H.partialPath(validated.details, [fname]),
+                validated.details,
+                [fname],
                 e,
               ),
             file => V.validPath(validated.details, O.some(file)),
@@ -171,25 +164,21 @@ const concatCachedWithValidated = <R extends T.Root>(
     }
     else {
       //
-      return V.invalidPath(validated, err(`the path changed`))
+      return validated
     }
   }
   else {
-    if (H.isValid(validated)) {
+    if (V.isValidPath(validated)) {
       return V.invalidPath(
-        H.partialPath(
-          validated.details,
-          cached.path.rest,
-        ),
+        validated.details,
+        cached.rest,
         cached.error,
       )
     }
     else {
       return V.invalidPath(
-        H.partialPath(
-          validated.details,
-          NA.concat(validated.rest, cached.path.rest),
-        ),
+        validated.details,
+        NA.concat(validated.rest, cached.rest),
         err(`the path changed`),
       )
     }
@@ -197,34 +186,36 @@ const concatCachedWithValidated = <R extends T.Root>(
 }
 
 const getActuals = <R extends T.Root>(
-  validationResults: NEA<[V.PathValidation<H.Hierarchy<R>>, NormalizedPath]>,
-): Drive.Effect<NEA<V.PathValidation<H.Hierarchy<R>>>> => {
+  validationResults: NEA<[V.PathValidation<R>, NormalizedPath]>,
+): Drive.Effect<NEA<V.PathValidation<R>>> => {
   logger.debug(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )
   return pipe(
     modifySubset(
       validationResults,
-      (res): res is [V.PathInvalid<H.Hierarchy<R>>, NormalizedPath] => !res[0].valid,
-      (subset: NEA<[V.PathInvalid<H.Hierarchy<R>>, NormalizedPath]>) => pipe(subset, NA.map(fst), handleInvalidPaths),
+      guardFst(V.isInvalidPath),
+      // (res): res is [V.PathInvalid<R>, NormalizedPath] => !res[0].valid,
+      (subset) => pipe(subset, NA.map(fst), handleInvalidPaths),
       ([h, p]): V.GetByPathResult<R> => h,
       // : [V.PathValid<H.Hierarchy<R>>, NormalizedPath]
     ),
   )
 }
+// : NEA<[V.PathInvalid<R>, NormalizedPath]>
 
 type DeeperFolders<R extends T.Root> =
   // folders items with empty rest (valid, requires details)
-  | [O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>, [[], V.PathInvalid<H.Hierarchy<R>>]]
+  | [O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>, [[], V.PathInvalid<R>]]
   // folders items with non empty rest (incomplete paths)
   | [
     O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
-    [NEA<string>, V.PathInvalid<H.Hierarchy<R>>],
+    [NEA<string>, V.PathInvalid<R>],
   ]
 
 const handleInvalidPaths = <R extends T.Root>(
-  partialPaths: NEA<V.PathInvalid<H.Hierarchy<R>>>,
-): Drive.Effect<NEA<V.PathValidation<H.Hierarchy<R>>>> => {
+  partialPaths: NEA<V.PathInvalid<R>>,
+): Drive.Effect<NEA<V.PathValidation<R>>> => {
   logger.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)
 
   const handleSubfolders = <R extends T.Root>(
@@ -252,28 +243,26 @@ const handleInvalidPaths = <R extends T.Root>(
             T.NonRootDetails,
             [
               O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
-              [NEA<string>, V.PathInvalid<H.Hierarchy<R>>],
+              [NEA<string>, V.PathInvalid<R>],
             ],
           ] => pipe(v, ([details, [item, [rest, partial]]]) => A.isNonEmpty(rest)),
           (task) => {
             return pipe(
               task,
-              NA.map(([details, [item, [rest, partial]]]): V.PathInvalid<H.Hierarchy<R>> =>
+              NA.map(([details, [item, [rest, partial]]]): V.PathInvalid<R> =>
                 V.invalidPath(
-                  H.partialPath(
-                    H.concat(partial.path.details, [details]),
-                    rest,
-                  ),
+                  V.concat(partial.details, [details]),
+                  rest,
                   err(`we need to go deepr)`),
                 )
               ),
               handleInvalidPaths,
             )
           },
-          ([details, [item, [rest, partial]]]): V.PathValid<H.Hierarchy<R>> => {
+          ([details, [item, [rest, partial]]]): V.PathValid<R> => {
             return {
               valid: true,
-              path: H.validPath(H.concat(partial.path.details, [details])),
+              details: V.concat(partial.details, [details]),
               file: O.none,
             }
           },
@@ -286,28 +275,29 @@ const handleInvalidPaths = <R extends T.Root>(
     (
       [item, [rest, partial]]: [
         O.Some<T.DriveChildrenItemFile>,
-        [string[], V.PathInvalid<H.Hierarchy<R>>],
+        [string[], V.PathInvalid<R>],
       ],
-    ): V.PathValidation<H.Hierarchy<R>> => {
+    ): V.PathValidation<R> => {
       return pipe(
         rest,
         A.match(
-          (): V.PathValid<H.Hierarchy<R>> => ({
+          (): V.PathValid<R> => ({
             valid: true,
             file: item,
-            path: H.validPath(partial.path.details),
+            details: partial.details,
           }),
-          (rest): V.PathValidation<H.Hierarchy<R>> => ({
+          (rest): V.PathValidation<R> => ({
             valid: false,
             error: ItemIsNotFolderError.create(`item is not folder`),
-            path: H.partialPath(partial.path.details, NA.concat([T.fileName(item.value)], rest)),
+            details: partial.details,
+            rest: NA.concat([T.fileName(item.value)], rest),
           }),
         ),
       )
     }
 
   const handleFoundItems = <R extends T.Root>(
-    found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<H.Hierarchy<R>>]]>,
+    found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
   ): Drive.Effect<V.GetByPathResult<R>[]> => {
     logger.debug(`handleItems. ${
       found.map(([item, [rest, partial]]) => {
@@ -316,7 +306,7 @@ const handleInvalidPaths = <R extends T.Root>(
     }`)
 
     const selectFolders = (
-      v: [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<H.Hierarchy<R>>]],
+      v: [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]],
     ): v is DeeperFolders<R> => T.isFolderLikeItem(v[0].value)
 
     if (A.isNonEmpty(found)) {
@@ -328,30 +318,31 @@ const handleInvalidPaths = <R extends T.Root>(
 
   const nextItems = pipe(
     partialPaths,
-    NA.map(_ => findInParentFilename(NA.last(_.path.details), NA.head(_.path.rest))),
-    NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.path.rest)), NA.zip(partialPaths))),
+    NA.map(_ => findInParentFilename(NA.last(_.details), NA.head(_.rest))),
+    NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.rest)), NA.zip(partialPaths))),
   )
 
   return modifySubset(
     nextItems,
     // select items that were found
-    (v): v is [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<H.Hierarchy<R>>]] => pipe(v, fst, O.isSome),
+    (v): v is [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]] => pipe(v, fst, O.isSome),
     handleFoundItems,
     ([item, [rest, partial]]): V.GetByPathResult<R> => {
       // : [O.None, [string[], V.PathInvalid<H.Hierarchy<R>>]]
       return {
         valid: false,
         error: NotFoundError.createTemplate(
-          NA.head(partial.path.rest),
-          T.fileName(NA.last(partial.path.details)),
+          NA.head(partial.rest),
+          T.fileName(NA.last(partial.details)),
         ),
-        path: partial.path,
+        details: partial.details,
+        rest: partial.rest,
       }
     },
   )
 }
 
-const showHierarchiy = (h: H.Hierarchy<T.Root>): string => {
+const showHierarchiy = (h: V.Hierarchy<T.Root>): string => {
   const [root, ...rest] = h
 
   return `${T.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(T.fileName).join('/')}`
@@ -361,4 +352,39 @@ const showDetails = (details: T.Details) => {
   return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
     details.items.map(T.fileName)
   }]`
+}
+
+const getValidHierarchyPart = <R extends T.Root>(
+  cachedHierarchy: V.Hierarchy<R>,
+  actualDetails: [R, ...O.Option<T.NonRootDetails>[]],
+): V.PathValidation<R> => {
+  const [actualRoot, ...actualPath] = actualDetails
+  const [cachedroot, ...cachedPath] = cachedHierarchy
+
+  const actualPathDetails = pipe(
+    actualPath,
+    A.takeLeftWhile(O.isSome),
+    A.map(_ => _.value),
+  )
+
+  return pipe(
+    A.zip(actualPathDetails, cachedPath),
+    A.takeLeftWhile(([a, b]) => V.isSameDetails(a, b)),
+    _ => ({
+      validPart: A.takeLeft(_.length)(actualPathDetails),
+      rest: pipe(
+        cachedPath,
+        A.dropLeft(_.length),
+        A.map(T.fileName),
+      ),
+    }),
+    ({ validPart, rest }) =>
+      pipe(
+        rest,
+        A.matchW(
+          () => V.validPath([actualRoot, ...validPart]),
+          rest => V.invalidPath([actualRoot, ...validPart], rest, err(`details changed`)),
+        ),
+      ),
+  )
 }

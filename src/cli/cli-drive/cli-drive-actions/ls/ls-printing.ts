@@ -91,8 +91,8 @@ export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = 
       showElements,
     )
 
-export const showFileInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (result: T.DriveChildrenItemFile) =>
+export const showFileInfo = (result: T.DriveChildrenItemFile) =>
+  ({ showDrivewsid = false, showDocwsid = false } = {}) =>
     pipe(
       [
         // ['name', T.fileName(result)],
@@ -161,26 +161,26 @@ const showItemRow = ({
 const ordByType = Ord.contramap((d: T.DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
 const ordByName = Ord.contramap((d: T.DriveChildrenItem) => d.name)(string.Ord)
 
-export const showDetailsInfo = (
-  {
-    fullPath,
-    path,
-    showDrivewsid = false,
-    showDocwsid = false,
-    printFolderInfo = false,
-    showEtag = false,
-    showHeader = false,
-  }: {
-    showDrivewsid?: boolean
-    showDocwsid?: boolean
-    showEtag?: boolean
-    showHeader?: boolean
-    printFolderInfo?: boolean
-    fullPath: boolean
-    path: string
-  },
-) =>
-  (details: T.Details) =>
+export const showDetailsInfo = (details: T.Details) =>
+  (
+    {
+      fullPath,
+      path,
+      showDrivewsid = false,
+      showDocwsid = false,
+      printFolderInfo = false,
+      showEtag = false,
+      showHeader = false,
+    }: {
+      showDrivewsid?: boolean
+      showDocwsid?: boolean
+      showEtag?: boolean
+      showHeader?: boolean
+      printFolderInfo?: boolean
+      fullPath: boolean
+      path: string
+    },
+  ) =>
     string.Monoid.concat(
       showHeader
         ? pipe(

@@ -13,3 +13,5 @@ export const defaultApiEnv = {
 
 export const defaultFileEditor = 'vim'
 export const defaultTempDir = '/tmp/'
+export const defaultSessionFile = 'data/last-session.json'
+export const defaultCacheFile = 'data/cli-drive-cache.json'

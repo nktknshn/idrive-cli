@@ -31,7 +31,12 @@ export function cliAction<A, R, Args extends unknown[]>(
       RTE.bindW('result', action(...args)),
       RTE.chainFirst(({ result: [, { cache }] }) =>
         RTE.fromIO(
-          () => cacheLogger.debug(`saving cache: ${Object.keys(cache.byDrivewsid).length} items`),
+          () =>
+            cacheLogger.debug(
+              `saving cache: ${Object.keys(cache.byDrivewsid).length} items: ${
+                cache.byDrivewsid['FOLDER::iCloud.is.workflow.my.workflows::documents'].hasDetails
+              }`,
+            ),
         )
       ),
       RTE.chainFirstW(({ result: [, state] }) =>

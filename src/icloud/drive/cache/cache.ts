@@ -14,7 +14,7 @@ import * as m from 'monocle-ts'
 import { err, TypeDecodingError } from '../../../lib/errors'
 import { ReadJsonFileError, tryReadJsonFile } from '../../../lib/files'
 import { saveJson } from '../../../lib/json'
-import { cacheLogger } from '../../../lib/logging'
+import { cacheLogger, logReturnS } from '../../../lib/logging'
 import { NormalizedPath } from '../../../lib/normalize-path'
 import { NEA } from '../../../lib/types'
 import { DepFs } from '../deps'
@@ -265,7 +265,13 @@ export const putDetails = (
         cacheEntityFromDetails(details),
       ),
     ),
+    // logReturnS((c) => `item: ${c.byDrivewsid['FOLDER::iCloud.is.workflow.my.workflows::documents'].hasDetails}`),
     addItems(details.items),
+    // logReturnS((c) =>
+    // E.isRight(c)
+    //   ? `item: ${c.right.byDrivewsid['FOLDER::iCloud.is.workflow.my.workflows::documents'].hasDetails}`
+    //   : 'dsdass'
+    // ),
   )
 }
 

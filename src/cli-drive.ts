@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import { cliActionDeps, isValidAction, runCliAction } from './cli/cli-drive'
+import { cliActionsDeps, isValidAction, runCliAction } from './cli/cli-drive'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
 
@@ -27,7 +27,7 @@ async function main() {
   }
 
   await pipe(
-    cliActionDeps(argv),
+    cliActionsDeps(argv),
     runCliAction(action)(argv),
     TE.fold(printer.errorTask, printer.printTask),
   )()

@@ -5,12 +5,13 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { err } from '../../lib/errors'
+import { loggerIO } from '../../lib/loggerIO'
 import { logReturnS } from '../../lib/logging'
 import { NormalizedPath } from '../../lib/normalize-path'
 import { NEA } from '../../lib/types'
 import * as C from './cache/cache'
-import { GetByPathResult, target } from './cache/cache-get-by-path-types'
-import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from './cache/cache-types'
+import { GetByPathResult, pathTarget } from './cache/cache-get-by-path-types'
+import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails, CacheF } from './cache/cache-types'
 import { DepApi } from './deps'
 import * as API from './deps/api-methods'
 import { getByPaths, getByPathsStrict } from './drive-methods/drive-get-by-paths'
@@ -195,7 +196,7 @@ export const getByPathFolderFromCache = <R extends T.Root>(path: NormalizedPath)
         C.getByPath(root, path)(cache),
         _ =>
           _.valid
-            ? E.of(target(_))
+            ? E.of(pathTarget(_))
             : E.left(NotFoundError.create(`not found ${path}`)),
         E.filterOrElse(T.isDetails, () => ItemIsNotFolderError.create()),
       ))
@@ -221,10 +222,10 @@ export const getTrash = () => chainCachedTrash(of)
 
 const putCache = (cache: C.Cache): Effect<void> =>
   pipe(
-    SRTE.gets(
+    state(),
+    SRTE.chain(
       (state: State) => SRTE.put({ ...state, cache }),
     ),
-    SRTE.map(constVoid),
   )
 
 const putDetailss = (detailss: T.Details[]): Effect<void> =>
@@ -232,8 +233,7 @@ const putDetailss = (detailss: T.Details[]): Effect<void> =>
     flow(
       C.putDetailss(detailss),
       SRTE.fromEither,
-      chain(putCache),
-      map(constVoid),
+      SRTE.chain(putCache),
     ),
   )
 
@@ -246,8 +246,9 @@ const putMissedFound = ({ found, missed }: {
     chain(() => removeByIdsFromCache(missed)),
   )
 
-const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
+export const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
 
-const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> => pipe(state(), chain(({ cache }) => f(cache)))
+export const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> =>
+  pipe(state(), chain(({ cache }) => f(cache)))
 
 const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> => chainCache(flow(f, putCache, map(constVoid)))

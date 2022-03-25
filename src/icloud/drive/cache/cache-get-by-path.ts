@@ -5,10 +5,9 @@ import * as O from 'fp-ts/lib/Option'
 import { cacheLogger, logger } from '../../../lib/logging'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { findInParentFilename } from '../helpers'
-import * as H from '../path-validation'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../types'
 import * as C from './cache'
-import { PathValidation } from './cache-get-by-path-types'
+import * as H from './cache-get-by-path-types'
 import { CacheF } from './cache-types'
 
 const showDetails = (d: Details): string => {
@@ -22,11 +21,11 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>
-  (cache: CacheF): PathValidation<H.Hierarchy<R>> => {
+  (cache: CacheF): H.PathValidation<R> => {
     cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {
-      return { valid: true, path: H.validPath([parentEntity]), file: O.none }
+      return { valid: true, details: [parentEntity], file: O.none }
     }
 
     const [subItemName, ...rest] = path
@@ -40,7 +39,8 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
     if (O.isNone(subitem)) {
       return {
         valid: false,
-        path: H.partialPath<H.Hierarchy<R>>(result, path),
+        details: result,
+        rest: path,
         error: NotFoundError.createTemplate(
           subItemName,
           showDetails(parentEntity),
@@ -52,14 +52,15 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
       if (A.isNonEmpty(rest)) {
         return {
           valid: false,
-          path: H.partialPath<H.Hierarchy<R>>(result, path),
+          details: result,
+          rest: path,
           error: ItemIsNotFolderError.createTemplate(subitem.value),
         }
       }
       else {
         return {
           valid: true,
-          path: H.validPath<H.Hierarchy<R>>([parentEntity]),
+          details: [parentEntity],
           file: O.some(subitem.value),
         }
       }
@@ -71,27 +72,27 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         // BUG
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (e): PathValidation<H.Hierarchy<R>> => ({
+          (e): H.PathValidation<R> => ({
             valid: false,
-            path: H.partialPath<H.Hierarchy<R>>(result, path),
+            details: result,
+            rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content, created }): PathValidation<H.Hierarchy<R>> =>
+          ({ content, created }): H.PathValidation<R> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
-              (result): PathValidation<H.Hierarchy<R>> =>
+              (result): H.PathValidation<R> =>
                 result.valid
                   ? ({
                     valid: true,
-                    path: H.validPath<H.Hierarchy<R>>(H.concat([parentEntity], result.path.details)),
+                    details: H.concat([parentEntity], result.details),
                     file: result.file,
                   })
                   : ({
                     valid: false,
-                    path: H.partialPath<H.Hierarchy<R>>(
-                      H.concat([parentEntity], result.path.details),
-                      result.path.rest,
-                    ),
+                    details: H.concat([parentEntity], result.details),
+                    rest: result.rest,
+
                     error: result.error,
                   }),
             ),
@@ -104,14 +105,15 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
       return pipe(
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (e): PathValidation<H.Hierarchy<R>> => ({
+          (e): H.PathValidation<R> => ({
             valid: false,
-            path: H.partialPath<H.Hierarchy<R>>(result, path),
+            details: result,
+            rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content }): PathValidation<H.Hierarchy<R>> => ({
+          ({ content }): H.PathValidation<R> => ({
             valid: true,
-            path: H.validPath<H.Hierarchy<R>>(H.concat([parentEntity], [content])),
+            details: H.concat([parentEntity], [content]),
             file: O.none,
           }),
         ),

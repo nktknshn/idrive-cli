@@ -96,7 +96,7 @@ const handleUploadFolder = (
   }
 
   if (dst.valid) {
-    const dstitem = V.target(dst)
+    const dstitem = V.pathTarget(dst)
 
     if (isFolderLike(dstitem)) {
       if (isSome(findInParentFilename(dstitem, dirname))) {
@@ -112,9 +112,9 @@ const handleUploadFolder = (
       )
     }
   }
-  else if (dst.path.rest.length == 1) {
-    const dstitem = NA.last(dst.path.details)
-    const dirname = NA.head(dst.path.rest)
+  else if (dst.rest.length == 1) {
+    const dstitem = NA.last(dst.details)
+    const dirname = NA.head(dst.rest)
 
     return pipe(
       uploadTask,

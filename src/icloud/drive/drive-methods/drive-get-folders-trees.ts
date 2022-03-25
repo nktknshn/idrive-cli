@@ -11,19 +11,19 @@ import { Path } from '../../../lib/util'
 import * as Drive from '../drive'
 import * as T from '../types'
 
-export type FolderTreeDeep<T extends T.Details> = {
+export type FolderDeep<T extends T.Details> = {
   readonly details: T
   readonly deep: true
 }
 
-export type FolderTreeShallow<T extends T.Details> = {
+export type FolderShallow<T extends T.Details> = {
   readonly details: T
   readonly deep: false
 }
 
 export type FolderTree<T extends T.Details> = TR.Tree<FolderTreeValue<T>>
 
-export type FolderTreeValue<T extends T.Details> = FolderTreeDeep<T> | FolderTreeShallow<T>
+export type FolderTreeValue<T extends T.Details> = FolderDeep<T> | FolderShallow<T>
 
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<T.NonRootDetails>,
@@ -128,14 +128,6 @@ export const showTreeWithFiles = (
   )
 }
 
-const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
-  pipe(
-    folders,
-    A.map(folder => pipe(folder.items, A.filter(T.isFolderLikeItem))),
-    A.flatten,
-    // A.reduce([], A.getSemigroup<T.FolderLikeItem>().concat),
-  )
-
 export const flattenFolderTreeWithPath = <T extends T.Details>(
   parentPath: string,
   tree: FolderTree<T>,
@@ -167,6 +159,13 @@ export const flattenFolderTreeWithPath = <T extends T.Details>(
     ...subfolders,
   ]
 }
+
+const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
+  pipe(
+    folders,
+    A.map(folder => pipe(folder.items, A.filter(T.isFolderLikeItem))),
+    A.flatten,
+  )
 
 const zipWithChildren = <T extends T.Details, R extends T.Details>(
   folders: NEA<T>,

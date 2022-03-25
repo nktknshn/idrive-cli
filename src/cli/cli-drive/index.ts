@@ -1,5 +1,5 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { defaultApiEnv, defaultFileEditor, defaultTempDir } from '../../defaults'
+import { defaultApiEnv, defaultCacheFile, defaultFileEditor, defaultSessionFile, defaultTempDir } from '../../defaults'
 import { defaultApiCreator } from '../../icloud/drive/deps/api-creator'
 import * as fs from '../../lib/fs'
 import { askConfirmation } from '../../lib/prompts'
@@ -24,19 +24,19 @@ const driveActions = {
   uf: Action.uploadFolder,
 }
 
-export const cliActionDeps = (argv: {
-  sessionFile: string
-  cacheFile: string
-  noCache: boolean
+export const cliActionsDeps = (argv: {
+  sessionFile?: string
+  cacheFile?: string
+  noCache?: boolean
   tempdir?: string
   fileEditor?: string
 }) => ({
   api: defaultApiCreator(defaultApiEnv),
   fs,
   ...defaultApiEnv,
-  sessionFile: argv.sessionFile,
-  cacheFile: argv.cacheFile,
-  noCache: argv.noCache,
+  sessionFile: argv.sessionFile ?? defaultSessionFile,
+  cacheFile: argv.cacheFile ?? defaultCacheFile,
+  noCache: argv.noCache ?? false,
   askConfirmation,
   tempdir: argv.tempdir ?? defaultTempDir,
   fileEditor: argv.fileEditor ?? defaultFileEditor,

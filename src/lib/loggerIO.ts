@@ -1,4 +1,5 @@
 import * as IO from 'fp-ts/lib/IO'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { logger } from './logging'
 
 export const loggerIO = {
@@ -11,3 +12,5 @@ export const loggerIO = {
       logger.error(msg)
     },
 }
+
+// export const loggerSRTE = SRTE.chainFirstIOK(loggerIO.debug)

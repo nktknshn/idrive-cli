@@ -6,6 +6,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Api, Drive } from '../../../icloud/drive'
 import { DepApi } from '../../../icloud/drive/deps'
 import { err } from '../../../lib/errors'
+import { loggerIO } from '../../../lib/loggerIO'
 import { logger } from '../../../lib/logging'
 import { normalizePath } from '../../../lib/normalize-path'
 import { XXX } from '../../../lib/types'
@@ -33,7 +34,7 @@ export const mkdir = (
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),
-        Drive.logS((resp) => `created: ${resp.map((_) => _.drivewsid)}`),
+        SRTE.chainFirstIOK((resp) => loggerIO.debug(`created: ${resp.map((_) => _.drivewsid)}`)),
       )),
     SRTE.chainW(({ result, parent }) =>
       pipe(
@@ -52,10 +53,11 @@ export const mkdir = (
     SRTE.map(
       O.fold(
         () => `missing created folder`,
-        showDetailsInfo({
-          fullPath: false,
-          path: '',
-        }),
+        d =>
+          showDetailsInfo(d)({
+            fullPath: false,
+            path: '',
+          }),
       ),
     ),
   )

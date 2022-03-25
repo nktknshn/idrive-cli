@@ -47,6 +47,7 @@ export const searchGlobs = (
           modifySubset(
             dirs,
             ([scan]) => scan.isGlob,
+            // recursively get content for globs
             globs =>
               pipe(
                 getFoldersTrees(pipe(globs, NA.map(snd)), depth),

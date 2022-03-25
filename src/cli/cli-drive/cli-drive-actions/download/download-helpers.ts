@@ -22,7 +22,7 @@ import { loggerIO } from '../../../../lib/loggerIO'
 import { printerIO } from '../../../../lib/logging'
 import { stripTrailingSlash } from '../../../../lib/normalize-path'
 import { XXX } from '../../../../lib/types'
-import { guardFst, guardSnd, hasOwnProperty, isDefined, Path } from '../../../../lib/util'
+import { guardFst, guardFstRO, guardSnd, hasOwnProperty, isDefined, Path } from '../../../../lib/util'
 import { handleLocalFilesConflicts, solvers } from './download-conflict'
 import {
   DownloadICloudFilesFunc,
@@ -264,7 +264,7 @@ export const downloadChunkPar = (
       return SRTE.fromReaderTaskEither(pipe(
         A.zip(urls)(chunk),
         A.map(([{ localpath }, url]) => [url, localpath] as const),
-        A.filter(guardFst(isDefined)),
+        A.filter(guardFstRO(isDefined)),
         RTE.fromReaderTaskK(downloadUrlsPar),
       ))
     }),

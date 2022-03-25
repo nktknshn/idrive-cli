@@ -9,7 +9,6 @@ import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps'
 import { findInParentFilename, getDrivewsid } from '../../../icloud/drive/helpers'
-import * as H from '../../../icloud/drive/path-validation'
 import * as T from '../../../icloud/drive/types'
 import { normalizePath } from '../../../lib/normalize-path'
 import { NEA, XXX } from '../../../lib/types'
@@ -87,7 +86,7 @@ const handleSingleFileUpload = (
 ): XXX<Drive.State, UploadActionDeps, void> => {
   // if the target path already exists at icloud drive
   if (dst.valid) {
-    const dstitem = V.target(dst)
+    const dstitem = V.pathTarget(dst)
 
     // if it's a folder
     if (T.isFolderLike(dstitem)) {
@@ -95,7 +94,7 @@ const handleSingleFileUpload = (
     }
     // if it's a file and the overwright flag set
     else if (overwright && V.isValidWithFile(dst)) {
-      return uploadOverwrighting({ src, dstitem: dst.file.value, parent: NA.last(dst.path.details) })
+      return uploadOverwrighting({ src, dstitem: dst.file.value, parent: NA.last(dst.details) })
     }
     // otherwise we cancel uploading
     else {
@@ -104,10 +103,10 @@ const handleSingleFileUpload = (
   }
 
   // if the path is valid only in its parent folder
-  if (dst.path.rest.length == 1) {
+  if (dst.rest.length == 1) {
     // upload and rename
-    const dstitem = NA.last(dst.path.details)
-    const fname = NA.head(dst.path.rest)
+    const dstitem = NA.last(dst.details)
+    const fname = NA.head(dst.rest)
 
     if (T.isFolderLike(dstitem)) {
       return pipe(
@@ -117,7 +116,7 @@ const handleSingleFileUpload = (
     }
   }
 
-  return Drive.errS(`invalid destination path: ${H.showMaybeValidPath(dst.path)}`)
+  return Drive.errS(`invalid destination path: ${V.showGetByPathResult(dst)}`)
 }
 
 const uploadToFolder = (

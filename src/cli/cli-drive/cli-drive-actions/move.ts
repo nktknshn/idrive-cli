@@ -5,7 +5,6 @@ import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi } from '../../../icloud/drive/deps'
 import { parseName } from '../../../icloud/drive/helpers'
-import * as H from '../../../icloud/drive/path-validation'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/requests'
 import * as T from '../../../icloud/drive/types'
 import { err } from '../../../lib/errors'
@@ -43,21 +42,21 @@ export const move = ({ srcpath, dstpath }: {
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.PathValidation<H.Hierarchy<T.DetailsDocwsRoot>>>
+    srcdst: NEA<V.PathValidation<T.DetailsDocwsRoot>>
   },
 ): Drive.Action<Deps, MoveItemsResponse | RenameResponse> => {
   if (!srcitem.valid) {
     return Drive.errS(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
   }
 
-  const src = V.target(srcitem)
+  const src = V.pathTarget(srcitem)
 
   if (!T.isNotRootDetails(src)) {
     return Drive.errS(`src cant be root`)
   }
 
   if (dstitem.valid) {
-    const dst = V.target(dstitem)
+    const dst = V.pathTarget(dstitem)
 
     if (!T.isDetails(dst)) {
       return Drive.errS(`dst is a file`)
@@ -67,16 +66,16 @@ const handle = (
   }
 
   if (
-    H.eq().equals(dstitem.path.details, srcitem.path.details)
-    && dstitem.path.rest.length == 1
+    V.eq().equals(dstitem.details, srcitem.details)
+    && dstitem.rest.length == 1
   ) {
-    const fname = NA.head(dstitem.path.rest)
+    const fname = NA.head(dstitem.rest)
     return caseRename(src, fname)
   }
 
-  if (dstitem.path.rest.length == 1) {
-    const dst = NA.last(dstitem.path.details)
-    const fname = NA.head(dstitem.path.rest)
+  if (dstitem.rest.length == 1) {
+    const dst = NA.last(dstitem.details)
+    const fname = NA.head(dstitem.rest)
 
     return caseMoveAndRename(src, dst, fname)
   }
