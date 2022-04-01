@@ -1,20 +1,19 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { AccountData } from '../icloud/authorization/types'
-import { readAccountData, saveAccountData as _saveAccountData } from '../icloud/authorization/validate'
-import { Api, Drive } from '../icloud/drive'
-import * as C from '../icloud/drive/cache/cache'
-import { DepApi, DepFs } from '../icloud/drive/deps'
-import { AuthorizedState, BasicState } from '../icloud/drive/requests/request'
-import { ICloudSession } from '../icloud/session/session'
-import { readSessionFile, saveSession as _saveSession } from '../icloud/session/session-file'
-import { err } from '../lib/errors'
-import { ReadJsonFileError } from '../lib/files'
-import { loggerIO } from '../lib/loggerIO'
-import { cacheLogger } from '../lib/logging'
+import { AccountData } from '../../icloud/authorization/types'
+import { readAccountData, saveAccountData as _saveAccountData } from '../../icloud/authorization/validate'
+import { Api, Drive } from '../../icloud/drive'
+import * as C from '../../icloud/drive/cache/cache'
+import { DepApi, DepFs } from '../../icloud/drive/deps'
+import { AuthorizedState, BasicState } from '../../icloud/drive/requests/request'
+import { readSessionFile, saveSession as _saveSession } from '../../icloud/session/session-file'
+import { err } from '../../util/errors'
+import { ReadJsonFileError } from '../../util/files'
+import { loggerIO } from '../../util/loggerIO'
+import { cacheLogger } from '../../util/logging'
 
-export type DriveActionDeps =
+export type CliActionDeps =
   & { sessionFile: string }
   & { cacheFile: string; noCache: boolean }
   & DepApi<'authorizeSession'>
@@ -24,18 +23,17 @@ export type DriveActionDeps =
 /** read the state from files and executes the action in the context */
 export function cliAction<A, R, Args extends unknown[]>(
   action: (...args: Args) => Drive.Effect<A, R>,
-): (...args: Args) => RTE.ReaderTaskEither<R & DriveActionDeps, Error, A> {
+): (...args: Args) => RTE.ReaderTaskEither<R & CliActionDeps, Error, A> {
   return (...args: Args) =>
     pipe(
       loadDriveState,
       RTE.bindW('result', action(...args)),
-      RTE.chainFirst(({ result: [, { cache }] }) =>
+      RTE.chainFirst(({ cache: oldCache, result: [, { cache }] }) =>
         RTE.fromIO(
           () =>
             cacheLogger.debug(
-              `saving cache: ${Object.keys(cache.byDrivewsid).length} items: ${
-                cache.byDrivewsid['FOLDER::iCloud.is.workflow.my.workflows::documents'].hasDetails
-              }`,
+              `saving cache: ${Object.keys(cache.byDrivewsid).length} items`
+                + `\n${Object.keys(cache.byDrivewsid).length - Object.keys(oldCache.byDrivewsid).length} new items`,
             ),
         )
       ),
@@ -60,7 +58,9 @@ const loadSession = pipe(
       ({ sessionFile }) =>
         TE.left(
           err(
-            `Couldn't read session file from '${sessionFile}' (${e}). Init new session file by using command\nidrive init -s ${sessionFile}`,
+            `Couldn't read session file from '${sessionFile}' (${e}).`
+              + `\nInit new session file by using command\n`
+              + `\nidrive init -s ${sessionFile}`,
           ),
         ),
   ),
@@ -68,7 +68,7 @@ const loadSession = pipe(
 )
 
 const loadAccountData = (
-  { session }: { session: ICloudSession },
+  { session }: BasicState,
 ): RTE.ReaderTaskEither<
   DepApi<'authorizeSession'> & { sessionFile: string } & DepFs<'readFile'>,
   Error,

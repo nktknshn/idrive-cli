@@ -15,9 +15,9 @@ import {
 } from '../../../../icloud/drive/cache/cache-get-by-path-types'
 import { findInParentGlob } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/types'
-import { loggerIO } from '../../../../lib/loggerIO'
-import { logger } from '../../../../lib/logging'
-import { normalizePath } from '../../../../lib/normalize-path'
+import { loggerIO } from '../../../../util/loggerIO'
+import { logger } from '../../../../util/logging'
+import { normalizePath } from '../../../../util/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls-printing'
 
 export const shallowList = (

@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { HttpRequest, uploadFileRequest } from '../../../lib/http/fetch-client'
+import { HttpRequest, uploadFileRequest } from '../../../util/http/fetch-client'
 import { readWebauthToken } from '../../session/session-cookies'
 import { AuthorizedState } from './request'
 import * as AR from './request'

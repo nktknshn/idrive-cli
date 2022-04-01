@@ -5,8 +5,8 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import { Stats } from 'fs'
 import { DepFs } from '../../../../icloud/drive/deps'
-import { stripTrailingSlash } from '../../../../lib/normalize-path'
-import { Path } from '../../../../lib/util'
+import { stripTrailingSlash } from '../../../../util/normalize-path'
+import { Path } from '../../../../util/util'
 
 export type LocalTreeElement =
   | {

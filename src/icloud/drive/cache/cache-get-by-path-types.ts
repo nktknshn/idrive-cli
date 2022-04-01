@@ -3,8 +3,8 @@ import { Eq } from 'fp-ts/lib/Eq'
 import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { normalizePath } from '../../../lib/normalize-path'
-import { NEA } from '../../../lib/types'
+import { normalizePath } from '../../../util/normalize-path'
+import { NEA } from '../../../util/types'
 import * as T from '../types'
 
 export const tail = <R>([, ...tail]: Hierarchy<R>) => tail

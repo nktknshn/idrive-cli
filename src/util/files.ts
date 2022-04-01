@@ -27,7 +27,7 @@ export function tryReadJsonFile(
   return ({ fs: { readFile } }) =>
     pipe(
       readFile(file),
-      TE.mapLeft(FileReadingError.create),
+      TE.mapLeft(e => FileReadingError.create(e, e.message)),
       TE.chainW(flow(tryDecodeBuffer, TE.fromEither)),
       TE.chainW(flow(tryParseJson, TE.fromEither)),
     )

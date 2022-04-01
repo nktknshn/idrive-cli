@@ -1,8 +1,8 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Getcode } from '../../lib/input'
-import { authLogger } from '../../lib/logging'
+import { Getcode } from '../../util/input'
+import { authLogger } from '../../util/logging'
 import * as AR from '../drive/requests/request'
 import { requestAccoutLoginM } from './accoutLogin'
 import { requestSecurityCodeM } from './securitycode'
@@ -12,11 +12,7 @@ import { AccountData } from './types'
 
 export type AuthorizeEnv = AR.RequestEnv & { getCode: Getcode }
 
-export function authorizeSession<S extends AR.BasicState>(): AR.ApiRequest<
-  AccountData,
-  S,
-  AuthorizeEnv
-> {
+export function authorizeSession<S extends AR.BasicState>(): AR.ApiRequest<AccountData, S, AuthorizeEnv> {
   authLogger.debug('authorizeSession')
 
   return pipe(

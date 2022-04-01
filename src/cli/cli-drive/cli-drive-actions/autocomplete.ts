@@ -2,9 +2,9 @@ import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as Drive from '../../../icloud/drive/drive'
 import { fileName, fileNameAddSlash } from '../../../icloud/drive/types'
-import { logger } from '../../../lib/logging'
-import { normalizePath } from '../../../lib/normalize-path'
-import { Path } from '../../../lib/util'
+import { logger } from '../../../util/logging'
+import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/util'
 
 export const autocomplete = ({ path, trash, file, dir, cached }: {
   path: string

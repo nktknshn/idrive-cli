@@ -2,7 +2,7 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { cacheLogger, logger } from '../../../lib/logging'
+import { cacheLogger, logger } from '../../../util/logging'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import { findInParentFilename } from '../helpers'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../types'
@@ -33,7 +33,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
 
     const result: H.Hierarchy<R> = [parentEntity]
 
-    logger.debug(`subitem: ${O.getShow({ show: fileName }).show(subitem)}`)
+    // logger.debug(`subitem: ${O.getShow({ show: fileName }).show(subitem)}`)
 
     // item was not found
     if (O.isNone(subitem)) {

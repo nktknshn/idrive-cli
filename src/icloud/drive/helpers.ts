@@ -7,7 +7,7 @@ import * as O from 'fp-ts/lib/Option'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import micromatch from 'micromatch'
 import Path from 'path'
-import { NormalizedPath, normalizePath } from '../../lib/normalize-path'
+import { NormalizedPath, normalizePath } from '../../util/normalize-path'
 import * as T from './types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
@@ -59,7 +59,7 @@ export function findInParentFilename(
   itemName: string,
 ): O.Option<T.DriveChildrenItem>
 export function findInParentFilename(
-  parent: T.NonRootDetails | T.DetailsTrash,
+  parent: T.NonRootDetails | T.DetailsTrashRoot,
   itemName: string,
 ): O.Option<T.DriveChildrenTrashItem>
 export function findInParentFilename<R extends T.Root>(
@@ -67,7 +67,7 @@ export function findInParentFilename<R extends T.Root>(
   itemName: string,
 ): O.Option<R extends T.DetailsDocwsRoot ? T.DriveChildrenItem : T.DriveChildrenTrashItem>
 export function findInParentFilename(
-  parent: T.NonRootDetails | T.DetailsTrash | T.DetailsDocwsRoot,
+  parent: T.NonRootDetails | T.DetailsTrashRoot | T.DetailsDocwsRoot,
   itemName: string,
 ): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> {
   return pipe(

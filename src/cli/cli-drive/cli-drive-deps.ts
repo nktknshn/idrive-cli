@@ -1,10 +1,8 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
-import { defaultApiEnv } from '../../defaults'
 import { DepAskConfirmation, DepFetchClient } from '../../icloud/drive/deps'
-import { ApiCreator, defaultApiCreator } from '../../icloud/drive/deps/api-creator'
-import * as fs from '../../lib/fs'
-import * as Action from './cli-drive-actions'
+import { ApiCreator } from '../../icloud/drive/deps/api-creator'
+import * as fs from '../../util/fs'
 
 export const cliActionsDependencies = <ApiCreatorEnv>() =>
   pipe(

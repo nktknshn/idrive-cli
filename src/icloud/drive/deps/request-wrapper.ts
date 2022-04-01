@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { XX } from '../../../lib/types'
+import { XX } from '../../../util/types'
 
 export const wrapRequest = <WR, WRS>(wrapper: ReqWrapper<WR, WRS>) =>
   <Args extends unknown[], A, R>(

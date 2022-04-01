@@ -1,4 +1,4 @@
-import { EmptyObject } from '../../lib/types'
+import { EmptyObject } from '../../util/types'
 
 export interface AccountData {
   dsInfo: DsInfo

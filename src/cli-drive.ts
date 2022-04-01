@@ -1,16 +1,18 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { sys } from 'typescript'
-import { cliActionsDeps, isValidAction, runCliAction } from './cli/cli-drive'
+import { cliActionsDeps, isValidAction, runCliAction, runCliAction2 } from './cli/cli-drive'
+import { readArgv } from './cli/cli-drive/args'
 import { parseArgs } from './cli/cli-drive/cli-drive-args'
-import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
+import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './util/logging'
 
 async function main() {
-  const { argv, showHelp } = parseArgs()
-  const [action] = argv._
+  // const { argv, showHelp } = parseArgs()
+  // const [action] = argv._
+  const t = readArgv()
 
   initLoggers(
-    { debug: argv.debug },
+    { debug: t.argv.debug },
     [
       logger,
       cacheLogger,
@@ -19,18 +21,23 @@ async function main() {
     ],
   )
 
-  if (!isValidAction(action)) {
-    printer.error(`invalid action ${action}`)
-    showHelp()
-    sys.exit(1)
-    return
-  }
-
   await pipe(
-    cliActionsDeps(argv),
-    runCliAction(action)(argv),
+    cliActionsDeps(t.argv),
+    runCliAction2(t),
     TE.fold(printer.errorTask, printer.printTask),
   )()
+
+  // if (!isValidAction(action)) {
+  //   printer.error(`invalid action ${action}`)
+  //   showHelp()
+  //   sys.exit(1)
+  //   return
+  // }
+  // await pipe(
+  //   cliActionsDeps(argv),
+  //   runCliAction(action)(argv),
+  //   TE.fold(printer.errorTask, printer.printTask),
+  // )()
 }
 
 main()

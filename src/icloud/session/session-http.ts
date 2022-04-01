@@ -1,17 +1,27 @@
 import { Method } from 'axios'
 import * as A from 'fp-ts/lib/Array'
-import { flow, Lazy, pipe } from 'fp-ts/lib/function'
-import * as O from 'fp-ts/lib/Option'
+import { pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
-import { cli } from 'winston/lib/winston/config'
-import { ClientInfo, defaultClientInfo } from '../../config'
-import { applyCookieToCookies, getCookies } from '../../lib/http/cookie'
-import { HttpRequest, HttpResponse } from '../../lib/http/fetch-client'
-import { getHeader } from '../../lib/http/http-headers'
-import { logger } from '../../lib/logging'
-import { buildRecord } from '../../lib/util'
+import { defaultClientInfo } from '../../defaults'
+import { applyCookieToCookies, getCookies } from '../../util/http/cookie'
+import { HttpRequest, HttpResponse } from '../../util/http/fetch-client'
+import { logger } from '../../util/logging'
+import { buildRecord } from '../../util/util'
 import { ICloudSession, sessionLens } from './session'
 import { Header, headers as _headers } from './session-http-headers'
+import { ClientInfo } from './types'
+
+export type HttpRequestConfig = {
+  method: Method
+  url: string
+  options: {
+    data?: unknown
+    headers?: ((session: ICloudSession) => Header[])[]
+    /** add appIdentifier etc to the url */
+    addClientInfo: boolean
+    clientInfo?: ClientInfo
+  }
+}
 
 export function buildRequest(
   method: Method,
@@ -47,18 +57,6 @@ export function buildRequest(
     ),
     data,
   })
-}
-
-export type HttpRequestConfig = {
-  method: Method
-  url: string
-  options: {
-    data?: unknown
-    headers?: ((session: ICloudSession) => Header[])[]
-    /** add appIdentifier etc to the url */
-    addClientInfo: boolean
-    clientInfo?: ClientInfo
-  }
 }
 
 export function apiHttpRequest(

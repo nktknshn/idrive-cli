@@ -4,10 +4,10 @@ import * as TE from 'fp-ts/TaskEither'
 import { Api } from '../../../icloud/drive'
 import { DepApi, DepFs } from '../../../icloud/drive/deps'
 import * as S from '../../../icloud/session/session'
-import { err } from '../../../lib/errors'
-import { printerIO } from '../../../lib/logging'
-import { prompts } from '../../../lib/prompts'
-import { saveAccountData, saveSession } from '../../cli-action'
+import { err } from '../../../util/errors'
+import { printerIO } from '../../../util/logging'
+import { prompts } from '../../../util/prompts'
+import { saveAccountData, saveSession } from '../cli-drive-action'
 
 type Argv = { skipLogin: boolean }
 

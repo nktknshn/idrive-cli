@@ -2,8 +2,8 @@ export * as Api from './api-methods'
 export { ApiType } from './api-type'
 
 import * as TE from 'fp-ts/TaskEither'
-import { FsType } from '../../../lib/fs'
-import { FetchClientEither } from '../../../lib/http/fetch-client'
+import { FsType } from '../../../util/fs'
+import { FetchClientEither } from '../../../util/http/fetch-client'
 import { ApiType } from './api-type'
 
 export type DepFetchClient = { fetchClient: FetchClientEither }

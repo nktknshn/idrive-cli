@@ -4,7 +4,7 @@ import * as A from 'fp-ts/lib/Array'
 import { identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
-import { splitPair } from '../../lib/util'
+import { splitPair } from '../../util/util'
 
 const parse = (webauthTokenCookie: string): string | undefined =>
   pipe(

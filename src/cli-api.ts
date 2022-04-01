@@ -11,9 +11,9 @@ import {
   retrieveTrashDetails,
 } from './cli/cli-api/cli-api-actions'
 import { parseArgs } from './cli/cli-trash/cli-trash-args'
-import { ensureError } from './lib/errors'
-import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './lib/logging'
-import { isKeyOf } from './lib/util'
+import { ensureError } from './util/errors'
+import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './util/logging'
+import { isKeyOf } from './util/util'
 
 const actions = {
   retrieveHierarchy,

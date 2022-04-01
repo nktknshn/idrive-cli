@@ -7,9 +7,9 @@ import { DepApi } from '../../../icloud/drive/deps'
 import { parseName } from '../../../icloud/drive/helpers'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/requests'
 import * as T from '../../../icloud/drive/types'
-import { err } from '../../../lib/errors'
-import { normalizePath } from '../../../lib/normalize-path'
-import { NEA } from '../../../lib/types'
+import { err } from '../../../util/errors'
+import { normalizePath } from '../../../util/normalize-path'
+import { NEA } from '../../../util/types'
 
 type Deps =
   & Drive.Deps
@@ -97,18 +97,16 @@ const caseRename = (
   srcitem: T.NonRootDetails | T.DriveChildrenItemFile,
   name: string,
 ): Drive.Action<Deps, RenameResponse> => {
-  return pipe(
-    Api.renameItems({
-      items: [
-        { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
-      ],
-    }),
-  )
+  return Api.renameItems({
+    items: [
+      { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
+    ],
+  })
 }
 
 const caseMoveAndRename = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
-  dst: (T.Details | T.DetailsTrash),
+  dst: (T.Details | T.DetailsTrashRoot),
   name: string,
 ): Drive.Action<Deps, RenameResponse> => {
   return pipe(

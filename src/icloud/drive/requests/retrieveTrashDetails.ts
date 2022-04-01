@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { DetailsTrash, DriveChildrenItem } from '../types'
+import { DetailsTrashRoot, DriveChildrenItem } from '../types'
 import { detailsItem, detailsTrash } from '../types/types-io'
 import { AuthorizedState } from './request'
 import * as AR from './request'
@@ -14,7 +14,7 @@ export const scheme = t.tuple(
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
 }
 
-export const retrieveTrashDetails = (): AR.AuthorizedRequest<DetailsTrash> =>
+export const retrieveTrashDetails = (): AR.AuthorizedRequest<DetailsTrashRoot> =>
   pipe(
     getRetrieveItemDetailsInFoldersHttpRequest(
       [{ 'drivewsid': 'TRASH_ROOT', 'partialData': false, 'includeHierarchy': true }],

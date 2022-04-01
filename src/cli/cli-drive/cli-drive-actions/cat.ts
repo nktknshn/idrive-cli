@@ -6,9 +6,9 @@ import * as O from 'fp-ts/Option'
 import { Api, Drive } from '../../../icloud/drive'
 import { DepApi, DepFetchClient } from '../../../icloud/drive/deps'
 import { isFile } from '../../../icloud/drive/types'
-import { err } from '../../../lib/errors'
-import { normalizePath } from '../../../lib/normalize-path'
-import { consumeStreamToString } from '../../../lib/util'
+import { err } from '../../../util/errors'
+import { normalizePath } from '../../../util/normalize-path'
+import { consumeStreamToString } from '../../../util/util'
 
 type Deps =
   & Drive.Deps
@@ -21,35 +21,20 @@ export const cat = (
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    SRTE.ask<Drive.State, Deps>(),
-    SRTE.bindTo('deps'),
-    SRTE.bindW('root', () => Drive.getDocwsRoot()),
-    SRTE.bindW('item', ({ root }) =>
+    Drive.getDocwsRoot(),
+    SRTE.bindW('item', (root) =>
       pipe(
         Drive.getByPathsStrict(root, [npath]),
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.bindW('url', ({ item }) =>
-      pipe(
-        Api.getICloudItemUrl<Drive.State>(item),
-        // deps.retrieveItemDetailsInFoldersRTE({drivewsids: [1]})
-        // SRTE.local(() => ({
-        //   download: deps.schema.download({ ...deps.depsEnv, fetch: failingFetch(99) }),
-        // })),
-      )),
-    SRTE.chain(({ url }) =>
-      pipe(
-        O.fromNullable(url),
-        O.match(
-          () => SRTE.left(err(`cannot get url`)),
-          (url) =>
-            SRTE.fromReaderTaskEither(
-              pipe(
-                Api.getUrlStream({ url }),
-                RTE.chainTaskEitherK(consumeStreamToString),
-              ),
-            ),
+    SRTE.chainW(({ item }) => Api.getICloudItemUrl<Drive.State>(item)),
+    SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
+    SRTE.chainW((url) =>
+      SRTE.fromReaderTaskEither(
+        pipe(
+          Api.getUrlStream({ url }),
+          RTE.chainTaskEitherK(consumeStreamToString),
         ),
       )
     ),

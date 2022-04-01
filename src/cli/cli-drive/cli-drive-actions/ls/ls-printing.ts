@@ -8,7 +8,7 @@ import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
 import * as T from '../../../../icloud/drive/types'
 
-export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrash>) => {
+export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrashRoot>) => {
   return pipe(
     tree,
     TR.map(T.fileNameAddSlash),
@@ -48,7 +48,7 @@ type Row = [string, string | number]
 type Element = Row | string | false | Element[]
 // type Component<P> = (props: P) => (Element | string | false)[]
 
-const Trash = ({ details }: { details: T.DetailsTrash }): Element[] => {
+const Trash = ({ details }: { details: T.DetailsTrashRoot }): Element[] => {
   return [
     ['name', T.fileName(details)],
     ['numberOfItems', details.numberOfItems],

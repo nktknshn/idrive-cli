@@ -5,14 +5,14 @@ import * as O from 'fp-ts/lib/Option'
 import * as T from 'fp-ts/lib/Tree'
 import { TypeOf } from 'io-ts'
 import * as t from 'io-ts'
-import { hasOwnProperty, isObjectWithOwnProperty } from '../../../lib/util'
+import { hasOwnProperty, isObjectWithOwnProperty } from '../../../util/util'
 import * as types from './types-io'
 
 export type DetailsOrFile<R> = (R | NonRootDetails | DriveChildrenItemFile)
 
 export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>
 
-export interface DetailsTrash extends TypeOf<typeof types.detailsTrash> {}
+export interface DetailsTrashRoot extends TypeOf<typeof types.detailsTrash> {}
 
 export interface DetailsDocwsRoot extends TypeOf<typeof types.detailsRoot> {}
 export interface DetailsFolder extends TypeOf<typeof types.detailsFolder> {}
@@ -26,7 +26,7 @@ export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItem
 
 export type Root =
   | DetailsDocwsRoot
-  | DetailsTrash
+  | DetailsTrashRoot
 
 export type Details =
   | Root
@@ -103,37 +103,39 @@ export interface PartialItem extends TypeOf<typeof types.partialItem> {}
 
 export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
-export const isRegularDetails = (details: Details | DetailsTrash | DriveChildrenItem): details is
+export const isRegularDetails = (details: Details | DetailsTrashRoot | DriveChildrenItem): details is
   | DetailsFolder
   | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details) && isFolderLike(details)
 
 export const isCloudDocsRootDetails = (
-  details: Details | DetailsTrash | DriveChildrenItem,
+  details: Details | DetailsTrashRoot | DriveChildrenItem,
 ): details is DetailsDocwsRoot => details.drivewsid === types.rootDrivewsid
 
-export const isTrashDetails = (details: DetailsTrash | DetailsDocwsRoot | DriveChildrenItem): details is DetailsTrash =>
-  details.drivewsid === types.trashDrivewsid
+export const isTrashDetails = (
+  details: DetailsTrashRoot | DetailsDocwsRoot | DriveChildrenItem,
+): details is DetailsTrashRoot => details.drivewsid === types.trashDrivewsid
 
-export const isTrashDetailsG = <T extends { drivewsid: string }>(details: DetailsTrash | T): details is DetailsTrash =>
-  details.drivewsid === types.trashDrivewsid
+export const isTrashDetailsG = <T extends { drivewsid: string }>(
+  details: DetailsTrashRoot | T,
+): details is DetailsTrashRoot => details.drivewsid === types.trashDrivewsid
 
-export const isNotRootDetails = (details: Details | DriveChildrenItem): details is
-  | DetailsFolder
-  | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
+export const isNotRootDetails = (
+  details: Root | Details | DetailsTrashRoot | DriveChildrenItemFile,
+): details is NonRootDetails | DriveChildrenItemFile => !isCloudDocsRootDetails(details) && !isTrashDetails(details)
 
-export const isNotFileG = <A extends { drivewsid: string }>(d: A | DriveChildrenItemFile): d is A =>
+export const isNotFile = <A extends { drivewsid: string }>(d: A | DriveChildrenItemFile): d is A =>
   !(isObjectWithOwnProperty(d, 'type') && d.type === 'FILE')
 
 export type FolderLike =
   | DetailsFolder
   | DetailsAppLibrary
   | DetailsDocwsRoot
-  | DetailsTrash
+  | DetailsTrashRoot
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
 
 export const isFolderLike = (
-  entity: Details | DetailsTrash | DriveChildrenItem,
+  entity: Details | DetailsTrashRoot | DriveChildrenItem,
 ): entity is FolderLike =>
   entity.drivewsid === types.trashDrivewsid
   || hasOwnProperty(entity, 'type') && entity.type === 'APP_LIBRARY'
@@ -194,7 +196,7 @@ export const hasName = <
   ]).is(a)
 }
 
-export const fileName = (item: HasName | DetailsTrash) => {
+export const fileName = (item: HasName | DetailsTrashRoot) => {
   if (isTrashDetailsG(item)) {
     return 'TRASH_ROOT'
   }
@@ -206,7 +208,7 @@ export const fileName = (item: HasName | DetailsTrash) => {
     : `${item.name}`
 }
 
-export const fileNameAddSlash = (item: HasName | DetailsTrash) => {
+export const fileNameAddSlash = (item: HasName | DetailsTrashRoot) => {
   const fname = fileName(item)
 
   if (isFolderDrivewsid(item.drivewsid) && item.drivewsid !== types.rootDrivewsid) {

@@ -52,7 +52,7 @@ export class CacheEntityFolderTrashDetails {
   readonly type = 'TRASH_ROOT'
   readonly hasDetails = true
   constructor(
-    public readonly content: T.DetailsTrash,
+    public readonly content: T.DetailsTrashRoot,
     public readonly created: Date = new Date(),
   ) {}
 }

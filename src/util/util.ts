@@ -91,17 +91,6 @@ export function splitPair(
   )
 }
 
-export const isKeyOf = <R extends Record<string, unknown>>(
-  commands: R,
-  command: string | number | symbol,
-): command is (keyof R) => {
-  if (!isString(command)) {
-    return false
-  }
-
-  return Object.keys(commands).includes(command)
-}
-
 import { Refinement } from 'fp-ts/lib/Refinement'
 import { Readable } from 'stream'
 import { NEA } from './types'
@@ -115,6 +104,8 @@ export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, 
     return data
   })
 }
+
+export const sequenceArrayNEA: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
 
 export function guardSndRO<A, B, F extends B>(
   refinement: Refinement<B, F>,
@@ -145,4 +136,19 @@ export const guardThird = <A, B, C, F extends C>(refinement: Refinement<C, F>) =
 
 export const isDefined = <A>(a: A | undefined): a is A => !!a
 
-export const sequenceArrayNEA: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
+export function guardProp<A, B extends R[K], R, K extends keyof R>(
+  key: K,
+  refinement: Refinement<R[K], B>,
+) {
+  return (rec: R): rec is R & Record<K, B> => refinement(rec[key])
+}
+export const isKeyOf = <R extends Record<string, unknown>>(
+  commands: R,
+  command: string | number | symbol,
+): command is (keyof R) => {
+  if (!isString(command)) {
+    return false
+  }
+
+  return Object.keys(commands).includes(command)
+}

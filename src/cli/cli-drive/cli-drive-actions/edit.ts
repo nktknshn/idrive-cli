@@ -4,24 +4,24 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 // import * as NM from '../../../icloud/drive/api/methods'
 import * as R from 'fp-ts/lib/Reader'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
+import { Readable } from 'stream'
 // import { tempDir } from '../../../defaults'
 import { Api, Drive } from '../../../icloud/drive'
 import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps'
 import { isFile } from '../../../icloud/drive/types'
-import { err } from '../../../lib/errors'
-import { logger } from '../../../lib/logging'
-import { normalizePath } from '../../../lib/normalize-path'
-import { consumeStreamToString, Path } from '../../../lib/util'
+import { err } from '../../../util/errors'
+import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/util'
+import { writeFileFromReadable } from './download/download-helpers'
 import { singleFileUpload, UploadActionDeps } from './upload'
 
 type Deps =
   & Drive.Deps
   & DepApi<'download'>
   & UploadActionDeps
-  & DepFs<'fstat' | 'writeFile'>
+  & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient
   & { fileEditor: string }
   & { tempdir: string }
@@ -71,19 +71,19 @@ export const edit = (
           url =>
             SRTE.fromReaderTaskEither(pipe(
               Api.getUrlStream({ url }),
-              RTE.chainTaskEitherK(consumeStreamToString),
+              // RTE.chainTaskEitherK(consumeStreamToString),
             )),
         ),
       )
     ),
-    SRTE.chainW(data =>
+    SRTE.chainW(readable =>
       pipe(
-        SRTE.of<Drive.State, Deps, Error, { data: string }>({ data }),
+        SRTE.of<Drive.State, Deps, Error, { readable: Readable }>({ readable }),
         SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
         SRTE.bind('fileEditor', () => SRTE.asks(s => s.fileEditor)),
-        SRTE.bind('writeRrsult', ({ data, tempFile }) =>
+        SRTE.bindW('writeRrsult', ({ readable, tempFile }) =>
           SRTE.fromReaderTaskEither(
-            ({ fs }: Deps) => (fs.writeFile(tempFile, data)),
+            writeFileFromReadable(tempFile)(readable),
           )),
         SRTE.bind(
           'signal',
@@ -94,6 +94,7 @@ export const edit = (
             overwright: true,
             srcpath: tempFile,
             dstpath: npath,
+            skipTrash: false,
           })
         }),
       )

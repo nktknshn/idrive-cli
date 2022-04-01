@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { NEA, XX } from '../../../lib/types'
+import { NEA, XX } from '../../../util/types'
 import { AccountData } from '../../authorization/types'
 import { AuthorizedState } from '../../drive/requests/request'
 import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'

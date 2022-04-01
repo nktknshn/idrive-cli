@@ -12,19 +12,18 @@ type ShowOpts = {
 }
 
 type Argv = {
-  recursive: boolean
   paths: string[]
   fullPath: boolean
   listInfo: boolean
-  update: boolean
-  trash: boolean
-  depth: number
-  raw: boolean
-  glob: boolean
-  cached: boolean
-  etag: boolean
   header: boolean
+  trash: boolean
   tree: boolean
+  etag: boolean
+  glob: boolean
+  raw: boolean
+  recursive: boolean
+  depth: number
+  cached: boolean
 }
 
 export const listUnixPath = (
@@ -33,7 +32,7 @@ export const listUnixPath = (
   assert(A.isNonEmpty(paths))
 
   if (recursive) {
-    return recursivels({ paths, depth, tree })
+    return recursivels({ paths, depth, tree, cached })
   }
 
   return shallowList({

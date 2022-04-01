@@ -3,7 +3,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { Drive } from '../../../../icloud/drive'
 import * as T from '../../../../icloud/drive/types'
 
-import { XXX } from '../../../../lib/types'
+import { XXX } from '../../../../util/types'
 
 export type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEither<
   R,

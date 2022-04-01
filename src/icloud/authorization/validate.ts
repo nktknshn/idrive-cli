@@ -12,8 +12,8 @@ import {
   InvalidGlobalSessionError,
   JsonParsingError,
   TypeDecodingError,
-} from '../../lib/errors'
-import { tryReadJsonFile } from '../../lib/files'
+} from '../../util/errors'
+import { tryReadJsonFile } from '../../util/files'
 import { DepFs } from '../drive/deps'
 import * as AR from '../drive/requests/request'
 import { ICloudSessionWithSessionToken } from '../session/session'

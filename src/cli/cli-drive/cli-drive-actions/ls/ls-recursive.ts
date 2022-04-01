@@ -10,14 +10,15 @@ import {
   showTreeWithFiles,
   treeWithFiles,
 } from '../../../../icloud/drive/drive-methods/drive-get-folders-trees'
-import { normalizePath } from '../../../../lib/normalize-path'
-import { filterTree } from '../../../../lib/tree'
-import { Path } from '../../../../lib/util'
+import { normalizePath } from '../../../../util/normalize-path'
+import { filterTree } from '../../../../util/tree'
+import { Path } from '../../../../util/util'
 
-export const recursivels = ({ paths, depth, tree }: {
+export const recursivels = ({ paths, depth, tree, cached }: {
   paths: NA.NonEmptyArray<string>
   depth: number
   tree: boolean
+  cached: boolean
 }) => {
   const scanned = pipe(
     paths,
@@ -54,7 +55,7 @@ export const recursivels = ({ paths, depth, tree }: {
   }
 
   return pipe(
-    Drive.searchGlobs(pipe(scanned, NA.map(_ => _.input))),
+    Drive.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
     SRTE.map(NA.map(A.map(_ => _.path))),
     SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),

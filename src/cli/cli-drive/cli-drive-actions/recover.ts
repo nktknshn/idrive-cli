@@ -5,9 +5,9 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Api, Drive } from '../../../icloud/drive/'
 import { DepApi } from '../../../icloud/drive/deps'
 import { isTrashDetailsG } from '../../../icloud/drive/types'
-import { err } from '../../../lib/errors'
-import { normalizePath } from '../../../lib/normalize-path'
-import { XXX } from '../../../lib/types'
+import { err } from '../../../util/errors'
+import { normalizePath } from '../../../util/normalize-path'
+import { XXX } from '../../../util/types'
 
 type Deps = Drive.Deps & DepApi<'putBackItemsFromTrash'>
 

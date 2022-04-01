@@ -13,10 +13,10 @@ import {
   InvalidJsonInResponse,
   InvalidResponseStatusError,
   MissingResponseBody,
-} from '../../../lib/errors'
-import { FetchClientEither, HttpRequest, HttpResponse } from '../../../lib/http/fetch-client'
-import { tryJsonFromResponse } from '../../../lib/http/json'
-import { apiLogger, logg } from '../../../lib/logging'
+} from '../../../util/errors'
+import { FetchClientEither, HttpRequest, HttpResponse } from '../../../util/http/fetch-client'
+import { tryJsonFromResponse } from '../../../util/http/json'
+import { apiLogger, logg } from '../../../util/logging'
 import { AccountData } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'

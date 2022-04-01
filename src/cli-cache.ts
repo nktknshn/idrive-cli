@@ -7,9 +7,9 @@ import yargs from 'yargs/yargs'
 import { defaultCacheFile } from './defaults'
 import * as C from './icloud/drive/cache/cache'
 import * as GetByPathResultValid from './icloud/drive/cache/cache-get-by-path-types'
-import * as fs from './lib/fs'
-import { cacheLogger, logger, loggingLevels, printer } from './lib/logging'
-import { normalizePath } from './lib/normalize-path'
+import * as fs from './util/fs'
+import { cacheLogger, logger, loggingLevels, printer } from './util/logging'
+import { normalizePath } from './util/normalize-path'
 
 function parseArgs() {
   return yargs(hideBin(process.argv))

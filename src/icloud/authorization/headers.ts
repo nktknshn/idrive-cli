@@ -1,7 +1,7 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow } from 'fp-ts/lib/function'
 import { isSome } from 'fp-ts/lib/Option'
-import { getHeader } from '../../lib/http/http-headers'
+import { getHeader } from '../../util/http/http-headers'
 import { ICloudSession } from '../session/session'
 import { Header } from '../session/session-http-headers'
 

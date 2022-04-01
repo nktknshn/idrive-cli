@@ -80,8 +80,8 @@ export class FileReadingError extends Error {
     return isObjectWithOwnProperty(v, 'tag') && v.tag === 'FileReadingError'
   }
 
-  static create(err: unknown): FileReadingError {
-    return new FileReadingError(err)
+  static create(err: unknown, message = 'FileReadingError'): FileReadingError {
+    return new FileReadingError(err, message)
   }
 }
 

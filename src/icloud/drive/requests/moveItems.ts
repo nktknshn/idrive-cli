@@ -3,7 +3,12 @@ import { childrenItem } from '../types/types-io'
 import { AuthorizedState } from './request'
 import * as AR from './request'
 
-const moveItemResponse = t.type({ items: t.array(childrenItem) })
+const moveItemResponse = t.type({
+  items: t.array(t.union([
+    childrenItem,
+    t.type({ status: t.literal('CROSS_ZONE_MOVE_NOT_ALLOWED') }),
+  ])),
+})
 
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 

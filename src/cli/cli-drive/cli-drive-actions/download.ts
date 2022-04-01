@@ -8,10 +8,10 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { Drive } from '../../../icloud/drive'
 import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps'
-import { printer, printerIO } from '../../../lib/logging'
-import { normalizePath } from '../../../lib/normalize-path'
-import { XXX } from '../../../lib/types'
-import { guardFst, Path } from '../../../lib/util'
+import { printer, printerIO } from '../../../util/logging'
+import { normalizePath } from '../../../util/normalize-path'
+import { XXX } from '../../../util/types'
+import { guardFst, Path } from '../../../util/util'
 import {
   basicDownloadTask,
   createDirsList,
@@ -37,7 +37,9 @@ type Deps =
   & Drive.Deps
   & DepApi<'downloadBatch'>
   & DepFetchClient
-  & DepFs<'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'>
+  & DepFs<
+    'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'
+  >
 
 export const downloadFolder = (argv: Argv): XXX<Drive.State, Deps, string> => {
   return _downloadFolder(
@@ -110,7 +112,7 @@ const _downloadFolder = <R>(
     { path, dstpath, dry, exclude, include },
   )
 
-  const buildTask = pipe(
+  const getDownloadTask = pipe(
     Drive.getDocwsRoot(),
     SRTE.chainW((root) =>
       pipe(
@@ -173,7 +175,7 @@ const _downloadFolder = <R>(
     )
 
   return pipe(
-    buildTask,
+    getDownloadTask,
     dry
       ? SRTE.map(() => [])
       : SRTE.chainW(effect),

@@ -4,11 +4,11 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { err } from '../../lib/errors'
-import { loggerIO } from '../../lib/loggerIO'
-import { logReturnS } from '../../lib/logging'
-import { NormalizedPath } from '../../lib/normalize-path'
-import { NEA } from '../../lib/types'
+import { err } from '../../util/errors'
+import { loggerIO } from '../../util/loggerIO'
+import { logReturnS } from '../../util/logging'
+import { NormalizedPath } from '../../util/normalize-path'
+import { NEA } from '../../util/types'
 import * as C from './cache/cache'
 import { GetByPathResult, pathTarget } from './cache/cache-get-by-path-types'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails, CacheF } from './cache/cache-types'
@@ -76,7 +76,7 @@ export const getCachedRoot = (trash: boolean): Effect<T.Root> => {
 }
 
 export const chainCachedTrash = <A>(
-  f: (root: T.DetailsTrash) => Effect<A>,
+  f: (root: T.DetailsTrashRoot) => Effect<A>,
 ): Effect<A> => {
   return pipe(
     retrieveRootAndTrashIfMissing(),
@@ -123,7 +123,7 @@ export function retrieveItemDetailsInFoldersSaving(
 ): Effect<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof trashDrivewsid, ...string[]],
-): Effect<[O.Some<T.DetailsTrash>, ...O.Option<T.Details>[]]>
+): Effect<[O.Some<T.DetailsTrashRoot>, ...O.Option<T.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...string[]],
 ): Effect<[O.Some<R>, ...O.Option<T.Details>[]]>

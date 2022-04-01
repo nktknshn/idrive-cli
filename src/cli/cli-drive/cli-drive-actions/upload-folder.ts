@@ -1,27 +1,26 @@
 import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
+import { constant, pipe } from 'fp-ts/lib/function'
 import { isSome } from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
-import { Api } from '../../../icloud/drive'
+import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi, DepFs } from '../../../icloud/drive/deps'
-import * as Drive from '../../../icloud/drive/drive'
 import { findInParentFilename } from '../../../icloud/drive/helpers'
 import { DetailsAppLibrary, DetailsDocwsRoot, DetailsFolder, isFolderLike } from '../../../icloud/drive/types'
-import { err } from '../../../lib/errors'
-import { loggerIO } from '../../../lib/loggerIO'
-import { printerIO } from '../../../lib/logging'
-import { normalizePath } from '../../../lib/normalize-path'
-import { NEA, XXX } from '../../../lib/types'
-import { Path } from '../../../lib/util'
+import { err } from '../../../util/errors'
+import { loggerIO } from '../../../util/loggerIO'
+import { printerIO } from '../../../util/logging'
+import { normalizePath } from '../../../util/normalize-path'
+import { XXX } from '../../../util/types'
+import { Path } from '../../../util/util'
 import { walkDirRel } from './download/walkdir'
 import {
   createRemoteDirStructure,
-  getDirStructTask,
   getUploadTask,
+  showUploadTask,
   uploadChunkPar,
   UploadResult,
   UploadTask,
@@ -33,8 +32,7 @@ type Argv = {
   dry: boolean
   include: string[]
   exclude: string[]
-  parChunks: number
-  // silent: boolean
+  chunkSize: number
 }
 
 type Deps =
@@ -65,7 +63,7 @@ const handleUploadFolder = (
     dst: V.GetByPathResult<DetailsDocwsRoot>
     args: Argv
   },
-): XXX<Drive.State, Deps, unknown> => {
+): XXX<Drive.State, Deps, UploadResult[]> => {
   const dirname = Path.parse(src).base
 
   const uploadTask = pipe(
@@ -76,22 +74,8 @@ const handleUploadFolder = (
   if (args.dry) {
     return SRTE.fromReaderTaskEither(pipe(
       uploadTask,
-      RTE.chainIOK(
-        ({ uploadable, excluded, empties, dirstruct }) =>
-          printerIO.print(
-            `excluded:\n${excluded.map(fst).join('\n').length} items\n\nempties:\n${
-              empties.map(fst).join('\n')
-            }\n\nuploadable:\n${
-              uploadable.map(fst).join('\n')
-              + `\n\ndirstruct: `
-              + `${dirstruct.join('\n')}`
-              + `\n\n`
-              + getDirStructTask(dirstruct)
-                .map(([parent, kids]) => `${parent}: ${kids}`)
-                .join('\n')
-            }`,
-          ),
-      ),
+      RTE.chainIOK((task) => printerIO.print(showUploadTask(task))),
+      RTE.map(constant([])),
     ))
   }
 
@@ -107,7 +91,7 @@ const handleUploadFolder = (
         uploadTask,
         SRTE.fromReaderTaskEither,
         SRTE.chain(
-          uploadToNewFolder({ dstitem, dirname, src, parChunks: args.parChunks, remotepath: args.remotepath }),
+          uploadToNewFolder({ dstitem, dirname, src, chunkSize: args.chunkSize, remotepath: args.remotepath }),
         ),
       )
     }
@@ -119,7 +103,7 @@ const handleUploadFolder = (
     return pipe(
       uploadTask,
       SRTE.fromReaderTaskEither,
-      SRTE.chain(uploadToNewFolder({ dstitem, dirname, src, parChunks: args.parChunks, remotepath: args.remotepath })),
+      SRTE.chain(uploadToNewFolder({ dstitem, dirname, src, chunkSize: args.chunkSize, remotepath: args.remotepath })),
     )
   }
 
@@ -127,36 +111,30 @@ const handleUploadFolder = (
 }
 
 const uploadToNewFolder = (
-  { dirname, dstitem, src, parChunks, remotepath }: {
+  { dirname, dstitem, src, chunkSize, remotepath }: {
     dstitem: DetailsDocwsRoot | DetailsFolder | DetailsAppLibrary
     dirname: string
     src: string
-    parChunks: number
+    chunkSize: number
     remotepath: string
   },
 ): (
   task: UploadTask,
-) => XXX<Drive.State, Deps, NEA<UploadResult>[]> =>
+) => XXX<Drive.State, Deps, UploadResult[]> =>
   (task: UploadTask) =>
     pipe(
-      SRTE.of<Drive.State, Deps, Error, UploadTask>(
-        task,
+      printerIO.print(`creating folder ${remotepath}`),
+      SRTE.fromIO,
+      SRTE.chain(() =>
+        Api.createFoldersFailing<Drive.State>({
+          names: [dirname],
+          destinationDrivewsId: dstitem.drivewsid,
+        })
       ),
-      SRTE.bindTo('task'),
-      SRTE.bindW('newFolder', () =>
-        pipe(
-          printerIO.print(`creating folder ${remotepath}`),
-          SRTE.fromIO,
-          SRTE.chain(() =>
-            Api.createFoldersFailing({
-              names: [dirname],
-              destinationDrivewsId: dstitem.drivewsid,
-            })
-          ),
-        )),
-      SRTE.bindW(
+      SRTE.bindTo('newFolder'),
+      SRTE.bind(
         'pathToDrivewsid',
-        ({ newFolder, task }) =>
+        ({ newFolder }) =>
           pipe(
             printerIO.print(`creating dir structure in ${dirname}`),
             SRTE.fromIO,
@@ -168,22 +146,23 @@ const uploadToNewFolder = (
             ),
           ),
       ),
-      SRTE.chainW(({ task, pathToDrivewsid }) => {
+      SRTE.chainW(({ pathToDrivewsid }) => {
         return pipe(
           task.uploadable,
           A.map(mapSnd(local => ({
             ...local,
             path: Path.join(src, local.path),
           }))),
-          A.chunksOf(parChunks),
+          A.chunksOf(chunkSize),
           A.map(chunk =>
             pipe(
-              loggerIO.debug(`starting uploading a chunk of ${parChunks} files`),
+              loggerIO.debug(`starting uploading a chunk of ${chunkSize} files`),
               SRTE.fromIO,
               SRTE.chain(() => uploadChunkPar(pathToDrivewsid)(chunk)),
             )
           ),
           A.sequence(SRTE.Applicative),
+          SRTE.map(A.flatten),
         )
       }),
     )

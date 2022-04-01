@@ -2,7 +2,7 @@ import { Eq } from 'fp-ts/Eq'
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { snd } from 'fp-ts/lib/ReadonlyTuple'
+import { fst, snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
@@ -14,10 +14,10 @@ import { Api } from '../../../../icloud/drive'
 import { DepApi } from '../../../../icloud/drive/deps'
 import * as Drive from '../../../../icloud/drive/drive'
 import { parseDrivewsid } from '../../../../icloud/drive/helpers'
-import { err } from '../../../../lib/errors'
-import { printerIO } from '../../../../lib/logging'
-import { NEA, XXX } from '../../../../lib/types'
-import { guardSndRO, Path } from '../../../../lib/util'
+import { err } from '../../../../util/errors'
+import { printerIO } from '../../../../util/logging'
+import { NEA, XXX } from '../../../../util/types'
+import { guardSndRO, Path } from '../../../../util/util'
 import { getDirectoryStructure } from '../download/download-helpers'
 import { LocalTreeElement } from '../download/walkdir'
 
@@ -191,3 +191,16 @@ const group = <A>(S: Eq<A>): ((as: Array<A>) => Array<Array<A>>) => {
     return [init, rest]
   })
 }
+
+export const showUploadTask = ({ dirstruct, empties, excluded, uploadable }: UploadTask) =>
+  `excluded:\n${excluded.map(fst).join('\n').length} items\n\nempties:\n${
+    empties.map(fst).join('\n')
+  }\n\nuploadable:\n${
+    uploadable.map(fst).join('\n')
+    + `\n\ndirstruct: `
+    + `${dirstruct.join('\n')}`
+    + `\n\n`
+    + getDirStructTask(dirstruct)
+      .map(([parent, kids]) => `${parent}: ${kids}`)
+      .join('\n')
+  }`

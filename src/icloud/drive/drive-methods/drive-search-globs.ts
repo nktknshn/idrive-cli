@@ -6,20 +6,20 @@ import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
-import { normalizePath } from '../../../lib/normalize-path'
-import { NEA } from '../../../lib/types'
-import { guardSnd, Path } from '../../../lib/util'
+import { normalizePath } from '../../../util/normalize-path'
+import { NEA } from '../../../util/types'
+import { guardSnd, Path } from '../../../util/util'
 import { Drive } from '..'
 import { modifySubset } from '../modify-subset'
 import * as T from '../types'
 import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder } from './drive-get-folders-trees'
 
+export type SearchGlobFoundItem = { path: string; item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrashRoot> }
+
 export const searchGlobsShallow = (
   globs: NEA<string>,
 ): Drive.Effect<
-  NA.NonEmptyArray<
-    { path: string; item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
-  >
+  NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   return searchGlobs(globs, 0)
 }
@@ -28,9 +28,7 @@ export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
 ): Drive.Effect<
-  NA.NonEmptyArray<
-    { path: string; item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrash> }[]
-  >
+  NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   const scanned = pipe(globs, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
@@ -39,10 +37,10 @@ export const searchGlobs = (
     Drive.chainCachedDocwsRoot(
       root => Drive.getByPathsStrict(root, basepaths),
     ),
-    SRTE.chain((bases) => {
-      return modifySubset(
+    SRTE.chain((bases) =>
+      modifySubset(
         NA.zip(bases)(scanned),
-        guardSnd(T.isNotFileG),
+        guardSnd(T.isNotFile),
         (dirs) =>
           modifySubset(
             dirs,
@@ -57,7 +55,7 @@ export const searchGlobs = (
           ),
         (base) => E.left(base[1]),
       )
-    }),
+    ),
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned))),
     SRTE.map(flow(NA.map(([[fileOrTree, globpattern], scan]) =>
       pipe(
