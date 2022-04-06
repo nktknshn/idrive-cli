@@ -1,13 +1,17 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { Drive } from '../../../icloud/drive'
-import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps'
+import { DepApi, DepAskConfirmation, DepFetchClient, DepFs } from '../../../icloud/drive/deps'
+import {
+  addPathToFolderTree,
+  flattenFolderTreeWithPath,
+} from '../../../icloud/drive/drive-methods/drive-get-folders-trees'
 import { printer, printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { XXX } from '../../../util/types'
@@ -37,6 +41,7 @@ type Deps =
   & Drive.Deps
   & DepApi<'downloadBatch'>
   & DepFetchClient
+  & DepAskConfirmation
   & DepFs<
     'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'
   >
@@ -119,13 +124,16 @@ const _downloadFolder = <R>(
         Drive.getByPathFolder(root, normalizePath(path)),
         SRTE.chain(dir => Drive.getFoldersTrees([dir], depth)),
         SRTE.map(NA.head),
+        SRTE.map(flattenFolderTreeWithPath(Path.dirname(path))),
       )
     ),
-    SRTE.map(filterFolderTree({ include, exclude })),
+    SRTE.map(filterFolderTree(
+      { include, exclude },
+    )),
     SRTE.chainFirstIOK(
       (task) =>
         () => {
-          if (exclude.length > 0 && verbose) {
+          if (verbose) {
             printer.print(
               `excluded: \n${task.excluded.map(_ => _[0]).join('\n')}\n`,
             )

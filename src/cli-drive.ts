@@ -1,9 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { sys } from 'typescript'
-import { cliActionsDeps, isValidAction, runCliAction, runCliAction2 } from './cli/cli-drive'
+import { cliActionsDeps, runCliAction2 } from './cli/cli-drive'
 import { readArgv } from './cli/cli-drive/args'
-import { parseArgs } from './cli/cli-drive/cli-drive-args'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './util/logging'
 
 async function main() {

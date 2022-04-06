@@ -132,8 +132,11 @@ export const getDirectoryStructure = (paths: string[]) => {
 export const filterFolderTree = (
   { exclude, include }: { include: string[]; exclude: string[] },
 ) =>
-  (tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>): FilterTreeResult => {
-    const flatTree = flattenFolderTreeWithPath('/', tree)
+  // (tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>): FilterTreeResult => {
+  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
+    console.log(
+      flatTree,
+    )
 
     const files = pipe(
       flatTree,
@@ -195,9 +198,10 @@ export const basicDownloadTask = (toDirMapper: (ds: DownloadStructure) => Downlo
 
     return handleLocalFilesConflicts({
       // conflictsSolver: resolveConflictsRename,
-      conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
-        file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
-      ),
+      // conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
+      //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
+      // ),
+      conflictsSolver: solvers.resolveConflictsAskAll,
     })(task)
   }
 

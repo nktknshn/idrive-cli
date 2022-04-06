@@ -9,10 +9,11 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import * as Task from 'fp-ts/Task'
-import { DepFs } from '../../../../icloud/drive/deps'
+import { DepAskConfirmation, DepFs } from '../../../../icloud/drive/deps'
 import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../util/errors'
 import { loggerIO } from '../../../../util/loggerIO'
+import { NEA } from '../../../../util/types'
 import { guardSndRO, Path } from '../../../../util/util'
 import { DownloadInfo, DownloadTask } from './types'
 import { LocalTreeElement } from './walkdir'
@@ -22,9 +23,9 @@ export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpa
 export type SolutionAction = 'skip' | 'overwright'
 export type Solution = (readonly [Conflict, SolutionAction])[]
 
-export type ConflictsSolver = (
-  conflicts: Conflict[],
-) => TE.TaskEither<Error, (readonly [Conflict, SolutionAction])[]>
+export type ConflictsSolver<Deps = {}> = (
+  conflicts: NEA<Conflict>,
+) => RTE.ReaderTaskEither<Deps, Error, Solution>
 
 export const showConflict = ([localfile, { info, localpath }]: Conflict) =>
   `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${info[1].size} bytes)`
@@ -102,21 +103,21 @@ const lookForConflicts = (
   )
 }
 
-export const handleLocalFilesConflicts = ({ conflictsSolver }: {
-  // dstpath: string
-  conflictsSolver: ConflictsSolver
-  // downloader: DownloadICloudFiles
-}): (
+export const handleLocalFilesConflicts = <SolverDeps = {}>(
+  { conflictsSolver }: {
+    conflictsSolver: ConflictsSolver<SolverDeps>
+  },
+): (
   initialtask: DownloadTask,
 ) => RTE.ReaderTaskEither<
-  DepFs<'fstat'>,
+  DepFs<'fstat'> & SolverDeps,
   Error,
   DownloadTask & { initialTask: DownloadTask }
 > =>
   (initialtask: DownloadTask) => {
     return pipe(
       RTE.fromReaderTaskK(lookForConflicts)(initialtask),
-      RTE.chainW(flow(conflictsSolver, RTE.fromTaskEither)),
+      RTE.chainW(A.matchW(() => RTE.of([]), conflictsSolver)),
       RTE.chainFirstIOK(
         (solution) =>
           loggerIO.debug(
@@ -130,56 +131,83 @@ export const handleLocalFilesConflicts = ({ conflictsSolver }: {
   }
 
 const failOnConflicts: ConflictsSolver = (conflicts) =>
-  pipe(
-    conflicts,
-    A.match(
-      () => TE.of([]),
-      () => TE.left(err(`conflicts`)),
-    ),
-  )
+  () =>
+    pipe(
+      conflicts,
+      A.match(
+        () => TE.of([]),
+        () => TE.left(err(`conflicts`)),
+      ),
+    )
 const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
-  pipe(
-    conflicts,
-    A.map(c => [c, 'skip'] as const),
-    TE.of,
-  )
+  () =>
+    pipe(
+      conflicts,
+      A.map(c => [c, 'skip'] as const),
+      TE.of,
+    )
 const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
-  pipe(
-    conflicts,
-    A.map(c => [c, 'overwright'] as const),
-    TE.of,
-  )
+  () =>
+    pipe(
+      conflicts,
+      A.map(c => [c, 'overwright'] as const),
+      TE.of,
+    )
 const resolveConflictsRename: ConflictsSolver = (conflicts) =>
-  pipe(
-    conflicts,
-    A.map(([localfile, { info, localpath }]) =>
-      [[localfile, { info, localpath: localpath + '.new' }], 'overwright'] as const
-    ),
-    TE.of,
-  )
+  () =>
+    pipe(
+      conflicts,
+      A.map(([localfile, { info, localpath }]) =>
+        [[localfile, { info, localpath: localpath + '.new' }], 'overwright'] as const
+      ),
+      TE.of,
+    )
 
 const resolveConflictsOverwrightIfSizeDifferent = (
   skipRemotes = (f: T.DriveChildrenItemFile) => false,
 ): ConflictsSolver =>
   (conflicts) =>
-    pipe(
-      conflicts,
-      A.map(([localfile, { info, localpath }]) =>
-        localfile.stats.size !== info[1].size && !skipRemotes(info[1])
-          ? [[localfile, { info, localpath }], 'overwright' as SolutionAction] as const
-          : [[localfile, { info, localpath }], 'skip' as SolutionAction] as const
-      ),
-      TE.of,
-    )
+    () =>
+      pipe(
+        conflicts,
+        A.map(([localfile, { info, localpath }]) =>
+          localfile.stats.size !== info[1].size && !skipRemotes(info[1])
+            ? [[localfile, { info, localpath }], 'overwright' as SolutionAction] as const
+            : [[localfile, { info, localpath }], 'skip' as SolutionAction] as const
+        ),
+        TE.of,
+      )
 
-const resolveConflictsAsk: ConflictsSolver = (conflicts) =>
-  pipe(
-    conflicts,
-    A.map(([localfile, { info, localpath }]) =>
-      [[localfile, { info, localpath: localpath + '.new' }], 'overwright'] as const
+const resolveConflictsAskAll: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
+  return pipe(
+    RTE.ask<DepAskConfirmation>(),
+    RTE.chainTaskEitherK(({ askConfirmation }) =>
+      askConfirmation({
+        message: `overwright?\n${
+          pipe(
+            conflicts,
+            A.map(([a, b]) => a.path),
+            _ => _.join('\n'),
+          )
+        }`,
+      })
     ),
-    TE.of,
+    RTE.chainW(a => a ? resolveConflictsOverwrightAll(conflicts) : failOnConflicts(conflicts)),
   )
+}
+const resolveConflictsEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
+  return pipe(
+    RTE.ask<DepAskConfirmation>(),
+    RTE.chainTaskEitherK(({ askConfirmation }) =>
+      pipe(
+        conflicts,
+        A.map(([local, remote]) => askConfirmation({ message: `overwright ${local.path}` })),
+        TE.sequenceSeqArray,
+      )
+    ),
+    RTE.chainW(a => a ? resolveConflictsOverwrightAll(conflicts) : failOnConflicts(conflicts)),
+  )
+}
 
 export const solvers = {
   failOnConflicts,
@@ -187,5 +215,6 @@ export const solvers = {
   resolveConflictsOverwrightAll,
   resolveConflictsRename,
   resolveConflictsOverwrightIfSizeDifferent,
-  resolveConflictsAsk,
+  resolveConflictsAskAll,
+  resolveConflictsEvery,
 }

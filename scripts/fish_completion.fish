@@ -43,7 +43,7 @@ end
 
 complete -c idrive -e
 
-set -l idrive_commands ls cat mkdir upload uploads rm mv recover
+set -l idrive_commands ls cat mkdir upload uploads rm mv recover download
 
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a ls -d 'list'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a cat -d 'cat'
@@ -52,6 +52,7 @@ complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_comman
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a mv -d 'mv'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a upload -d 'upload'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a uploads -d 'uploads'
+complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a download -d 'download'
 
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a recover -d 'recover'
 
@@ -66,6 +67,8 @@ complete --no-files -c idrive -n "__fish_seen_subcommand_from cat" -a "(__fish_a
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mkdir" -a "(__fish_autocomplete_path -d)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from rm" -a "(__fish_autocomplete_path)"
+
+complete --no-files -c idrive -n "__fish_seen_subcommand_from download" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path -t)"
 

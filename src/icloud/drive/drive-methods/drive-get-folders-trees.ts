@@ -128,37 +128,37 @@ export const showTreeWithFiles = (
   )
 }
 
-export const flattenFolderTreeWithPath = <T extends T.Details>(
+export const flattenFolderTreeWithPath = (
   parentPath: string,
-  tree: FolderTree<T>,
-): [string, T.DetailsOrFile<T>][] => {
-  const name = T.fileName(tree.value.details)
-  const path = Path.join(parentPath, name) + '/'
+) =>
+  <T extends T.Details>(tree: FolderTree<T>): [string, T.DetailsOrFile<T>][] => {
+    const name = T.fileName(tree.value.details)
+    const path = Path.join(parentPath, name) + '/'
 
-  const subfiles = pipe(
-    tree.value.details.items,
-    A.filter(T.isFile),
-  )
+    const subfiles = pipe(
+      tree.value.details.items,
+      A.filter(T.isFile),
+    )
 
-  const zippedsubfiles = pipe(
-    subfiles,
-    A.map(T.fileName),
-    A.map(f => Path.join(path, f)),
-    A.zip(subfiles),
-  )
+    const zippedsubfiles = pipe(
+      subfiles,
+      A.map(T.fileName),
+      A.map(f => Path.join(path, f)),
+      A.zip(subfiles),
+    )
 
-  const subfolders = pipe(
-    tree.forest,
-    A.map(t => flattenFolderTreeWithPath(path, t)),
-    A.flatten,
-  )
+    const subfolders = pipe(
+      tree.forest,
+      A.map(flattenFolderTreeWithPath(path)),
+      A.flatten,
+    )
 
-  return [
-    [path, tree.value.details],
-    ...zippedsubfiles,
-    ...subfolders,
-  ]
-}
+    return [
+      [path, tree.value.details],
+      ...zippedsubfiles,
+      ...subfolders,
+    ]
+  }
 
 const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
   pipe(

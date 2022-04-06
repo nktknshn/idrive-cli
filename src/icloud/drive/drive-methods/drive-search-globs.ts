@@ -67,7 +67,8 @@ export const searchGlobs = (
               : [],
           tree =>
             pipe(
-              flattenFolderTreeWithPath(Path.dirname(scan.base), tree),
+              tree,
+              flattenFolderTreeWithPath(Path.dirname(scan.base)),
               A.filterMap(([path, item]) => {
                 if (scan.glob.length == 0) {
                   if (normalizePath(path) == normalizePath(globpattern)) {

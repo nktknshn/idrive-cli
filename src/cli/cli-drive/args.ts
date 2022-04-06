@@ -8,6 +8,17 @@ import { defaultCacheFile, defaultSessionFile } from '../../defaults'
 import { printer } from '../../util/logging'
 import { isKeyOf } from '../../util/util'
 
+type Commands = keyof typeof commands
+type CommonOptions = ReturnType<typeof commonOptions>['argv']
+
+type ReadArgvResult = (Commands extends infer K
+  ? K extends keyof typeof commands
+    ? (typeof commands)[K] extends <T>(argv: y.Argv<T>) => y.Argv<infer _Argv>
+      ? { command: K; argv: _Argv & CommonOptions }
+    : never
+  : never
+  : never)
+
 const commonOptions = <T>(y: y.Argv<T>) =>
   y.options({
     sessionFile: { alias: ['s', 'session'], default: defaultSessionFile },
@@ -95,6 +106,7 @@ const upload = <T>(y: y.Argv<T>) =>
           return true
         }),
   )
+
 const autocomplete = <T>(y: y.Argv<T>) =>
   y.command(
     'autocomplete <path>',
@@ -109,18 +121,20 @@ const autocomplete = <T>(y: y.Argv<T>) =>
         }),
   )
 
-// .command(
-//   'df <path> <dstpath>',
-//   'df',
-//   (_) =>
-//     _.positional('path', { type: 'string', demandOption: true })
-//       .positional('dstpath', { type: 'string', demandOption: true })
-//       .options({
-//         include: { default: [], type: 'string', array: false },
-//         exclude: { default: [], type: 'string', array: false },
-//         dry: { default: false, type: 'boolean' },
-//       }),
-// )
+const df = <T>(y: y.Argv<T>) =>
+  y.command(
+    'df <path> <dstpath>',
+    'df',
+    (_) =>
+      _.positional('path', { type: 'string', demandOption: true })
+        .positional('dstpath', { type: 'string', demandOption: true })
+        .options({
+          include: { default: [], type: 'string', array: false },
+          exclude: { default: [], type: 'string', array: false },
+          dry: { default: false, type: 'boolean' },
+        }),
+  )
+
 const uf = <T>(y: y.Argv<T>) =>
   y.command(
     'uf <localpath> <remotepath>',
@@ -140,7 +154,10 @@ const init = <T>(y: y.Argv<T>) =>
   y.command(
     'init',
     'init',
-    a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
+    a =>
+      a.options({
+        skipLogin: { default: false, type: 'boolean' },
+      }),
   )
 
 const edit = <T>(y: y.Argv<T>) =>
@@ -167,10 +184,8 @@ const commands = {
   mv,
   cat,
   rm,
+  df,
 }
-
-type Commands = keyof typeof commands
-type CommonOptions = ReturnType<typeof commonOptions>['argv']
 
 export const readArgv = (): ReadArgvResult => {
   const y = pipe(
@@ -194,13 +209,5 @@ export const readArgv = (): ReadArgvResult => {
     return {} as any
   }
 
-  return { command, argv } as any as ReadArgvResult
+  return { command, argv } as ReadArgvResult
 }
-
-export type ReadArgvResult = (Commands extends infer K
-  ? K extends keyof typeof commands
-    ? (typeof commands)[K] extends <T>(argv: y.Argv<T>) => y.Argv<infer _Argv>
-      ? { command: K; argv: _Argv & CommonOptions }
-    : never
-  : never
-  : never)
