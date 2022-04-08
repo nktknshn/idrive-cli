@@ -192,7 +192,7 @@ export const logReturn = <T>(logFunc: (value: T) => void) =>
 
 export const logReturnS = <T>(
   logFunc: (value: T) => string,
-  _logger = logger.debug,
+  _logger: (s: any) => void = logger.debug,
 ) =>
   (value: T): T => {
     _logger(logFunc(value))

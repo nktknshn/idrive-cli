@@ -36,7 +36,10 @@ const download = <T>(y: y.Argv<T>) =>
         .positional('dstpath', { type: 'string', demandOption: true })
         .options({
           dry: { default: false, type: 'boolean' },
-          raw: { default: true, type: 'boolean' },
+          include: { default: [], type: 'string', array: false },
+          exclude: { default: [], type: 'string', array: false },
+          recursive: { alias: ['R'], default: false, type: 'boolean' },
+          keepStructure: { alias: ['S'], default: false, type: 'boolean' },
         }),
   )
 
@@ -121,19 +124,19 @@ const autocomplete = <T>(y: y.Argv<T>) =>
         }),
   )
 
-const df = <T>(y: y.Argv<T>) =>
-  y.command(
-    'df <path> <dstpath>',
-    'df',
-    (_) =>
-      _.positional('path', { type: 'string', demandOption: true })
-        .positional('dstpath', { type: 'string', demandOption: true })
-        .options({
-          include: { default: [], type: 'string', array: false },
-          exclude: { default: [], type: 'string', array: false },
-          dry: { default: false, type: 'boolean' },
-        }),
-  )
+// const df = <T>(y: y.Argv<T>) =>
+//   y.command(
+//     'df <path> <dstpath>',
+//     'df',
+//     (_) =>
+//       _.positional('path', { type: 'string', demandOption: true })
+//         .positional('dstpath', { type: 'string', demandOption: true })
+//         .options({
+//           include: { default: [], type: 'string', array: false },
+//           exclude: { default: [], type: 'string', array: false },
+//           dry: { default: false, type: 'boolean' },
+//         }),
+//   )
 
 const uf = <T>(y: y.Argv<T>) =>
   y.command(
@@ -184,7 +187,6 @@ const commands = {
   mv,
   cat,
   rm,
-  df,
 }
 
 export const readArgv = (): ReadArgvResult => {

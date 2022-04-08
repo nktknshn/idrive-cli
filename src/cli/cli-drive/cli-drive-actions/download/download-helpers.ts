@@ -1,6 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constVoid, flow, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 // import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RT from 'fp-ts/lib/ReaderTask'
@@ -13,7 +13,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
 import { Api, Drive } from '../../../../icloud/drive'
-import { DepApi, DepFetchClient, DepFs } from '../../../../icloud/drive/deps'
+import { DepApi, DepAskConfirmation, DepFetchClient, DepFs } from '../../../../icloud/drive/deps'
 import { flattenFolderTreeWithPath, FolderTree } from '../../../../icloud/drive/drive-methods/drive-get-folders-trees'
 import { prependPath } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/types'
@@ -23,7 +23,7 @@ import { printerIO } from '../../../../util/logging'
 import { stripTrailingSlash } from '../../../../util/normalize-path'
 import { XXX } from '../../../../util/types'
 import { guardFst, guardFstRO, guardSnd, hasOwnProperty, isDefined, Path } from '../../../../util/util'
-import { handleLocalFilesConflicts, solvers } from './download-conflict'
+import { ConflictsSolver, handleLocalFilesConflicts, solvers } from './download-conflict'
 import {
   DownloadICloudFilesFunc,
   DownloadInfo,
@@ -129,15 +129,28 @@ export const getDirectoryStructure = (paths: string[]) => {
   )
 }
 
-export const filterFolderTree = (
-  { exclude, include }: { include: string[]; exclude: string[] },
-) =>
-  // (tree: FolderTree<T.DetailsDocwsRoot | T.NonRootDetails>): FilterTreeResult => {
-  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
-    console.log(
-      flatTree,
-    )
+type DefaultFunc = (opts: {
+  include: string[]
+  exclude: string[]
+}) => (files: [string, T.DriveChildrenItemFile]) => boolean
 
+const defaultFunc: DefaultFunc = ({ include, exclude }) =>
+  ([path, item]) =>
+    (include.length == 0 || micromatch.any(path, include, { dot: true }))
+    && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true }))
+
+export const filterFolderTree = (
+  {
+    exclude,
+    include,
+    func = defaultFunc({ exclude, include }),
+  }: {
+    include: string[]
+    exclude: string[]
+    func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+  },
+) =>
+  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
     const files = pipe(
       flatTree,
       A.filter(guardSnd(T.isFile)),
@@ -150,11 +163,7 @@ export const filterFolderTree = (
 
     const { left: excluded, right: valid } = pipe(
       files,
-      A.partition(
-        ([path, item]) =>
-          (include.length == 0 || micromatch.any(path, include, { dot: true }))
-          && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true })),
-      ),
+      A.partition(func),
     )
 
     const { left: downloadable, right: empties } = pipe(
@@ -177,32 +186,54 @@ export const filterFolderTree = (
     }
   }
 
-export const toDirMapper = (dstpath: string) =>
-  (ds: DownloadStructure): DownloadTask => {
+export const recursiveDirMapper = (
+  dstpath: string,
+  mapPath: (path: string) => string = identity,
+) =>
+  (
+    ds: DownloadStructure,
+  ): DownloadTask => {
     return {
-      downloadable: ds.downloadable.map(([remotepath, file]) => ({
-        info: [remotepath, file],
-        localpath: prependPath(dstpath)(remotepath),
-      })),
-      empties: ds.empties.map(([remotepath, file]) => ({
-        info: [remotepath, file],
-        localpath: prependPath(dstpath)(remotepath),
-      })),
-      localdirstruct: [dstpath, ...ds.dirstruct.map(prependPath(dstpath))],
+      downloadable: ds.downloadable
+        .map(([remotepath, file]) => ({
+          info: [remotepath, file],
+          localpath: prependPath(dstpath)(mapPath(remotepath)),
+        })),
+      empties: ds.empties
+        .map(([remotepath, file]) => ({
+          info: [remotepath, file],
+          localpath: prependPath(dstpath)(mapPath(remotepath)),
+        })),
+      localdirstruct: [
+        dstpath,
+        ...ds.dirstruct
+          .map(prependPath(mapPath(dstpath))),
+      ],
     }
   }
 
-export const basicDownloadTask = (toDirMapper: (ds: DownloadStructure) => DownloadTask) =>
-  (ds: DownloadStructure) => {
-    const task = toDirMapper(ds)
-
-    return handleLocalFilesConflicts({
-      // conflictsSolver: resolveConflictsRename,
-      // conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
-      //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
-      // ),
-      conflictsSolver: solvers.resolveConflictsAskAll,
-    })(task)
+export const createDownloadTask = <SolverDeps>(
+  deps: {
+    conflictsSolver: ConflictsSolver<SolverDeps>
+    toDirMapper: (ds: DownloadStructure) => DownloadTask
+  },
+) =>
+  (ds: DownloadStructure): RTE.ReaderTaskEither<
+    DepFs<'fstat'> & SolverDeps,
+    Error,
+    DownloadTask & { initialTask: DownloadTask }
+  > => {
+    return pipe(
+      deps.toDirMapper(ds),
+      handleLocalFilesConflicts({
+        // conflictsSolver: resolveConflictsRename,
+        // conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
+        //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
+        // ),
+        conflictsSolver: deps.conflictsSolver,
+        //  solvers.resolveConflictsAskEvery,
+      }),
+    )
   }
 
 export const createEmpties = ({ empties }: DownloadTask) =>

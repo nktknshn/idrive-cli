@@ -1,11 +1,9 @@
 import * as E from 'fp-ts/Either'
 import * as A from 'fp-ts/lib/Array'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as RT from 'fp-ts/lib/ReaderTask'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as TE from 'fp-ts/lib/TaskEither'
-import * as TR from 'fp-ts/lib/Tree'
 import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import * as Task from 'fp-ts/Task'
@@ -14,14 +12,14 @@ import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../util/errors'
 import { loggerIO } from '../../../../util/loggerIO'
 import { NEA } from '../../../../util/types'
-import { guardSndRO, Path } from '../../../../util/util'
+import { Path } from '../../../../util/util'
 import { DownloadInfo, DownloadTask } from './types'
 import { LocalTreeElement } from './walkdir'
 
 export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpath: string }]
 
 export type SolutionAction = 'skip' | 'overwright'
-export type Solution = (readonly [Conflict, SolutionAction])[]
+export type Solution = readonly (readonly [Conflict, SolutionAction])[]
 
 export type ConflictsSolver<Deps = {}> = (
   conflicts: NEA<Conflict>,
@@ -44,7 +42,7 @@ const applySoultion = (
     }) =>
       pipe(
         solution,
-        A.findFirstMap(
+        RA.findFirstMap(
           ([[localfile, { info, localpath }], action]) =>
             info[1].drivewsid === d.info[1].drivewsid ? O.some([{ info, localpath }, action] as const) : O.none,
         ),
@@ -139,6 +137,7 @@ const failOnConflicts: ConflictsSolver = (conflicts) =>
         () => TE.left(err(`conflicts`)),
       ),
     )
+
 const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
@@ -146,6 +145,7 @@ const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
       A.map(c => [c, 'skip'] as const),
       TE.of,
     )
+
 const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
@@ -153,6 +153,7 @@ const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
       A.map(c => [c, 'overwright'] as const),
       TE.of,
     )
+
 const resolveConflictsRename: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
@@ -195,7 +196,7 @@ const resolveConflictsAskAll: ConflictsSolver<DepAskConfirmation> = (conflicts) 
     RTE.chainW(a => a ? resolveConflictsOverwrightAll(conflicts) : failOnConflicts(conflicts)),
   )
 }
-const resolveConflictsEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
+const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
   return pipe(
     RTE.ask<DepAskConfirmation>(),
     RTE.chainTaskEitherK(({ askConfirmation }) =>
@@ -205,7 +206,13 @@ const resolveConflictsEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) =
         TE.sequenceSeqArray,
       )
     ),
-    RTE.chainW(a => a ? resolveConflictsOverwrightAll(conflicts) : failOnConflicts(conflicts)),
+    RTE.map(RA.zip(conflicts)),
+    RTE.map(RA.map(
+      ([ov, conflict]) =>
+        ov
+          ? [conflict, 'overwright']
+          : [conflict, 'skip'],
+    )),
   )
 }
 
@@ -216,5 +223,5 @@ export const solvers = {
   resolveConflictsRename,
   resolveConflictsOverwrightIfSizeDifferent,
   resolveConflictsAskAll,
-  resolveConflictsEvery,
+  resolveConflictsAskEvery,
 }

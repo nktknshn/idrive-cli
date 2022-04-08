@@ -22,7 +22,6 @@ const cliActions = {
   recover: Action.recover,
   download: Action.download,
   edit: Action.edit,
-  df: Action.downloadFolder,
   uf: Action.uploadFolder,
   init: SRTE.fromReaderTaskEitherK(Action.initSession),
 }

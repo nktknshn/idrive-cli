@@ -16,13 +16,14 @@ import { printer, printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { XXX } from '../../../util/types'
 import { guardFst, Path } from '../../../util/util'
+import { solvers } from './download/download-conflict'
 import {
-  basicDownloadTask,
   createDirsList,
+  createDownloadTask as createDownloadTask,
   createEmpties,
   downloadICloudFilesChunked,
   filterFolderTree,
-  toDirMapper,
+  recursiveDirMapper,
 } from './download/download-helpers'
 import { CreateDownloadTask, DownloadTask } from './download/types'
 
@@ -30,9 +31,10 @@ type Argv = {
   path: string
   dstpath: string
   dry: boolean
+  recursive: boolean
   include: string[]
   exclude: string[]
-  // silent: boolean
+  keepStructure: boolean
 }
 
 // & SchemaEnv
@@ -46,60 +48,85 @@ type Deps =
     'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'
   >
 
-export const downloadFolder = (argv: Argv): XXX<Drive.State, Deps, string> => {
-  return _downloadFolder(
-    argv,
-    Infinity,
-    basicDownloadTask(toDirMapper(argv.dstpath)),
-  )
+export const download = (argv: Argv): XXX<Drive.State, Deps, string> => {
+  if (argv.recursive) {
+    return downloadRecursive(argv)
+  }
+  else {
+    return downloadShallow(argv)
+  }
 }
 
-export const download = (
-  { path, dry, dstpath }: {
-    path: string
-    dstpath: string
-    raw: boolean
-    dry: boolean
-  },
+type ShallowArgs = {
+  path: string
+  dstpath: string
+  dry: boolean
+}
+
+/** download file of files from a directory */
+const downloadShallow = (
+  { path, dry, dstpath }: ShallowArgs,
 ): XXX<Drive.State, Deps, string> => {
-  const globInput = {
-    path: micromatch.scan(path).base,
-    dstpath,
-    dry,
-    exclude: [],
-    include: [
-      '/' + Path.join(
-        Path.basename(micromatch.scan(path).base),
-        micromatch.scan(path).glob,
-      ),
-    ],
-  }
-
-  const basicInput = {
-    path: Path.dirname(path),
-    dstpath,
-    dry,
-    exclude: [],
-    include: [
-      path,
-    ],
-  }
-
   return pipe(
     _downloadFolder(
-      micromatch.scan(path).isGlob ? globInput : basicInput,
+      {
+        path: Path.dirname(path),
+        dstpath,
+        exclude: [],
+        include: [path],
+        keepStructure: false,
+        dry,
+      },
       0,
-      basicDownloadTask((ds) => ({
-        downloadable: ds.downloadable.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
-        empties: ds.empties.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
-        localdirstruct: [dstpath],
-      })),
+      createDownloadTask({
+        conflictsSolver: solvers.resolveConflictsAskEvery,
+        // solvers.resolveConflictsOverwrightIfSizeDifferent(
+        //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
+        // ),
+        toDirMapper: (ds) => ({
+          downloadable: ds.downloadable.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
+          empties: ds.empties.map(info => ({ info, localpath: Path.join(dstpath, Path.basename(info[0])) })),
+          localdirstruct: [dstpath],
+        }),
+      }),
     ),
   )
 }
 
+type RecursiveArgv = {
+  path: string
+  dstpath: string
+  dry: boolean
+  include: string[]
+  exclude: string[]
+  keepStructure: boolean
+  // silent: boolean
+}
+
+/** recursively download files */
+const downloadRecursive = (argv: RecursiveArgv): XXX<Drive.State, Deps, string> => {
+  const dirname = Path.dirname(micromatch.scan(argv.path).base)
+
+  return _downloadFolder(
+    argv,
+    Infinity,
+    createDownloadTask({
+      conflictsSolver: cfs =>
+        cfs.length > 10
+          ? solvers.resolveConflictsAskAll(cfs)
+          : solvers.resolveConflictsAskEvery(cfs),
+      toDirMapper: argv.keepStructure
+        ? recursiveDirMapper(argv.dstpath)
+        : recursiveDirMapper(
+          argv.dstpath,
+          p => p.substring(dirname.length),
+        ),
+    }),
+  )
+}
+
 const _downloadFolder = <R>(
-  { path, dstpath, dry, exclude, include }: Argv,
+  { path, dstpath, dry, exclude, include, keepStructure }: RecursiveArgv,
   depth = Infinity,
   createDownloadTask: CreateDownloadTask<R>,
 ): XXX<Drive.State, Deps & R, string> => {
@@ -114,7 +141,7 @@ const _downloadFolder = <R>(
   }
 
   printer.print(
-    { path, dstpath, dry, exclude, include },
+    { path, dstpath, dry, exclude, include, keepStructure },
   )
 
   const getDownloadTask = pipe(
@@ -130,16 +157,6 @@ const _downloadFolder = <R>(
     SRTE.map(filterFolderTree(
       { include, exclude },
     )),
-    SRTE.chainFirstIOK(
-      (task) =>
-        () => {
-          if (verbose) {
-            printer.print(
-              `excluded: \n${task.excluded.map(_ => _[0]).join('\n')}\n`,
-            )
-          }
-        },
-    ),
     SRTE.chainW(ds =>
       SRTE.fromReaderTaskEither(
         createDownloadTask(ds),
