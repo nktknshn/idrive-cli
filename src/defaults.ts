@@ -1,6 +1,6 @@
 import { ClientInfo } from './icloud/session/types'
 import { fetchClient, FetchError } from './util/http/fetch-client'
-import { input } from './util/input'
+import { input } from './util/prompts'
 
 export const defaultApiEnv = {
   catchFetchErrorsRetries: 3,
@@ -9,13 +9,15 @@ export const defaultApiEnv = {
   catchFetchErrorsRetryDelay: 200,
   isFetchError: FetchError.is,
   fetchClient,
-  getCode: () => input({ prompt: 'code: ' }),
+  getCode: () => input({ message: 'code: ' }),
 }
 
 export const defaultFileEditor = 'vim'
 export const defaultTempDir = '/tmp/'
 export const defaultSessionFile = 'data/last-session.json'
 export const defaultCacheFile = 'data/cli-drive-cache.json'
+
+export const defaultDownloadChunkSize = 5
 
 export const defaultCountryCode = 'RUS'
 export const defaultClientInfo: ClientInfo = {

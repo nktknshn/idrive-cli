@@ -4,7 +4,7 @@ import * as Drive from '../../../icloud/drive/drive'
 import { fileName, fileNameAddSlash } from '../../../icloud/drive/types'
 import { logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
-import { Path } from '../../../util/util'
+import { Path } from '../../../util/path'
 
 export const autocomplete = ({ path, trash, file, dir, cached }: {
   path: string

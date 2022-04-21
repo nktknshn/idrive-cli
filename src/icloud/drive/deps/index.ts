@@ -1,10 +1,8 @@
-export * as Api from './api-methods'
-export { ApiType } from './api-type'
-
 import * as TE from 'fp-ts/TaskEither'
 import { FsType } from '../../../util/fs'
 import { FetchClientEither } from '../../../util/http/fetch-client'
 import { ApiType } from './api-type'
+export * as Api from './api-methods'
 
 export type DepFetchClient = { fetchClient: FetchClientEither }
 // export type DepChildProcess = { spawn: FetchClientEither }

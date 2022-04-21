@@ -52,7 +52,7 @@ export const defaultApiSchema = {
   ...wrapRequests(RQ)(authorized),
   ...wrapRequests({ updateDocuments: RQ.updateDocuments })(handle409),
   ...wrapRequests({ authorizeSession })(basic),
-} as const
+}
 
 export const defaultApiCreator: ApiCreator<CatchFetchEnv & CatchSessEnv & AuthorizeEnv> = seqs(
   defaultApiSchema,

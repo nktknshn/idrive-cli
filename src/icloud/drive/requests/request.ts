@@ -20,12 +20,15 @@ import { apiLogger, logg } from '../../../util/logging'
 import { AccountData } from '../../authorization/types'
 import { ICloudSession } from '../../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
+
 export type BasicState = {
   session: ICloudSession
 }
+
 export type AuthorizedState = BasicState & {
   accountData: AccountData
 }
+
 export type AuthorizedRequest<A, S = AuthorizedState, R = RequestEnv> = ApiRequest<A, S, R>
 
 export type RequestEnv = {

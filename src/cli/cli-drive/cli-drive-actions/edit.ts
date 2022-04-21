@@ -13,14 +13,14 @@ import { DepApi, DepFetchClient, DepFs } from '../../../icloud/drive/deps'
 import { isFile } from '../../../icloud/drive/types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
-import { Path } from '../../../util/util'
+import { Path } from '../../../util/path'
 import { writeFileFromReadable } from './download/download-helpers'
-import { singleFileUpload, UploadActionDeps } from './upload'
+import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 
 type Deps =
   & Drive.Deps
   & DepApi<'download'>
-  & UploadActionDeps
+  & UploadDeps
   & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient
   & { fileEditor: string }
@@ -90,7 +90,7 @@ export const edit = (
           (s) => SRTE.fromTask(spawnVim(s)),
         ),
         SRTE.chainW(({ signal, tempFile }) => {
-          return singleFileUpload({
+          return uploadSingleFile({
             overwright: true,
             srcpath: tempFile,
             dstpath: npath,

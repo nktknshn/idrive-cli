@@ -14,8 +14,8 @@ import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/path'
 import { XXX } from '../../../util/types'
-import { Path } from '../../../util/util'
 import { walkDirRel } from './download/walkdir'
 import {
   createRemoteDirStructure,
@@ -35,7 +35,7 @@ type Argv = {
   chunkSize: number
 }
 
-type Deps =
+export type Deps =
   & Drive.Deps
   & DepApi<'renameItems'>
   & DepApi<'createFolders'>

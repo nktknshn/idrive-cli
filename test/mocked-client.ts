@@ -3,7 +3,7 @@ import * as E from 'fp-ts/Either'
 import { apply, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
 import { retrieveHierarchy } from '../src/icloud/drive/requests/retrieveHierarchy'
-import { FetchClientEither, FetchError, HttpRequest, HttpResponse } from '../src/lib/http/fetch-client'
+import { FetchClientEither, FetchError, HttpRequest, HttpResponse } from '../src/util/http/fetch-client'
 import { retrieveHierarchy1, validAccountdata, validSession } from './fixtures'
 
 export interface Responses {

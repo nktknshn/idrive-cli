@@ -1,3 +1,4 @@
+import * as E from 'fp-ts/Either'
 import * as A from 'fp-ts/lib/Array'
 import { Eq } from 'fp-ts/lib/Eq'
 import { flow, identity, pipe } from 'fp-ts/lib/function'
@@ -7,8 +8,6 @@ import { normalizePath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
 import * as T from '../types'
 
-export const tail = <R>([, ...tail]: Hierarchy<R>) => tail
-export const root = <R>([root]: Hierarchy<R>) => root
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]
 
 export type PathValid<R> = {
@@ -27,7 +26,6 @@ export type PathInvalid<R> = {
   valid: false
   details: Hierarchy<R>
   rest: NEA<string>
-
   error: Error
 }
 
@@ -36,6 +34,9 @@ export type PathValidation<R> =
   | PathInvalid<R>
 
 export type GetByPathResult<R extends T.Root> = PathValidation<R>
+
+export const tail = <R>([, ...tail]: Hierarchy<R>) => tail
+export const root = <R>([root]: Hierarchy<R>) => root
 
 export const pathTarget = <R extends T.Root>(
   res: PathValid<R>,
@@ -84,7 +85,7 @@ export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>) => {
   return `invalid (${p.error.message}). valid part ${p.details.map(T.fileName)}, rest: ${p.rest}`
 }
 
-export const asString = <R extends T.Root>(result: PathValid<R>) => {
+export const validAsString = <R extends T.Root>(result: PathValid<R>) => {
   return normalizePath(
     [
       ...result.details.map(T.fileName),
@@ -92,6 +93,7 @@ export const asString = <R extends T.Root>(result: PathValid<R>) => {
     ].join('/'),
   )
 }
+
 export const concat = <R>(h: Hierarchy<R>, details: NEA<T.Details>): Hierarchy<R> => [...h, ...details] as Hierarchy<R>
 
 export const eq = <R extends T.Root>(): Eq<Hierarchy<R>> => ({
@@ -124,7 +126,6 @@ export const isSameDetails = (a: T.Details, b: T.Details) => {
 
   return true
 }
-import * as E from 'fp-ts/Either'
 
 export const asEither = <R extends T.Root, E>(
   onLeft: (path: PathInvalid<R>) => E,

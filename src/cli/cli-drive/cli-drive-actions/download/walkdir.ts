@@ -6,7 +6,7 @@ import * as TR from 'fp-ts/lib/Tree'
 import { Stats } from 'fs'
 import { DepFs } from '../../../../icloud/drive/deps'
 import { stripTrailingSlash } from '../../../../util/normalize-path'
-import { Path } from '../../../../util/util'
+import { Path } from '../../../../util/path'
 
 export type LocalTreeElement =
   | {

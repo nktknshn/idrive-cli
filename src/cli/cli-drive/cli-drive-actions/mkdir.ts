@@ -9,8 +9,8 @@ import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/path'
 import { XXX } from '../../../util/types'
-import { Path } from '../../../util/util'
 import { showDetailsInfo } from './ls/ls-printing'
 
 type Deps = Drive.Deps & DepApi<'createFolders'>
@@ -42,23 +42,18 @@ export const mkdir = (
         A.matchLeft(
           () => SRTE.left(err(`createFolders returned empty result`)),
           (head) =>
-            Drive.retrieveItemDetailsInFoldersSaving([
+            Drive.retrieveItemDetailsInFoldersSavingStrict([
               head.drivewsid,
               parent.drivewsid,
             ]),
         ),
       )
     ),
-    SRTE.map(flow(NA.head)),
-    SRTE.map(
-      O.fold(
-        () => `missing created folder`,
-        d =>
-          showDetailsInfo(d)({
-            fullPath: false,
-            path: '',
-          }),
-      ),
+    SRTE.map(NA.head),
+    SRTE.map(d =>
+      showDetailsInfo(d, '')({
+        fullPath: false,
+      })
     ),
   )
 }

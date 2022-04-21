@@ -21,8 +21,9 @@ import { normalizePath } from '../../../../util/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls-printing'
 
 export const shallowList = (
-  { paths, raw, fullPath, listInfo, trash, etag, cached, header, glob }: {
-    paths: NA.NonEmptyArray<string>
+  paths: NA.NonEmptyArray<string>,
+) =>
+  (args: {
     fullPath: boolean
     listInfo: boolean
     trash: boolean
@@ -31,46 +32,46 @@ export const shallowList = (
     cached: boolean
     etag: boolean
     header: boolean
-  },
-) => {
-  assert(A.isNonEmpty(paths))
+  }) => {
+    assert(A.isNonEmpty(paths))
 
-  const opts = { showDocwsid: false, showDrivewsid: listInfo, showEtag: etag, showHeader: header }
+    const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
 
-  // const npaths = NA.map(normalizePath)(paths)
-  const scanned = pipe(paths, NA.map(micromatch.scan))
-  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+    // const npaths = NA.map(normalizePath)(paths)
+    const scanned = pipe(paths, NA.map(micromatch.scan))
+    const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
-  return pipe(
-    // Drive.searchGlobs(paths as NEA<string>),
-    Drive.getCachedRoot(trash),
-    SRTE.chain(root =>
-      cached
-        ? Drive.getByPathsFromCache(root, basepaths)
-        : Drive.getByPaths(root, basepaths)
-    ),
-    SRTE.map(NA.zip(scanned)),
-    SRTE.map(NA.map(([path, scan]) =>
-      isValidPath(path)
-        ? showValid(path, scan)({
-          ...opts,
-          path: scan.input,
-          printFolderInfo: true,
-          fullPath,
-        })
-        : showInvalid(path)
-    )),
-    SRTE.map(NA.zip(scanned)),
-    SRTE.map(res =>
-      res.length == 1
-        ? [NA.head(res[0])]
-        : pipe(res, NA.map(([output, { input }]) => `${input}:\n${output}`))
-    ),
-    SRTE.map(_ => _.join('\n\n')),
-  )
-}
+    return pipe(
+      // Drive.searchGlobs(paths as NEA<string>),
+      Drive.getCachedRoot(args.trash),
+      SRTE.chain(root =>
+        args.cached
+          ? Drive.getByPathsFromCache(root, basepaths)
+          : Drive.getByPaths(root, basepaths)
+      ),
+      SRTE.map(NA.zip(scanned)),
+      SRTE.map(NA.map(([path, scan]) =>
+        isValidPath(path)
+          ? showValidPath(path, scan)({ ...args, ...opts })
+          : // ({
+          //   ...opts,
+          //   path: scan.input,
+          //   printFolderInfo: true,
+          //   fullPath,
+          // })
+            showInvalid(path)
+      )),
+      SRTE.map(NA.zip(scanned)),
+      SRTE.map(res =>
+        res.length == 1
+          ? [NA.head(res[0])]
+          : pipe(res, NA.map(([output, { input }]) => `${input}:\n${output}`))
+      ),
+      SRTE.map(_ => _.join('\n\n')),
+    )
+  }
 
-const showValid = (path: PathValid<T.Root>, scan: micromatch.ScanInfo) => {
+const showValidPath = (path: PathValid<T.Root>, scan: micromatch.ScanInfo) => {
   const t = pathTarget(path)
 
   if (T.isFile(t)) {
@@ -85,11 +86,7 @@ const showValid = (path: PathValid<T.Root>, scan: micromatch.ScanInfo) => {
     )
   }
 
-  return showDetailsInfo({
-    ...t,
-    items,
-  })
-  // ({ path: scan.base, fullPath, printFolderInfo: true, ...opts })
+  return showDetailsInfo({ ...t, items }, scan.input)
 }
 
 const showInvalid = (path: PathInvalid<T.Root>) => {

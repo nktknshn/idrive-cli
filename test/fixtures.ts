@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option'
-import { ICloudSessionValidated } from '../src/icloud/authorization/authorize'
-import { AccountLoginResponseBody } from '../src/icloud/authorization/types'
+import { AccountData } from '../src/icloud/authorization/types'
+import { AuthorizedState } from '../src/icloud/drive/requests/request'
 import { ICloudSession } from '../src/icloud/session/session'
 
 export const validSession: ICloudSession = {
@@ -15,7 +15,7 @@ export const validSession: ICloudSession = {
   trustToken: O.some('trustToken'),
 }
 
-export const validAccountdata: AccountLoginResponseBody = {
+export const validAccountdata: AccountData = {
   'dsInfo': {
     'lastName': 'Lastname',
     'iCDPEnabled': false,
@@ -154,7 +154,7 @@ export const validAccountdata: AccountLoginResponseBody = {
   },
 }
 
-export const validatedSession: ICloudSessionValidated = {
+export const authorizedState: AuthorizedState = {
   session: validSession,
   accountData: validAccountdata,
 }

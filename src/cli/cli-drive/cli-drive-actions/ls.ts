@@ -35,8 +35,7 @@ export const listUnixPath = (
     return recursivels({ paths, depth, tree, cached })
   }
 
-  return shallowList({
-    paths,
+  return shallowList(paths)({
     raw,
     fullPath,
     listInfo,

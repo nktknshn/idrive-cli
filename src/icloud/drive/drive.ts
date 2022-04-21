@@ -147,7 +147,7 @@ export function retrieveItemDetailsInFoldersSaving(
 
 /** fails if some of the ids were not found */
 export function retrieveItemDetailsInFoldersSavingStrict(
-  drivewsids: NEA<T.NonRootDrivewsid>,
+  drivewsids: NEA<string>,
 ): Effect<NEA<T.NonRootDetails>>
 export function retrieveItemDetailsInFoldersSavingStrict(
   drivewsids: NEA<string>,

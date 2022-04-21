@@ -11,8 +11,8 @@ import {
   treeWithFiles,
 } from '../../../../icloud/drive/drive-methods/drive-get-folders-trees'
 import { normalizePath } from '../../../../util/normalize-path'
+import { Path } from '../../../../util/path'
 import { filterTree } from '../../../../util/tree'
-import { Path } from '../../../../util/util'
 
 export const recursivels = ({ paths, depth, tree, cached }: {
   paths: NA.NonEmptyArray<string>

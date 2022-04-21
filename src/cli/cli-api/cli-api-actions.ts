@@ -1,5 +1,5 @@
 import { hole, pipe } from 'fp-ts/lib/function'
-import { parseName } from '../../icloud/drive/helpers'
+import { parseFilename } from '../../icloud/drive/helpers'
 import * as RQ from '../../icloud/drive/requests'
 import { apiActionM } from '../api-action'
 
@@ -34,7 +34,7 @@ export const rename = (argv: {
       pipe(
         RQ.renameItems({
           items: [
-            { drivewsid: argv.drivewsid, ...parseName(argv.name), etag: argv.etag },
+            { drivewsid: argv.drivewsid, ...parseFilename(argv.name), etag: argv.etag },
           ],
         }),
       ),

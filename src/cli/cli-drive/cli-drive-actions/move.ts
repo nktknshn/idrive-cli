@@ -4,7 +4,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Api, Drive } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
 import { DepApi } from '../../../icloud/drive/deps'
-import { parseName } from '../../../icloud/drive/helpers'
+import { parseFilename } from '../../../icloud/drive/helpers'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/requests'
 import * as T from '../../../icloud/drive/types'
 import { err } from '../../../util/errors'
@@ -99,7 +99,7 @@ const caseRename = (
 ): Drive.Action<Deps, RenameResponse> => {
   return Api.renameItems({
     items: [
-      { drivewsid: srcitem.drivewsid, ...parseName(name), etag: srcitem.etag },
+      { drivewsid: srcitem.drivewsid, ...parseFilename(name), etag: srcitem.etag },
     ],
   })
 }
@@ -119,7 +119,7 @@ const caseMoveAndRename = (
     SRTE.chainW(() =>
       Api.renameItems({
         items: [
-          { drivewsid: src.drivewsid, ...parseName(name), etag: src.etag },
+          { drivewsid: src.drivewsid, ...parseFilename(name), etag: src.etag },
         ],
       })
     ),

@@ -12,18 +12,18 @@ import { Eq } from 'fp-ts/lib/string'
 import * as TE from 'fp-ts/lib/TaskEither'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
-import { Api, Drive } from '../../../../icloud/drive'
-import { DepApi, DepAskConfirmation, DepFetchClient, DepFs } from '../../../../icloud/drive/deps'
-import { flattenFolderTreeWithPath, FolderTree } from '../../../../icloud/drive/drive-methods/drive-get-folders-trees'
+import { Api, DepApi, DepFetchClient, DepFs, Drive } from '../../../../icloud/drive'
 import { prependPath } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../util/errors'
+import { guardFstRO, guardSnd, isDefined } from '../../../../util/guards'
 import { loggerIO } from '../../../../util/loggerIO'
 import { printerIO } from '../../../../util/logging'
 import { stripTrailingSlash } from '../../../../util/normalize-path'
+import { Path } from '../../../../util/path'
 import { XXX } from '../../../../util/types'
-import { guardFst, guardFstRO, guardSnd, hasOwnProperty, isDefined, Path } from '../../../../util/util'
-import { ConflictsSolver, handleLocalFilesConflicts, solvers } from './download-conflict'
+import { hasOwnProperty } from '../../../../util/util'
+import { ConflictsSolver, handleLocalFilesConflicts } from './download-conflict'
 import {
   DownloadICloudFilesFunc,
   DownloadInfo,
@@ -62,8 +62,8 @@ export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'create
     RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
   )
 
-export const downloadUrlsPar = (
-  urlDest: Array<readonly [url: string, dest: string]>,
+const downloadUrlsPar = (
+  urlDest: Array<readonly [url: string, localpath: string]>,
 ): RT.ReaderTask<
   DepFetchClient & DepFs<'createWriteStream'>,
   [E.Either<Error, void>, readonly [string, string]][]
@@ -76,17 +76,7 @@ export const downloadUrlsPar = (
   )
 }
 
-export const createEmptyFiles = (paths: string[]): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, unknown[]> => {
-  return ({ fs: { writeFile } }) =>
-    pipe(
-      paths,
-      // A.map(p => Path.join(dstpath, p)),
-      A.map(path => writeFile(path, '')),
-      A.sequence(TE.ApplicativePar),
-    )
-}
-
-export const createDirsList = (
+export const createDirStruct = (
   dirs: string[],
 ): RTE.ReaderTaskEither<DepFs<'mkdir'>, Error, void> =>
   ({ fs: { mkdir: mkdirTask } }) => {
@@ -139,18 +129,16 @@ const defaultFunc: DefaultFunc = ({ include, exclude }) =>
     (include.length == 0 || micromatch.any(path, include, { dot: true }))
     && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true }))
 
-export const filterFolderTree = (
-  {
-    exclude,
-    include,
-    func = defaultFunc({ exclude, include }),
-  }: {
-    include: string[]
-    exclude: string[]
-    func?: (files: [string, T.DriveChildrenItemFile]) => boolean
-  },
-) =>
-  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
+const filterFlatTree = ({
+  exclude,
+  include,
+  func = defaultFunc({ exclude, include }),
+}: {
+  include: string[]
+  exclude: string[]
+  func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+}) =>
+  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]) => {
     const files = pipe(
       flatTree,
       A.filter(guardSnd(T.isFile)),
@@ -161,13 +149,28 @@ export const filterFolderTree = (
       A.filter(guardSnd(T.isFolderLike)),
     )
 
-    const { left: excluded, right: valid } = pipe(
+    const { left: excluded, right: validFiles } = pipe(
       files,
       A.partition(func),
     )
 
+    return {
+      files: validFiles,
+      folders,
+      excluded,
+    }
+  }
+
+export const filterFlattenFolderTree = (opts: {
+  include: string[]
+  exclude: string[]
+  func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+}) =>
+  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
+    const { excluded, files, folders } = filterFlatTree(opts)(flatTree)
+
     const { left: downloadable, right: empties } = pipe(
-      valid,
+      files,
       A.partition(([, file]) => file.size == 0),
     )
 
@@ -190,9 +193,7 @@ export const recursiveDirMapper = (
   dstpath: string,
   mapPath: (path: string) => string = identity,
 ) =>
-  (
-    ds: DownloadStructure,
-  ): DownloadTask => {
+  (ds: DownloadStructure): DownloadTask => {
     return {
       downloadable: ds.downloadable
         .map(([remotepath, file]) => ({
@@ -207,7 +208,7 @@ export const recursiveDirMapper = (
       localdirstruct: [
         dstpath,
         ...ds.dirstruct
-          .map(prependPath(mapPath(dstpath))),
+          .map(p => prependPath(dstpath)(mapPath(p))),
       ],
     }
   }
@@ -236,13 +237,29 @@ export const createDownloadTask = <SolverDeps>(
     )
   }
 
-export const createEmpties = ({ empties }: DownloadTask) =>
+const createEmptyFiles = (paths: string[]): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, unknown[]> => {
+  return ({ fs: { writeFile } }) =>
+    pipe(
+      paths,
+      A.map(path => writeFile(path, '')),
+      A.sequence(TE.ApplicativePar),
+    )
+}
+
+export const createEmpties = ({ empties }: DownloadTask): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
   pipe(
     empties.length > 0
       ? pipe(
-        loggerIO.debug(`creating empty ${empties.length} files`),
-        RTE.fromIO,
-        RTE.chain(() => createEmptyFiles(empties.map(_ => _.localpath))),
+        RTE.ask<DepFs<'writeFile'>>(),
+        RTE.chainFirstIOK(() => loggerIO.debug(`creating empty ${empties.length} files`)),
+        RTE.chainW(({ fs: { writeFile } }) =>
+          pipe(
+            empties.map(_ => _.localpath),
+            A.map(path => writeFile(path, '')),
+            A.sequence(TE.ApplicativePar),
+            RTE.fromTaskEither,
+          )
+        ),
         RTE.map(constVoid),
       )
       : RTE.of(constVoid()),
@@ -260,7 +277,7 @@ export const downloadICloudFilesChunked = (
     )
   }
 
-export const splitIntoChunks = (
+const splitIntoChunks = (
   files: { info: DownloadInfo; localpath: string }[],
   chunkSize = 5,
 ): NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>[] => {
@@ -278,7 +295,7 @@ export const splitIntoChunks = (
   return filesChunks
 }
 
-export const downloadChunkPar = (
+const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
 ): XXX<
   Drive.State,

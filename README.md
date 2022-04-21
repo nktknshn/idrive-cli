@@ -46,6 +46,7 @@ Initializes new session.
 `idrive init -s myicloud.json`
 
 `idrive init --skipLogin`
+
 Do not login, just create the session file.
 
 ### ls
@@ -53,6 +54,7 @@ Do not login, just create the session file.
 List files in folders. Supports globs
 
 `idrive ls '/Obsidian/my1/'`
+
 `idrive ls '/Obsidian/my1/*.md'`
 
 List files
@@ -73,13 +75,17 @@ Multiple paths
 
 Output result as a tree
 
-`idrive ls -R --cached`
+<!-- `idrive ls -R --cached`
 
-???
+??? -->
 
 `idrive ls -t`
 
 list trash
+
+`idrive ls -t -R`
+
+???
 
 ### rm [paths..]
 
@@ -89,7 +95,11 @@ Removes files and folders. Supports globs. By default moves files to the trash
 
 Multiple paths
 
-`idrive ls -R '/Obsidian/my1/**/*.md'`
+`idrive rm -R '/Obsidian/my1/**/*.md'`
+
+Use recursive flag for the globstar pattern
+
+`idrive rm -R '/Obsidian/my1/**/*.md' --dry`
 
 Use recursive flag for the globstar pattern
 
@@ -133,6 +143,19 @@ Creates a folder
 
 ### edit
 
+### upload 
+
+`upload ~/Documents/note1.md /Obsidian/my1/notes/`
+
+`upload ~/Documents/note1.md /Obsidian/my1/notes/note.md`
+
+`upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /Obsidian/my1/notes/`
+
+`upload -R ~/Documents/ /Obsidian/my1/notes/`
+
+`upload -R '~/Documents/**/*.md' /Obsidian/my1/notes/`
+
+<!-- 
 ### uploads [files..] <dstpath>
 
 Upload multiple files to a folder
@@ -173,7 +196,7 @@ Upload a folder node-icloud-drive-client excluding files in cli-drive folder
 `idrive uf --include '/**/*.ts' --exclude '/**/cli-drive/**/*' ./node-icloud-drive-client /Documents/projects/ --dry`
 
 
-Use `dry` flag to only check what is going to be uploaded
+Use `dry` flag to only check what is going to be uploaded -->
 
 ### download <remotepath> <localpath>
 

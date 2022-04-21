@@ -1,5 +1,5 @@
 import { pipe } from 'fp-ts/lib/function'
-import { Path } from './util'
+import { Path } from './path'
 
 declare const _brand: unique symbol
 

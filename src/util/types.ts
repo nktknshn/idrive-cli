@@ -10,7 +10,7 @@ export type NEA<A> = NA.NonEmptyArray<A>
 /** alias for SRTE */
 export type XXXX<S, R, E, A> = SRTE.StateReaderTaskEither<S, R, E, A>
 
-/** alias for SRTE<S, R, A> */
+/** alias for SRTE<S, R, E=Error, A> */
 export type XXX<S, R, A> = SRTE.StateReaderTaskEither<S, R, Error, A>
 
 /** alias for SRTE<S, A> */

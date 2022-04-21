@@ -161,11 +161,13 @@ const showItemRow = ({
 const ordByType = Ord.contramap((d: T.DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
 const ordByName = Ord.contramap((d: T.DriveChildrenItem) => d.name)(string.Ord)
 
-export const showDetailsInfo = (details: T.Details) =>
+export const showDetailsInfo = (
+  details: T.Details,
+  path: string,
+) =>
   (
     {
       fullPath,
-      path,
       showDrivewsid = false,
       showDocwsid = false,
       printFolderInfo = false,
@@ -178,7 +180,6 @@ export const showDetailsInfo = (details: T.Details) =>
       showHeader?: boolean
       printFolderInfo?: boolean
       fullPath: boolean
-      path: string
     },
   ) =>
     string.Monoid.concat(

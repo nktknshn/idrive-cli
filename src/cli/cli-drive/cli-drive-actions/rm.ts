@@ -6,8 +6,8 @@ import * as TE from 'fp-ts/TaskEither'
 import { Api, Drive } from '../../../icloud/drive'
 import { DepApi, DepAskConfirmation } from '../../../icloud/drive/deps'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud/drive/types'
+import { guardProp } from '../../../util/guards'
 import { NEA } from '../../../util/types'
-import { guardProp } from '../../../util/util'
 
 type Deps =
   & Drive.Deps

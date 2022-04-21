@@ -32,7 +32,7 @@ export const getMissedFound = <T>(
   )
 }
 
-export const parseName = (fileName: string): { name: string; extension?: string } => {
+export const parseFilename = (fileName: string): { name: string; extension?: string } => {
   const extension = pipe(
     Path.extname(fileName),
     _ => _ === '' ? undefined : _,

@@ -11,8 +11,8 @@ import { DepAskConfirmation, DepFs } from '../../../../icloud/drive/deps'
 import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../util/errors'
 import { loggerIO } from '../../../../util/loggerIO'
+import { Path } from '../../../../util/path'
 import { NEA } from '../../../../util/types'
-import { Path } from '../../../../util/util'
 import { DownloadInfo, DownloadTask } from './types'
 import { LocalTreeElement } from './walkdir'
 
@@ -114,7 +114,8 @@ export const handleLocalFilesConflicts = <SolverDeps = {}>(
 > =>
   (initialtask: DownloadTask) => {
     return pipe(
-      RTE.fromReaderTaskK(lookForConflicts)(initialtask),
+      initialtask,
+      RTE.fromReaderTaskK(lookForConflicts),
       RTE.chainW(A.matchW(() => RTE.of([]), conflictsSolver)),
       RTE.chainFirstIOK(
         (solution) =>

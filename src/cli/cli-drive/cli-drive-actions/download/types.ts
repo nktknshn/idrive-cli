@@ -5,36 +5,36 @@ import * as T from '../../../../icloud/drive/types'
 
 import { XXX } from '../../../../util/types'
 
-export type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEither<
-  R,
-  Error,
-  DownloadTask & {
-    initialTask: DownloadTask
-  }
->
-
-export type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
-  Drive.State,
-  R,
-  [E.Either<Error, void>, readonly [url: string, path: string]][]
->
-
-export type DownloadInfo = (readonly [remotepath: string, remotefile: T.DriveChildrenItemFile])
-
 export type DownloadStructure = {
   dirstruct: string[]
   downloadable: DownloadInfo[]
   empties: DownloadInfo[]
 }
 
-export type FilterTreeResult = DownloadStructure & {
-  excluded: DownloadInfo[]
-}
-
 export type DownloadTask = {
   localdirstruct: string[]
   downloadable: { info: DownloadInfo; localpath: string }[]
   empties: { info: DownloadInfo; localpath: string }[]
+}
+
+export type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEither<
+  R,
+  Error,
+  DownloadTask & { initialTask: DownloadTask }
+>
+
+export type DownloadFileResult = [E.Either<Error, void>, readonly [url: string, localpath: string]]
+
+export type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
+  Drive.State,
+  R,
+  DownloadFileResult[]
+>
+
+export type DownloadInfo = (readonly [remotepath: string, remotefile: T.DriveChildrenItemFile])
+
+export type FilterTreeResult = DownloadStructure & {
+  excluded: DownloadInfo[]
 }
 
 export type DownloadUrlToFile<R> = (
