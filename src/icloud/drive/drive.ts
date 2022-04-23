@@ -203,15 +203,15 @@ export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Effe
   )
 }
 
-export const getByPathsDocwsRoot = (paths: NEA<NormalizedPath>): Effect<NEA<GetByPathResult<T.DetailsDocwsRoot>>> => {
+export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>): Effect<NEA<GetByPathResult<T.DetailsDocwsRoot>>> => {
   return pipe(
     chainCachedDocwsRoot(root => getByPaths(root, paths)),
   )
 }
 
-export const getByPathDocwsRoot = (path: NormalizedPath): Effect<GetByPathResult<T.DetailsDocwsRoot>> => {
+export const getByPathDocwsroot = (path: NormalizedPath): Effect<GetByPathResult<T.DetailsDocwsRoot>> => {
   return pipe(
-    chainCachedDocwsRoot(root => getByPaths(root, [path])),
+    getByPathsDocwsroot([path]),
     map(NA.head),
   )
 }
@@ -223,8 +223,6 @@ export const getByPathsFromCache = <R extends T.Root>(
   asksCache(
     C.getByPaths(root, paths),
   )
-
-export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>) => chainCachedDocwsRoot(root => getByPaths(root, paths))
 
 export const getDocwsRoot = () => chainCachedDocwsRoot(of)
 export const getTrash = () => chainCachedTrash(of)
@@ -255,9 +253,8 @@ const putMissedFound = ({ found, missed }: {
     chain(() => removeByIdsFromCache(missed)),
   )
 
-export const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
+const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
 
-export const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> =>
-  pipe(state(), chain(({ cache }) => f(cache)))
+const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> => pipe(state(), chain(({ cache }) => f(cache)))
 
 const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> => chainCache(flow(f, putCache, map(constVoid)))

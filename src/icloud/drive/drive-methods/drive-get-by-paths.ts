@@ -27,7 +27,22 @@ export const getByPaths = <R extends T.Root>(
   paths: NEA<NormalizedPath>,
 ): Drive.Effect<NEA<V.GetByPathResult<R>>> =>
   pipe(
-    validateCachedPaths(root, paths),
+    Drive.getByPathsFromCache(root, paths),
+    SRTE.chainFirstIOK(
+      (cached) => loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join(', ')}`),
+    ),
+    SRTE.chain((cached) =>
+      pipe(
+        validateCachedHierarchies(
+          pipe(cached, NA.map(_ => _.details)),
+        ),
+        SRTE.map(NA.zip(cached)),
+        SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
+      )
+    ),
+    SRTE.chainFirstIOK(
+      paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
+    ),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
@@ -43,7 +58,8 @@ export const getByPathsStrict = <R extends T.Root>(
       V.asEither(
         (res) =>
           err(
-            `error: ${res.error}. validPart=${res.details.map(T.fileName)} rest=[${res.rest}]`,
+            V.showGetByPathResult(res),
+            // `error: ${res.error}. validPart=${res.details.map(T.fileName)} rest=[${res.rest}]`,
           ),
       ),
     )),
@@ -51,26 +67,26 @@ export const getByPathsStrict = <R extends T.Root>(
   )
 }
 
-const validateCachedPaths = <R extends T.Root>(
-  root: R,
-  paths: NEA<NormalizedPath>,
-): Drive.Effect<NEA<V.GetByPathResult<R>>> => {
-  logg(`validateCachedPaths: ${paths}`)
-  return pipe(
-    Drive.getByPathsFromCache(root, paths),
-    SRTE.chainFirstIOK((cached) =>
-      loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`)
-    ),
-    SRTE.chain((cached) =>
-      pipe(
-        validateCachedHierarchies(pipe(cached, NA.map(_ => _.details))),
-        SRTE.map(NA.zip(cached)),
-        SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
-      )
-    ),
-    SRTE.chainFirstIOK(paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`)),
-  )
-}
+// const validateCachedPaths = <R extends T.Root>(
+//   root: R,
+//   paths: NEA<NormalizedPath>,
+// ): Drive.Effect<NEA<V.GetByPathResult<R>>> => {
+//   logg(`validateCachedPaths: ${paths}`)
+//   return pipe(
+//     Drive.getByPathsFromCache(root, paths),
+//     SRTE.chainFirstIOK((cached) =>
+//       loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`)
+//     ),
+//     SRTE.chain((cached) =>
+//       pipe(
+//         validateCachedHierarchies(pipe(cached, NA.map(_ => _.details))),
+//         SRTE.map(NA.zip(cached)),
+//         SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
+//       )
+//     ),
+//     SRTE.chainFirstIOK(paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`)),
+//   )
+// }
 
 /**
 Given cached root and a cached hierarchy determine which part of the hierarchy is unchanged
@@ -222,7 +238,7 @@ const handleInvalidPaths = <R extends T.Root>(
   const handleSubfolders = <R extends T.Root>(
     subfolders: NEA<DeeperFolders<R>>,
   ): Drive.Effect<NEA<V.GetByPathResult<R>>> => {
-    logger.debug(`handleFolders: ${
+    logger.debug(`handleSubfolders: ${
       subfolders.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}. rest: [${rest}]`
       })
@@ -300,7 +316,7 @@ const handleInvalidPaths = <R extends T.Root>(
   const handleFoundItems = <R extends T.Root>(
     found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
   ): Drive.Effect<V.GetByPathResult<R>[]> => {
-    logger.debug(`handleItems. ${
+    logger.debug(`handleFoundItems. ${
       found.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}.`
       })
@@ -311,7 +327,12 @@ const handleInvalidPaths = <R extends T.Root>(
     ): v is DeeperFolders<R> => T.isFolderLikeItem(v[0].value)
 
     if (A.isNonEmpty(found)) {
-      return modifySubset(found, selectFolders, handleSubfolders, handleFiles())
+      return modifySubset(
+        found,
+        selectFolders,
+        handleSubfolders,
+        handleFiles(),
+      )
     }
 
     return SRTE.of([])

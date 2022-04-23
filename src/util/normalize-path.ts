@@ -36,3 +36,5 @@ export const normalizePath = (path: string): NormalizedPath => {
     addSlash,
   ) as NormalizedPath
 }
+
+export const npath = normalizePath
