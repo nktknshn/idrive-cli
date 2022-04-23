@@ -2,18 +2,19 @@ import { constant, pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { defaultApiEnv } from '../defaults'
+import { apiEnv } from '../defaults'
 import { readAccountData } from '../icloud/authorization/validate'
 import { DepFetchClient, DepFs } from '../icloud/drive/deps'
 import * as AM from '../icloud/drive/requests/request'
 import { readSessionFile, saveSession } from '../icloud/session/session-file'
 
-export function apiActionM<T>(
-  action: () => AM.AuthorizedRequest<T>,
+export function apiActionM<T, R>(
+  action: () => AM.AuthorizedRequest<T, AM.AuthorizedState, R>,
 ): RTE.ReaderTaskEither<
   & { sessionFile: string }
   & DepFs<'writeFile' | 'readFile'>
-  & DepFetchClient,
+  & DepFetchClient
+  & R,
   Error,
   T
 > {

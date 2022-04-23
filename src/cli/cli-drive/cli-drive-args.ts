@@ -21,8 +21,8 @@ type ReadArgvResult = (Commands extends infer K
 
 const commonOptions = <T>(y: y.Argv<T>) =>
   y.options({
-    sessionFile: { alias: ['s', 'session'], default: defaults.defaultSessionFile },
-    cacheFile: { alias: ['c', 'cache'], default: defaults.defaultCacheFile },
+    sessionFile: { alias: ['s', 'session'], default: defaults.sessionFile },
+    cacheFile: { alias: ['c', 'cache'], default: defaults.cacheFile },
     noCache: { alias: 'n', default: false, type: 'boolean' },
     debug: { alias: 'd', default: false, type: 'boolean' },
   })
@@ -40,7 +40,7 @@ const download = <T>(y: y.Argv<T>) =>
           exclude: { default: [], type: 'string', array: false },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           keepStructure: { alias: ['S'], default: false, type: 'boolean' },
-          chunkSize: { default: defaults.defaultDownloadChunkSize, type: 'number' },
+          chunkSize: { default: defaults.downloadChunkSize, type: 'number' },
         }),
   )
 
@@ -130,20 +130,6 @@ const autocomplete = <T>(y: y.Argv<T>) =>
           cached: { default: false, type: 'boolean' },
         }),
   )
-
-// const df = <T>(y: y.Argv<T>) =>
-//   y.command(
-//     'df <path> <dstpath>',
-//     'df',
-//     (_) =>
-//       _.positional('path', { type: 'string', demandOption: true })
-//         .positional('dstpath', { type: 'string', demandOption: true })
-//         .options({
-//           include: { default: [], type: 'string', array: false },
-//           exclude: { default: [], type: 'string', array: false },
-//           dry: { default: false, type: 'boolean' },
-//         }),
-//   )
 
 const uf = <T>(y: y.Argv<T>) =>
   y.command(

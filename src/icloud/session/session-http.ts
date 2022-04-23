@@ -2,7 +2,7 @@ import { Method } from 'axios'
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
-import { defaultClientInfo } from '../../defaults'
+import { clientInfo as _clientInfo } from '../../defaults'
 import { applyCookieToCookies, getCookies } from '../../util/http/cookie'
 import { HttpRequest, HttpResponse } from '../../util/http/fetch-client'
 import { logger } from '../../util/logging'
@@ -26,7 +26,7 @@ export type HttpRequestConfig = {
 export function buildRequest(
   method: Method,
   url: string,
-  { data = undefined, headers = [_headers.default], clientInfo = defaultClientInfo, addClientInfo }: {
+  { data = undefined, headers = [_headers.default], clientInfo = _clientInfo, addClientInfo }: {
     data?: unknown
     headers?: ((session: ICloudSession) => Header[])[]
     addClientInfo: boolean
@@ -62,7 +62,7 @@ export function buildRequest(
 export function apiHttpRequest(
   method: Method,
   url: string,
-  { data = undefined, headers = [_headers.default], clientInfo = defaultClientInfo, addClientInfo }: {
+  { data = undefined, headers = [_headers.default], clientInfo = _clientInfo, addClientInfo }: {
     data?: unknown
     headers?: ((session: ICloudSession) => Header[])[]
     /** add appIdentifier etc to the url */

@@ -21,17 +21,18 @@ export type Branded<A, B> = A & Brand<B>
  */
 
 export type NormalizedPath = Branded<string, NormalizedPathBrand>
-// export type NonRootDrivewsid = Branded<string, NonRootDrivewsidBrand>
-// export const isNonRootDrivewsid = (drivewsid: string): drivewsid is NonRootDrivewsid => {
-//   return drivewsid !== rootDrivewsid && drivewsid !== trashDrivewsid
-// }
 
 export const stripTrailingSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
 const addSlash = (s: string) => s.startsWith('/') ? s : `/${s}`
+
 /**
  * NormalizedPath has Path.normalize applied and no trailing slash
  */
 
 export const normalizePath = (path: string): NormalizedPath => {
-  return pipe(Path.normalize(path), stripTrailingSlash, addSlash) as NormalizedPath
+  return pipe(
+    Path.normalize(path),
+    stripTrailingSlash,
+    addSlash,
+  ) as NormalizedPath
 }

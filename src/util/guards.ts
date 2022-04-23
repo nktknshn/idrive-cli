@@ -36,6 +36,7 @@ export function guardProp<A, B extends R[K], R, K extends keyof R>(
 ) {
   return (rec: R): rec is R & Record<K, B> => refinement(rec[key])
 }
+
 export const isKeyOf = <R extends Record<string, unknown>>(
   commands: R,
   command: string | number | symbol,

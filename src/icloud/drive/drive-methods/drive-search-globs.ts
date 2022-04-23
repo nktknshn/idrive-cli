@@ -1,3 +1,4 @@
+import * as IO from 'fp-ts/IO'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
@@ -7,15 +8,19 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import { guardSnd } from '../../../util/guards'
+import { logg, logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
 import { Drive } from '..'
 import { modifySubset } from '../modify-subset'
 import * as T from '../types'
-import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder } from './drive-get-folders-trees'
+import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder, showFolderTree } from './drive-get-folders-trees'
 
-export type SearchGlobFoundItem = { path: string; item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrashRoot> }
+export type SearchGlobFoundItem = {
+  path: string
+  item: T.DetailsOrFile<T.DetailsDocwsRoot | T.DetailsTrashRoot>
+}
 
 export const searchGlobsShallow = (
   globs: NEA<string>,
@@ -32,7 +37,7 @@ export const searchGlobs = (
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   const scanned = pipe(globs, NA.map(micromatch.scan))
-  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+  const basepaths = pipe(scanned, NA.map(_ => normalizePath(_.base)))
 
   return pipe(
     Drive.chainCachedDocwsRoot(
@@ -45,16 +50,16 @@ export const searchGlobs = (
         (dirs) =>
           modifySubset(
             dirs,
-            ([scan]) => scan.isGlob,
+            ([scan, dir]) => scan.isGlob,
             // recursively get content for globs
-            globs =>
+            parents =>
               pipe(
-                getFoldersTrees(pipe(globs, NA.map(snd)), depth),
+                getFoldersTrees(pipe(parents, NA.map(snd)), depth),
                 SRTE.map(NA.map(E.of)),
               ),
-            dir => E.of(shallowFolder(dir[1])),
+            ([scan, dir]) => E.of(shallowFolder(dir)),
           ),
-        (base) => E.left(base[1]),
+        ([scan, file]) => E.left(file),
       )
     ),
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned))),
@@ -66,8 +71,8 @@ export const searchGlobs = (
             !scan.isGlob
               ? [{ path: scan.base, item: file }]
               : [],
-          tree =>
-            pipe(
+          tree => {
+            return pipe(
               tree,
               flattenFolderTreeWithPath(Path.dirname(scan.base)),
               A.filterMap(([path, item]) => {
@@ -78,11 +83,15 @@ export const searchGlobs = (
                   return O.none
                 }
 
-                return micromatch.isMatch(path, globpattern)
+                return micromatch.isMatch(
+                    path.replace(/^\//, ''),
+                    globpattern.replace(/^\//, ''),
+                  )
                   ? O.some({ path, item })
                   : O.none
               }),
-            ),
+            )
+          },
         ),
       )
     ))),

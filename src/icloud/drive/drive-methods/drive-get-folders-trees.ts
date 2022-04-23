@@ -1,3 +1,4 @@
+import { eq } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import { apply, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
@@ -5,6 +6,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
+import { logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
@@ -41,18 +43,28 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   const doGoDeeper = depth > 0 && subfolders.length > 0
   const depthExceed = subfolders.length > 0 && depth == 0
 
+  logger.debug(`getFoldersTrees(${folders.map(_ => _.drivewsid)})`)
+
   return pipe(
     A.isNonEmpty(subfolders) && doGoDeeper
       ? pipe(
         Drive.retrieveItemDetailsInFoldersSavingStrict(
-          pipe(subfolders, NA.map(_ => _.drivewsid)),
+          pipe(subfolders, NA.uniq(eq.fromEquals((a, b) => a.drivewsid === b.drivewsid)), NA.map(_ => _.drivewsid)),
         ),
-        SRTE.chain(details => getFoldersTrees(details, depth - 1)),
+        SRTE.chain(
+          subfoldersdetails =>
+            getFoldersTrees(
+              subfoldersdetails,
+              depth - 1,
+            ),
+        ),
         SRTE.map(
           groupBy(_ => _.value.details.parentId),
         ),
         SRTE.map(g => zipWithChildren(folders, g)),
-        SRTE.map(NA.map(([parent, children]) => deepFolder(parent, children))),
+        SRTE.map(
+          NA.map(([parent, children]) => deepFolder(parent, children)),
+        ),
       )
       : depthExceed
       ? SRTE.of(pipe(folders, NA.map(shallowFolder)))
@@ -133,7 +145,7 @@ export const flattenFolderTreeWithPath = (
 ) =>
   <T extends T.Details>(tree: FolderTree<T>): [string, T.DetailsOrFile<T>][] => {
     const name = T.fileName(tree.value.details)
-    const path = Path.join(parentPath, name) + '/'
+    const path = Path.normalize(Path.join(parentPath, name) + '/')
 
     const subfiles = pipe(
       tree.value.details.items,
@@ -202,7 +214,7 @@ const groupBy = <T>(f: (item: T) => string): (items: T[]) => Record<string, T[]>
     return result
   }
 
-export const drawFilesTree = <T extends T.Details>(tree: FolderTree<T>) => {
+export const showFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
   const getSubTrees = (tree: FolderTree<T>): TR.Tree<T.HasName> => {
     const files: T.HasName[] = pipe(
       tree.value.details.items,

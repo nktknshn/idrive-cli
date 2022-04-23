@@ -2,7 +2,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as t from 'io-ts'
-import { defaultCountryCode } from '../../defaults'
+import { countryCode } from '../../defaults'
 import { err } from '../../util/errors'
 import { logger } from '../../util/logging'
 import * as AR from '../drive/requests/request'
@@ -32,7 +32,7 @@ export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<Ac
               trustToken: O.toUndefined(session.trustToken),
               accountCountryCode: pipe(
                 session.accountCountry,
-                O.getOrElse(() => defaultCountryCode),
+                O.getOrElse(() => countryCode),
               ),
               extended_login: false,
             },

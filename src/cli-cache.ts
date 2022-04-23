@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
-import { defaultCacheFile } from './defaults'
+import { cacheFile } from './defaults'
 import * as C from './icloud/drive/cache/cache'
 import * as GetByPathResultValid from './icloud/drive/cache/cache-get-by-path-types'
 import * as fs from './util/fs'
@@ -15,7 +15,7 @@ function parseArgs() {
   return yargs(hideBin(process.argv))
     // .parserConfiguration({})
     .options({
-      cacheFile: { alias: ['c', 'cache'], default: defaultCacheFile },
+      cacheFile: { alias: ['c', 'cache'], default: cacheFile },
       raw: { alias: 'r', default: false, type: 'boolean' },
       debug: { alias: 'd', default: false, type: 'boolean' },
     })

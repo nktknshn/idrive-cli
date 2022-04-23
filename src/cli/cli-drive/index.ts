@@ -1,15 +1,8 @@
-import { flow } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { defaultApiEnv, defaultCacheFile, defaultFileEditor, defaultSessionFile, defaultTempDir } from '../../defaults'
-import { DepAskConfirmation } from '../../icloud/drive/deps'
-import { defaultApiCreator } from '../../icloud/drive/deps/api-creator'
-import * as fs from '../../util/fs'
 import { isKeyOf } from '../../util/guards'
-import { askConfirmation } from '../../util/prompts'
 import { cliAction } from './cli-drive-action'
 import * as Action from './cli-drive-actions'
-import { InitSessionDeps } from './cli-drive-actions/init'
 
 const cliActions = {
   ls: Action.listUnixPath,
@@ -29,25 +22,6 @@ const cliActions = {
 const rteCliActions = {
   init: Action.initSession,
 }
-
-export const cliActionsDeps = (argv: {
-  sessionFile?: string
-  cacheFile?: string
-  noCache?: boolean
-  tempdir?: string
-  fileEditor?: string
-  askConfirmation?: DepAskConfirmation['askConfirmation']
-}) => ({
-  api: defaultApiCreator(defaultApiEnv),
-  fs,
-  ...defaultApiEnv,
-  sessionFile: argv.sessionFile ?? defaultSessionFile,
-  cacheFile: argv.cacheFile ?? defaultCacheFile,
-  noCache: argv.noCache ?? false,
-  askConfirmation: argv.askConfirmation ?? askConfirmation,
-  tempdir: argv.tempdir ?? defaultTempDir,
-  fileEditor: argv.fileEditor ?? defaultFileEditor,
-})
 
 export const runCliAction = (
   action: ActionsArgvTuples,

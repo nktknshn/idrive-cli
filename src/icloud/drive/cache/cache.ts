@@ -265,13 +265,7 @@ export const putDetails = (
         cacheEntityFromDetails(details),
       ),
     ),
-    // logReturnS((c) => `item: ${c.byDrivewsid['FOLDER::iCloud.is.workflow.my.workflows::documents'].hasDetails}`),
     addItems(details.items),
-    // logReturnS((c) =>
-    // E.isRight(c)
-    //   ? `item: ${c.right.byDrivewsid['FOLDER::iCloud.is.workflow.my.workflows::documents'].hasDetails}`
-    //   : 'dsdass'
-    // ),
   )
 }
 

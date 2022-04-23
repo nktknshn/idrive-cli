@@ -2,12 +2,12 @@ import { flow } from 'fp-ts/lib/function'
 import * as y from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
-import { defaultCacheFile, defaultSessionFile } from '../../defaults'
+import { cacheFile, sessionFile } from '../../defaults'
 
 const commonOptions = <T>(y: y.Argv<T>) =>
   y.options({
-    sessionFile: { alias: ['s', 'session'], default: defaultSessionFile },
-    cacheFile: { alias: ['c', 'cache'], default: defaultCacheFile },
+    sessionFile: { alias: ['s', 'session'], default: sessionFile },
+    cacheFile: { alias: ['c', 'cache'], default: cacheFile },
     noCache: { alias: 'n', default: false, type: 'boolean' },
     debug: { alias: 'd', default: false, type: 'boolean' },
   })

@@ -343,18 +343,6 @@ const handleInvalidPaths = <R extends T.Root>(
   )
 }
 
-const showHierarchiy = (h: V.Hierarchy<T.Root>): string => {
-  const [root, ...rest] = h
-
-  return `${T.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(T.fileName).join('/')}`
-}
-
-const showDetails = (details: T.Details) => {
-  return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
-    details.items.map(T.fileName)
-  }]`
-}
-
 const getValidHierarchyPart = <R extends T.Root>(
   cachedHierarchy: V.Hierarchy<R>,
   actualDetails: [R, ...O.Option<T.NonRootDetails>[]],
@@ -388,4 +376,16 @@ const getValidHierarchyPart = <R extends T.Root>(
         ),
       ),
   )
+}
+
+const showHierarchiy = (h: V.Hierarchy<T.Root>): string => {
+  const [root, ...rest] = h
+
+  return `${T.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(T.fileName).join('/')}`
+}
+
+const showDetails = (details: T.Details) => {
+  return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
+    details.items.map(T.fileName)
+  }]`
 }

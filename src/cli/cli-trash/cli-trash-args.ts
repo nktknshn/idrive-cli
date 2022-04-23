@@ -1,11 +1,11 @@
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
-import { defaultSessionFile } from '../../defaults'
+import { sessionFile } from '../../defaults'
 
 export function parseArgs() {
   return yargs(hideBin(process.argv))
     .options({
-      sessionFile: { alias: ['s', 'session'], default: defaultSessionFile },
+      sessionFile: { alias: ['s', 'session'], default: sessionFile },
       raw: { alias: 'r', default: false, type: 'boolean' },
       debug: { alias: 'd', default: false, type: 'boolean' },
     })

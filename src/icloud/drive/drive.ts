@@ -1,4 +1,4 @@
-import * as A from 'fp-ts/lib/Array'
+import * as Drive from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
@@ -54,7 +54,7 @@ export const chainCachedDocwsRoot = <A>(
   f: (root: T.DetailsDocwsRoot) => Effect<A>,
 ): Effect<A> => {
   return pipe(
-    retrieveRootAndTrashIfMissing(),
+    retrieveItemDetailsInFoldersCached([rootDrivewsid]),
     chain(() => chainCache(cache => SRTE.fromEither(C.getDocwsRoot(cache)))),
     map(_ => _.content),
     chain(f),
@@ -63,7 +63,7 @@ export const chainCachedDocwsRoot = <A>(
 
 export const getCachedRoot = (trash: boolean): Effect<T.Root> => {
   return pipe(
-    retrieveRootAndTrashIfMissing(),
+    retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
     chain(() =>
       chainCache(cache =>
         SRTE.fromEither(pipe(
@@ -79,17 +79,10 @@ export const chainCachedTrash = <A>(
   f: (root: T.DetailsTrashRoot) => Effect<A>,
 ): Effect<A> => {
   return pipe(
-    retrieveRootAndTrashIfMissing(),
+    retrieveItemDetailsInFoldersCached([trashDrivewsid]),
     chain(() => chainCache(SRTE.fromEitherK(C.getTrash))),
     map(_ => _.content),
     chain(f),
-  )
-}
-
-const retrieveRootAndTrashIfMissing = (): Effect<void> => {
-  return pipe(
-    retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
-    map(constVoid),
   )
 }
 
@@ -102,7 +95,7 @@ const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): Effect<T.Mayb
     SRTE.chain(({ missed }) =>
       pipe(
         missed,
-        A.matchW(
+        Drive.matchW(
           () => SRTE.of({ missed: [], found: [] }),
           (missed) => API.retrieveItemDetailsInFoldersSeparated<State>(missed),
         ),
@@ -118,6 +111,7 @@ const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): Effect<T.Mayb
 export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
   drivewsids: [R['drivewsid'], ...T.NonRootDrivewsid[]],
 ): Effect<[O.Some<R>, ...O.Option<T.NonRootDetails>[]]>
+
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof rootDrivewsid, ...string[]],
 ): Effect<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
@@ -184,7 +178,7 @@ export const getByPathsFolders = <R extends T.Root>(
   pipe(
     getByPathsStrict(root, paths),
     filterOrElse(
-      (items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items),
+      (items): items is NEA<R | T.NonRootDetails> => Drive.every(T.isDetailsG)(items),
       (e) => ItemIsNotFolderError.create(`some of the paths are not folders`),
     ),
   )
@@ -209,6 +203,19 @@ export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Effe
   )
 }
 
+export const getByPathsDocwsRoot = (paths: NEA<NormalizedPath>): Effect<NEA<GetByPathResult<T.DetailsDocwsRoot>>> => {
+  return pipe(
+    chainCachedDocwsRoot(root => getByPaths(root, paths)),
+  )
+}
+
+export const getByPathDocwsRoot = (path: NormalizedPath): Effect<GetByPathResult<T.DetailsDocwsRoot>> => {
+  return pipe(
+    chainCachedDocwsRoot(root => getByPaths(root, [path])),
+    map(NA.head),
+  )
+}
+
 export const getByPathsFromCache = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
@@ -216,6 +223,8 @@ export const getByPathsFromCache = <R extends T.Root>(
   asksCache(
     C.getByPaths(root, paths),
   )
+
+export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>) => chainCachedDocwsRoot(root => getByPaths(root, paths))
 
 export const getDocwsRoot = () => chainCachedDocwsRoot(of)
 export const getTrash = () => chainCachedTrash(of)

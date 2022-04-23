@@ -225,7 +225,11 @@ export const initLoggers = (
   loggers: winston.Logger[],
 ) => {
   for (const logger of loggers) {
-    logger.add(argv.debug ? loggingLevels.debug : loggingLevels.info)
+    logger.add(
+      argv.debug
+        ? loggingLevels.debug
+        : loggingLevels.info,
+    )
   }
 }
 
