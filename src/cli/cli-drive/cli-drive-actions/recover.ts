@@ -2,14 +2,14 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Api, Drive } from '../../../icloud/drive/'
-import { DepApi } from '../../../icloud/drive/deps'
-import { isTrashDetailsG } from '../../../icloud/drive/types'
+import { Drive, DriveApi } from '../../../icloud/drive/'
+import { DepDriveApi } from '../../../icloud/drive/deps'
+import { isTrashDetailsG } from '../../../icloud/drive/drive-types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 import { XXX } from '../../../util/types'
 
-type Deps = Drive.Deps & DepApi<'putBackItemsFromTrash'>
+type Deps = Drive.Deps & DepDriveApi<'putBackItemsFromTrash'>
 
 export const recover = (
   { path }: { path: string },
@@ -22,7 +22,7 @@ export const recover = (
     SRTE.filterOrElse(not(isTrashDetailsG), () => err(`you cannot recover trash root`)),
     SRTE.chainW((item) =>
       pipe(
-        Api.putBackItemsFromTrash<Drive.State>([item]),
+        DriveApi.putBackItemsFromTrash<Drive.State>([item]),
         SRTE.map(() => `Success.`),
       )
     ),

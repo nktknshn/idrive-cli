@@ -8,12 +8,12 @@ import * as iot from 'io-ts-types'
 import { FetchClientEither } from '../../../util/http/fetch-client'
 import { apiLogger } from '../../../util/logging'
 import { NEA } from '../../../util/types'
+import { AuthorizedState } from '../../request/request'
+import * as AR from '../../request/request'
+import { ResponseHandler, ResponseWithSession } from '../../request/request'
 import { buildRequest } from '../../session/session-http'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../types/types-io'
-import { AuthorizedState } from './request'
-import * as AR from './request'
-import { ResponseHandler, ResponseWithSession } from './request'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../drive-types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../drive-types/types-io'
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,
@@ -57,6 +57,7 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsW
   )),
 )
 
+// eslint-disable-next-line id-length
 export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ) => {

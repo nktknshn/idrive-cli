@@ -5,18 +5,18 @@ import { cliAction } from './cli-drive-action'
 import * as Action from './cli-drive-actions'
 
 const cliActions = {
-  ls: Action.listUnixPath,
-  mkdir: Action.mkdir,
-  rm: Action.rm,
-  upload: Action.upload,
-  mv: Action.move,
-  autocomplete: Action.autocomplete,
-  ac: Action.autocomplete,
-  cat: Action.cat,
-  recover: Action.recover,
-  download: Action.download,
-  edit: Action.edit,
-  init: SRTE.fromReaderTaskEitherK(Action.initSession),
+  ls: cliAction(Action.listUnixPath),
+  mkdir: cliAction(Action.mkdir),
+  rm: cliAction(Action.rm),
+  upload: cliAction(Action.upload),
+  mv: cliAction(Action.move),
+  autocomplete: cliAction(Action.autocomplete),
+  ac: cliAction(Action.autocomplete),
+  cat: cliAction(Action.cat),
+  recover: cliAction(Action.recover),
+  download: cliAction(Action.download),
+  edit: cliAction(Action.edit),
+  init: Action.initSession,
 }
 
 const rteCliActions = {
@@ -25,14 +25,15 @@ const rteCliActions = {
 
 export const runCliAction = (
   action: ActionsArgvTuples,
-) => {
-  if (action.command === 'init') {
-    return Action.initSession(action.argv)
-  }
-
-  return cliAction<unknown, ActionsDeps, [ActionsArgv]>(
-    cliActions[action.command],
-  )(action.argv as any)
+): RTE.ReaderTaskEither<ActionsDeps, Error, unknown> => {
+  // if (action.command === 'init') {
+  //   return Action.initSession(action.argv)
+  // }
+  return cliActions[action.command](action.argv as any)
+  // return cliActions[action.command](action.argv)
+  // return cliAction<unknown, ActionsDeps, [ActionsArgv]>(
+  //   cliActions[action.command],
+  // )(action.argv as any)
 }
 
 export const isValidAction = (action: unknown): action is ValidAction =>
@@ -53,8 +54,7 @@ type ValidAction = (keyof typeof cliActions | 'init')
 
 type Actions = typeof cliActions extends { [key: string]: infer V } ? V : never
 
-type ActionsDeps = Actions extends
-  (...args: infer Args) => (state: infer S) => RTE.ReaderTaskEither<infer R, infer E, infer A> ? R
+export type ActionsDeps = Actions extends (...args: infer Args) => RTE.ReaderTaskEither<infer R, infer E, infer A> ? R
   : never
 
 type ActionsArgv = Actions extends

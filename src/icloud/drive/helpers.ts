@@ -8,7 +8,7 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import micromatch from 'micromatch'
 import Path from 'path'
 import { NormalizedPath, normalizePath } from '../../util/normalize-path'
-import * as T from './types'
+import * as T from './drive-types'
 
 export function parsePath(path: string): NA.NonEmptyArray<string> {
   const parsedPath = Path.normalize(path)

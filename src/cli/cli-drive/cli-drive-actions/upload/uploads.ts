@@ -6,11 +6,12 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { Api, Drive } from '../../../../icloud/drive'
+import { DepAskConfirmation, DepFs } from '../../../../icloud/deps/DepFetchClient'
+import { Drive, DriveApi } from '../../../../icloud/drive'
 import * as V from '../../../../icloud/drive/cache/cache-get-by-path-types'
-import { DepApi, DepAskConfirmation, DepFs } from '../../../../icloud/drive/deps'
+import { DepDriveApi } from '../../../../icloud/drive/deps'
+import * as T from '../../../../icloud/drive/drive-types'
 import { findInParentFilename, getDrivewsid } from '../../../../icloud/drive/helpers'
-import * as T from '../../../../icloud/drive/types'
 import { loggerIO } from '../../../../util/loggerIO'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
@@ -19,10 +20,10 @@ import { AskingFunc } from '../upload'
 
 export type Deps =
   & Drive.Deps
-  & DepApi<'renameItems'>
-  & DepApi<'moveItemsToTrash'>
-  & DepApi<'moveItems'>
-  & Api.UploadMethodDeps
+  & DepDriveApi<'renameItems'>
+  & DepDriveApi<'moveItemsToTrash'>
+  & DepDriveApi<'moveItems'>
+  & DriveApi.UploadMethodDeps
   & DepFs<'fstat'>
   & DepAskConfirmation
 
@@ -42,7 +43,7 @@ export const uploads = (
   const srcpaths = NA.init(uploadargs)
 
   return pipe(
-    Drive.getDocwsRoot(),
+    Drive.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
     SRTE.bind('dstDetails', ({ root }) => Drive.getByPathFolder(root, normalizePath(dstpath))),
     SRTE.bindW('deps', () => SRTE.ask<Drive.State, Deps>()),
@@ -73,7 +74,7 @@ export const uploadSingleFile = (
   },
 ): XXX<Drive.State, Deps, string> => {
   return pipe(
-    Drive.getDocwsRoot(),
+    Drive.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
     SRTE.bind('dst', ({ root }) => Drive.getByPath(root, normalizePath(dstpath))),
     SRTE.bind('src', () => SRTE.of(srcpath)),
@@ -118,7 +119,7 @@ const handleSingleFileUpload = (
 
     if (T.isFolderLike(dstitem)) {
       return pipe(
-        Api.upload<Drive.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
+        DriveApi.upload<Drive.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         SRTE.map(constVoid),
       )
     }
@@ -168,7 +169,7 @@ const uploadFileToFolder = (
   }
 
   return pipe(
-    Api.upload<Drive.State>({
+    DriveApi.upload<Drive.State>({
       sourceFilePath: src,
       docwsid: dstDetails.docwsid,
       zone: dstDetails.zone,
@@ -188,18 +189,18 @@ const uploadOverwrighting = (
   // const dstitem = V.target(dst)
   // const parent = NA.last(dst.path.details)
   return pipe(
-    Api.upload<Drive.State>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
+    DriveApi.upload<Drive.State>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
     logging(loggerIO.debug(`uploading`)),
     SRTE.bindTo('uploadResult'),
     SRTE.bindW('removeResult', () =>
       pipe(
-        Api.moveItemsToTrash<Drive.State>({ items: [dstitem], trash: !skipTrash }),
+        DriveApi.moveItemsToTrash<Drive.State>({ items: [dstitem], trash: !skipTrash }),
         logging(loggerIO.debug(`moving previous file to trash`)),
       )),
     SRTE.chainW(({ uploadResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        Api.renameItems<Drive.State>({
+        DriveApi.renameItems<Drive.State>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

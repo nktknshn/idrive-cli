@@ -3,11 +3,11 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { InvalidGlobalSessionError } from '../../../util/errors'
-import { FetchError, HttpResponse } from '../../../util/http/fetch-client'
-import { loggerIO } from '../../../util/loggerIO'
-import { AuthorizeEnv, authorizeSession } from '../../authorization/authorize'
-import { AuthorizedState } from '../requests/request'
+import { InvalidGlobalSessionError } from '../../util/errors'
+import { FetchError, HttpResponse } from '../../util/http/fetch-client'
+import { loggerIO } from '../../util/loggerIO'
+import { AuthorizeEnv, authorizeSession } from '../authorization/authorization-methods'
+import { AuthorizedState } from './request'
 
 export type CatchFetchEnv = {
   catchFetchErrorsRetries: number

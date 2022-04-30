@@ -1,7 +1,7 @@
 import { appLibrary, file, folder } from './helpers-drive'
-import { struct } from './struct'
+import { fakeicloud } from './struct'
 
-export const complexStructure0 = struct(
+export const complexStructure0 = fakeicloud(
   folder({ name: 'test1' })(),
   folder({ name: 'test2' })(
     file({ name: 'file1.txt', docwsid: 'file1' }),

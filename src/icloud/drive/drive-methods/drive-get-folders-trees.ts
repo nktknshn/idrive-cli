@@ -11,7 +11,7 @@ import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
 import * as Drive from '../drive'
-import * as T from '../types'
+import * as T from '../drive-types'
 
 export type FolderDeep<T extends T.Details> = {
   readonly details: T
@@ -27,7 +27,7 @@ export type FolderTree<T extends T.Details> = TR.Tree<FolderTreeValue<T>>
 
 export type FolderTreeValue<T extends T.Details> = FolderDeep<T> | FolderShallow<T>
 
-export function getFoldersTrees<R extends T.Root>(
+export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
   depth: number,
 ): Drive.Effect<NEA<FolderTree<T.NonRootDetails>>>
@@ -89,7 +89,7 @@ export const deepFolder = <T extends T.Details | T.NonRootDetails>(
     deep: true,
   }, children)
 
-export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
+export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>): string => {
   return pipe(
     tree,
     TR.map(_ => T.fileNameAddSlash(_.details)),
@@ -132,7 +132,7 @@ export const addPathToFolderTree = <T>(
 
 export const showTreeWithFiles = (
   tree: TR.Tree<{ item: T.DetailsDocwsRoot | T.NonRootDetails | T.DriveChildrenItemFile; path: string }>,
-) => {
+): string => {
   return pipe(
     tree,
     TR.map(_ => T.fileNameAddSlash(_.item)),
@@ -214,7 +214,7 @@ const groupBy = <T>(f: (item: T) => string): (items: T[]) => Record<string, T[]>
     return result
   }
 
-export const showFolderTree = <T extends T.Details>(tree: FolderTree<T>) => {
+export const showFolderTree = <T extends T.Details>(tree: FolderTree<T>): string => {
   const getSubTrees = (tree: FolderTree<T>): TR.Tree<T.HasName> => {
     const files: T.HasName[] = pipe(
       tree.value.details.items,

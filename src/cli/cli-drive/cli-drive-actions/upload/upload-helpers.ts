@@ -10,8 +10,8 @@ import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
 import { string } from 'yargs'
-import { Api } from '../../../../icloud/drive'
-import { DepApi } from '../../../../icloud/drive/deps'
+import { DriveApi } from '../../../../icloud/drive'
+import { DepDriveApi } from '../../../../icloud/drive/deps'
 import * as Drive from '../../../../icloud/drive/drive'
 import { parseDrivewsid } from '../../../../icloud/drive/helpers'
 import { err } from '../../../../util/errors'
@@ -91,14 +91,14 @@ export const uploadChunkPar = (
         local: { path: string; stats: Stats },
       ]
     >,
-  ): XXX<Drive.State, Api.UploadMethodDeps, NEA<UploadResult>> =>
+  ): XXX<Drive.State, DriveApi.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, local]) => {
           const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
           return pipe(
-            Api.upload<Drive.State>({
+            DriveApi.upload<Drive.State>({
               sourceFilePath: local.path,
               docwsid: d.docwsid,
               zone: d.zone,
@@ -128,7 +128,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<Drive.State, DepApi<'createFolders'>, Record<string, string>> => {
+): XXX<Drive.State, DepDriveApi<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {
@@ -148,7 +148,7 @@ export const createRemoteDirStructure = (
               R.lookup(parent)(acc),
               SRTE.fromOption(() => err(`pathToDrivewsid missing ${parent}`)),
               SRTE.chain(destinationDrivewsId =>
-                Api.createFoldersFailing<Drive.State>({
+                DriveApi.createFoldersStrict<Drive.State>({
                   destinationDrivewsId,
                   names: subdirs,
                 })

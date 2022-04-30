@@ -1,26 +1,26 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, identity, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
-import { err } from '../../../util/errors'
-import { guardFst, guardFstRO } from '../../../util/guards'
-import { loggerIO } from '../../../util/loggerIO'
-import { logg, logger } from '../../../util/logging'
-import { NormalizedPath } from '../../../util/normalize-path'
-import { NEA } from '../../../util/types'
-import { recordFromTuples, sequenceArrayNEA } from '../../../util/util'
-import { Drive } from '..'
-import { getByIdO } from '../cache/cache'
-import * as V from '../cache/cache-get-by-path-types'
-import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import { equalsDrivewsId, findInParentFilename } from '../helpers'
-import { modifySubset } from '../modify-subset'
-import * as T from '../types'
+import { err } from '../../../../util/errors'
+import { guardFst } from '../../../../util/guards'
+import { loggerIO } from '../../../../util/loggerIO'
+import { logg, logger } from '../../../../util/logging'
+import { NormalizedPath } from '../../../../util/normalize-path'
+import { NEA } from '../../../../util/types'
+import { recordFromTuples, sequenceArrayNEA } from '../../../../util/util'
+import * as Drive from '../../../drive/drive'
+import * as V from '../../cache/cache-get-by-path-types'
+import * as T from '../../drive-types'
+import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
+import { equalsDrivewsId, findInParentFilename } from '../../helpers'
+import { modifySubset } from '../../modify-subset'
 
 export const getByPaths = <R extends T.Root>(
   root: R,
@@ -46,26 +46,6 @@ export const getByPaths = <R extends T.Root>(
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
-
-/** fails if some of the paths are not valid */
-export const getByPathsStrict = <R extends T.Root>(
-  root: R,
-  paths: NEA<NormalizedPath>,
-): Drive.Effect<NEA<T.DetailsOrFile<R>>> => {
-  return pipe(
-    getByPaths(root, paths),
-    SRTE.map(NA.map(
-      V.asEither(
-        (res) =>
-          err(
-            V.showGetByPathResult(res),
-            // `error: ${res.error}. validPart=${res.details.map(T.fileName)} rest=[${res.rest}]`,
-          ),
-      ),
-    )),
-    SRTE.chainEitherK(sequenceArrayNEA),
-  )
-}
 
 // const validateCachedPaths = <R extends T.Root>(
 //   root: R,
@@ -162,7 +142,7 @@ const concatCachedWithValidated = <R extends T.Root>(
                 ? E.of(actualFileItem)
                 : E.left(ItemIsNotFileError.createTemplate(actualFileItem)),
           ),
-          E.fold(
+          E.foldW(
             (e) =>
               V.invalidPath(
                 validated.details,

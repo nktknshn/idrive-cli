@@ -2,11 +2,11 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as t from 'io-ts'
-import { countryCode } from '../../defaults'
-import { err } from '../../util/errors'
-import { logger } from '../../util/logging'
-import * as AR from '../drive/requests/request'
-import { AccountData } from './types'
+import { countryCode } from '../../../defaults'
+import { err } from '../../../util/errors'
+import { logger } from '../../../util/logging'
+import * as AR from '../../request/request'
+import { AccountData } from '../types'
 
 export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<AccountData, S> {
   logger.debug('requestAccoutLogin')

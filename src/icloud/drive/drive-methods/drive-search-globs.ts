@@ -13,8 +13,8 @@ import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
 import { Drive } from '..'
+import * as T from '../drive-types'
 import { modifySubset } from '../modify-subset'
-import * as T from '../types'
 import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder, showFolderTree } from './drive-get-folders-trees'
 
 export type SearchGlobFoundItem = {

@@ -1,18 +1,15 @@
 import { pipe } from 'fp-ts/lib/function'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NEA, XX } from '../../../util/types'
-import { AccountData } from '../../authorization/types'
-import { AuthorizedState } from '../../drive/requests/request'
+import { AuthorizedState } from '../../request/request'
+import * as T from '../drive-types'
 import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
 import { DownloadResponseBody } from '../requests/download'
 import { MoveItemsResponse } from '../requests/moveItems'
-import { BasicState } from '../requests/request'
 import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
-import * as T from '../types'
 
 /** basic api functions with attached dependencies */
-export type ApiType = {
+export type DriveApi = {
   retrieveItemDetailsInFolders: <S extends AuthorizedState>(
     { drivewsids }: { drivewsids: NEA<string> },
   ) => XX<S, NEA<(T.Details | T.InvalidId)>>
@@ -80,10 +77,9 @@ export type ApiType = {
   updateDocuments: <S extends AuthorizedState>(
     { zone, data }: { zone: string; data: UpdateDocumentsRequest },
   ) => XX<S, UpdateDocumentsResponse>
-
   // fetchClient: FetchClientEither
 
-  authorizeSession: <S extends BasicState>() => XX<S, AccountData>
+  // authorizeSession: <S extends BasicState>() => XX<S, AccountData>
 }
 
 export const useApi = <Args extends unknown[], S, R, A>(

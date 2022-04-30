@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { XX } from '../../../util/types'
+import { XX } from '../../util/types'
 
 export const wrapRequest = <WR, WRS>(wrapper: ReqWrapper<WR, WRS>) =>
   <Args extends unknown[], A, R>(
@@ -25,7 +25,7 @@ export const wrapRequests = <
       : never
       : never
   } => {
-    let r: any = {}
+    const r: any = {}
 
     for (const k of Object.keys(reqs)) {
       r[k] = wrapRequest(wrapper)(reqs[k])
@@ -36,4 +36,4 @@ export const wrapRequests = <
 
 export type ReqWrapper<WR, SS, RR = any> = <R extends RR>(r: R & WR) => <A, S extends SS>(
   req: SRTE.StateReaderTaskEither<S, R, Error, A>,
-) => SRTE.StateReaderTaskEither<S, {}, Error, A>
+) => SRTE.StateReaderTaskEither<S, unknown, Error, A>

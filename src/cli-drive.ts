@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { runCliAction } from './cli/cli-drive'
 import { readArgv } from './cli/cli-drive/cli-drive-args'
-import { cliActionsDeps } from './cli/cli-drive/cli-drive-deps'
+import { createCliActionsDeps } from './cli/cli-drive/cli-drive-deps'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './util/logging'
 
 async function main() {
@@ -21,7 +21,7 @@ async function main() {
   )
 
   await pipe(
-    cliActionsDeps(t.argv),
+    createCliActionsDeps(t.argv),
     runCliAction(t),
     TE.fold(printer.errorTask, printer.printTask),
   )()

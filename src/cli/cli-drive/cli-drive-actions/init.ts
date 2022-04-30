@@ -1,8 +1,10 @@
 import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { Api } from '../../../icloud/drive'
-import { DepApi, DepFs } from '../../../icloud/drive/deps'
+import { DepAuthorizeSession, DepFs } from '../../../icloud/deps/DepFetchClient'
+import { DriveApi } from '../../../icloud/drive'
+import { DepDriveApi } from '../../../icloud/drive/deps'
+import { authorizeState } from '../../../icloud/drive/deps/authorize'
 import * as S from '../../../icloud/session/session'
 import { err } from '../../../util/errors'
 import { printerIO } from '../../../util/logging'
@@ -13,7 +15,7 @@ type Argv = { skipLogin: boolean }
 
 export type InitSessionDeps =
   & { sessionFile: string }
-  & DepApi<'authorizeSession'>
+  & DepAuthorizeSession
   & DepFs<'fstat'>
   & DepFs<'writeFile'>
 
@@ -35,7 +37,7 @@ export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessi
     RTE.chainTaskEitherK(() => sessionQuest),
     !skipLogin
       ? flow(
-        RTE.chainW(Api.authorizeState),
+        RTE.chainW(authorizeState),
         RTE.chainFirstW(saveAccountData),
       )
       : RTE.map(identity),

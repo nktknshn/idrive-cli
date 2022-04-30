@@ -6,7 +6,8 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { DepApi, DepAskConfirmation, DepFetchClient, DepFs, Drive } from '../../../icloud/drive'
+import { DepAskConfirmation, DepFetchClient, DepFs } from '../../../icloud/deps/DepFetchClient'
+import { DepDriveApi, Drive } from '../../../icloud/drive'
 import { flattenFolderTreeWithPath } from '../../../icloud/drive/drive-methods/drive-get-folders-trees'
 import { guardFst } from '../../../util/guards'
 import { printer, printerIO } from '../../../util/logging'
@@ -37,7 +38,7 @@ type Argv = {
 
 type Deps =
   & Drive.Deps
-  & DepApi<'downloadBatch'>
+  & DepDriveApi<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
   & DepFs<
@@ -161,7 +162,7 @@ const _downloadFolder = <R>(
   // )
 
   const folderTree = pipe(
-    Drive.getDocwsRoot(),
+    Drive.getCachedDocwsRoot(),
     SRTE.chainW((root) =>
       pipe(
         Drive.getByPathFolder(root, normalizePath(path)),

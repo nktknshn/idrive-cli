@@ -34,7 +34,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
 
   if (tree) {
     return pipe(
-      Drive.getDocwsRoot(),
+      Drive.getCachedDocwsRoot(),
       SRTE.bindTo('root'),
       SRTE.chain(({ root }) => Drive.getByPathsFolders(root, basepaths)),
       SRTE.chain(dirs => Drive.getFoldersTrees(dirs, depth)),

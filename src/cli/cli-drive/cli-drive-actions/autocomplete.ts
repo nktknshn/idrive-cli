@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as Drive from '../../../icloud/drive/drive'
-import { fileName, fileNameAddSlash } from '../../../icloud/drive/types'
+import { fileName, fileNameAddSlash } from '../../../icloud/drive/drive-types'
 import { logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
@@ -38,9 +38,9 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
               f => fileName(f).startsWith(childName),
             )
         ),
-        Drive.logS(
-          result => `suggestions: ${result.map(fileName)}`,
-        ),
+        // Drive.logS(
+        //   result => `suggestions: ${result.map(fileName)}`,
+        // ),
         SRTE.map((result) =>
           result
             .filter(item => file ? item.type === 'FILE' : true)

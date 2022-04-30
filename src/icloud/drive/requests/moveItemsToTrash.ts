@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
-import { AuthorizedState } from './request'
-import * as AR from './request'
+import { AuthorizedState } from '../../request/request'
+import * as AR from '../../request/request'
 
 export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]

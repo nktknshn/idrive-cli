@@ -13,13 +13,13 @@ import {
   InvalidJsonInResponse,
   InvalidResponseStatusError,
   MissingResponseBody,
-} from '../../../util/errors'
-import { FetchClientEither, HttpRequest, HttpResponse } from '../../../util/http/fetch-client'
-import { tryJsonFromResponse } from '../../../util/http/json'
-import { apiLogger, logg } from '../../../util/logging'
-import { AccountData } from '../../authorization/types'
-import { ICloudSession } from '../../session/session'
-import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
+} from '../../util/errors'
+import { FetchClientEither, HttpRequest, HttpResponse } from '../../util/http/fetch-client'
+import { tryJsonFromResponse } from '../../util/http/json'
+import { apiLogger, logg } from '../../util/logging'
+import { AccountData } from '../authorization/types'
+import { ICloudSession } from '../session/session'
+import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../session/session-http'
 
 export type BasicState = {
   session: ICloudSession

@@ -2,7 +2,7 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
-import { Hierarchy } from '../../src/icloud/drive/cache/cache-get-by-path-types'
+import * as V from '../../src/icloud/drive/cache/cache-get-by-path-types'
 import { parseFilename } from '../../src/icloud/drive/helpers'
 import * as T from '../../src/icloud/drive/types'
 import { rootDrivewsid } from '../../src/icloud/drive/types/types-io'
@@ -26,19 +26,22 @@ type RootResult<T> = T extends [infer A, ...(infer Rest)] ? [
     Omit<Folder<G, N>, 'children'> & {
       details: T.DetailsFolder
       children: RootResult<G>
-      detailsPath: Hierarchy<T.DetailsDocwsRoot>
+      validPath: V.PathValid<T.DetailsDocwsRoot>
+      // detailsPath: V.Hierarchy<T.DetailsDocwsRoot>
     }
   )
     : A extends AppLibray<infer G, infer N> ? (
       Omit<AppLibray<G, N>, 'children'> & {
         details: T.DetailsAppLibrary
         children: RootResult<G>
-        detailsPath: Hierarchy<T.DetailsDocwsRoot>
+        validPath: V.PathValid<T.DetailsDocwsRoot>
+        // detailsPath: V.Hierarchy<T.DetailsDocwsRoot>
       }
     )
     : (File<any> & {
       details: T.DriveChildrenItemFile
-      detailsPath: Hierarchy<T.DetailsDocwsRoot>
+      validPath: V.PathValid<T.DetailsDocwsRoot>
+      // detailsPath:V.Hierarchy<T.DetailsDocwsRoot>
     }),
   ...RootResult<Rest>,
 ]
@@ -52,6 +55,7 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
         {
           details: T.DetailsFolder
           byName: RootDict<G>
+          validPath: V.PathValid<T.DetailsDocwsRoot>
         } & Folder<G, N>
       >
     ) // {
@@ -61,6 +65,7 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
           {
             details: T.DetailsAppLibrary
             byName: RootDict<G>
+            validPath: V.PathValid<T.DetailsDocwsRoot>
           } & AppLibray<G, N>
         >
       )
@@ -69,7 +74,7 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
     // ...RootDict<Rest>,
   )
   & RootDict<Rest>
-  : {}
+  : Record<string, unknown>
 
 type AppLibray<T extends (Folder<any[], any> | File<any>)[], N extends string> = {
   name: N
@@ -177,7 +182,10 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       'shareCount': 0,
       'shareAliasCount': 0,
       'directChildrenCount': 2,
-      'items': children.map(_ => _.details),
+      items: children.map(_ => ({
+        ..._.details,
+        items: undefined,
+      })),
       'numberOfItems': children.length,
       'status': 'OK',
     }
@@ -204,32 +212,32 @@ const makeAppLibrary = () =>
     }))
 
     const byName = pipe(
-      children.map(
-        _ => [_.name, _] as const,
-      ),
+      children.map(_ => [_.name, _] as const),
       recordFromTuples,
     )
 
+    const details: T.DetailsAppLibrary = {
+      'dateCreated': '2021-07-27T04:01:10Z',
+      'drivewsid': drivewsid as any,
+      'docwsid': f.docwsid,
+      'zone': f.zone,
+      'name': f.name,
+      'parentId': 'FOLDER::com.apple.CloudDocs::root',
+      'etag': 'a3q',
+      'type': 'APP_LIBRARY',
+      'maxDepth': 'ANY',
+      'icons': [],
+      'supportedExtensions': [],
+      numberOfItems: children.length,
+      items: children.map(_ => ({ ..._.details, items: undefined })),
+      status: 'OK',
+      supportedTypes: [],
+      // extension: '',
+    }
+
     return {
       ...f,
-      details: {
-        'dateCreated': '2021-07-27T04:01:10Z',
-        'drivewsid': drivewsid as any,
-        'docwsid': f.docwsid,
-        'zone': f.zone,
-        'name': f.name,
-        'parentId': 'FOLDER::com.apple.CloudDocs::root',
-        'etag': 'a3q',
-        'type': 'APP_LIBRARY',
-        'maxDepth': 'ANY',
-        'icons': [],
-        'supportedExtensions': [],
-        numberOfItems: children.length,
-        items: children.map(_ => _.details),
-        status: 'OK',
-        supportedTypes: [],
-        // extension: '',
-      },
+      details,
       children: children as RootResult<any>,
       byName,
     }
@@ -262,7 +270,7 @@ const makeFile = (
 const makeItem = (
   { parentId, zone }: { parentId: string; zone: string },
 ) =>
-  (item: File<any> | Folder<any[], any> | AppLibray<any[], any>) => {
+  (item: File<any> | Folder<any[], any> | AppLibray<any[], any>): Child => {
     return item.type === 'FILE'
       ? makeFile({ parentId, zone })(item)
       : item.type === 'FOLDER'
@@ -270,15 +278,20 @@ const makeItem = (
       : makeAppLibrary()(item)
   }
 
-type Child = ({
-  details: T.DetailsFolder
-  children: RootResult<any[]>
-  byName: RootDict<any>
-} | {
-  details: T.DetailsAppLibrary
-  children: RootResult<any[]>
-  byName: RootDict<any>
-} | { details: T.DriveChildrenItemFile })
+type Child =
+  | (File<any> & {
+    details: T.DriveChildrenItemFile
+  })
+  | (Folder<any[], any> & {
+    details: T.DetailsFolder
+    children: RootResult<any>
+    byName: RootDict<any>
+  })
+  | (AppLibray<any[], any> & {
+    details: T.DetailsAppLibrary
+    children: RootResult<any>
+    byName: RootDict<any>
+  })
 
 type Item = {
   tag?: string
@@ -290,13 +303,39 @@ const getItems = (item: Item): Item[] => {
   return [item, ...A.flatten((item.children ?? []).map(getItems))]
 }
 
+const addValidPath = <C extends Child>(
+  item: C,
+  parentPath: V.PathValid<T.DetailsDocwsRoot>,
+): C & {
+  // children?: (C & { validPath: V.PathValid<T.DetailsDocwsRoot> })[]
+  validPath: V.PathValid<T.DetailsDocwsRoot>
+} => {
+  return {
+    ...item,
+    validPath: parentPath,
+    // children: 'children' in item
+    //   ? pipe(
+    //     item.children,
+    //     A.map(a =>
+    //       addValidPath(
+    //         a,
+    //         V.validPath(
+    //           V.concat(parentPath.details, [item.details]),
+    //         ),
+    //       )
+    //     ),
+    //   )
+    //   : undefined,
+  }
+}
+
 export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]>(
   tree: DocwsRoot<T>,
 ): {
   root: {
-    type: 'DOCWSROOT'
     details: T.DetailsDocwsRoot
     children: RootResult<T>
+    childrenWithPath: RootResult<T>
     byName: RootDict<T>
   }
   itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>
@@ -304,11 +343,16 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
   byTag: Record<string, Item>
   tree: DocwsRoot<T>
 } => {
-  const children = tree.children.map(
-    makeItem({
-      parentId: rootDrivewsid,
-      zone: 'com.apple.CloudDocs',
-    }),
+  const children = pipe(
+    tree.children.map(
+      makeItem({
+        parentId: rootDrivewsid,
+        zone: 'com.apple.CloudDocs',
+      }),
+    ),
+    A.map(
+      c => addValidPath(c, V.validPath([details])),
+    ),
   )
 
   const byName = pipe(
@@ -331,13 +375,16 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     'directChildrenCount': 7,
     'numberOfItems': children.length,
     'status': 'OK',
-    items: children.map(_ => _.details),
+    items: children.map(_ => ({
+      ..._.details,
+      items: undefined,
+    })),
   }
 
-  const children1 = pipe(
-    children,
-    A.map(c => ({ ...c, detailsPath: [details] })),
-  )
+  // const children1 = pipe(
+  //   children,
+  //   A.map(c => ({ ...c, detailsPath: [details] })),
+  // )
 
   const itemByDrivewsid = pipe(
     children.map(getItems),
@@ -350,9 +397,11 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
 
   return {
     root: {
-      type: 'DOCWSROOT',
       details,
       children: children as RootResult<T>,
+      childrenWithPath: children.map(
+        c => addValidPath(c, V.validPath([details])),
+      ) as RootResult<T>,
       byName: byName as RootDict<T>,
     },
     itemByDrivewsid: itemByDrivewsid,
@@ -373,6 +422,12 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
 export const removeByTag = () => {
 }
 import * as O from 'fp-ts/Option'
+
+const validPathByDrivewsid = (drivewsid: string) =>
+  (
+    itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
+  ) => {
+  }
 
 export const removeByDrivewsid = (drivewsid: string) =>
   (

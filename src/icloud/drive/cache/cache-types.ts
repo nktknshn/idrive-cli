@@ -1,4 +1,4 @@
-import * as T from '../types'
+import * as T from '../drive-types'
 
 /** Cache is just a key-val storage for files info */
 export interface CacheF {

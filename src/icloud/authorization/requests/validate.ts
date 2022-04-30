@@ -12,12 +12,12 @@ import {
   InvalidGlobalSessionError,
   JsonParsingError,
   TypeDecodingError,
-} from '../../util/errors'
-import { tryReadJsonFile } from '../../util/files'
-import { DepFs } from '../drive/deps'
-import * as AR from '../drive/requests/request'
-import { ICloudSessionWithSessionToken } from '../session/session'
-import { AccountData } from './types'
+} from '../../../util/errors'
+import { tryReadJsonFile } from '../../../util/files'
+import { DepFs } from '../../deps/DepFetchClient'
+import * as AR from '../../request/request'
+import { ICloudSessionWithSessionToken } from '../../session/session'
+import { AccountData } from './../types'
 
 const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountData>
 

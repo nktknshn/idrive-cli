@@ -6,7 +6,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { normalizePath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
-import * as T from '../types'
+import * as T from '../drive-types'
 
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]
 
@@ -61,7 +61,7 @@ export const isInvalidPath = <R>(res: PathValidation<R>): res is PathInvalid<R> 
 export const validPath = <R extends T.Root>(
   path: Hierarchy<R>,
   file: O.Option<T.DriveChildrenItemFile> = O.none,
-): PathValidation<R> => ({
+): PathValid<R> => ({
   valid: true,
   details: path,
   file,

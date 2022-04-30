@@ -6,7 +6,7 @@ export const prompts = TE.tryCatchK(prompts_, (e) => err(`error: ${e}`))
 
 import { pipe } from 'fp-ts/lib/function'
 
-export const askConfirmation = ({ message }: { message: string }) =>
+export const askConfirmation = ({ message }: { message: string }): TE.TaskEither<Error, boolean> =>
   pipe(
     prompts({
       type: 'confirm',

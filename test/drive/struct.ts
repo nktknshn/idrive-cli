@@ -7,13 +7,13 @@ import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
 import { DepApi, Drive } from '../../src/icloud/drive'
 import * as C from '../../src/icloud/drive/cache/cache'
-import { ApiType } from '../../src/icloud/drive/deps/api-type'
+import { DriveApiDeps } from '../../src/icloud/drive/deps/api-type'
 import * as T from '../../src/icloud/drive/types'
 import * as L from '../../src/util/logging'
 import { authorizedState } from '../fixtures'
 import { createRootDetails, docwsroot } from './helpers-drive'
 
-export const struct = flow(docwsroot, createRootDetails)
+export const fakeicloud = flow(docwsroot, createRootDetails)
 // complexStructure0.aa.Obsidian.children.my1.children.misc.children.images
 export const createState = ({
   cache = C.cachef(),
@@ -27,7 +27,7 @@ type Calls = {
 
 const retrieveItemDetailsInFolders = (
   detailsRec: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
-): ApiType['retrieveItemDetailsInFolders'] =>
+): DriveApiDeps['retrieveItemDetailsInFolders'] =>
   ({ drivewsids }) => {
     return SRTE.of(pipe(
       drivewsids,
@@ -42,7 +42,7 @@ const retrieveItemDetailsInFolders = (
 export const createEnv = (
   details: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
 ): Calls & DepApi<'retrieveItemDetailsInFolders'> => {
-  let calls = {
+  const calls = {
     retrieveItemDetailsInFolders: 0,
     total: 0,
   }

@@ -1,8 +1,8 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { DriveDetailsPartialWithHierarchy } from '../types'
-import { driveDetailsWithHierarchyPartial } from '../types/types-io'
-import * as AR from './request'
+import * as AR from '../../request/request'
+import { DriveDetailsPartialWithHierarchy } from '../drive-types'
+import { driveDetailsWithHierarchyPartial } from '../drive-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
 
 export const retrieveHierarchy = (

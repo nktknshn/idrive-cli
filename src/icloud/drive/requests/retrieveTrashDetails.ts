@@ -1,16 +1,17 @@
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { DetailsTrashRoot, DriveChildrenItem } from '../types'
-import { detailsItem, detailsTrash } from '../types/types-io'
-import { AuthorizedState } from './request'
-import * as AR from './request'
+import { AuthorizedState } from '../../request/request'
+import * as AR from '../../request/request'
+import { DetailsTrashRoot, DriveChildrenItem } from '../drive-types'
+import { detailsItem, detailsTrash } from '../drive-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
 
 export const scheme = t.tuple(
   [detailsTrash],
 )
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
 }
 

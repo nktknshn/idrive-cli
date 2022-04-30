@@ -1,8 +1,9 @@
 import assert from 'assert'
 import * as A from 'fp-ts/Array'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { Api, Drive } from '../../../icloud/drive'
-import { DepApi, DepAskConfirmation, DepFs } from '../../../icloud/drive/deps'
+import { Drive, DriveApi } from '../../../icloud/drive'
+
+import { DepDriveApi } from '../../../icloud/drive/deps'
 import { NEA, XXX } from '../../../util/types'
 import { Deps as UploadFolderDeps, uploadFolder } from './upload-folder'
 import { Deps as UploadDeps, uploads, uploadSingleFile } from './upload/uploads'

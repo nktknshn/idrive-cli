@@ -1,10 +1,11 @@
 import * as t from 'io-ts'
-import { childrenItem } from '../types/types-io'
-import { AuthorizedState } from './request'
-import * as AR from './request'
+import { AuthorizedState } from '../../request/request'
+import * as AR from '../../request/request'
+import { childrenItem } from '../drive-types/types-io'
 
 const renameResponse = t.type({ items: t.array(childrenItem) })
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RenameResponse extends t.TypeOf<typeof renameResponse> {}
 
 export const renameItems = <S extends AuthorizedState>(

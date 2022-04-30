@@ -1,5 +1,5 @@
-import { Api } from './icloud/drive'
-import { defaultApiCreator } from './icloud/drive/deps/api-creator'
+import { DriveApi } from './icloud/drive'
+import { defaultApiCreator } from './icloud/drive/deps/drive-api-creator'
 import { ClientInfo } from './icloud/session/types'
 import { fetchClient, FetchError } from './util/http/fetch-client'
 import { input } from './util/prompts'

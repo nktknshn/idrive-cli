@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
+import * as T from '../drive-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
-import * as T from '../types'
 import * as C from './cache-types'
 
 export const cacheEntityFromDetails = (

@@ -1,5 +1,5 @@
 import { hole, pipe } from 'fp-ts/lib/function'
-import { Api } from '../../icloud/drive'
+import { DriveApi } from '../../icloud/drive'
 import { parseFilename } from '../../icloud/drive/helpers'
 import * as RQ from '../../icloud/drive/requests'
 import { NEA } from '../../util/types'
@@ -53,7 +53,7 @@ export const retrieveItemDetailsInFolders = (argv: {
     () =>
       pipe(
         // hole(),
-        Api.retrieveItemDetailsInFolders({ drivewsids: argv.drivewsids as NEA<string> }),
+        DriveApi.retrieveItemDetailsInFolders({ drivewsids: argv.drivewsids as NEA<string> }),
       ),
   )
 

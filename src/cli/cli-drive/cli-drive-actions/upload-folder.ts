@@ -5,11 +5,12 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
-import { Api, Drive } from '../../../icloud/drive'
+import { DepFs } from '../../../icloud/deps/DepFetchClient'
+import { Drive, DriveApi } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import { DepApi, DepFs } from '../../../icloud/drive/deps'
+import { DepDriveApi } from '../../../icloud/drive/deps'
+import { DetailsAppLibrary, DetailsDocwsRoot, DetailsFolder, isFolderLike } from '../../../icloud/drive/drive-types'
 import { findInParentFilename } from '../../../icloud/drive/helpers'
-import { DetailsAppLibrary, DetailsDocwsRoot, DetailsFolder, isFolderLike } from '../../../icloud/drive/types'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
@@ -37,19 +38,18 @@ type Argv = {
 
 export type Deps =
   & Drive.Deps
-  & DepApi<'renameItems'>
-  & DepApi<'createFolders'>
-  & DepApi<'downloadBatch'>
-  & Api.UploadMethodDeps
+  & DepDriveApi<'renameItems'>
+  & DepDriveApi<'createFolders'>
+  & DepDriveApi<'downloadBatch'>
+  & DriveApi.UploadMethodDeps
   & DepFs<'fstat' | 'opendir'>
 
 export const uploadFolder = (
   argv: Argv,
 ): XXX<Drive.State, Deps, unknown> => {
   return pipe(
-    Drive.getDocwsRoot(),
-    SRTE.bindTo('root'),
-    SRTE.bind('dst', ({ root }) => Drive.getByPath(root, normalizePath(argv.remotepath))),
+    Drive.getByPathDocwsroot(normalizePath(argv.remotepath)),
+    SRTE.bindTo('dst'),
     SRTE.bind('src', () => SRTE.of(argv.localpath)),
     SRTE.bind('args', () => SRTE.of(argv)),
     SRTE.chain(handleUploadFolder),
@@ -126,7 +126,7 @@ const uploadToNewFolder = (
       printerIO.print(`creating folder ${remotepath}`),
       SRTE.fromIO,
       SRTE.chain(() =>
-        Api.createFoldersFailing<Drive.State>({
+        DriveApi.createFoldersStrict<Drive.State>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })

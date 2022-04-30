@@ -13,8 +13,8 @@ import {
   PathValid,
   showGetByPathResult,
 } from '../../../../icloud/drive/cache/cache-get-by-path-types'
+import * as T from '../../../../icloud/drive/drive-types'
 import { findInParentGlob } from '../../../../icloud/drive/helpers'
-import * as T from '../../../../icloud/drive/types'
 import { loggerIO } from '../../../../util/loggerIO'
 import { logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'

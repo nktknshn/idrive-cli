@@ -36,7 +36,7 @@ Options:
   -u, --update                                        [boolean] [default: false]
       --help                    Show help                              [boolean]
 ```
-
+FIXMEFIXMEFIXMEFIXMEFIXMEFIXMEFIXMEFIXME
 ### init
 
 Initializes new session. 

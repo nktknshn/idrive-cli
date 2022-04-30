@@ -1,14 +1,14 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { err } from '../../util/errors'
-import { logger } from '../../util/logging'
-import * as AR from '../drive/requests/request'
-import { sessionLens } from '../session/session'
-import { applyCookiesToSession } from '../session/session-http'
-import { headers } from '../session/session-http-headers'
-import { authorizationHeaders, getTrustToken } from './headers'
-import { applyAuthorizationResponse } from './session'
+import { err } from '../../../util/errors'
+import { logger } from '../../../util/logging'
+import * as AR from '../../request/request'
+import { sessionLens } from '../../session/session'
+import { applyCookiesToSession } from '../../session/session-http'
+import { headers } from '../../session/session-http-headers'
+import { applyAuthorizationResponse } from '../authorization-session'
+import { authorizationHeaders, getTrustToken } from './../headers'
 
 export interface TrustResponse204 {
   trustToken: string

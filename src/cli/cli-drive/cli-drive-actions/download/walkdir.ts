@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import { Stats } from 'fs'
-import { DepFs } from '../../../../icloud/drive/deps'
+import { DepFs } from '../../../../icloud/deps/DepFetchClient'
 import { stripTrailingSlash } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 
@@ -33,7 +33,7 @@ export const walkDir = (path: string): RTE.ReaderTaskEither<
       TE.chain(dir =>
         TE.fromTask(
           async () => {
-            let items: TR.Forest<LocalTreeElement> = []
+            const items: TR.Forest<LocalTreeElement> = []
 
             for await (const dirent of dir) {
               const itemPath = Path.join(

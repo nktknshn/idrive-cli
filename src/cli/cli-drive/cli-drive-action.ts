@@ -1,29 +1,31 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { readAccountData, saveAccountData as _saveAccountData } from '../../icloud/authorization/requests/validate'
 import { AccountData } from '../../icloud/authorization/types'
-import { readAccountData, saveAccountData as _saveAccountData } from '../../icloud/authorization/validate'
-import { Api, Drive } from '../../icloud/drive'
+import { Drive, DriveApi } from '../../icloud/drive'
 import * as C from '../../icloud/drive/cache/cache'
-import { DepApi, DepFs } from '../../icloud/drive/deps'
-import { AuthorizedState, BasicState } from '../../icloud/drive/requests/request'
+import { DepAuthorizeSession, DepFs } from '../../icloud/deps/DepFetchClient'
+import { DepDriveApi } from '../../icloud/drive/deps'
+import { authorizeState } from '../../icloud/drive/deps/authorize'
+import { AuthorizedState, BasicState } from '../../icloud/request/request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud/session/session-file'
 import { err } from '../../util/errors'
 import { ReadJsonFileError } from '../../util/files'
 import { loggerIO } from '../../util/loggerIO'
 import { cacheLogger } from '../../util/logging'
 
-export type CliActionDeps =
+type Deps =
   & { sessionFile: string }
   & { cacheFile: string; noCache: boolean }
-  & DepApi<'authorizeSession'>
+  & DepAuthorizeSession
   & DepFs<'writeFile'>
   & DepFs<'readFile'>
 
 /** read the state from files and executes the action in the context */
 export function cliAction<A, R, Args extends unknown[]>(
   action: (...args: Args) => Drive.Effect<A, R>,
-): (...args: Args) => RTE.ReaderTaskEither<R & CliActionDeps, Error, A> {
+): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {
   return (...args: Args) =>
     pipe(
       loadDriveState,
@@ -70,7 +72,7 @@ const loadSession = pipe(
 const loadAccountData = (
   { session }: BasicState,
 ): RTE.ReaderTaskEither<
-  DepApi<'authorizeSession'> & { sessionFile: string } & DepFs<'readFile'>,
+  DepAuthorizeSession & { sessionFile: string } & DepFs<'readFile'>,
   Error,
   AuthorizedState
 > =>
@@ -83,7 +85,7 @@ const loadAccountData = (
       pipe(
         loggerIO.error(`couldn't read account data from file. (${e}). Fetching from the icloud server`),
         RTE.fromIO,
-        RTE.chain(() => Api.authorizeState({ session })),
+        RTE.chain(() => authorizeState({ session })),
       )
     ),
   )

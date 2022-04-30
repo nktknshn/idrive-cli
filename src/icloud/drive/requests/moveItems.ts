@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
-import { childrenItem } from '../types/types-io'
-import { AuthorizedState } from './request'
-import * as AR from './request'
+import { AuthorizedState } from '../../request/request'
+import * as AR from '../../request/request'
+import { childrenItem } from '../drive-types/types-io'
 
 const moveItemResponse = t.type({
   items: t.array(t.union([
@@ -10,6 +10,7 @@ const moveItemResponse = t.type({
   ])),
 })
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
 export const moveItems = <S extends AuthorizedState>({ items, destinationDrivewsId }: {

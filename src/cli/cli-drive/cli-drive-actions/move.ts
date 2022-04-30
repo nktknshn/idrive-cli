@@ -1,20 +1,20 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Api, Drive } from '../../../icloud/drive'
+import { Drive, DriveApi } from '../../../icloud/drive'
 import * as V from '../../../icloud/drive/cache/cache-get-by-path-types'
-import { DepApi } from '../../../icloud/drive/deps'
+import { DepDriveApi } from '../../../icloud/drive/deps'
+import * as T from '../../../icloud/drive/drive-types'
 import { parseFilename } from '../../../icloud/drive/helpers'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/requests'
-import * as T from '../../../icloud/drive/types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
 
 type Deps =
   & Drive.Deps
-  & DepApi<'moveItems'>
-  & DepApi<'renameItems'>
+  & DepDriveApi<'moveItems'>
+  & DepDriveApi<'renameItems'>
 
 /**
  * move a file or a directory
@@ -87,7 +87,7 @@ const caseMove = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
   dst: T.Details,
 ): Drive.Action<Deps, MoveItemsResponse> => {
-  return Api.moveItems({
+  return DriveApi.moveItems<Drive.State>({
     destinationDrivewsId: dst.drivewsid,
     items: [{ drivewsid: src.drivewsid, etag: src.etag }],
   })
@@ -97,7 +97,7 @@ const caseRename = (
   srcitem: T.NonRootDetails | T.DriveChildrenItemFile,
   name: string,
 ): Drive.Action<Deps, RenameResponse> => {
-  return Api.renameItems({
+  return DriveApi.renameItems({
     items: [
       { drivewsid: srcitem.drivewsid, ...parseFilename(name), etag: srcitem.etag },
     ],
@@ -110,14 +110,14 @@ const caseMoveAndRename = (
   name: string,
 ): Drive.Action<Deps, RenameResponse> => {
   return pipe(
-    Api.moveItems<Drive.State>(
+    DriveApi.moveItems<Drive.State>(
       {
         destinationDrivewsId: dst.drivewsid,
         items: [{ drivewsid: src.drivewsid, etag: src.etag }],
       },
     ),
     SRTE.chainW(() =>
-      Api.renameItems({
+      DriveApi.renameItems({
         items: [
           { drivewsid: src.drivewsid, ...parseFilename(name), etag: src.etag },
         ],

@@ -3,15 +3,16 @@ import * as A from 'fp-ts/lib/Array'
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { Api, Drive } from '../../../icloud/drive'
-import { DepApi, DepAskConfirmation } from '../../../icloud/drive/deps'
-import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud/drive/types'
+import { DepAskConfirmation } from '../../../icloud/deps/DepFetchClient'
+import { Drive, DriveApi } from '../../../icloud/drive'
+import { DepDriveApi } from '../../../icloud/drive/deps'
+import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud/drive/drive-types'
 import { guardProp } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 
 type Deps =
   & Drive.Deps
-  & DepApi<'moveItemsToTrash'>
+  & DepDriveApi<'moveItemsToTrash'>
   & DepAskConfirmation
 
 export const rm = (
@@ -47,7 +48,7 @@ const _rm = (
 ) => {
   const effect = () =>
     pipe(
-      Api.moveItemsToTrash<Drive.State>({
+      DriveApi.moveItemsToTrash<Drive.State>({
         items: items.map(a => a.item),
         trash,
       }),

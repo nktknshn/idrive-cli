@@ -1,4 +1,3 @@
-import { apply } from 'fp-ts/function'
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
@@ -6,65 +5,77 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Stats } from 'fs'
 import mime from 'mime-types'
-import { Readable } from 'stream'
-import { err } from '../../../util/errors'
-import { Path } from '../../../util/path'
-import { NEA } from '../../../util/types'
-import { getMissedFound } from '../helpers'
-import { CreateFoldersResponse } from '../requests'
-import { getUrlStream as getUrlStream_ } from '../requests/download'
-import { AuthorizedState, BasicState } from '../requests/request'
-import * as T from '../types'
-import { DepApi, DepFetchClient, DepFs } from '.'
-import { useApi } from './api-type'
+import { err } from '../../util/errors'
+import { Path } from '../../util/path'
+import { NEA } from '../../util/types'
+import { AccountData } from '../authorization/types'
+import { DepFs } from '../deps/DepFetchClient'
+import { AuthorizedState, BasicState } from '../request/request'
+import { DepDriveApi } from './deps'
+import { useApi } from './deps/drive-api-type'
+import * as T from './drive-types'
+import { getMissedFound } from './helpers'
+import { CreateFoldersResponse } from './requests'
+
+// FIXME
+// export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
+//   drivewsids: [R['drivewsid'], ...T.NonRootDrivewsid[]],
+// ): Effect<[O.Some<R>, ...O.Option<T.NonRootDetails>[]]>
+
+// export function retrieveItemDetailsInFoldersSaving(
+//   drivewsids: [typeof rootDrivewsid, ...string[]],
+// ): Effect<[O.Some<T.DetailsDocwsRoot>, ...O.Option<T.Details>[]]>
+// export function retrieveItemDetailsInFoldersSaving(
+//   drivewsids: [typeof trashDrivewsid, ...string[]],
+// ): Effect<[O.Some<T.DetailsTrashRoot>, ...O.Option<T.Details>[]]>
+// export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
+//   drivewsids: [R['drivewsid'], ...string[]],
+// ): Effect<[O.Some<R>, ...O.Option<T.Details>[]]>
+// export function retrieveItemDetailsInFoldersSaving(
+//   drivewsids: NEA<string>,
+// ): Effect<NEA<O.Option<T.Details>>>
+// export function retrieveItemDetailsInFoldersSaving(
+//   drivewsids: NEA<string>,
+// ): Effect<NEA<O.Option<T.Details>>> {
+//   return pipe(
+//     API.retrieveItemDetailsInFolders<State>({ drivewsids }),
+//     chain((details) =>
+//       pipe(
+//         createMissedFound(drivewsids, details),
+//         putMissedFound,
+//         chain(() => of(NA.map(T.invalidIdToOption)(details))),
+//       )
+//     ),
+//   )
+// }
 
 /** basic icloud api requests as standalone depended functions*/
-export const renameItems = useApi((_: DepApi<'renameItems'>) => _.api.renameItems)
+export const renameItems = useApi((_: DepDriveApi<'renameItems'>) => _.api.renameItems)
 
-export const putBackItemsFromTrash = useApi((_: DepApi<'putBackItemsFromTrash'>) => _.api.putBackItemsFromTrash)
+export const putBackItemsFromTrash = useApi((_: DepDriveApi<'putBackItemsFromTrash'>) => _.api.putBackItemsFromTrash)
 
-export const moveItems = useApi((_: DepApi<'moveItems'>) => _.api.moveItems)
+export const moveItems = useApi((_: DepDriveApi<'moveItems'>) => _.api.moveItems)
 
-export const moveItemsToTrash = useApi((_: DepApi<'moveItemsToTrash'>) => _.api.moveItemsToTrash)
+export const moveItemsToTrash = useApi((_: DepDriveApi<'moveItemsToTrash'>) => _.api.moveItemsToTrash)
 
-export const retrieveItemDetailsInFolders = useApi((_: DepApi<'retrieveItemDetailsInFolders'>) =>
+export const retrieveItemDetailsInFolders = useApi((_: DepDriveApi<'retrieveItemDetailsInFolders'>) =>
   _.api.retrieveItemDetailsInFolders
 )
 
-export const download = useApi((_: DepApi<'download'>) => _.api.download)
+export const download = useApi((_: DepDriveApi<'download'>) => _.api.download)
 
-export const downloadBatch = useApi((_: DepApi<'downloadBatch'>) => _.api.downloadBatch)
+export const downloadBatch = useApi((_: DepDriveApi<'downloadBatch'>) => _.api.downloadBatch)
 
-export const createFolders = useApi((_: DepApi<'createFolders'>) => _.api.createFolders)
-
-export const authorizeSession = <S extends BasicState>() =>
-  SRTE.asksStateReaderTaskEitherW(
-    (_: DepApi<'authorizeSession'>) => _.api.authorizeSession<S>(),
-  )
-
-/** higher level methods based and dependent on the basic functions */
-
-export const authorizeState = <
-  S extends BasicState,
->(
-  state: S,
-) =>
-  pipe(
-    authorizeSession<S>()(state),
-    RTE.map(([accountData, state]) => ({ ...state, accountData })),
-  )
-
-export const getUrlStream = ({ url }: {
-  url: string
-}): RTE.ReaderTaskEither<DepFetchClient, Error, Readable> =>
-  pipe(
-    RTE.ask<DepFetchClient>(),
-    RTE.chainTaskEitherK(flow(getUrlStream_, apply({ url }))),
-  )
+export const createFolders = useApi((_: DepDriveApi<'createFolders'>) => _.api.createFolders)
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
-) =>
+): SRTE.StateReaderTaskEither<
+  S,
+  DepDriveApi<'retrieveItemDetailsInFolders', 'api'>,
+  Error,
+  { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
+> =>
   pipe(
     retrieveItemDetailsInFolders<S>({ drivewsids }),
     SRTE.map(ds => getMissedFound(drivewsids, ds)),
@@ -87,9 +98,9 @@ export const getICloudItemUrl = flow(
 )
 
 export type UploadMethodDeps =
-  & DepApi<'upload'>
-  & DepApi<'singleFileUpload'>
-  & DepApi<'updateDocuments'>
+  & DepDriveApi<'upload'>
+  & DepDriveApi<'singleFileUpload'>
+  & DepDriveApi<'updateDocuments'>
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 
@@ -200,7 +211,7 @@ export const createFoldersNEA = <S extends AuthorizedState>(args: {
     SRTE.filterOrElse(A.isNonEmpty, () => err(`createFolders returned empty response`)),
   )
 
-export const createFoldersFailing = flow(
+export const createFoldersStrict = flow(
   createFoldersNEA,
   SRTE.filterOrElse(
     (folders): folders is NEA<T.DriveChildrenItemFolder> => pipe(folders, A.every((folder) => folder.status === 'OK')),

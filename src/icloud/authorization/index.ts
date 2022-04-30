@@ -1,1 +1,1 @@
-export { authorizeSession } from './authorize'
+export { authorizeSession } from './authorization-methods'

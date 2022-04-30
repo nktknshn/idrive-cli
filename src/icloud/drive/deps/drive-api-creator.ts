@@ -3,16 +3,16 @@ import { flow } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as R from 'fp-ts/Reader'
 import { InvalidResponseStatusError } from '../../../util/errors'
-import { AuthorizeEnv, authorizeSession } from '../../authorization/authorize'
+import { AuthorizeEnv, authorizeSession } from '../../authorization/authorization-methods'
+import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from '../../request/api-catch'
+import { AuthorizedState, BasicState } from '../../request/request'
+import { ReqWrapper, wrapRequest, wrapRequests } from '../../request/request-wrapper'
 import * as RQ from '../requests'
-import { AuthorizedState, BasicState } from '../requests/request'
-import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from './api-catch'
-import { ApiType } from './api-type'
-import { ReqWrapper, wrapRequests } from './request-wrapper'
+import { DriveApi } from './drive-api-type'
 
 const seqs = sequenceS(R.Apply)
 
-export type ApiCreator<Env> = R.Reader<Env, ApiType>
+export type ApiCreator<Env> = R.Reader<Env, DriveApi>
 
 export const basic: ReqWrapper<
   CatchFetchEnv & AuthorizeEnv,
@@ -51,9 +51,11 @@ export const handle409: ReqWrapper<
 export const defaultApiSchema = {
   ...wrapRequests(RQ)(authorized),
   ...wrapRequests({ updateDocuments: RQ.updateDocuments })(handle409),
-  ...wrapRequests({ authorizeSession })(basic),
+  // ...wrapRequests({ authorizeSession })(basic),
 }
 
 export const defaultApiCreator: ApiCreator<CatchFetchEnv & CatchSessEnv & AuthorizeEnv> = seqs(
   defaultApiSchema,
 )
+
+export const authorizeSessionMethod = wrapRequest(basic)(authorizeSession)

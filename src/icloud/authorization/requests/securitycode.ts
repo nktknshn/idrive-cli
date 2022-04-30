@@ -1,13 +1,14 @@
 import { constant, flow, pipe } from 'fp-ts/lib/function'
-import * as AR from '../drive/requests/request'
-import { applyCookiesToSession } from '../session/session-http'
-import { headers } from '../session/session-http-headers'
-import { authorizationHeaders } from './headers'
-import { applyAuthorizationResponse } from './session'
+import { EmptyObject } from '../../../util/types'
+import * as AR from '../../request/request'
+import { applyCookiesToSession } from '../../session/session-http'
+import { headers } from '../../session/session-http-headers'
+import { applyAuthorizationResponse } from '../authorization-session'
+import { authorizationHeaders } from './../headers'
 
 export const requestSecurityCodeM = <S extends AR.BasicState>(
   code: number,
-): AR.ApiRequest<{}, S> => {
+): AR.ApiRequest<EmptyObject, S> => {
   return pipe(
     AR.buildRequestC<S>(() => ({
       method: 'POST',

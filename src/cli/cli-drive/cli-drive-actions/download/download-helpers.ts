@@ -12,9 +12,11 @@ import { Eq } from 'fp-ts/lib/string'
 import * as TE from 'fp-ts/lib/TaskEither'
 import micromatch from 'micromatch'
 import { Readable } from 'stream'
-import { Api, DepApi, DepFetchClient, DepFs, Drive } from '../../../../icloud/drive'
+import { DepFetchClient, DepFs } from '../../../../icloud/deps/DepFetchClient'
+import { DepDriveApi, Drive, DriveApi } from '../../../../icloud/drive'
+import { getUrlStream } from '../../../../icloud/drive/deps/getUrlStream'
+import * as T from '../../../../icloud/drive/drive-types'
 import { prependPath } from '../../../../icloud/drive/helpers'
-import * as T from '../../../../icloud/drive/types'
 import { err } from '../../../../util/errors'
 import { guardFstRO, guardSnd, isDefined } from '../../../../util/guards'
 import { loggerIO } from '../../../../util/loggerIO'
@@ -55,7 +57,7 @@ export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'create
   pipe(
     loggerIO.debug(`getting ${destpath}`),
     RTE.fromIO,
-    RTE.chain(() => Api.getUrlStream({ url })),
+    RTE.chain(() => getUrlStream({ url })),
     RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
     RTE.chainFirstIOK(() => printerIO.print(`writing ${destpath}`)),
     RTE.chainW(writeFileFromReadable(destpath)),
@@ -267,7 +269,7 @@ export const createEmpties = ({ empties }: DownloadTask): RTE.ReaderTaskEither<D
 
 export const downloadICloudFilesChunked = (
   { chunkSize = 5 },
-): DownloadICloudFilesFunc<DepApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>> =>
+): DownloadICloudFilesFunc<DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>> =>
   ({ downloadable }) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
@@ -299,11 +301,11 @@ const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
 ): XXX<
   Drive.State,
-  DepApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
+  DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 > => {
   return pipe(
-    Api.downloadBatch<Drive.State>({
+    DriveApi.downloadBatch<Drive.State>({
       docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
       zone: NA.head(chunk).info[1].zone,
     }),

@@ -1,19 +1,22 @@
 import * as defaults from '../../defaults'
-import { DepAskConfirmation } from '../../icloud/drive/deps'
+import { DepAskConfirmation } from '../../icloud/deps/DepFetchClient'
+import { authorizeSessionMethod } from '../../icloud/drive/deps/drive-api-creator'
+import { ActionsDeps } from '.'
 
-export const cliActionsDeps = (argv: {
+export const createCliActionsDeps = (argv: {
   sessionFile?: string
   cacheFile?: string
   noCache?: boolean
   tempdir?: string
   fileEditor?: string
   askConfirmation?: DepAskConfirmation['askConfirmation']
-}) => ({
+}): ActionsDeps => ({
   api: defaults.api,
   fs: defaults.fs,
+  authorizeSession: authorizeSessionMethod(defaults.apiEnv),
   // ...defaults.apiEnv,
   fetchClient: defaults.apiEnv.fetchClient,
-  clientInfo: defaults.clientInfo,
+  // clientInfo: defaults.clientInfo,
   sessionFile: argv.sessionFile ?? defaults.sessionFile,
   cacheFile: argv.cacheFile ?? defaults.cacheFile,
   noCache: argv.noCache ?? false,
