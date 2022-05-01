@@ -4,9 +4,9 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as R from 'fp-ts/Reader'
 import { InvalidResponseStatusError } from '../../util/errors'
 import { AuthorizeEnv } from '../authorization/authorize-session'
-import { DriveApiEnv } from '../drive/drive-api/deps/drive-api-env'
+import { DriveApiEnv } from '../drive/drive-api/deps/drive-api-env-type'
 import * as RQ from '../drive/drive-api/requests'
-import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from '../request/api-catch'
+import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from '../request/catch'
 import { AuthorizedState, BasicState } from '../request/request'
 import { ReqWrapper, wrapRequests } from '../request/request-wrapper'
 
@@ -48,12 +48,12 @@ export const handle409: ReqWrapper<
     // SRTE.local(() => ({ ...deps, fetchClient: failingFetch(90) })),
   )
 
-export const defaultApiSchema = {
+export const defaultDriveApiEnvSchema = {
   ...wrapRequests(RQ)(wrapAuthorizedReq),
   ...wrapRequests({ updateDocuments: RQ.updateDocuments })(handle409),
   // ...wrapRequests({ authorizeSession })(basic),
 }
 
 export const defaultApiCreator: ApiCreator<CatchFetchEnv & CatchSessEnv & AuthorizeEnv> = seqs(
-  defaultApiSchema,
+  defaultDriveApiEnvSchema,
 )

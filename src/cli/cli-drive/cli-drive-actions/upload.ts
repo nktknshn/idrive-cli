@@ -1,7 +1,7 @@
 import assert from 'assert'
 import * as A from 'fp-ts/Array'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { DriveApi, Query } from '../../../icloud/drive'
+import { DriveApi, DriveQuery } from '../../../icloud/drive'
 
 import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
 import { NEA, XXX } from '../../../util/types'
@@ -34,7 +34,7 @@ export const upload = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<Query.State, UploadDeps & UploadFolderDeps, unknown> => {
+): XXX<DriveQuery.State, UploadDeps & UploadFolderDeps, unknown> => {
   assert(A.isNonEmpty(argv.uploadargs))
   assert(argv.uploadargs.length > 1)
 

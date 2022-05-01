@@ -1,19 +1,19 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepDriveApi, DriveApi, DriveQuery } from '../../../icloud/drive'
-import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/drive-api/requests'
-import * as V from '../../../icloud/drive/get-by-path-types'
-import { parseFilename } from '../../../icloud/drive/helpers'
-import * as T from '../../../icloud/drive/icloud-drive-types'
-import { err } from '../../../util/errors'
-import { normalizePath } from '../../../util/normalize-path'
-import { NEA } from '../../../util/types'
+import { err } from '../../../../util/errors'
+import { normalizePath } from '../../../../util/normalize-path'
+import { NEA } from '../../../../util/types'
+import { Dep, DepDriveApi, DriveApi, DriveQuery } from '../..'
+import { MoveItemsResponse, RenameResponse } from '../../drive-api/requests'
+import * as V from '../../get-by-path-types'
+import { parseFilename } from '../../helpers'
+import * as T from '../../icloud-drive-types'
 
-type Deps =
+export type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'moveItems'>
-  & DepDriveApi<'renameItems'>
+  & Dep<'moveItems'>
+  & Dep<'renameItems'>
 
 /**
  * move a file or a directory
@@ -21,15 +21,15 @@ type Deps =
 export const move = ({ srcpath, dstpath }: {
   srcpath: string
   dstpath: string
-}): DriveQuery.Effect<string, Deps> => {
+}): DriveQuery.Action<Deps, MoveItemsResponse | RenameResponse> => {
   const nsrc = normalizePath(srcpath)
   const ndst = normalizePath(dstpath)
 
   return pipe(
-    DriveQuery.chainCachedDocwsRoot(root => DriveQuery.getByPaths(root, [nsrc, ndst])),
+    DriveQuery.getByPathsDocwsroot([nsrc, ndst]),
     SRTE.bindTo('srcdst'),
     SRTE.chain(handle),
-    SRTE.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
+    // SRTE.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
   )
 }
 

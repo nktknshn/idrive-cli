@@ -12,8 +12,8 @@ import { AuthorizedState } from '../../../request/request'
 import * as AR from '../../../request/request'
 import { ResponseHandler, ResponseWithSession } from '../../../request/request'
 import { buildRequest } from '../../../session/session-http'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../icloud-drive-types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../icloud-drive-types/types-io'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../../icloud-drive-types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../../icloud-drive-types/types-io'
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,

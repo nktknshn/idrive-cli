@@ -1,21 +1,21 @@
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { isKeyOf } from '../../util/guards'
-import { cliAction } from './cli-drive-action'
+import { driveAction } from './cli-drive-action'
 import * as Action from './cli-drive-actions'
 
 const cliActions = {
-  ls: cliAction(Action.listUnixPath),
-  mkdir: cliAction(Action.mkdir),
-  rm: cliAction(Action.rm),
-  upload: cliAction(Action.upload),
-  mv: cliAction(Action.move),
-  autocomplete: cliAction(Action.autocomplete),
-  ac: cliAction(Action.autocomplete),
-  cat: cliAction(Action.cat),
-  recover: cliAction(Action.recover),
-  download: cliAction(Action.download),
-  edit: cliAction(Action.edit),
+  ls: driveAction(Action.listUnixPath),
+  mkdir: driveAction(Action.mkdir),
+  rm: driveAction(Action.rm),
+  upload: driveAction(Action.upload),
+  mv: driveAction(Action.move),
+  autocomplete: driveAction(Action.autocomplete),
+  ac: driveAction(Action.autocomplete),
+  cat: driveAction(Action.cat),
+  recover: driveAction(Action.recover),
+  download: driveAction(Action.download),
+  edit: driveAction(Action.edit),
   init: Action.initSession,
 }
 

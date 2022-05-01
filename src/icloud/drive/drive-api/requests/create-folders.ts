@@ -1,8 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../../request/request'
-import * as AR from '../../../request/request'
-import { itemFolder } from '../icloud-drive-types/types-io'
+import * as AR from '../../../request'
+import { itemFolder } from '../../icloud-drive-types/types-io'
 
 const createFolderResponse = t.type({
   destinationDrivewsId: t.string,
@@ -18,7 +17,7 @@ const createFolderResponse = t.type({
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CreateFoldersResponse extends t.TypeOf<typeof createFolderResponse> {}
 
-export function createFoldersM<S extends AuthorizedState>(
+export function createFoldersM<S extends AR.AuthorizedState>(
   { names, destinationDrivewsId }: {
     destinationDrivewsId: string
     names: string[]

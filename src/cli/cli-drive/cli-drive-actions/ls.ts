@@ -1,6 +1,6 @@
 import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
-import { Query } from '../../../icloud/drive'
+import { DriveQuery } from '../../../icloud/drive'
 import { recursivels } from './ls/ls-recursive'
 import { shallowList } from './ls/ls-shallow'
 
@@ -28,7 +28,7 @@ type Argv = {
 
 export const listUnixPath = (
   { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
-): Query.Effect<string> => {
+): DriveQuery.Effect<string> => {
   assert(A.isNonEmpty(paths))
 
   if (recursive) {

@@ -1,5 +1,4 @@
-import { DepDriveApi } from '../deps'
-import { useApi } from '../deps/util'
+import { DepDriveApi, useApi } from '../deps'
 
 // FIXME
 // export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(

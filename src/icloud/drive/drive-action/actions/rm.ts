@@ -1,32 +1,31 @@
-import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
-import { constVoid, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { DepAskConfirmation } from '../../../icloud/deps'
-import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
-import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud/drive/icloud-drive-types'
-import { guardProp } from '../../../util/guards'
-import { NEA } from '../../../util/types'
+import { guardProp } from '../../../../util/guards'
+import { NEA } from '../../../../util/types'
+import { DepAskConfirmation } from '../../../deps'
+import { Dep, DepDriveApi, DriveApi, DriveQuery } from '../..'
+import { MoveItemToTrashResponse } from '../../drive-api/requests'
+import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../icloud-drive-types'
 
-type Deps =
+export type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'moveItemsToTrash'>
+  & Dep<'moveItemsToTrash'>
   & DepAskConfirmation
 
+type Result = MoveItemToTrashResponse
+
 export const rm = (
-  { paths, skipTrash, force, recursive }: {
-    paths: string[]
+  globs: NEA<string>,
+  { skipTrash, force, recursive }: {
     skipTrash: boolean
     recursive: boolean
     force: boolean
   },
-): DriveQuery.Effect<void, Deps> => {
-  assert(A.isNonEmpty(paths))
-
+): DriveQuery.Action<Deps, Result> => {
   return pipe(
-    DriveQuery.searchGlobs(paths, recursive ? Infinity : 1),
+    DriveQuery.searchGlobs(globs, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
     SRTE.map(
       A.filter(guardProp('item', isNotRootDetails)),
@@ -34,7 +33,7 @@ export const rm = (
     SRTE.chainW((items) =>
       A.isNonEmpty(items)
         ? _rm({ items, trash: !skipTrash, force })
-        : SRTE.of(constVoid())
+        : SRTE.of({ items: [] })
     ),
   )
 }
@@ -45,7 +44,7 @@ const _rm = (
     force: boolean
     items: NEA<{ path: string; item: NonRootDetails | DriveChildrenItemFile }>
   },
-) => {
+): DriveQuery.Action<Deps, Result> => {
   const effect = () =>
     pipe(
       DriveApi.moveItemsToTrash<DriveQuery.State>({
@@ -54,8 +53,11 @@ const _rm = (
       }),
       SRTE.chainW(
         resp =>
-          DriveQuery.removeByIdsFromCache(
-            resp.items.map(_ => _.drivewsid),
+          pipe(
+            DriveQuery.removeByIdsFromCache(
+              resp.items.map(_ => _.drivewsid),
+            ),
+            SRTE.map(() => resp),
           ),
       ),
     )
@@ -72,7 +74,7 @@ const _rm = (
     SRTE.chain((answer) =>
       answer
         ? effect()
-        : SRTE.of(constVoid())
+        : SRTE.of({ items: [] })
     ),
   )
 }

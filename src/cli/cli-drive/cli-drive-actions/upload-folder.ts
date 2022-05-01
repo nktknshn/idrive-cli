@@ -6,16 +6,16 @@ import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../icloud/deps'
-import { DriveApi, Query } from '../../../icloud/drive'
+import { DriveApi, DriveQuery } from '../../../icloud/drive'
 import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
+import * as V from '../../../icloud/drive/get-by-path-types'
+import { findInParentFilename } from '../../../icloud/drive/helpers'
 import {
   DetailsAppLibrary,
   DetailsDocwsRoot,
   DetailsFolder,
   isFolderLike,
-} from '../../../icloud/drive/drive-api/icloud-drive-types'
-import * as V from '../../../icloud/drive/drive-query/cache/cache-get-by-path-types'
-import { findInParentFilename } from '../../../icloud/drive/helpers'
+} from '../../../icloud/drive/icloud-drive-types'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
@@ -42,7 +42,7 @@ type Argv = {
 }
 
 export type Deps =
-  & Query.Deps
+  & DriveQuery.Deps
   & DepDriveApi<'renameItems'>
   & DepDriveApi<'createFolders'>
   & DepDriveApi<'downloadBatch'>
@@ -51,9 +51,9 @@ export type Deps =
 
 export const uploadFolder = (
   argv: Argv,
-): XXX<Query.State, Deps, unknown> => {
+): XXX<DriveQuery.State, Deps, unknown> => {
   return pipe(
-    Query.getByPathDocwsroot(normalizePath(argv.remotepath)),
+    DriveQuery.getByPathDocwsroot(normalizePath(argv.remotepath)),
     SRTE.bindTo('dst'),
     SRTE.bind('src', () => SRTE.of(argv.localpath)),
     SRTE.bind('args', () => SRTE.of(argv)),
@@ -68,7 +68,7 @@ const handleUploadFolder = (
     dst: V.GetByPathResult<DetailsDocwsRoot>
     args: Argv
   },
-): XXX<Query.State, Deps, UploadResult[]> => {
+): XXX<DriveQuery.State, Deps, UploadResult[]> => {
   const dirname = Path.parse(src).base
 
   const uploadTask = pipe(
@@ -125,13 +125,13 @@ const uploadToNewFolder = (
   },
 ): (
   task: UploadTask,
-) => XXX<Query.State, Deps, UploadResult[]> =>
+) => XXX<DriveQuery.State, Deps, UploadResult[]> =>
   (task: UploadTask) =>
     pipe(
       printerIO.print(`creating folder ${remotepath}`),
       SRTE.fromIO,
       SRTE.chain(() =>
-        DriveApi.createFoldersStrict<Query.State>({
+        DriveApi.createFoldersStrict<DriveQuery.State>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })

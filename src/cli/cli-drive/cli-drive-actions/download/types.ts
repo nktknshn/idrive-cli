@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/lib/Either'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { Query } from '../../../../icloud/drive'
-import * as T from '../../../../icloud/drive/drive-api/icloud-drive-types'
+import { DriveQuery } from '../../../../icloud/drive'
+import * as T from '../../../../icloud/drive/icloud-drive-types'
 
 import { XXX } from '../../../../util/types'
 
@@ -26,7 +26,7 @@ export type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEit
 export type DownloadFileResult = [E.Either<Error, void>, readonly [url: string, localpath: string]]
 
 export type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
-  Query.State,
+  DriveQuery.State,
   R,
   DownloadFileResult[]
 >

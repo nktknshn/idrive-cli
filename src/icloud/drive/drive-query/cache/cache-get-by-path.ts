@@ -3,11 +3,11 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import { cacheLogger, logger } from '../../../../util/logging'
-import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../../drive-api/icloud-drive-types'
+import * as H from '../../get-by-path-types'
 import { findInParentFilename } from '../../helpers'
+import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../../icloud-drive-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as C from './cache'
-import * as H from './cache-get-by-path-types'
 import { CacheF } from './cache-types'
 
 const showDetails = (d: Details): string => {

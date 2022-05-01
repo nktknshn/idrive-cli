@@ -12,8 +12,8 @@ import { logg, logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { NEA } from '../../../../util/types'
-import { Query } from '../..'
-import * as T from '../../drive-api/icloud-drive-types'
+import { DriveQuery } from '../..'
+import * as T from '../../icloud-drive-types'
 import { modifySubset } from '../../modify-subset'
 import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder, showFolderTree } from './drive-get-folders-trees'
 
@@ -24,7 +24,7 @@ export type SearchGlobFoundItem = {
 
 export const searchGlobsShallow = (
   globs: NEA<string>,
-): Query.Effect<
+): DriveQuery.Effect<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   return searchGlobs(globs, 0)
@@ -33,15 +33,15 @@ export const searchGlobsShallow = (
 export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
-): Query.Effect<
+): DriveQuery.Effect<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   const scanned = pipe(globs, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => normalizePath(_.base)))
 
   return pipe(
-    Query.chainCachedDocwsRoot(
-      root => Query.getByPathsStrict(root, basepaths),
+    DriveQuery.chainCachedDocwsRoot(
+      root => DriveQuery.getByPathsStrict(root, basepaths),
     ),
     SRTE.chain((bases) =>
       modifySubset(

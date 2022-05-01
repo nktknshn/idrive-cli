@@ -1,6 +1,6 @@
 import * as defaults from '../../defaults'
 import { DepAskConfirmation } from '../../icloud/deps'
-import { authorizeSessionMethod } from '../../icloud/deps/authorize'
+import { authorizeSessionMethod } from '../../icloud/deps/authorize-session'
 import { ActionsDeps } from '.'
 
 export const createCliActionsDeps = (argv: {

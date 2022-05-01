@@ -1,4 +1,4 @@
-import * as T from '../../drive-api/icloud-drive-types'
+import * as CT from '../../icloud-drive-types'
 
 /** Cache is just a key-val storage for files info */
 export interface CacheF {
@@ -34,7 +34,7 @@ export type ICloudDriveCacheEntityType = CacheEntity['type']
 export interface CacheEntityFolderRootDetails {
   readonly type: 'ROOT'
   readonly hasDetails: true
-  readonly content: T.DetailsDocwsRoot
+  readonly content: CT.DetailsDocwsRoot
   // readonly updated: Date
 }
 
@@ -43,7 +43,7 @@ export class CacheEntityFolderRootDetails {
   readonly hasDetails = true
   // readonly updated: Date = new Date()
   constructor(
-    public readonly content: T.DetailsDocwsRoot,
+    public readonly content: CT.DetailsDocwsRoot,
     public readonly created: Date = new Date(),
   ) {}
 }
@@ -52,7 +52,7 @@ export class CacheEntityFolderTrashDetails {
   readonly type = 'TRASH_ROOT'
   readonly hasDetails = true
   constructor(
-    public readonly content: T.DetailsTrashRoot,
+    public readonly content: CT.DetailsTrashRoot,
     public readonly created: Date = new Date(),
   ) {}
 }
@@ -62,7 +62,7 @@ export class CacheEntityFolderDetails {
   readonly hasDetails = true
 
   constructor(
-    public readonly content: T.DetailsFolder,
+    public readonly content: CT.DetailsFolder,
     public readonly created: Date = new Date(),
   ) {}
 }
@@ -72,7 +72,7 @@ export class CacheEntityFolderItem {
   readonly hasDetails = false
 
   constructor(
-    public readonly content: T.DriveChildrenItemFolder,
+    public readonly content: CT.DriveChildrenItemFolder,
     public readonly created: Date = new Date(),
   ) {}
 }
@@ -82,7 +82,7 @@ export class CacheEntityAppLibraryDetails {
   readonly hasDetails = true
 
   constructor(
-    public readonly content: T.DetailsAppLibrary,
+    public readonly content: CT.DetailsAppLibrary,
     public readonly created: Date = new Date(),
   ) {}
 }
@@ -92,7 +92,7 @@ export class CacheEntityAppLibraryItem {
   readonly hasDetails = false
 
   constructor(
-    public readonly content: T.DriveChildrenItemAppLibrary,
+    public readonly content: CT.DriveChildrenItemAppLibrary,
     public readonly created: Date = new Date(),
   ) {}
 }
@@ -102,7 +102,7 @@ export class CacheEntityFile {
   readonly hasDetails = false
 
   constructor(
-    public readonly content: T.DriveChildrenItemFile,
+    public readonly content: CT.DriveChildrenItemFile,
     public readonly created: Date = new Date(),
   ) {}
 }

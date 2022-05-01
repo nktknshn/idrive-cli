@@ -1,7 +1,6 @@
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../../request/request'
-import * as AR from '../../../request/request'
-import { childrenItem } from '../icloud-drive-types/types-io'
+import * as AR from '../../../request'
+import { childrenItem } from '../../icloud-drive-types/types-io'
 
 const moveItemResponse = t.type({
   items: t.array(t.union([
@@ -13,7 +12,7 @@ const moveItemResponse = t.type({
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
-export const moveItems = <S extends AuthorizedState>({ items, destinationDrivewsId }: {
+export const moveItems = <S extends AR.AuthorizedState>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
 }): AR.AuthorizedRequest<MoveItemsResponse, S, AR.RequestEnv> =>

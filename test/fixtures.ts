@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option'
 import { AccountData } from '../src/icloud/authorization/types'
 import { AuthorizedState } from '../src/icloud/request/request'
-import { ICloudSession } from '../src/icloud/session/session'
+import { ICloudSession } from '../src/icloud/session/session-type'
 
 export const validSession: ICloudSession = {
   accountCountry: O.some('RUS'),

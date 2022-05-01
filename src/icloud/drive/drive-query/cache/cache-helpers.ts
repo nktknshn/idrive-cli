@@ -1,6 +1,6 @@
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
-import * as T from '../../drive-api/icloud-drive-types'
+import * as T from '../../icloud-drive-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import * as C from './cache-types'
 

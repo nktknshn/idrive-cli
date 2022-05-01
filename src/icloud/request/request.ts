@@ -1,7 +1,6 @@
 import { sequenceS } from 'fp-ts/lib/Apply'
 import * as E from 'fp-ts/lib/Either'
 import { constant, flow, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Reader'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -18,8 +17,8 @@ import { FetchClientEither, HttpRequest, HttpResponse } from '../../util/http/fe
 import { tryJsonFromResponse } from '../../util/http/json'
 import { apiLogger, logg } from '../../util/logging'
 import { AccountData } from '../authorization/types'
-import { ICloudSession } from '../session/session'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../session/session-http'
+import { ICloudSession } from '../session/session-type'
 
 export type BasicState = {
   session: ICloudSession
@@ -82,15 +81,6 @@ const putSession = <S extends { session: ICloudSession }, R extends RequestEnv>(
     chain(({ state }) => SRTE.put({ ...state, session })),
   )
 
-export const buildRequest = <S extends BasicState>(
-  f: (a: { state: S; env: RequestEnv }) => R.Reader<{ state: S }, HttpRequest>,
-): ApiRequest<HttpRequest, S> =>
-  pipe(
-    readEnv<S>(),
-    map(f),
-    chain(reader => pipe(readEnv<S>(), map(reader))),
-  )
-
 export const buildRequestC = <S extends BasicState, R extends RequestEnv = RequestEnv>(
   f: (a: { state: S; env: R }) => HttpRequestConfig,
 ): ApiRequest<HttpRequest, S, R> =>
@@ -103,25 +93,6 @@ export const buildRequestC = <S extends BasicState, R extends RequestEnv = Reque
       )
     ),
   )
-
-export const buildRequestE = <S extends BasicState>(
-  f: (a: { state: S; env: RequestEnv }) => ApiRequest<R.Reader<{ session: ICloudSession }, HttpRequest>, S>,
-): ApiRequest<HttpRequest, S> =>
-  pipe(
-    readEnv<S>(),
-    chain(f),
-    chain(reader => pipe(readEnv<S>(), map(s => reader(s.state)))),
-  )
-
-export const fetch = <S extends BasicState>(
-  req: ApiRequest<HttpRequest, S>,
-) => {
-  return pipe(
-    readEnv<S>(),
-    SRTE.bindW('req', () => req),
-    chain(({ req, env: { fetchClient: fetch } }) => fromTaskEither(fetch(req))),
-  )
-}
 
 export const handleResponse = <A, S extends BasicState, R extends RequestEnv>(
   f: (
@@ -221,19 +192,6 @@ export const decodeJson = <T extends { httpResponse: HttpResponse }, Resp>(
         >
       ),
     )
-
-export const reporter = (validation: t.Validation<any>): string => {
-  return pipe(
-    validation,
-    E.fold((errors) => errors.map(errorMessage).join('\n'), () => 'ok'),
-  )
-}
-
-const errorMessage = (err: t.ValidationError) => {
-  const path = err.context.map((e) => `${e.key}`).join('/')
-
-  return `invalid value ${err.value} in ${path}`
-}
 
 export const decodeJsonEither = <T extends { httpResponse: HttpResponse }, R, S extends BasicState>(
   decode: (u: unknown) => t.Validation<R>,
@@ -350,90 +308,15 @@ export const orElse = <R, S extends BasicState>(
       )
   }
 
-export const filterStatus = (status = 200) => filterStatuses([status])
-
-export const filterStatuses = <B extends { httpResponse: HttpResponse }>(
-  statuses = [200],
-) =>
-  (mb: TE.TaskEither<Error, B>): TE.TaskEither<Error, B> =>
-    pipe(
-      mb,
-      TE.filterOrElseW(
-        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
-        r => InvalidGlobalSessionError.create(r.httpResponse),
-      ),
-      TE.filterOrElseW(
-        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
-        r => BadRequestError.create(r.httpResponse),
-      ),
-      TE.filterOrElseW(
-        r => statuses.includes(r.httpResponse.status),
-        r => err(`invalid status ${r.httpResponse.status}`),
-      ),
-    )
-
-export const filterStatusesE = <B extends { httpResponse: HttpResponse }>(
-  statuses = [200],
-) =>
-  (mb: B): E.Either<Error, B> =>
-    pipe(
-      E.of(mb),
-      E.filterOrElseW(
-        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 421,
-        r => InvalidGlobalSessionError.create(r.httpResponse),
-      ),
-      E.filterOrElseW(
-        (r: { httpResponse: HttpResponse }) => r.httpResponse.status != 400,
-        r => BadRequestError.create(r.httpResponse),
-      ),
-      E.filterOrElseW(
-        r => statuses.includes(r.httpResponse.status),
-        r => err(`invalid status ${r.httpResponse.status}`),
-      ),
-    )
-
-export const withResponse = (httpResponse: HttpResponse) =>
-  pipe(
-    TE.Do,
-    TE.bind('httpResponse', () => TE.of<Error, HttpResponse>(httpResponse)),
+export const reporter = (validation: t.Validation<any>): string => {
+  return pipe(
+    validation,
+    E.fold((errors) => errors.map(errorMessage).join('\n'), () => 'ok'),
   )
-
-export const returnDecodedJson = <
-  R,
->() => returnS<{ httpResponse: HttpResponse; session: ICloudSession; readonly decoded: R }, R>(_ => _.decoded)
-
-export const applyCookiesFromResponse = <T extends { httpResponse: HttpResponse }>() =>
-  applyToSession2<T>(({ httpResponse }) => applyCookiesToSession(httpResponse))
-
-export function returnS<T extends { httpResponse: HttpResponse; session: ICloudSession }, R>(
-  ff: (a: T) => R,
-) {
-  return (f: (session: ICloudSession) => TE.TaskEither<Error, T>) =>
-    (session: ICloudSession): TE.TaskEither<Error, ResponseWithSession<R>> =>
-      pipe(
-        f(session),
-        TE.map((a) => ({
-          session: a.session,
-          response: {
-            httpResponse: a.httpResponse,
-            body: ff(a),
-          },
-        })),
-      )
 }
 
-export function applyToSession2<T extends { httpResponse: HttpResponse }>(
-  f: (a: T) => (session: ICloudSession) => ICloudSession,
-): (te: TE.TaskEither<Error, T>) => (session: ICloudSession) => TE.TaskEither<Error, T & { session: ICloudSession }> {
-  return (te: TE.TaskEither<Error, T>) => {
-    return (session: ICloudSession) =>
-      pipe(
-        te,
-        // TE.bind('session', (a) => f(a)(session)),
-        TE.map(a => ({
-          ...a,
-          session: f(a)(session),
-        })),
-      )
-  }
+const errorMessage = (err: t.ValidationError) => {
+  const path = err.context.map((e) => `${e.key}`).join('/')
+
+  return `invalid value ${err.value} in ${path}`
 }

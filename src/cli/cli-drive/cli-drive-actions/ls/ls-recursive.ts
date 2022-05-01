@@ -4,12 +4,12 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
-import { Query } from '../../../../icloud/drive'
+import { DriveQuery } from '../../../../icloud/drive'
 import {
   addPathToFolderTree,
   showTreeWithFiles,
   treeWithFiles,
-} from '../../../../icloud/drive/drive-query/drive-methods/drive-get-folders-trees'
+} from '../../../../icloud/drive/drive-query/methods/drive-get-folders-trees'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { filterTree } from '../../../../util/tree'
@@ -19,7 +19,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
   depth: number
   tree: boolean
   cached: boolean
-}) => {
+}): SRTE.StateReaderTaskEither<DriveQuery.State, DriveQuery.Deps, Error, string> => {
   const scanned = pipe(
     paths,
     NA.map(micromatch.scan),
@@ -34,10 +34,10 @@ export const recursivels = ({ paths, depth, tree, cached }: {
 
   if (tree) {
     return pipe(
-      Query.getCachedDocwsRoot(),
+      DriveQuery.getCachedDocwsRoot(),
       SRTE.bindTo('root'),
-      SRTE.chain(({ root }) => Query.getByPathsFolders(root, basepaths)),
-      SRTE.chain(dirs => Query.getFoldersTrees(dirs, depth)),
+      SRTE.chain(({ root }) => DriveQuery.getByPathsFoldersStrict(root, basepaths)),
+      SRTE.chain(dirs => DriveQuery.getFoldersTrees(dirs, depth)),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([tree, scan]) =>
         pipe(
@@ -55,7 +55,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
   }
 
   return pipe(
-    Query.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
+    DriveQuery.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
     SRTE.map(NA.map(A.map(_ => _.path))),
     SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),

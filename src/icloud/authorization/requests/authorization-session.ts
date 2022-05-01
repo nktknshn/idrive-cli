@@ -1,7 +1,7 @@
 import { Lazy, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import { HttpResponse } from '../../../util/http/fetch-client'
-import { ICloudSession } from '../../session/session'
+import { ICloudSession } from '../../session/session-type'
 import { getAccountCountry, getAuthAttributes, getScnt, getSessionId, getSessionToken } from './headers'
 
 const fallback = <A>(

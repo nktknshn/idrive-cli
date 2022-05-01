@@ -1,4 +1,4 @@
-import { SessionCookies } from './session'
+import { SessionCookies } from './session-type'
 
 import * as A from 'fp-ts/lib/Array'
 import { identity, pipe } from 'fp-ts/lib/function'

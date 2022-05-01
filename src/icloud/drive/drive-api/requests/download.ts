@@ -4,7 +4,7 @@ import * as t from 'io-ts'
 import { Readable } from 'stream'
 import { err } from '../../../../util/errors'
 import { expectResponse, FetchClientEither } from '../../../../util/http/fetch-client'
-import * as AR from '../../../request/request'
+import * as AR from '../../../request'
 
 export interface DownloadResponseBody {
   document_id: string

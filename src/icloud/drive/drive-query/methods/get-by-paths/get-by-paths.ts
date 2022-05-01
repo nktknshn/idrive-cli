@@ -15,19 +15,19 @@ import { logg, logger } from '../../../../../util/logging'
 import { NormalizedPath } from '../../../../../util/normalize-path'
 import { NEA } from '../../../../../util/types'
 import { recordFromTuples } from '../../../../../util/util'
-import { Query } from '../../..'
-import * as T from '../../../drive-api/icloud-drive-types'
+import { DriveQuery } from '../../..'
+import * as V from '../../../get-by-path-types'
 import { equalsDrivewsId, findInParentFilename } from '../../../helpers'
+import * as T from '../../../icloud-drive-types'
 import { modifySubset } from '../../../modify-subset'
-import * as V from '../../cache/cache-get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
 
 export const getByPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): Query.Effect<NEA<V.GetByPathResult<R>>> =>
+): DriveQuery.Effect<NEA<V.GetByPathResult<R>>> =>
   pipe(
-    Query.getByPathsFromCache(root, paths),
+    DriveQuery.getByPathsFromCache(root, paths),
     SRTE.chainFirstIOK(
       (cached) => loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join(', ')}`),
     ),
@@ -73,7 +73,7 @@ Given cached root and a cached hierarchy determine which part of the hierarchy i
  */
 const validateCachedHierarchies = <R extends T.Root>(
   cachedHierarchies: NEA<V.Hierarchy<R>>,
-): Query.Effect<NEA<V.PathValidation<R>>> => {
+): DriveQuery.Effect<NEA<V.PathValidation<R>>> => {
   const toActual = (
     cachedPath: T.NonRootDetails[],
     actualsRecord: Record<string, O.Option<T.NonRootDetails>>,
@@ -97,7 +97,7 @@ const validateCachedHierarchies = <R extends T.Root>(
   return pipe(
     logg(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
     () =>
-      Query.retrieveItemDetailsInFoldersSaving<R>([
+      DriveQuery.retrieveItemDetailsInFoldersSaving<R>([
         cachedRoot.drivewsid,
         ...drivewsids,
       ]),
@@ -184,7 +184,7 @@ const concatCachedWithValidated = <R extends T.Root>(
 
 const getActuals = <R extends T.Root>(
   validationResults: NEA<[V.PathValidation<R>, NormalizedPath]>,
-): Query.Effect<NEA<V.PathValidation<R>>> => {
+): DriveQuery.Effect<NEA<V.PathValidation<R>>> => {
   logger.debug(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )
@@ -212,12 +212,12 @@ type DeeperFolders<R extends T.Root> =
 
 const handleInvalidPaths = <R extends T.Root>(
   partialPaths: NEA<V.PathInvalid<R>>,
-): Query.Effect<NEA<V.PathValidation<R>>> => {
+): DriveQuery.Effect<NEA<V.PathValidation<R>>> => {
   logger.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)
 
   const handleSubfolders = <R extends T.Root>(
     subfolders: NEA<DeeperFolders<R>>,
-  ): Query.Effect<NEA<V.GetByPathResult<R>>> => {
+  ): DriveQuery.Effect<NEA<V.GetByPathResult<R>>> => {
     logger.debug(`handleSubfolders: ${
       subfolders.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}. rest: [${rest}]`
@@ -230,7 +230,7 @@ const handleInvalidPaths = <R extends T.Root>(
     )
 
     return pipe(
-      Query.retrieveItemDetailsInFoldersSavingStrict(foldersToRetrieve),
+      DriveQuery.retrieveItemDetailsInFoldersSavingStrict(foldersToRetrieve),
       SRTE.map(NA.zip(subfolders)),
       SRTE.chain((details) => {
         return modifySubset(
@@ -295,7 +295,7 @@ const handleInvalidPaths = <R extends T.Root>(
 
   const handleFoundItems = <R extends T.Root>(
     found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
-  ): Query.Effect<V.GetByPathResult<R>[]> => {
+  ): DriveQuery.Effect<V.GetByPathResult<R>[]> => {
     logger.debug(`handleFoundItems. ${
       found.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}.`

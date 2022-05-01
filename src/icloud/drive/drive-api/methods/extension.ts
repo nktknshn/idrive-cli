@@ -6,8 +6,8 @@ import { err } from '../../../../util/errors'
 import { NEA } from '../../../../util/types'
 import { AuthorizedState } from '../../../request/request'
 import { getMissedFound } from '../../helpers'
+import * as T from '../../icloud-drive-types'
 import { DepDriveApi } from '../deps'
-import * as T from '../icloud-drive-types'
 import { createFolders, download, retrieveItemDetailsInFolders } from './standard'
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(

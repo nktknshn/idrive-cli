@@ -7,8 +7,7 @@ import { err } from '../../../../util/errors'
 import { Path } from '../../../../util/path'
 import { DepFs } from '../../../deps'
 import { AuthorizedState } from '../../../request/request'
-import { DepDriveApi } from '../deps'
-import { useApi } from '../deps/util'
+import { DepDriveApi, useApi } from '../deps'
 
 export type UploadMethodDeps =
   & DepDriveApi<'upload'>

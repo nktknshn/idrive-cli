@@ -4,18 +4,16 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { Query } from '../../../../icloud/drive'
-import * as T from '../../../../icloud/drive/drive-api/icloud-drive-types'
-import { getByIdO } from '../../../../icloud/drive/drive-query/cache/cache'
+import { DriveQuery } from '../../../../icloud/drive'
 import {
   isValidPath,
   PathInvalid,
   pathTarget,
   PathValid,
   showGetByPathResult,
-} from '../../../../icloud/drive/drive-query/cache/cache-get-by-path-types'
+} from '../../../../icloud/drive/get-by-path-types'
 import { findInParentGlob } from '../../../../icloud/drive/helpers'
-import { loggerIO } from '../../../../util/loggerIO'
+import * as T from '../../../../icloud/drive/icloud-drive-types'
 import { logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls-printing'
@@ -32,7 +30,7 @@ export const shallowList = (
     cached: boolean
     etag: boolean
     header: boolean
-  }) => {
+  }): SRTE.StateReaderTaskEither<DriveQuery.State, DriveQuery.Deps, Error, string> => {
     assert(A.isNonEmpty(paths))
 
     const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
@@ -43,11 +41,11 @@ export const shallowList = (
 
     return pipe(
       // Drive.searchGlobs(paths as NEA<string>),
-      Query.getCachedRoot(args.trash),
+      DriveQuery.getCachedRoot(args.trash),
       SRTE.chain(root =>
         args.cached
-          ? Query.getByPathsFromCache(root, basepaths)
-          : Query.getByPaths(root, basepaths)
+          ? DriveQuery.getByPathsFromCache(root, basepaths)
+          : DriveQuery.getByPaths(root, basepaths)
       ),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([path, scan]) =>

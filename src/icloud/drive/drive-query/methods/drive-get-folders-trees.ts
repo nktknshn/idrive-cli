@@ -10,8 +10,8 @@ import { logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { NEA } from '../../../../util/types'
-import { Query } from '../..'
-import * as T from '../../drive-api/icloud-drive-types'
+import { DriveQuery } from '../..'
+import * as T from '../../icloud-drive-types'
 
 export type FolderDeep<T extends T.Details> = {
   readonly details: T
@@ -30,15 +30,15 @@ export type FolderTreeValue<T extends T.Details> = FolderDeep<T> | FolderShallow
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
   depth: number,
-): Query.Effect<NEA<FolderTree<T.NonRootDetails>>>
+): DriveQuery.Effect<NEA<FolderTree<T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): Query.Effect<NEA<FolderTree<R | T.NonRootDetails>>>
+): DriveQuery.Effect<NEA<FolderTree<R | T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): Query.Effect<NEA<FolderTree<R | T.NonRootDetails>>> {
+): DriveQuery.Effect<NEA<FolderTree<R | T.NonRootDetails>>> {
   const subfolders = getSubfolders(folders)
   const doGoDeeper = depth > 0 && subfolders.length > 0
   const depthExceed = subfolders.length > 0 && depth == 0
@@ -48,7 +48,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   return pipe(
     A.isNonEmpty(subfolders) && doGoDeeper
       ? pipe(
-        Query.retrieveItemDetailsInFoldersSavingStrict(
+        DriveQuery.retrieveItemDetailsInFoldersSavingStrict(
           pipe(subfolders, NA.uniq(eq.fromEquals((a, b) => a.drivewsid === b.drivewsid)), NA.map(_ => _.drivewsid)),
         ),
         SRTE.chain(

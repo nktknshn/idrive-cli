@@ -1,5 +1,5 @@
 import * as t from 'io-ts'
-import { omit } from '../../../../util/io-omit'
+import { omit } from '../../../util/io-omit'
 
 export const rootDrivewsid = 'FOLDER::com.apple.CloudDocs::root'
 export const cloudDocsZone = 'com.apple.CloudDocs'

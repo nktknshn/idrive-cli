@@ -1,10 +1,9 @@
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as T from '../../drive-api/icloud-drive-types'
-import { chain, map, state } from '../../drive-query'
-import { Effect, State } from '../../drive-query'
-import * as C from '../cache/cache'
-
+import * as T from '../../icloud-drive-types'
+import { chain, map, state } from '..'
+import { Effect, State } from '..'
+import * as C from '../cache'
 export const putCache = (cache: C.Cache): Effect<void> =>
   pipe(
     state(),

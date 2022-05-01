@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
 import * as tt from 'io-ts-types'
-import * as io from '../../drive-api/icloud-drive-types/types-io'
+import * as io from '../../icloud-drive-types/types-io'
 
 export const cacheEntityFolderRootDetails = t.type({
   type: t.readonly(t.literal('ROOT')),

@@ -6,9 +6,9 @@ import { clientInfo as _clientInfo } from '../../defaults'
 import { applyCookieToCookies, getCookies } from '../../util/http/cookie'
 import { HttpRequest, HttpResponse } from '../../util/http/fetch-client'
 import { logger } from '../../util/logging'
-import { buildRecord } from '../../util/util'
-import { ICloudSession, sessionLens } from './session'
+import { recordFromTuples } from '../../util/util'
 import { Header, headers as _headers } from './session-http-headers'
+import { ICloudSession, sessionLens } from './session-type'
 import { ClientInfo } from './types'
 
 export type HttpRequestConfig = {
@@ -48,7 +48,7 @@ export function buildRequest(
   return (session: ICloudSession) => ({
     url,
     method,
-    headers: buildRecord(
+    headers: recordFromTuples(
       pipe(
         headers,
         A.map((f) => f(session)),

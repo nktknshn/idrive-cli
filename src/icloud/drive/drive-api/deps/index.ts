@@ -1,4 +1,7 @@
-import { DriveApiEnv } from './drive-api-env'
+import { pipe } from 'fp-ts/lib/function'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { DriveApiEnv } from './drive-api-env-type'
+export { DriveApiEnv } from './drive-api-env-type'
 
 export type DepDriveApi<
   K extends keyof DriveApiEnv,
@@ -8,4 +11,12 @@ export type DepDriveApi<
   Pick<DriveApiEnv, K>
 >
 
-export { DriveApiEnv } from './drive-api-env'
+export const useApi = <Args extends unknown[], S, R, A>(
+  f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
+) =>
+  (...args: Args) =>
+    pipe(
+      SRTE.ask<S, R>(),
+      SRTE.map(f),
+      SRTE.chain(f => f(...args)),
+    )
