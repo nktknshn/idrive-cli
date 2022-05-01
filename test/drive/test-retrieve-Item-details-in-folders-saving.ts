@@ -1,23 +1,16 @@
 import assert from 'assert'
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Record'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as NA from 'fp-ts/NonEmptyArray'
+import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/Option'
+import * as R from 'fp-ts/Record'
 import * as TE from 'fp-ts/TaskEither'
-import { DepApi, Drive } from '../../src/icloud/drive'
-import * as C from '../../src/icloud/drive/cache/cache'
-import { invalidPath, pathTarget, validPath } from '../../src/icloud/drive/cache/cache-get-by-path-types'
-import { DriveApiType } from '../../src/icloud/drive/deps/api-type'
-import { showFolderTree } from '../../src/icloud/drive/drive-methods/drive-get-folders-trees'
-import { NotFoundError } from '../../src/icloud/drive/errors'
-import * as T from '../../src/icloud/drive/types'
+import { C, DriveQuery } from '../../src/icloud/drive'
+import { NotFoundError } from '../../src/icloud/drive/drive-query/errors'
+import { rootDrivewsid } from '../../src/icloud/drive/icloud-drive-types/types-io'
+import { invalidPath, pathTarget } from '../../src/icloud/drive/util/get-by-path-types'
 import * as L from '../../src/util/logging'
-import { normalizePath, npath } from '../../src/util/normalize-path'
-import { authorizedState } from '../fixtures'
-import { appLibrary, createRootDetails, docwsroot, file, folder } from './helpers-drive'
+import { npath } from '../../src/util/normalize-path'
+import { appLibrary, file, folder, removeByDrivewsid } from './helpers-drive'
 import { executeDrive, fakeicloud } from './struct'
-
 L.initLoggers(
   { debug: true },
   [
@@ -63,7 +56,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           ]),
         ),
       })(
-        Drive.retrieveItemDetailsInFoldersSaving([
+        DriveQuery.retrieveItemDetailsInFoldersSaving([
           structure0.root.byName.folder1.byName.folder2.details.drivewsid,
           structure0.root.byName.folder1.byName.folder3.details.drivewsid,
         ]),

@@ -1,3 +1,3 @@
 export * from './methods/extension'
-export * from './methods/standard'
+export * from './methods/original'
 export * from './methods/upload'

@@ -8,7 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { DepAskConfirmation, DepFetchClient, DepFs } from '../../../icloud/deps'
 import { DepDriveApi, DriveQuery } from '../../../icloud/drive'
-import { flattenFolderTreeWithPath } from '../../../icloud/util/foldertree'
+import { flattenFolderTreeWithBasepath } from '../../../icloud/drive/util/folder-tree'
 import { guardFst } from '../../../util/guards'
 import { printer, printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
@@ -19,10 +19,10 @@ import {
   createDirStruct,
   createDownloadTask,
   createEmpties,
-  downloadICloudFilesChunked,
   filterFlattenFolderTree,
   recursiveDirMapper,
 } from './download/download-helpers'
+import { downloadICloudFilesChunked } from './download/downloadICloudFilesChunked'
 import { CreateDownloadTask, DownloadFileResult, DownloadTask } from './download/types'
 
 type Argv = {
@@ -165,10 +165,10 @@ const _downloadFolder = <R>(
     DriveQuery.getCachedDocwsRoot(),
     SRTE.chainW((root) =>
       pipe(
-        DriveQuery.getByPathFolder(root, normalizePath(path)),
+        DriveQuery.getByPathFolderStrict(root, normalizePath(path)),
         SRTE.chain(dir => DriveQuery.getFoldersTrees([dir], depth)),
         SRTE.map(NA.head),
-        SRTE.map(flattenFolderTreeWithPath(Path.dirname(path))),
+        SRTE.map(flattenFolderTreeWithBasepath(Path.dirname(path))),
       )
     ),
   )

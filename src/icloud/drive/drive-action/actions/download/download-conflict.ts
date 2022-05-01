@@ -10,13 +10,13 @@ import * as Task from 'fp-ts/Task'
 import { DepAskConfirmation, DepFs } from '../../../../../icloud/deps'
 import { T } from '../../../../../icloud/drive'
 import { err } from '../../../../../util/errors'
+import { LocalTreeElement } from '../../../../../util/localtreeelement'
 import { loggerIO } from '../../../../../util/loggerIO'
 import { Path } from '../../../../../util/path'
 import { EmptyObject, NEA, UnknownObject } from '../../../../../util/types'
-import { LocalTreeElement } from '../../../../util/localtreeelement'
-import { DownloadInfo, DownloadTask } from './types'
+import { DownloadItem, DownloadItemMapped, DownloadTaskLocalMapping } from './types'
 
-export type Conflict = readonly [LocalTreeElement, { info: DownloadInfo; localpath: string }]
+export type Conflict = readonly [localitem: LocalTreeElement, task: DownloadItemMapped]
 
 export type SolutionAction = 'skip' | 'overwright'
 export type Solution = readonly (readonly [Conflict, SolutionAction])[]
@@ -28,44 +28,8 @@ export type ConflictsSolver<Deps = UnknownObject> = (
 export const showConflict = ([localfile, { info, localpath }]: Conflict) =>
   `local file ${localpath} (${localfile.stats.size} bytes) conflicts with remote file (${info[1].size} bytes)`
 
-const applySoultion = (
-  { downloadable, empties, localdirstruct }: DownloadTask,
-) =>
-  (
-    solution: Solution,
-  ): DownloadTask & {
-    initialTask: DownloadTask
-  } => {
-    const fa = (d: {
-      info: DownloadInfo
-      localpath: string
-    }) =>
-      pipe(
-        solution,
-        RA.findFirstMap(
-          ([[localfile, { info, localpath }], action]) =>
-            info[1].drivewsid === d.info[1].drivewsid ? O.some([{ info, localpath }, action] as const) : O.none,
-        ),
-        O.getOrElse(() => [d, 'overwright' as SolutionAction] as const),
-      )
-
-    const findAction = (fs: { info: DownloadInfo; localpath: string }[]) =>
-      pipe(
-        fs,
-        A.map((c) => fa(c)),
-        A.filterMap(([d, action]) => action === 'overwright' ? O.some(d) : O.none),
-      )
-
-    return {
-      downloadable: findAction(downloadable),
-      empties: findAction(empties),
-      localdirstruct,
-      initialTask: { downloadable, empties, localdirstruct },
-    }
-  }
-
 const lookForConflicts = (
-  { downloadable, empties }: DownloadTask,
+  { downloadable, empties }: DownloadTaskLocalMapping,
 ): RT.ReaderTask<DepFs<'fstat'>, Conflict[]> => {
   const remotes = pipe(
     [...downloadable, ...empties],
@@ -75,10 +39,10 @@ const lookForConflicts = (
     pipe(
       remotes,
       A.map(
-        (c) =>
+        (task) =>
           pipe(
-            fstat(c.localpath),
-            TE.match((e) => E.right(c), s => E.left({ c, s })),
+            fstat(task.localpath),
+            TE.match((e) => E.right(task), s => E.left({ task, s })),
           ),
         //
       ),
@@ -88,12 +52,12 @@ const lookForConflicts = (
       Task.map(({ left }) =>
         pipe(
           left,
-          A.map(({ c, s }): Conflict => [{
+          A.map(({ task, s }): Conflict => [{
             type: s.isDirectory() ? 'directory' as const : 'file' as const,
             stats: s,
-            path: c.localpath,
-            name: Path.basename(c.localpath),
-          }, c]),
+            path: task.localpath,
+            name: Path.basename(task.localpath),
+          }, task]),
         )
       ),
       RT.fromTask,
@@ -106,13 +70,13 @@ export const handleLocalFilesConflicts = <SolverDeps = UnknownObject>(
     conflictsSolver: ConflictsSolver<SolverDeps>
   },
 ): (
-  initialtask: DownloadTask,
+  initialtask: DownloadTaskLocalMapping,
 ) => RTE.ReaderTaskEither<
   DepFs<'fstat'> & SolverDeps,
   Error,
-  DownloadTask & { initialTask: DownloadTask }
+  DownloadTaskLocalMapping & { initialTask: DownloadTaskLocalMapping }
 > =>
-  (initialtask: DownloadTask) => {
+  (initialtask: DownloadTaskLocalMapping) => {
     return pipe(
       initialtask,
       RTE.fromReaderTaskK(lookForConflicts),
@@ -127,6 +91,42 @@ export const handleLocalFilesConflicts = <SolverDeps = UnknownObject>(
       ),
       RTE.map(applySoultion(initialtask)),
     )
+  }
+
+const applySoultion = (
+  { downloadable, empties, localdirstruct }: DownloadTaskLocalMapping,
+) =>
+  (
+    solution: Solution,
+  ): DownloadTaskLocalMapping & {
+    initialTask: DownloadTaskLocalMapping
+  } => {
+    const fa = (d: {
+      info: DownloadItem
+      localpath: string
+    }) =>
+      pipe(
+        solution,
+        RA.findFirstMap(
+          ([[localfile, { info, localpath }], action]) =>
+            info[1].drivewsid === d.info[1].drivewsid ? O.some([{ info, localpath }, action] as const) : O.none,
+        ),
+        O.getOrElse(() => [d, 'overwright' as SolutionAction] as const),
+      )
+
+    const findAction = (fs: { info: DownloadItem; localpath: string }[]) =>
+      pipe(
+        fs,
+        A.map((c) => fa(c)),
+        A.filterMap(([d, action]) => action === 'overwright' ? O.some(d) : O.none),
+      )
+
+    return {
+      downloadable: findAction(downloadable),
+      empties: findAction(empties),
+      localdirstruct,
+      initialTask: { downloadable, empties, localdirstruct },
+    }
   }
 
 const failOnConflicts: ConflictsSolver = (conflicts) =>

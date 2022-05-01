@@ -1,22 +1,13 @@
 import assert from 'assert'
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Record'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as NA from 'fp-ts/NonEmptyArray'
-import * as O from 'fp-ts/Option'
+import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { DepApi, Drive } from '../../src/icloud/drive'
-import * as C from '../../src/icloud/drive/cache/cache'
-import { invalidPath, pathTarget, validPath } from '../../src/icloud/drive/cache/cache-get-by-path-types'
-import { showFolderTree } from '../../src/icloud/drive/drive-methods/drive-get-folders-trees'
-import { NotFoundError } from '../../src/icloud/drive/errors'
-import * as T from '../../src/icloud/drive/types'
-import { rootDrivewsid } from '../../src/icloud/drive/types/types-io'
+import { C, DriveQuery } from '../../src/icloud/drive'
+import { NotFoundError } from '../../src/icloud/drive/drive-query/errors'
+import { rootDrivewsid } from '../../src/icloud/drive/icloud-drive-types/types-io'
+import { invalidPath, pathTarget } from '../../src/icloud/drive/util/get-by-path-types'
 import * as L from '../../src/util/logging'
-import { normalizePath, npath } from '../../src/util/normalize-path'
-import { authorizedState } from '../fixtures'
-import { complexStructure0 } from './fixtures'
-import { appLibrary, createRootDetails, docwsroot, file, folder, removeByDrivewsid } from './helpers-drive'
+import { npath } from '../../src/util/normalize-path'
+import { appLibrary, file, folder, removeByDrivewsid } from './helpers-drive'
 import { executeDrive, fakeicloud } from './struct'
 
 L.initLoggers(
@@ -70,7 +61,7 @@ describe('getByPaths', () => {
 
   it('works fully cached', async () => {
     const req0 = pipe(
-      Drive.getByPathsDocwsroot([
+      DriveQuery.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
       ]),
       executeDrive({
@@ -106,7 +97,7 @@ describe('getByPaths', () => {
 
   it('works fully cached multiple dirs', async () => {
     const req0 = pipe(
-      Drive.getByPathsDocwsroot([
+      DriveQuery.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
         npath('/folder1/subfolder1/sources/tsconfig.json'),
       ]),
@@ -148,7 +139,7 @@ describe('getByPaths', () => {
       ),
     )
     const req0 = pipe(
-      Drive.getByPathsDocwsroot([
+      DriveQuery.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
       ]),
       executeDrive({

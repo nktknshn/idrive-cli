@@ -3,12 +3,12 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { err } from '../../../../util/errors'
 import { normalizePath } from '../../../../util/normalize-path'
+import { parseFilename } from '../../../../util/parse-filename'
 import { NEA } from '../../../../util/types'
 import { DepApi, DriveApi, DriveQuery } from '../..'
 import { MoveItemsResponse, RenameResponse } from '../../drive-api/requests'
-import { parseFilename } from '../../drive-helpers'
-import * as V from '../../get-by-path-types'
 import * as T from '../../icloud-drive-types'
+import * as V from '../../util/get-by-path-types'
 
 export type Deps =
   & DriveQuery.Deps

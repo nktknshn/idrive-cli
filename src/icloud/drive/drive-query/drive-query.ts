@@ -1,12 +1,13 @@
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { err } from '../../../util/errors'
+import { AuthorizedState } from '../../request'
+import { DepDriveApi } from '../drive-api'
+import * as C from './cache'
+
 export * from './methods/cache-methods'
 export { getFoldersTrees } from './methods/drive-get-folders-trees'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { err } from '../../../util/errors'
-import { AuthorizedState } from '../../request/request'
-import { DepDriveApi } from '../drive-api/deps'
-import * as C from './cache/cache'
 
 export type Deps = DepDriveApi<'retrieveItemDetailsInFolders'>
 

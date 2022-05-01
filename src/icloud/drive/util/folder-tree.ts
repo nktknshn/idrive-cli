@@ -1,14 +1,9 @@
-import { eq } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as O from 'fp-ts/lib/Option'
-import * as R from 'fp-ts/lib/Record'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
-import { normalizePath } from '../../util/normalize-path'
-import { Path } from '../../util/path'
-import { T } from '../drive'
+import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/path'
+import { T } from '..'
 
 export type FolderDeep<T extends T.Details> = {
   readonly details: T
@@ -41,13 +36,6 @@ export const deepFolder = <T extends T.Details | T.NonRootDetails>(
     deep: true,
   }, children)
 
-export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>): string => {
-  return pipe(
-    tree,
-    TR.map(_ => T.fileNameAddSlash(_.details)),
-    TR.drawTree,
-  )
-}
 export const treeWithFiles = <T extends T.Details>(tree: FolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
   const files: (T | T.DriveChildrenItemFile)[] = pipe(
     tree.value.details.items,
@@ -82,17 +70,7 @@ export const addPathToFolderTree = <T>(
     )
   }
 
-export const showTreeWithFiles = (
-  tree: TR.Tree<{ item: T.DetailsDocwsRoot | T.NonRootDetails | T.DriveChildrenItemFile; path: string }>,
-): string => {
-  return pipe(
-    tree,
-    TR.map(_ => T.fileNameAddSlash(_.item)),
-    TR.drawTree,
-  )
-}
-
-export const flattenFolderTreeWithPath = (
+export const flattenFolderTreeWithBasepath = (
   parentPath: string,
 ) =>
   <T extends T.Details>(tree: FolderTree<T>): [string, T.DetailsOrFile<T>][] => {
@@ -113,7 +91,7 @@ export const flattenFolderTreeWithPath = (
 
     const subfolders = pipe(
       tree.forest,
-      A.map(flattenFolderTreeWithPath(path)),
+      A.map(flattenFolderTreeWithBasepath(path)),
       A.flatten,
     )
 
@@ -142,6 +120,23 @@ export const showFolderTree = <T extends T.Details>(tree: FolderTree<T>): string
   return pipe(
     getSubTrees(tree),
     TR.map(T.fileNameAddSlash),
+    TR.drawTree,
+  )
+}
+
+export const drawFolderTree = <T extends T.Details>(tree: FolderTree<T>): string => {
+  return pipe(
+    tree,
+    TR.map(_ => T.fileNameAddSlash(_.details)),
+    TR.drawTree,
+  )
+}
+export const showTreeWithFiles = (
+  tree: TR.Tree<{ item: T.DetailsDocwsRoot | T.NonRootDetails | T.DriveChildrenItemFile; path: string }>,
+): string => {
+  return pipe(
+    tree,
+    TR.map(_ => T.fileNameAddSlash(_.item)),
     TR.drawTree,
   )
 }

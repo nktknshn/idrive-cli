@@ -30,7 +30,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
       pipe(
         cached
           ? DriveQuery.getByPathFolderFromCache(targetDir)(root)
-          : DriveQuery.getByPathFolder(root, targetDir),
+          : DriveQuery.getByPathFolderStrict(root, targetDir),
         SRTE.map(parent =>
           lookupDir
             ? parent.items

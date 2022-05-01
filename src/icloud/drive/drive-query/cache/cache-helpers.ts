@@ -1,37 +1,66 @@
+import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/NonEmptyArray'
+import { NormalizedPath, normalizePath, Path } from '../../../../util/path'
 import * as T from '../../icloud-drive-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
-import * as C from './cache-types'
+import * as CT from './cache-types'
 
 export const cacheEntityFromDetails = (
   details: T.Details,
-): C.CacheEntity =>
+): CT.CacheEntity =>
   T.isCloudDocsRootDetails(details)
-    ? new C.CacheEntityFolderRootDetails(details)
+    ? new CT.CacheEntityFolderRootDetails(details)
     : T.isTrashDetailsG(details)
-    ? new C.CacheEntityFolderTrashDetails(details)
+    ? new CT.CacheEntityFolderTrashDetails(details)
     : details.type === 'FOLDER'
-    ? new C.CacheEntityFolderDetails(details)
-    : new C.CacheEntityAppLibraryDetails(details)
+    ? new CT.CacheEntityFolderDetails(details)
+    : new CT.CacheEntityAppLibraryDetails(details)
 
 export const cacheEntityFromItem = (
   item: T.DriveChildrenItem,
-): C.CacheEntity => {
+): CT.CacheEntity => {
   return item.type === 'FILE'
-    ? new C.CacheEntityFile(item)
+    ? new CT.CacheEntityFile(item)
     : item.type === 'FOLDER'
-    ? new C.CacheEntityFolderItem(item)
-    : new C.CacheEntityAppLibraryItem(item)
+    ? new CT.CacheEntityFolderItem(item)
+    : new CT.CacheEntityAppLibraryItem(item)
 }
 
 export const assertFolderWithDetailsEntity = (
-  entity: C.CacheEntity,
-): E.Either<ItemIsNotFolderError | FolderLikeMissingDetailsError, C.CacheEntityDetails> =>
+  entity: CT.CacheEntity,
+): E.Either<ItemIsNotFolderError | FolderLikeMissingDetailsError, CT.CacheEntityDetails> =>
   pipe(
     E.of(entity),
-    E.filterOrElse(C.isFolderLikeCacheEntity, p =>
+    E.filterOrElse(CT.isFolderLikeCacheEntity, p =>
       ItemIsNotFolderError.create(`assertFolderWithDetails: ${p.content.drivewsid} is not a folder`)),
-    E.filterOrElse(C.isDetailsCacheEntity, p =>
+    E.filterOrElse(CT.isDetailsCacheEntity, p =>
       FolderLikeMissingDetailsError.create(`${p.content.drivewsid} is missing details`)),
   )
+
+export const hierarchyToPath = (hierarchy: T.Hierarchy): NormalizedPath => {
+  return pipe(
+    hierarchy,
+    A.map(hitem =>
+      T.isHierarchyItemRoot(hitem)
+        ? '/'
+        : T.isHierarchyItemTrash(hitem)
+        ? 'TRASH_ROOT/'
+        : T.fileName(hitem)
+    ),
+    _ => _.length > 0 ? _.join('/') : '/',
+    normalizePath,
+  )
+}
+
+export function parsePath(path: string): NA.NonEmptyArray<string> {
+  const parsedPath = Path.normalize(path)
+    .replace(/^\//, '')
+    .replace(/\/$/, '')
+    .split('/')
+
+  return parsedPath.length == 1 && parsedPath[0] == ''
+    ? ['/']
+    : ['/', ...parsedPath]
+}

@@ -9,9 +9,9 @@ import * as O from 'fp-ts/Option'
 import { DepAskConfirmation, DepFs } from '../../../../icloud/deps'
 import { DriveApi, DriveQuery } from '../../../../icloud/drive'
 import { DepDriveApi } from '../../../../icloud/drive/drive-api/deps'
-import { findInParentFilename, getDrivewsid } from '../../../../icloud/drive/drive-helpers'
-import * as V from '../../../../icloud/drive/get-by-path-types'
 import * as T from '../../../../icloud/drive/icloud-drive-types'
+import { findInParentFilename, getDrivewsid } from '../../../../icloud/drive/util/drive-helpers'
+import * as V from '../../../../icloud/drive/util/get-by-path-types'
 import { loggerIO } from '../../../../util/loggerIO'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
@@ -45,7 +45,7 @@ export const uploads = (
   return pipe(
     DriveQuery.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bind('dstDetails', ({ root }) => DriveQuery.getByPathFolder(root, normalizePath(dstpath))),
+    SRTE.bind('dstDetails', ({ root }) => DriveQuery.getByPathFolderStrict(root, normalizePath(dstpath))),
     SRTE.bindW('deps', () => SRTE.ask<DriveQuery.State, Deps>()),
     SRTE.chain(({ dstDetails, deps }) =>
       pipe(

@@ -1,6 +1,5 @@
-import { parseDrivewsid } from '../src/icloud/drive/helpers'
-import * as T from '../src/icloud/drive/types'
-import { nonRootDrivewsid } from '../src/icloud/drive/types/types-io'
+import { T } from '../src/icloud/drive/'
+import { parseDrivewsid } from '../src/icloud/drive/util/drive-helpers'
 
 export const detailsFolder = (
   data: Partial<T.DetailsFolder> & {

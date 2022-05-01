@@ -27,7 +27,7 @@ export const mkdir = (
   return pipe(
     DriveQuery.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bindW('parent', ({ root }) => DriveQuery.getByPathFolder(root, nparentPath)),
+    SRTE.bindW('parent', ({ root }) => DriveQuery.getByPathFolderStrict(root, nparentPath)),
     SRTE.bindW('result', ({ parent }) =>
       pipe(
         DriveApi.createFoldersStrict<DriveQuery.State>({

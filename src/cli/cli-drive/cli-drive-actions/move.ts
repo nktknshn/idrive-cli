@@ -3,10 +3,10 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DepApi, DriveApi, DriveQuery, T } from '../../../icloud/drive'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/drive-api/requests'
-import { parseFilename } from '../../../icloud/drive/drive-helpers'
-import * as V from '../../../icloud/drive/get-by-path-types'
+import * as V from '../../../icloud/drive/util/get-by-path-types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
+import { parseFilename } from '../../../util/parse-filename'
 import { NEA } from '../../../util/types'
 
 type Deps =

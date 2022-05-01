@@ -5,15 +5,15 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { DriveQuery } from '../../../../icloud/drive'
-import { findInParentGlob } from '../../../../icloud/drive/drive-helpers'
+import * as T from '../../../../icloud/drive/icloud-drive-types'
+import { findInParentGlob } from '../../../../icloud/drive/util/drive-helpers'
 import {
   isValidPath,
   PathInvalid,
   pathTarget,
   PathValid,
   showGetByPathResult,
-} from '../../../../icloud/drive/get-by-path-types'
-import * as T from '../../../../icloud/drive/icloud-drive-types'
+} from '../../../../icloud/drive/util/get-by-path-types'
 import { logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls-printing'

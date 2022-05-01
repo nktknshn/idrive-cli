@@ -6,11 +6,11 @@ import { err } from '../../../../../util/errors'
 import { NormalizedPath } from '../../../../../util/normalize-path'
 import { NEA } from '../../../../../util/types'
 import { sequenceArrayNEA } from '../../../../../util/util'
-import * as V from '../../../get-by-path-types'
 import * as T from '../../../icloud-drive-types'
+import * as V from '../../../util/get-by-path-types'
 import { Effect, filterOrElse, map } from '../..'
 import { ItemIsNotFolderError } from '../../errors'
-import { chainCachedDocwsRoot } from '../get-roots'
+import { chainCachedDocwsRoot, getCachedDocwsRoot } from '../get-roots'
 import { getByPaths } from './get-by-paths'
 
 /** fails if some of the paths are not valid */
@@ -33,7 +33,7 @@ export const getByPathsStrict = <R extends T.Root>(
   )
 }
 
-export const getByPathFolder = <R extends T.Root>(
+export const getByPathFolderStrict = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
 ): Effect<R | T.NonRootDetails> =>
@@ -44,6 +44,14 @@ export const getByPathFolder = <R extends T.Root>(
       T.isDetailsG,
       () => ItemIsNotFolderError.create(`${path} is not a folder`),
     ),
+  )
+
+export const getByPathFolderDocwsroot = (
+  path: NormalizedPath,
+): Effect<T.DetailsDocwsRoot | T.NonRootDetails> =>
+  pipe(
+    getCachedDocwsRoot(),
+    SRTE.chainW((root) => getByPathFolderStrict(root, path)),
   )
 
 export const getByPathsFoldersStrict = <R extends T.Root>(

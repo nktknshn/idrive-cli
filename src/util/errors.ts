@@ -175,5 +175,5 @@ export class BufferDecodingError extends Error {
   }
 }
 
-export const err = (message: string): SomeError => new SomeError(message)
-export const ensureError = (e: unknown): SomeError => e instanceof Error ? e : err(`${e}`)
+export const err = (message: string): Error => new Error(message)
+export const ensureError = (e: unknown): Error => e instanceof Error ? e : err(`${e}`)

@@ -1,4 +1,3 @@
-import * as IO from 'fp-ts/IO'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
@@ -8,14 +7,13 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import { guardSnd } from '../../../../util/guards'
-import { logg, logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { NEA } from '../../../../util/types'
-import { flattenFolderTreeWithPath, shallowFolder, showFolderTree } from './../../../util/foldertree'
 import { DriveQuery } from '../..'
 import * as T from '../../icloud-drive-types'
-import { modifySubset } from '../../modify-subset'
+import { modifySubset } from '../../util/drive-modify-subset'
+import { flattenFolderTreeWithBasepath, shallowFolder } from '../../util/folder-tree'
 import { getFoldersTrees } from './drive-get-folders-trees'
 
 export type SearchGlobFoundItem = {
@@ -75,7 +73,7 @@ export const searchGlobs = (
           tree => {
             return pipe(
               tree,
-              flattenFolderTreeWithPath(Path.dirname(scan.base)),
+              flattenFolderTreeWithBasepath(Path.dirname(scan.base)),
               A.filterMap(([path, item]) => {
                 if (scan.glob.length == 0) {
                   if (normalizePath(path) == normalizePath(globpattern)) {

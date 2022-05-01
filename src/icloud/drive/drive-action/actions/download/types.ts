@@ -1,41 +1,45 @@
 import * as E from 'fp-ts/lib/Either'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { DriveQuery } from '../../../../../icloud/drive'
-import * as T from '../../../../../icloud/drive/icloud-drive-types'
+import { DriveQuery, T } from '../../../../../icloud/drive'
 
 import { XXX } from '../../../../../util/types'
 
-export type DownloadStructure = {
-  dirstruct: string[]
-  downloadable: DownloadInfo[]
-  empties: DownloadInfo[]
-}
+export type DownloadItem = (readonly [remotepath: string, remotefile: T.DriveChildrenItemFile])
 
 export type DownloadTask = {
-  localdirstruct: string[]
-  downloadable: { info: DownloadInfo; localpath: string }[]
-  empties: { info: DownloadInfo; localpath: string }[]
+  dirstruct: string[]
+  downloadable: DownloadItem[]
+  empties: DownloadItem[]
 }
 
-export type CreateDownloadTask<R> = (ds: DownloadStructure) => RTE.ReaderTaskEither<
+export type DownloadItemMapped = { info: DownloadItem; localpath: string }
+
+export type DownloadTaskLocalMapping = {
+  localdirstruct: string[]
+  downloadable: DownloadItemMapped[]
+  empties: DownloadItemMapped[]
+}
+
+export type DownloadTaskMapper<R> = (ds: DownloadTask) => RTE.ReaderTaskEither<
   R,
   Error,
-  DownloadTask & { initialTask: DownloadTask }
+  DownloadTaskLocalMapping & { initialTask: DownloadTaskLocalMapping }
 >
 
-export type DownloadFileResult = [E.Either<Error, void>, readonly [url: string, localpath: string]]
+export type DownloadFileResult = [
+  status: E.Either<Error, void>,
+  task: readonly [url: string, localpath: string],
+]
 
-export type DownloadICloudFilesFunc<R> = (task: { downloadable: { info: DownloadInfo; localpath: string }[] }) => XXX<
+export type DownloadICloudFilesFunc<R> = (task: { downloadable: DownloadItemMapped[] }) => XXX<
   DriveQuery.State,
   R,
   DownloadFileResult[]
 >
 
-export type DownloadInfo = (readonly [remotepath: string, remotefile: T.DriveChildrenItemFile])
-
-export type FilterTreeResult = DownloadStructure & {
-  excluded: DownloadInfo[]
-}
+// export type FilterTreeResult = DownloadStructure & {
+//   excluded: DownloadInfo[]
+// }
 
 export type DownloadUrlToFile<R> = (
   url: string,

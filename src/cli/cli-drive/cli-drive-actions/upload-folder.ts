@@ -8,19 +8,18 @@ import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../icloud/deps'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
 import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
-import { findInParentFilename } from '../../../icloud/drive/drive-helpers'
-import * as V from '../../../icloud/drive/get-by-path-types'
 import {
   DetailsAppLibrary,
   DetailsDocwsRoot,
   DetailsFolder,
   isFolderLike,
 } from '../../../icloud/drive/icloud-drive-types'
+import { findInParentFilename } from '../../../icloud/drive/util/drive-helpers'
+import * as V from '../../../icloud/drive/util/get-by-path-types'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
-import { normalizePath } from '../../../util/normalize-path'
-import { Path } from '../../../util/path'
+import { normalizePath, Path } from '../../../util/path'
 import { XXX } from '../../../util/types'
 import { walkDirRel } from './download/walkdir'
 import {

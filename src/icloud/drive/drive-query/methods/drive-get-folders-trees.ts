@@ -5,14 +5,11 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TR from 'fp-ts/lib/Tree'
 import { logger } from '../../../../util/logging'
-import { normalizePath } from '../../../../util/normalize-path'
-import { Path } from '../../../../util/path'
 import { NEA } from '../../../../util/types'
-import { deepFolder, FolderTree, shallowFolder } from '../../../util/foldertree'
 import { DriveQuery } from '../..'
 import * as T from '../../icloud-drive-types'
+import { deepFolder, FolderTree, shallowFolder } from '../../util/folder-tree'
 
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,

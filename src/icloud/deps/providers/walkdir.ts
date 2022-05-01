@@ -1,3 +1,3 @@
-import { walkDir } from '../../util/walkdir'
+import { walkDir } from '../../../util/walkdir'
 
 walkDir

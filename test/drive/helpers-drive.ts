@@ -2,11 +2,11 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
-import * as V from '../../src/icloud/drive/cache/cache-get-by-path-types'
-import { parseFilename } from '../../src/icloud/drive/helpers'
-import * as T from '../../src/icloud/drive/types'
-import { rootDrivewsid } from '../../src/icloud/drive/types/types-io'
+import { T } from '../../src/icloud/drive/'
+import { rootDrivewsid } from '../../src/icloud/drive/icloud-drive-types/types-io'
+import * as V from '../../src/icloud/drive/util/get-by-path-types'
 import { guardFst, guardFstRO, isDefined } from '../../src/util/guards'
+import { parseFilename } from '../../src/util/parse-filename'
 import { randomUUIDCap, recordFromTuples } from '../../src/util/util'
 
 type File<N extends string> = {
@@ -419,15 +419,15 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
   }
 }
 
-export const removeByTag = () => {
-}
-import * as O from 'fp-ts/Option'
+// export const removeByTag = () => {
+// }
+// import * as O from 'fp-ts/Option'
 
-const validPathByDrivewsid = (drivewsid: string) =>
-  (
-    itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
-  ) => {
-  }
+// const validPathByDrivewsid = (drivewsid: string) =>
+//   (
+//     itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
+//   ) => {
+//   }
 
 export const removeByDrivewsid = (drivewsid: string) =>
   (

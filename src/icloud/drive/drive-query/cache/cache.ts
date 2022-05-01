@@ -18,14 +18,19 @@ import { cacheLogger, logReturnS } from '../../../../util/logging'
 import { NormalizedPath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
 import { DepFs } from '../../../deps'
-import { hierarchyToPath, parsePath } from '../../drive-helpers'
-import { GetByPathResult } from '../../get-by-path-types'
 import * as T from '../../icloud-drive-types'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-types/types-io'
+import { GetByPathResult } from '../../util/get-by-path-types'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { getFromCacheByPath } from './cache-get-by-path'
-import { assertFolderWithDetailsEntity, cacheEntityFromDetails, cacheEntityFromItem } from './cache-helpers'
-import * as cacheEntityFolderRootDetails from './cache-io-types'
+import {
+  assertFolderWithDetailsEntity,
+  cacheEntityFromDetails,
+  cacheEntityFromItem,
+  hierarchyToPath,
+  parsePath,
+} from './cache-helpers'
+import * as cachIo from './cache-io-types'
 import * as CT from './cache-types'
 import { MissingParentError } from './errors'
 
@@ -326,7 +331,7 @@ export const tryReadFromFile = (
   return pipe(
     tryReadJsonFile(accountDataFilePath),
     RTE.chainEitherKW(flow(
-      cacheEntityFolderRootDetails.cache.decode,
+      cachIo.cache.decode,
       E.mapLeft(es => TypeDecodingError.create(es, 'wrong ICloudDriveCache json')),
     )),
   )
