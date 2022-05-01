@@ -1,9 +1,9 @@
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as C from '../../cache/cache'
-import { chain, map, state } from '../../drive'
-import { Effect, State } from '../../drive'
-import * as T from '../../drive-types'
+import * as C from '../cache/cache'
+import { chain, map, state } from '../drive'
+import { Effect, State } from '../drive'
+import * as T from '../drive-types'
 
 export const putCache = (cache: C.Cache): Effect<void> =>
   pipe(

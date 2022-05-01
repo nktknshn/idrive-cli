@@ -1,6 +1,6 @@
 import * as defaults from '../../defaults'
-import { DepAskConfirmation } from '../../icloud/deps/DepFetchClient'
-import { authorizeSessionMethod } from '../../icloud/drive/deps/drive-api-creator'
+import { DepAskConfirmation } from '../../icloud/deps'
+import { authorizeSessionMethod } from '../../icloud/drive/deps/authorize'
 import { ActionsDeps } from '.'
 
 export const createCliActionsDeps = (argv: {

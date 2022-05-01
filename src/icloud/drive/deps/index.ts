@@ -1,5 +1,4 @@
 import { DriveApi } from './drive-api-type'
-export * as DriveApi from '../api'
 
 export type DepDriveApi<
   K extends keyof DriveApi,
@@ -8,3 +7,7 @@ export type DepDriveApi<
   RootKey,
   Pick<DriveApi, K>
 >
+
+export { DriveApi } from './drive-api-type'
+
+export { DepAuthorizeSession } from './authorize'

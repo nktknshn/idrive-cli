@@ -14,7 +14,7 @@ import { filterOrElse, map } from '../../drive'
 import { Effect } from '../../drive'
 import * as T from '../../drive-types'
 import { ItemIsNotFolderError, NotFoundError } from '../../errors'
-import { asksCache, chainCache } from './cache-methods'
+import { asksCache, chainCache } from '../cache-methods'
 import { getByPaths } from './get-by-paths'
 import { chainCachedDocwsRoot } from './roots'
 

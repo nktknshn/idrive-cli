@@ -20,7 +20,3 @@ export type DepFs<
   RootKey,
   Pick<FsType, K>
 >
-
-export type DepAuthorizeSession = {
-  authorizeSession: <S extends BasicState>() => XX<S, AccountData>
-}

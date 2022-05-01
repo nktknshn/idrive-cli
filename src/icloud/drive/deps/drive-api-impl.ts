@@ -57,5 +57,3 @@ export const defaultApiSchema = {
 export const defaultApiCreator: ApiCreator<CatchFetchEnv & CatchSessEnv & AuthorizeEnv> = seqs(
   defaultApiSchema,
 )
-
-export const authorizeSessionMethod = wrapRequest(basic)(authorizeSession)

@@ -4,13 +4,13 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { err } from '../../../../util/errors'
 import { NEA } from '../../../../util/types'
-import * as API from '../../api'
 import { chain, of } from '../../drive'
 import { Effect, State } from '../../drive'
+import * as API from '../../drive-api'
 import * as T from '../../drive-types'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import { getMissedFound as createMissedFound } from '../../helpers'
-import { putMissedFound } from './cache-methods'
+import { putMissedFound } from '../cache-methods'
 
 /** retrieves actual drivewsids saving valid ones to cache and removing those that were not found */
 export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
