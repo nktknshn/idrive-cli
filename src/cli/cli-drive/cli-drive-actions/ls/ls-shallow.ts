@@ -5,6 +5,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { DriveQuery } from '../../../../icloud/drive'
+import { findInParentGlob } from '../../../../icloud/drive/drive-helpers'
 import {
   isValidPath,
   PathInvalid,
@@ -12,7 +13,6 @@ import {
   PathValid,
   showGetByPathResult,
 } from '../../../../icloud/drive/get-by-path-types'
-import { findInParentGlob } from '../../../../icloud/drive/helpers'
 import * as T from '../../../../icloud/drive/icloud-drive-types'
 import { logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'

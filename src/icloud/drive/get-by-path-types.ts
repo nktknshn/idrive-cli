@@ -35,8 +35,8 @@ export type PathValidation<R> =
 
 export type GetByPathResult<R extends T.Root> = PathValidation<R>
 
-export const tail = <R>([, ...tail]: Hierarchy<R>) => tail
-export const root = <R>([root]: Hierarchy<R>) => root
+export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
+export const root = <R>([root]: Hierarchy<R>): R => root
 
 export const pathTarget = <R extends T.Root>(
   res: PathValid<R>,
@@ -78,14 +78,16 @@ export const invalidPath = <R extends T.Root>(
   error,
 })
 
-export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>) => {
+export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): string => {
   if (p.valid) {
     return `valid: ${p.details.map(T.fileName)} file: ${pipe(p.file, O.fold(() => `none`, T.fileName))}`
   }
   return `invalid (${p.error.message}). valid part ${p.details.map(T.fileName)}, rest: ${p.rest}`
 }
 
-export const validAsString = <R extends T.Root>(result: PathValid<R>) => {
+export const validAsString = <R extends T.Root>(
+  result: PathValid<R>,
+): import('/home/horn/Workspace/Typescript/Deno/node-icloud1/src/util/normalize-path').NormalizedPath => {
   return normalizePath(
     [
       ...result.details.map(T.fileName),
@@ -109,7 +111,7 @@ export const eq = <R extends T.Root>(): Eq<Hierarchy<R>> => ({
   },
 })
 
-export const isSameDetails = (a: T.Details, b: T.Details) => {
+export const isSameDetails = (a: T.Details, b: T.Details): boolean => {
   if (a.drivewsid !== b.drivewsid) {
     return false
   }
@@ -129,7 +131,9 @@ export const isSameDetails = (a: T.Details, b: T.Details) => {
 
 export const asEither = <R extends T.Root, E>(
   onLeft: (path: PathInvalid<R>) => E,
-) =>
+): (
+  path: GetByPathResult<R>,
+) => E.Either<E, R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile> =>
   (path: GetByPathResult<R>) => {
     return path.valid ? E.of(pathTarget(path)) : E.left(onLeft(path))
   }

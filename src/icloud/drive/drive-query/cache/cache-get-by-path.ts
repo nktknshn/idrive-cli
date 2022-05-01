@@ -3,8 +3,8 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import { cacheLogger, logger } from '../../../../util/logging'
-import * as H from '../../get-by-path-types'
-import { findInParentFilename } from '../../helpers'
+import { findInParentFilename } from '../../drive-helpers'
+import * as V from '../../get-by-path-types'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../../icloud-drive-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as C from './cache'
@@ -21,7 +21,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>
-  (cache: CacheF): H.PathValidation<R> => {
+  (cache: CacheF): V.PathValidation<R> => {
     cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {
@@ -31,7 +31,7 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
     const [subItemName, ...rest] = path
     const subitem = findInParentFilename(parentEntity, subItemName)
 
-    const result: H.Hierarchy<R> = [parentEntity]
+    const result: V.Hierarchy<R> = [parentEntity]
 
     // logger.debug(`subitem: ${O.getShow({ show: fileName }).show(subitem)}`)
 
@@ -72,25 +72,25 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         // BUG
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (e): H.PathValidation<R> => ({
+          (e): V.PathValidation<R> => ({
             valid: false,
             details: result,
             rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content, created }): H.PathValidation<R> =>
+          ({ content, created }): V.PathValidation<R> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
-              (result): H.PathValidation<R> =>
+              (result): V.PathValidation<R> =>
                 result.valid
                   ? ({
                     valid: true,
-                    details: H.concat([parentEntity], result.details),
+                    details: V.concat([parentEntity], result.details),
                     file: result.file,
                   })
                   : ({
                     valid: false,
-                    details: H.concat([parentEntity], result.details),
+                    details: V.concat([parentEntity], result.details),
                     rest: result.rest,
 
                     error: result.error,
@@ -105,15 +105,15 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
       return pipe(
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (e): H.PathValidation<R> => ({
+          (e): V.PathValidation<R> => ({
             valid: false,
             details: result,
             rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content }): H.PathValidation<R> => ({
+          ({ content }): V.PathValidation<R> => ({
             valid: true,
-            details: H.concat([parentEntity], [content]),
+            details: V.concat([parentEntity], [content]),
             file: O.none,
           }),
         ),

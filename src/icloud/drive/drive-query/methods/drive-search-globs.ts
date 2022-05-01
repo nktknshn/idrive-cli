@@ -12,10 +12,11 @@ import { logg, logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { NEA } from '../../../../util/types'
+import { flattenFolderTreeWithPath, shallowFolder, showFolderTree } from './../../../util/foldertree'
 import { DriveQuery } from '../..'
 import * as T from '../../icloud-drive-types'
 import { modifySubset } from '../../modify-subset'
-import { flattenFolderTreeWithPath, getFoldersTrees, shallowFolder, showFolderTree } from './drive-get-folders-trees'
+import { getFoldersTrees } from './drive-get-folders-trees'
 
 export type SearchGlobFoundItem = {
   path: string

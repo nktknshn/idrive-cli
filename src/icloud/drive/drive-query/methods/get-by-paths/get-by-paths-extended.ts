@@ -7,7 +7,6 @@ import { NormalizedPath } from '../../../../../util/normalize-path'
 import { NEA } from '../../../../../util/types'
 import { sequenceArrayNEA } from '../../../../../util/util'
 import * as V from '../../../get-by-path-types'
-import { GetByPathResult } from '../../../get-by-path-types'
 import * as T from '../../../icloud-drive-types'
 import { Effect, filterOrElse, map } from '../..'
 import { ItemIsNotFolderError } from '../../errors'
@@ -59,20 +58,20 @@ export const getByPathsFoldersStrict = <R extends T.Root>(
     ),
   )
 
-export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Effect<GetByPathResult<R>> => {
+export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Effect<V.GetByPathResult<R>> => {
   return pipe(
     getByPaths(root, [path]),
     map(NA.head),
   )
 }
 
-export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>): Effect<NEA<GetByPathResult<T.DetailsDocwsRoot>>> => {
+export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>): Effect<NEA<V.GetByPathResult<T.DetailsDocwsRoot>>> => {
   return pipe(
     chainCachedDocwsRoot(root => getByPaths(root, paths)),
   )
 }
 
-export const getByPathDocwsroot = (path: NormalizedPath): Effect<GetByPathResult<T.DetailsDocwsRoot>> => {
+export const getByPathDocwsroot = (path: NormalizedPath): Effect<V.GetByPathResult<T.DetailsDocwsRoot>> => {
   return pipe(
     getByPathsDocwsroot([path]),
     map(NA.head),

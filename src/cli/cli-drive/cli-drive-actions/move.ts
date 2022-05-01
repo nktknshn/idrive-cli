@@ -1,19 +1,18 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepDriveApi, DriveApi, DriveQuery } from '../../../icloud/drive'
+import { DepApi, DriveApi, DriveQuery, T } from '../../../icloud/drive'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud/drive/drive-api/requests'
+import { parseFilename } from '../../../icloud/drive/drive-helpers'
 import * as V from '../../../icloud/drive/get-by-path-types'
-import { parseFilename } from '../../../icloud/drive/helpers'
-import * as T from '../../../icloud/drive/icloud-drive-types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'moveItems'>
-  & DepDriveApi<'renameItems'>
+  & DepApi<'moveItems'>
+  & DepApi<'renameItems'>
 
 /**
  * move a file or a directory

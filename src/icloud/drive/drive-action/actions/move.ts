@@ -4,16 +4,16 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { err } from '../../../../util/errors'
 import { normalizePath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
-import { Dep, DepDriveApi, DriveApi, DriveQuery } from '../..'
+import { DepApi, DriveApi, DriveQuery } from '../..'
 import { MoveItemsResponse, RenameResponse } from '../../drive-api/requests'
+import { parseFilename } from '../../drive-helpers'
 import * as V from '../../get-by-path-types'
-import { parseFilename } from '../../helpers'
 import * as T from '../../icloud-drive-types'
 
 export type Deps =
   & DriveQuery.Deps
-  & Dep<'moveItems'>
-  & Dep<'renameItems'>
+  & DepApi<'moveItems'>
+  & DepApi<'renameItems'>
 
 /**
  * move a file or a directory

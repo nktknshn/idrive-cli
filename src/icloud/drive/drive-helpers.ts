@@ -100,7 +100,9 @@ export const equalsDrivewsId = <T extends string>() =>
 
 export const prependPath = (parent: string) => (kid: string) => Path.join(parent, kid)
 
-export const getDrivewsid = ({ zone, document_id, type }: { document_id: string; zone: string; type: string }) => {
+export const getDrivewsid = (
+  { zone, document_id, type }: { document_id: string; zone: string; type: string },
+): string => {
   return `${type}::${zone}::${document_id}`
 }
 

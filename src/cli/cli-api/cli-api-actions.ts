@@ -1,7 +1,7 @@
 import { hole, pipe } from 'fp-ts/lib/function'
 import { DriveApi } from '../../icloud/drive'
 import * as RQ from '../../icloud/drive/drive-api/requests'
-import { parseFilename } from '../../icloud/drive/helpers'
+import { parseFilename } from '../../icloud/drive/drive-helpers'
 import { NEA } from '../../util/types'
 import { apiActionM } from '../api-action'
 

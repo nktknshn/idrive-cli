@@ -6,14 +6,14 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { DepAskConfirmation, DepFetchClient, DepFs } from '../../../icloud/deps'
-import { DepDriveApi, DriveQuery } from '../../../icloud/drive'
-import { flattenFolderTreeWithPath } from '../../../icloud/util/foldertree'
-import { guardFst } from '../../../util/guards'
-import { printer, printerIO } from '../../../util/logging'
-import { normalizePath } from '../../../util/normalize-path'
-import { Path } from '../../../util/path'
-import { XXX } from '../../../util/types'
+import { DepAskConfirmation, DepFetchClient, DepFs } from '../../../../icloud/deps'
+import { DepApi, DriveQuery } from '../../../../icloud/drive'
+import { flattenFolderTreeWithPath } from '../../../../icloud/util/foldertree'
+import { guardFst } from '../../../../util/guards'
+import { printer, printerIO } from '../../../../util/logging'
+import { normalizePath } from '../../../../util/normalize-path'
+import { Path } from '../../../../util/path'
+import { XXX } from '../../../../util/types'
 import { solvers } from './download/download-conflict'
 import {
   createDirStruct,
@@ -38,7 +38,7 @@ type Argv = {
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'downloadBatch'>
+  & DepApi<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
   & DepFs<

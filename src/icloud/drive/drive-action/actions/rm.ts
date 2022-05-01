@@ -5,20 +5,20 @@ import * as TE from 'fp-ts/TaskEither'
 import { guardProp } from '../../../../util/guards'
 import { NEA } from '../../../../util/types'
 import { DepAskConfirmation } from '../../../deps'
-import { Dep, DepDriveApi, DriveApi, DriveQuery } from '../..'
+import { DepApi, DriveApi, DriveQuery } from '../..'
 import { MoveItemToTrashResponse } from '../../drive-api/requests'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../icloud-drive-types'
 
 export type Deps =
   & DriveQuery.Deps
-  & Dep<'moveItemsToTrash'>
+  & DepApi<'moveItemsToTrash'>
   & DepAskConfirmation
 
 type Result = MoveItemToTrashResponse
 
 export const rm = (
   globs: NEA<string>,
-  { skipTrash, force, recursive }: {
+  { skipTrash = false, force = false, recursive = false }: {
     skipTrash: boolean
     recursive: boolean
     force: boolean

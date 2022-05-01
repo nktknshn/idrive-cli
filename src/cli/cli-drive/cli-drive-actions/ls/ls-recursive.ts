@@ -5,11 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import { DriveQuery } from '../../../../icloud/drive'
-import {
-  addPathToFolderTree,
-  showTreeWithFiles,
-  treeWithFiles,
-} from '../../../../icloud/drive/drive-query/methods/drive-get-folders-trees'
+import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../../../icloud/util/foldertree'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { filterTree } from '../../../../util/tree'
