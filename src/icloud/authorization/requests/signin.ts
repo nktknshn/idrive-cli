@@ -11,8 +11,8 @@ import { arrayFromOption } from '../../../util/util'
 import * as AR from '../../request/request'
 import { applyCookiesToSession } from '../../session/session-http'
 import { headers } from '../../session/session-http-headers'
-import { applyAuthorizationResponse } from '../authorization-session'
-import { authorizationHeaders } from './../headers'
+import { applyAuthorizationResponse } from './authorization-session'
+import { authorizationHeaders } from './headers'
 
 type SignInResponse = SignInResponse409 | SignInResponse200
 

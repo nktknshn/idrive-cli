@@ -1,1 +1,2 @@
-export { authorizeSession } from './authorization-methods'
+export { authorizeSession } from './authorize-session'
+export { AccountData } from './types'

@@ -6,7 +6,7 @@ import * as Ord from 'fp-ts/lib/Ord'
 import { not } from 'fp-ts/lib/Refinement'
 import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
-import * as T from '../../../../icloud/drive/drive-types'
+import * as T from '../../../../icloud/drive/drive-api/icloud-drive-types'
 
 export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrashRoot>) => {
   return pipe(
@@ -123,7 +123,7 @@ const showItemRow = ({
   showEtag = false,
 } = {}) =>
   (item: T.DriveChildrenItem) => {
-    let row = []
+    const row = []
 
     if (item.type === 'FILE') {
       if (!short) {

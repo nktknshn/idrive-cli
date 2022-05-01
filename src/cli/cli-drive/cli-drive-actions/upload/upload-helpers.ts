@@ -10,9 +10,8 @@ import * as NA from 'fp-ts/NonEmptyArray'
 import { Stats } from 'fs'
 import micromatch from 'micromatch'
 import { string } from 'yargs'
-import { DriveApi } from '../../../../icloud/drive'
-import { DepDriveApi } from '../../../../icloud/drive/deps'
-import * as Drive from '../../../../icloud/drive/drive'
+import { DriveApi, Query } from '../../../../icloud/drive'
+import { DepDriveApi } from '../../../../icloud/drive/drive-api/deps'
 import { parseDrivewsid } from '../../../../icloud/drive/helpers'
 import { err } from '../../../../util/errors'
 import { guardSndRO } from '../../../../util/guards'
@@ -91,14 +90,14 @@ export const uploadChunkPar = (
         local: { path: string; stats: Stats },
       ]
     >,
-  ): XXX<Drive.State, DriveApi.UploadMethodDeps, NEA<UploadResult>> =>
+  ): XXX<Query.State, DriveApi.UploadMethodDeps, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, local]) => {
           const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
           return pipe(
-            DriveApi.upload<Drive.State>({
+            DriveApi.upload<Query.State>({
               sourceFilePath: local.path,
               docwsid: d.docwsid,
               zone: d.zone,
@@ -128,7 +127,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<Drive.State, DepDriveApi<'createFolders'>, Record<string, string>> => {
+): XXX<Query.State, DepDriveApi<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {
@@ -148,7 +147,7 @@ export const createRemoteDirStructure = (
               R.lookup(parent)(acc),
               SRTE.fromOption(() => err(`pathToDrivewsid missing ${parent}`)),
               SRTE.chain(destinationDrivewsId =>
-                DriveApi.createFoldersStrict<Drive.State>({
+                DriveApi.createFoldersStrict<Query.State>({
                   destinationDrivewsId,
                   names: subdirs,
                 })

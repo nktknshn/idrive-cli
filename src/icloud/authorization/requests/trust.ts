@@ -7,8 +7,8 @@ import * as AR from '../../request/request'
 import { sessionLens } from '../../session/session'
 import { applyCookiesToSession } from '../../session/session-http'
 import { headers } from '../../session/session-http-headers'
-import { applyAuthorizationResponse } from '../authorization-session'
-import { authorizationHeaders, getTrustToken } from './../headers'
+import { applyAuthorizationResponse } from './authorization-session'
+import { authorizationHeaders, getTrustToken } from './headers'
 
 export interface TrustResponse204 {
   trustToken: string

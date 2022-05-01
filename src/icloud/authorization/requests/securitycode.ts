@@ -3,8 +3,8 @@ import { EmptyObject } from '../../../util/types'
 import * as AR from '../../request/request'
 import { applyCookiesToSession } from '../../session/session-http'
 import { headers } from '../../session/session-http-headers'
-import { applyAuthorizationResponse } from '../authorization-session'
-import { authorizationHeaders } from './../headers'
+import { applyAuthorizationResponse } from './authorization-session'
+import { authorizationHeaders } from './headers'
 
 export const requestSecurityCodeM = <S extends AR.BasicState>(
   code: number,

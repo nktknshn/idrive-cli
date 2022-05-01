@@ -4,16 +4,16 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { Drive } from '../../../../icloud/drive'
-import { getByIdO } from '../../../../icloud/drive/cache/cache'
+import { Query } from '../../../../icloud/drive'
+import * as T from '../../../../icloud/drive/drive-api/icloud-drive-types'
+import { getByIdO } from '../../../../icloud/drive/drive-query/cache/cache'
 import {
   isValidPath,
   PathInvalid,
   pathTarget,
   PathValid,
   showGetByPathResult,
-} from '../../../../icloud/drive/cache/cache-get-by-path-types'
-import * as T from '../../../../icloud/drive/drive-types'
+} from '../../../../icloud/drive/drive-query/cache/cache-get-by-path-types'
 import { findInParentGlob } from '../../../../icloud/drive/helpers'
 import { loggerIO } from '../../../../util/loggerIO'
 import { logger } from '../../../../util/logging'
@@ -43,11 +43,11 @@ export const shallowList = (
 
     return pipe(
       // Drive.searchGlobs(paths as NEA<string>),
-      Drive.getCachedRoot(args.trash),
+      Query.getCachedRoot(args.trash),
       SRTE.chain(root =>
         args.cached
-          ? Drive.getByPathsFromCache(root, basepaths)
-          : Drive.getByPaths(root, basepaths)
+          ? Query.getByPathsFromCache(root, basepaths)
+          : Query.getByPaths(root, basepaths)
       ),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([path, scan]) =>

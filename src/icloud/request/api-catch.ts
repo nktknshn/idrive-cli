@@ -6,7 +6,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { InvalidGlobalSessionError } from '../../util/errors'
 import { FetchError, HttpResponse } from '../../util/http/fetch-client'
 import { loggerIO } from '../../util/loggerIO'
-import { AuthorizeEnv, authorizeSession } from '../authorization/authorization-methods'
+import { AuthorizeEnv, authorizeSession } from '../authorization/authorize-session'
 import { AuthorizedState } from './request'
 
 export type CatchFetchEnv = {

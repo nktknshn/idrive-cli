@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as Drive from '../../../icloud/drive/drive'
-import { fileName, fileNameAddSlash } from '../../../icloud/drive/drive-types'
+import { Query } from '../../../icloud/drive'
+import { fileName, fileNameAddSlash } from '../../../icloud/drive/drive-api/icloud-drive-types'
 import { logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
@@ -12,7 +12,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   file: boolean
   dir: boolean
   cached: boolean
-}): Drive.Effect<string> => {
+}): Query.Effect<string> => {
   const npath = normalizePath(path)
   const nparentPath = normalizePath(Path.dirname(path))
 
@@ -25,12 +25,12 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   const targetDir = lookupDir ? npath : nparentPath
 
   return pipe(
-    Drive.getCachedRoot(trash),
+    Query.getCachedRoot(trash),
     SRTE.chain(root =>
       pipe(
         cached
-          ? Drive.getByPathFolderFromCache(targetDir)(root)
-          : Drive.getByPathFolder(root, targetDir),
+          ? Query.getByPathFolderFromCache(targetDir)(root)
+          : Query.getByPathFolder(root, targetDir),
         SRTE.map(parent =>
           lookupDir
             ? parent.items

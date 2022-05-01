@@ -1,13 +1,12 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { authorizeState, DepAuthorizeSession } from '../../icloud//deps/DepAuthorizeSession'
 import { readAccountData, saveAccountData as _saveAccountData } from '../../icloud/authorization/requests/validate'
 import { AccountData } from '../../icloud/authorization/types'
 import { DepFs } from '../../icloud/deps'
-import { Drive, DriveApi } from '../../icloud/drive'
-import * as C from '../../icloud/drive/cache/cache'
-import { DepDriveApi } from '../../icloud/drive/deps'
-import { authorizeState, DepAuthorizeSession } from '../../icloud/drive/deps/authorize'
+import { Query } from '../../icloud/drive'
+import * as C from '../../icloud/drive/drive-query/cache/cache'
 import { AuthorizedState, BasicState } from '../../icloud/request/request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud/session/session-file'
 import { err } from '../../util/errors'
@@ -24,7 +23,7 @@ type Deps =
 
 /** read the state from files and executes the action in the context */
 export function cliAction<A, R, Args extends unknown[]>(
-  action: (...args: Args) => Drive.Effect<A, R>,
+  action: (...args: Args) => Query.Effect<A, R>,
 ): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {
   return (...args: Args) =>
     pipe(

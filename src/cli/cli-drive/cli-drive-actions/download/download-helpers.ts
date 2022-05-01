@@ -14,8 +14,8 @@ import micromatch from 'micromatch'
 import { Readable } from 'stream'
 import { DepFetchClient, DepFs } from '../../../../icloud/deps'
 import { getUrlStream } from '../../../../icloud/deps/getUrlStream'
-import { DepDriveApi, Drive, DriveApi } from '../../../../icloud/drive'
-import * as T from '../../../../icloud/drive/drive-types'
+import { DepDriveApi, DriveApi, Query } from '../../../../icloud/drive'
+import * as T from '../../../../icloud/drive/drive-api/icloud-drive-types'
 import { prependPath } from '../../../../icloud/drive/helpers'
 import { err } from '../../../../util/errors'
 import { guardFstRO, guardSnd, isDefined } from '../../../../util/guards'
@@ -300,12 +300,12 @@ const splitIntoChunks = (
 const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
 ): XXX<
-  Drive.State,
+  Query.State,
   DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 > => {
   return pipe(
-    DriveApi.downloadBatch<Drive.State>({
+    DriveApi.downloadBatch<Query.State>({
       docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
       zone: NA.head(chunk).info[1].zone,
     }),

@@ -7,10 +7,10 @@ import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DepAskConfirmation, DepFs } from '../../../../icloud/deps'
-import { Drive, DriveApi } from '../../../../icloud/drive'
-import * as V from '../../../../icloud/drive/cache/cache-get-by-path-types'
-import { DepDriveApi } from '../../../../icloud/drive/deps'
-import * as T from '../../../../icloud/drive/drive-types'
+import { DriveApi, Query } from '../../../../icloud/drive'
+import { DepDriveApi } from '../../../../icloud/drive/drive-api/deps'
+import * as T from '../../../../icloud/drive/drive-api/icloud-drive-types'
+import * as V from '../../../../icloud/drive/drive-query/cache/cache-get-by-path-types'
 import { findInParentFilename, getDrivewsid } from '../../../../icloud/drive/helpers'
 import { loggerIO } from '../../../../util/loggerIO'
 import { normalizePath } from '../../../../util/normalize-path'
@@ -19,7 +19,7 @@ import { XXX } from '../../../../util/types'
 import { AskingFunc } from '../upload'
 
 export type Deps =
-  & Drive.Deps
+  & Query.Deps
   & DepDriveApi<'renameItems'>
   & DepDriveApi<'moveItemsToTrash'>
   & DepDriveApi<'moveItems'>
@@ -35,7 +35,7 @@ export const uploads = (
       | AskingFunc
     skipTrash: boolean
   },
-): XXX<Drive.State, Deps, string> => {
+): XXX<Query.State, Deps, string> => {
   assert(A.isNonEmpty(uploadargs))
   assert(uploadargs.length > 1)
 
@@ -43,10 +43,10 @@ export const uploads = (
   const srcpaths = NA.init(uploadargs)
 
   return pipe(
-    Drive.getCachedDocwsRoot(),
+    Query.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bind('dstDetails', ({ root }) => Drive.getByPathFolder(root, normalizePath(dstpath))),
-    SRTE.bindW('deps', () => SRTE.ask<Drive.State, Deps>()),
+    SRTE.bind('dstDetails', ({ root }) => Query.getByPathFolder(root, normalizePath(dstpath))),
+    SRTE.bindW('deps', () => SRTE.ask<Query.State, Deps>()),
     SRTE.chain(({ dstDetails, deps }) =>
       pipe(
         srcpaths,
@@ -72,11 +72,11 @@ export const uploadSingleFile = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<Drive.State, Deps, string> => {
+): XXX<Query.State, Deps, string> => {
   return pipe(
-    Drive.getCachedDocwsRoot(),
+    Query.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bind('dst', ({ root }) => Drive.getByPath(root, normalizePath(dstpath))),
+    SRTE.bind('dst', ({ root }) => Query.getByPath(root, normalizePath(dstpath))),
     SRTE.bind('src', () => SRTE.of(srcpath)),
     SRTE.bind('overwright', () => SRTE.of(overwright)),
     SRTE.bind('skipTrash', () => SRTE.of(skipTrash)),
@@ -92,7 +92,7 @@ const handleSingleFileUpload = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<Drive.State, Deps, void> => {
+): XXX<Query.State, Deps, void> => {
   // if the target path already exists at icloud drive
   if (dst.valid) {
     const dstitem = V.pathTarget(dst)
@@ -107,7 +107,7 @@ const handleSingleFileUpload = (
     }
     // otherwise we cancel uploading
     else {
-      return Drive.errS(`invalid destination path: ${V.validAsString(dst)} It's a file`)
+      return Query.errS(`invalid destination path: ${V.validAsString(dst)} It's a file`)
     }
   }
 
@@ -119,13 +119,13 @@ const handleSingleFileUpload = (
 
     if (T.isFolderLike(dstitem)) {
       return pipe(
-        DriveApi.upload<Drive.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
+        DriveApi.upload<Query.State>({ sourceFilePath: src, docwsid: dstitem.docwsid, fname, zone: dstitem.zone }),
         SRTE.map(constVoid),
       )
     }
   }
 
-  return Drive.errS(`invalid destination path: ${V.showGetByPathResult(dst)}`)
+  return Query.errS(`invalid destination path: ${V.showGetByPathResult(dst)}`)
 }
 
 const uploadFileToFolder = (
@@ -137,7 +137,7 @@ const uploadFileToFolder = (
     src: string
     skipTrash: boolean
   },
-): XXX<Drive.State, Deps, void> => {
+): XXX<Query.State, Deps, void> => {
   const fname = Path.basename(src)
 
   const actualFile = pipe(
@@ -169,7 +169,7 @@ const uploadFileToFolder = (
   }
 
   return pipe(
-    DriveApi.upload<Drive.State>({
+    DriveApi.upload<Query.State>({
       sourceFilePath: src,
       docwsid: dstDetails.docwsid,
       zone: dstDetails.zone,
@@ -185,22 +185,22 @@ const uploadOverwrighting = (
     src: string
     skipTrash: boolean
   },
-): XXX<Drive.State, Deps, void> => {
+): XXX<Query.State, Deps, void> => {
   // const dstitem = V.target(dst)
   // const parent = NA.last(dst.path.details)
   return pipe(
-    DriveApi.upload<Drive.State>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
+    DriveApi.upload<Query.State>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
     logging(loggerIO.debug(`uploading`)),
     SRTE.bindTo('uploadResult'),
     SRTE.bindW('removeResult', () =>
       pipe(
-        DriveApi.moveItemsToTrash<Drive.State>({ items: [dstitem], trash: !skipTrash }),
+        DriveApi.moveItemsToTrash<Query.State>({ items: [dstitem], trash: !skipTrash }),
         logging(loggerIO.debug(`moving previous file to trash`)),
       )),
     SRTE.chainW(({ uploadResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        DriveApi.renameItems<Drive.State>({
+        DriveApi.renameItems<Query.State>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

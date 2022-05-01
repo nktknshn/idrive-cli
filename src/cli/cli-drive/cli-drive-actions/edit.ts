@@ -10,9 +10,9 @@ import { Readable } from 'stream'
 // import { tempDir } from '../../../defaults'
 import { DepFetchClient, DepFs } from '../../../icloud/deps'
 import { getUrlStream } from '../../../icloud/deps/getUrlStream'
-import { Drive, DriveApi } from '../../../icloud/drive'
-import { DepDriveApi } from '../../../icloud/drive/deps'
-import { isFile } from '../../../icloud/drive/drive-types'
+import { DriveApi, Query } from '../../../icloud/drive'
+import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
+import { isFile } from '../../../icloud/drive/drive-api/icloud-drive-types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
@@ -20,7 +20,7 @@ import { writeFileFromReadable } from './download/download-helpers'
 import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 
 type Deps =
-  & Drive.Deps
+  & Query.Deps
   & DepDriveApi<'download'>
   & UploadDeps
   & DepFs<'fstat' | 'createWriteStream'>
@@ -49,7 +49,7 @@ const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: stri
 
 export const edit = (
   { path }: { path: string },
-): Drive.Effect<string, Deps> => {
+): Query.Effect<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   const tempFile = ({ tempdir }: Deps) =>
@@ -61,7 +61,7 @@ export const edit = (
   // logger.debug(`temp file: ${tempFile}`)
 
   return pipe(
-    Drive.chainCachedDocwsRoot(root => Drive.getByPathsStrict(root, [npath])),
+    Query.chainCachedDocwsRoot(root => Query.getByPathsStrict(root, [npath])),
     SRTE.map(NA.head),
     SRTE.filterOrElse(isFile, () => err(`you cannot edit a directory`)),
     SRTE.chainW((item) => DriveApi.getICloudItemUrl(item)),
@@ -80,7 +80,7 @@ export const edit = (
     ),
     SRTE.chainW(readable =>
       pipe(
-        SRTE.of<Drive.State, Deps, Error, { readable: Readable }>({ readable }),
+        SRTE.of<Query.State, Deps, Error, { readable: Readable }>({ readable }),
         SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
         SRTE.bind('fileEditor', () => SRTE.asks(s => s.fileEditor)),
         SRTE.bindW('writeRrsult', ({ readable, tempFile }) =>

@@ -7,8 +7,8 @@ import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { DepAskConfirmation, DepFetchClient, DepFs } from '../../../icloud/deps'
-import { DepDriveApi, Drive } from '../../../icloud/drive'
-import { flattenFolderTreeWithPath } from '../../../icloud/drive/drive-methods/drive-get-folders-trees'
+import { DepDriveApi, Query } from '../../../icloud/drive'
+import { flattenFolderTreeWithPath } from '../../../icloud/drive/drive-query/drive-methods/drive-get-folders-trees'
 import { guardFst } from '../../../util/guards'
 import { printer, printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
@@ -37,7 +37,7 @@ type Argv = {
 }
 
 type Deps =
-  & Drive.Deps
+  & Query.Deps
   & DepDriveApi<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
@@ -45,7 +45,7 @@ type Deps =
     'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'
   >
 
-export const download = (argv: Argv): XXX<Drive.State, Deps, string> => {
+export const download = (argv: Argv): XXX<Query.State, Deps, string> => {
   const scan = micromatch.scan(argv.path)
 
   if (scan.isGlob) {
@@ -71,7 +71,7 @@ type ShallowArgs = {
 /** download file of files from a directory */
 const downloadShallow = (
   { path, dry, dstpath, chunkSize }: ShallowArgs,
-): XXX<Drive.State, Deps, string> => {
+): XXX<Query.State, Deps, string> => {
   return pipe(
     _downloadFolder(
       {
@@ -115,7 +115,7 @@ type RecursiveArgv = {
 }
 
 /** recursively download files */
-const downloadRecursive = (argv: RecursiveArgv): XXX<Drive.State, Deps, string> => {
+const downloadRecursive = (argv: RecursiveArgv): XXX<Query.State, Deps, string> => {
   const dirname = Path.dirname(micromatch.scan(argv.path).base)
   console.log(
     dirname,
@@ -153,7 +153,7 @@ const _downloadFolder = <R>(
     depth,
     createDownloadTask,
   }: DownloadFolderOpts<R>,
-): XXX<Drive.State, Deps & R, string> => {
+): XXX<Query.State, Deps & R, string> => {
   const verbose = dry
   const downloadFiles = downloadICloudFilesChunked({ chunkSize })
 
@@ -162,11 +162,11 @@ const _downloadFolder = <R>(
   // )
 
   const folderTree = pipe(
-    Drive.getCachedDocwsRoot(),
+    Query.getCachedDocwsRoot(),
     SRTE.chainW((root) =>
       pipe(
-        Drive.getByPathFolder(root, normalizePath(path)),
-        SRTE.chain(dir => Drive.getFoldersTrees([dir], depth)),
+        Query.getByPathFolder(root, normalizePath(path)),
+        SRTE.chain(dir => Query.getFoldersTrees([dir], depth)),
         SRTE.map(NA.head),
         SRTE.map(flattenFolderTreeWithPath(Path.dirname(path))),
       )
@@ -175,7 +175,7 @@ const _downloadFolder = <R>(
 
   const effect = (task: DownloadTask) =>
     pipe(
-      SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, Drive.State>(
+      SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, Query.State>(
         pipe(
           createDirStruct(task.localdirstruct),
           RTE.chainW(() => createEmpties(task)),
