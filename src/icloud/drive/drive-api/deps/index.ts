@@ -1,9 +1,8 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DriveApiEnv } from '../../../../deps/dep-drive-api-env'
-export { DriveApiEnv } from '../../../../deps/dep-drive-api-env'
 
-export type DepDriveApiEnv<
+export type GetDep<
   K extends keyof DriveApiEnv,
   RootKey extends string | number | symbol = 'api',
 > = Record<

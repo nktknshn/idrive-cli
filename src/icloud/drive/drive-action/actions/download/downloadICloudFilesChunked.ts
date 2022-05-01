@@ -12,17 +12,18 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { Readable } from 'stream'
 import { DepFetchClient } from '../../../../../deps/DepFetchClient'
 import { DepFs } from '../../../../../deps/DepFs'
-import { DepDriveApiEnv, DriveApi, DriveQuery } from '../../../../../icloud/drive'
+import { DriveApi, DriveQuery } from '../../../../../icloud/drive'
 import { err } from '../../../../../util/errors'
 import { guardFstRO, isDefined } from '../../../../../util/guards'
 import { getUrlStream } from '../../../../../util/http/getUrlStream'
 import { loggerIO } from '../../../../../util/loggerIO'
 import { printerIO } from '../../../../../util/logging'
 import { XXX } from '../../../../../util/types'
+import { DepDriveApi } from '../../../drive-api'
 import { DownloadICloudFilesFunc, DownloadItem, DownloadUrlToFile } from './types'
 
 export type Deps =
-  & DepDriveApiEnv<'downloadBatch'>
+  & DepDriveApi<'downloadBatch'>
   & DepFetchClient
   & DepFs<'createWriteStream'>
 
@@ -58,7 +59,7 @@ const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadItem; localpath: string }>,
 ): XXX<
   DriveQuery.State,
-  DepDriveApiEnv<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
+  DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 > => {
   return pipe(

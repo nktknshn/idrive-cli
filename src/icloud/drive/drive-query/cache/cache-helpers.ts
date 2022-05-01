@@ -3,7 +3,7 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { NormalizedPath, normalizePath, Path } from '../../../../util/path'
-import * as T from '../../icloud-drive-types'
+import * as T from '../../icloud-drive-items-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import * as CT from './cache-types'
 

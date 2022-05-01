@@ -8,7 +8,7 @@ import * as AM from '../icloud/request/request'
 import { readSessionFile, saveSession } from '../icloud/session/session-file'
 
 export function apiActionM<T, R>(
-  action: () => AM.AuthorizedRequest<T, AM.AuthorizedState, R>,
+  action: () => AM.ApiRequest<T, AM.AuthorizedState, R>,
 ): RTE.ReaderTaskEither<
   & { sessionFile: string }
   & DepFs<'writeFile' | 'readFile'>

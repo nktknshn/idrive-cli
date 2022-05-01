@@ -13,6 +13,7 @@ import { InvalidResponseStatusError } from '../util/errors'
 const seqs = sequenceS(R.Apply)
 
 export type ApiCreator<Env> = R.Reader<Env, DriveApiEnv>
+
 export const wrapBasicReq: ReqWrapper<
   CatchFetchEnv & AuthorizeEnv,
   BasicState

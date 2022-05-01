@@ -32,7 +32,7 @@ export function download<S extends AR.AuthorizedState>(
     zone: string
   },
 ): AR.ApiRequest<DownloadResponseBody, S> {
-  return AR.basicDriveJsonRequest(
+  return AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'GET',
       url:
@@ -46,7 +46,7 @@ export function download<S extends AR.AuthorizedState>(
 export function downloadBatch<S extends AR.AuthorizedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
 ): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestEnv> {
-  return AR.basicDriveJsonRequest(
+  return AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/download/batch?dsid=${accountData.dsInfo.dsid}`,

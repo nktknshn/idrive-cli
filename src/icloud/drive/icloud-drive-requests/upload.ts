@@ -89,8 +89,8 @@ export const upload = <S extends AuthorizedState>(
     size: number
     type: 'FILE'
   },
-): AR.AuthorizedRequest<UploadResponse, S> =>
-  AR.basicDriveJsonRequest(
+): AR.ApiRequest<UploadResponse, S> =>
+  AR.basicJsonRequest(
     ({ state: { accountData, session } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
@@ -103,7 +103,7 @@ export const upload = <S extends AuthorizedState>(
 
 export const singleFileUpload = <S extends AuthorizedState>(
   { buffer, url, filename }: { buffer: Buffer; url: string; filename: string },
-): AR.AuthorizedRequest<SingleFileResponse, S, AR.RequestEnv> => {
+): AR.ApiRequest<SingleFileResponse, S, AR.RequestEnv> => {
   // const filename = Path.parse(filePath).base
   return pipe(
     // SRTE.asksStateReaderTaskEither<AR.RequestEnv & DepFs<'readFile'>, S, Error, HttpRequest>((
@@ -124,8 +124,8 @@ export const singleFileUpload = <S extends AuthorizedState>(
 
 export const updateDocuments = <S extends AuthorizedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
-): AR.AuthorizedRequest<UpdateDocumentsResponse, S> =>
-  AR.basicDriveJsonRequest(
+): AR.ApiRequest<UpdateDocumentsResponse, S> =>
+  AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,

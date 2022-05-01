@@ -7,13 +7,13 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../deps/DepFs'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepDriveApiEnv } from '../../../icloud/drive/drive-api/deps'
+import { DepDriveApi } from '../../../icloud/drive/drive-api'
 import {
   DetailsAppLibrary,
   DetailsDocwsRoot,
   DetailsFolder,
   isFolderLike,
-} from '../../../icloud/drive/icloud-drive-types'
+} from '../../../icloud/drive/icloud-drive-items-types'
 import { findInParentFilename } from '../../../icloud/drive/util/drive-helpers'
 import * as V from '../../../icloud/drive/util/get-by-path-types'
 import { err } from '../../../util/errors'
@@ -42,9 +42,9 @@ type Argv = {
 
 export type Deps =
   & DriveQuery.Deps
-  & DepDriveApiEnv<'renameItems'>
-  & DepDriveApiEnv<'createFolders'>
-  & DepDriveApiEnv<'downloadBatch'>
+  & DepDriveApi<'renameItems'>
+  & DepDriveApi<'createFolders'>
+  & DepDriveApi<'downloadBatch'>
   & DriveApi.UploadMethodDeps
   & DepFs<'fstat' | 'opendir'>
 

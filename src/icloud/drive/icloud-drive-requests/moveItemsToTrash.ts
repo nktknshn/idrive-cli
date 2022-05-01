@@ -9,8 +9,8 @@ export interface MoveItemToTrashResponse {
 export const moveItemsToTrash = <S extends AuthorizedState>({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
-}): AR.AuthorizedRequest<MoveItemToTrashResponse, S> =>
-  AR.basicDriveJsonRequest(
+}): AR.ApiRequest<MoveItemToTrashResponse, S> =>
+  AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.drivews.url}/${

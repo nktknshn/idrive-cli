@@ -5,7 +5,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import micromatch from 'micromatch'
 import Path from 'path'
-import * as T from '../icloud-drive-types'
+import * as T from '../icloud-drive-items-types'
 
 export const getMissedFound = <T>(
   drivewsids: string[],

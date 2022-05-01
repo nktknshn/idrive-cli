@@ -11,8 +11,8 @@ import { Readable } from 'stream'
 import { DepFetchClient } from '../../../deps/DepFetchClient'
 import { DepFs } from '../../../deps/DepFs'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepApi } from '../../../icloud/drive/drive-api'
-import { isFile } from '../../../icloud/drive/icloud-drive-types'
+import { DepDriveApi } from '../../../icloud/drive/drive-api'
+import { isFile } from '../../../icloud/drive/icloud-drive-items-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
 import { normalizePath } from '../../../util/normalize-path'
@@ -22,7 +22,7 @@ import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 
 type Deps =
   & DriveQuery.Deps
-  & DepApi<'download'>
+  & DepDriveApi<'download'>
   & UploadDeps
   & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient

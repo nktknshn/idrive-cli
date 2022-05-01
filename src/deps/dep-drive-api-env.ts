@@ -1,3 +1,4 @@
+import * as T from '../icloud/drive/icloud-drive-items-types'
 import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../icloud/drive/icloud-drive-requests'
 import { DownloadResponseBody } from '../icloud/drive/icloud-drive-requests/download'
 import { MoveItemsResponse } from '../icloud/drive/icloud-drive-requests/moveItems'
@@ -7,8 +8,7 @@ import {
   UpdateDocumentsResponse,
   UploadResponse,
 } from '../icloud/drive/icloud-drive-requests/upload'
-import * as T from '../icloud/drive/icloud-drive-types'
-import { AuthorizedState } from '../icloud/request/request'
+import { AuthorizedState } from '../icloud/request'
 import { NEA, XX } from '../util/types'
 
 /** basic api functions with attached dependencies */

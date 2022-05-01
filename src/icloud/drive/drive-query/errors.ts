@@ -1,4 +1,4 @@
-import { DriveChildrenItem, DriveChildrenItemFile, fileName, HasName } from '../icloud-drive-types'
+import { DriveChildrenItem, DriveChildrenItemFile, fileName, HasName } from '../icloud-drive-items-types'
 
 export class NotFoundError extends Error {
   static is(e: Error): e is NotFoundError {

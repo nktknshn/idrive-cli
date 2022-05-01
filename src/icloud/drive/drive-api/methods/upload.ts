@@ -6,13 +6,13 @@ import mime from 'mime-types'
 import { DepFs } from '../../../../deps/DepFs'
 import { err } from '../../../../util/errors'
 import { Path } from '../../../../util/path'
-import { AuthorizedState } from '../../../request/request'
-import { DepDriveApiEnv, useApi } from '../deps'
+import { AuthorizedState } from '../../../request'
+import { GetDep, useApi } from '../deps'
 
 export type UploadMethodDeps =
-  & DepDriveApiEnv<'upload'>
-  & DepDriveApiEnv<'singleFileUpload'>
-  & DepDriveApiEnv<'updateDocuments'>
+  & GetDep<'upload'>
+  & GetDep<'singleFileUpload'>
+  & GetDep<'updateDocuments'>
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 

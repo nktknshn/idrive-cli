@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as AR from '../../request'
-import { itemFolder } from '../icloud-drive-types/types-io'
+import { itemFolder } from '../icloud-drive-items-types/types-io'
 
 const createFolderResponse = t.type({
   destinationDrivewsId: t.string,
@@ -22,7 +22,7 @@ export function createFoldersM<S extends AR.AuthorizedState>(
     destinationDrivewsId: string
     names: string[]
   },
-): AR.AuthorizedRequest<CreateFoldersResponse, S> {
+): AR.ApiRequest<CreateFoldersResponse, S> {
   const folders = names.map(name => ({ name, clientId: name }))
 
   return pipe(

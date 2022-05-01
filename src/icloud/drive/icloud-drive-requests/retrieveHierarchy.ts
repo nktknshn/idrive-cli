@@ -1,15 +1,15 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as AR from '../../request/request'
-import { DriveDetailsPartialWithHierarchy } from '../icloud-drive-types'
-import { driveDetailsWithHierarchyPartial } from '../icloud-drive-types/types-io'
+import { DriveDetailsPartialWithHierarchy } from '../icloud-drive-items-types'
+import { driveDetailsWithHierarchyPartial } from '../icloud-drive-items-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
 
-export const retrieveHierarchy = (
+export const retrieveHierarchy = <S extends AR.AuthorizedState>(
   { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<DriveDetailsPartialWithHierarchy[]> =>
+): AR.ApiRequest<DriveDetailsPartialWithHierarchy[], S> =>
   pipe(
-    getRetrieveItemDetailsInFoldersHttpRequest(
+    getRetrieveItemDetailsInFoldersHttpRequest<S>(
       drivewsids.map(drivewsid => ({ drivewsid, partialData: true, includeHierarchy: true })),
     ),
     AR.handleResponse(AR.basicJsonResponse(

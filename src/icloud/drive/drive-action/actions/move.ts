@@ -6,8 +6,8 @@ import { normalizePath } from '../../../../util/normalize-path'
 import { parseFilename } from '../../../../util/parse-filename'
 import { NEA } from '../../../../util/types'
 import { DepApi, DriveApi, DriveQuery } from '../..'
+import * as T from '../../icloud-drive-items-types'
 import { MoveItemsResponse, RenameResponse } from '../../icloud-drive-requests'
-import * as T from '../../icloud-drive-types'
 import * as V from '../../util/get-by-path-types'
 
 export type Deps =

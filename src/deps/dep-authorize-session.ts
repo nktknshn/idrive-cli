@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { AccountData } from '../icloud/authorization/types'
-import { BasicState } from '../icloud/request/request'
+import { BasicState } from '../icloud/request'
 import { XX } from '../util/types'
 
 export type DepAuthorizeSession = {

@@ -5,15 +5,15 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import * as iot from 'io-ts-types'
-import { FetchClientEither } from '../../../util/http/fetch-client'
+import { FetchClientEither, HttpRequest } from '../../../util/http/fetch-client'
 import { apiLogger } from '../../../util/logging'
 import { NEA } from '../../../util/types'
 import { AuthorizedState } from '../../request/request'
 import * as AR from '../../request/request'
 import { ResponseHandler, ResponseWithSession } from '../../request/request'
 import { buildRequest } from '../../session/session-http'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../icloud-drive-types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../icloud-drive-types/types-io'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../icloud-drive-items-types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../icloud-drive-items-types/types-io'
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,
@@ -60,7 +60,7 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsW
 // eslint-disable-next-line id-length
 export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
-) => {
+): AR.ApiRequest<HttpRequest, S, AR.RequestEnv> => {
   return pipe(
     AR.buildRequestC<S>(({ state: { accountData } }) => ({
       method: 'POST',
@@ -72,7 +72,7 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedS
 
 export function retrieveItemDetailsInFolders<S extends AuthorizedState>(
   { drivewsids }: { drivewsids: string[] },
-): AR.AuthorizedRequest<NEA<(Details | InvalidId)>, S> {
+): AR.ApiRequest<NEA<(Details | InvalidId)>, S> {
   return pipe(
     getRetrieveItemDetailsInFoldersHttpRequest<S>(
       drivewsids.map(

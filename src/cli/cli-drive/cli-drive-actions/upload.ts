@@ -3,7 +3,6 @@ import * as A from 'fp-ts/Array'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
 
-import { DepDriveApiEnv } from '../../../icloud/drive/drive-api/deps'
 import { NEA, XXX } from '../../../util/types'
 import { Deps as UploadFolderDeps, uploadFolder } from './upload-folder'
 import { Deps as UploadDeps, uploads, uploadSingleFile } from './upload/uploads'

@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DriveQuery } from '../../../icloud/drive'
-import { fileName, fileNameAddSlash } from '../../../icloud/drive/icloud-drive-types'
+import { fileName, fileNameAddSlash } from '../../../icloud/drive/icloud-drive-items-types'
 import { logger } from '../../../util/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'

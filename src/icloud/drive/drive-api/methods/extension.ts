@@ -4,17 +4,17 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { err } from '../../../../util/errors'
 import { NEA } from '../../../../util/types'
-import { AuthorizedState } from '../../../request/request'
-import * as T from '../../icloud-drive-types'
+import { AuthorizedState } from '../../../request'
+import * as T from '../../icloud-drive-items-types'
 import { getMissedFound } from '../../util/drive-helpers'
-import { DepDriveApiEnv } from '../deps'
+import { GetDep } from '../deps'
 import { createFolders, download, retrieveItemDetailsInFolders } from './original'
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<
   S,
-  DepDriveApiEnv<'retrieveItemDetailsInFolders', 'api'>,
+  GetDep<'retrieveItemDetailsInFolders', 'api'>,
   Error,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>

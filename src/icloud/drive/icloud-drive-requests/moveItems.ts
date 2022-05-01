@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
 import * as AR from '../../request'
-import { childrenItem } from '../icloud-drive-types/types-io'
+import { childrenItem } from '../icloud-drive-items-types/types-io'
 
 const moveItemResponse = t.type({
   items: t.array(t.union([
@@ -15,8 +15,8 @@ export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 export const moveItems = <S extends AR.AuthorizedState>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
-}): AR.AuthorizedRequest<MoveItemsResponse, S, AR.RequestEnv> =>
-  AR.basicDriveJsonRequest(
+}): AR.ApiRequest<MoveItemsResponse, S, AR.RequestEnv> =>
+  AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.drivews.url}/moveItems?dsid=${accountData.dsInfo.dsid}`,

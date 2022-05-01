@@ -9,7 +9,7 @@ import micromatch from 'micromatch'
 import { DepAskConfirmation } from '../../../deps/DepAskConfirmation'
 import { DepFetchClient } from '../../../deps/DepFetchClient'
 import { DepFs } from '../../../deps/DepFs'
-import { DepDriveApiEnv, DriveQuery } from '../../../icloud/drive'
+import { DepApi, DriveQuery } from '../../../icloud/drive'
 import { flattenFolderTreeWithBasepath } from '../../../icloud/drive/util/folder-tree'
 import { guardFst } from '../../../util/guards'
 import { printer, printerIO } from '../../../util/logging'
@@ -40,7 +40,7 @@ type Argv = {
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApiEnv<'downloadBatch'>
+  & DepApi<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
   & DepFs<

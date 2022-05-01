@@ -11,7 +11,7 @@ import { Stats } from 'fs'
 import micromatch from 'micromatch'
 import { string } from 'yargs'
 import { DriveApi, DriveQuery } from '../../../../icloud/drive'
-import { DepDriveApiEnv } from '../../../../icloud/drive/drive-api/deps'
+import { GetDep } from '../../../../icloud/drive/drive-api/deps'
 import { parseDrivewsid } from '../../../../icloud/drive/util/drive-helpers'
 import { err } from '../../../../util/errors'
 import { guardSndRO } from '../../../../util/guards'
@@ -127,7 +127,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<DriveQuery.State, DepDriveApiEnv<'createFolders'>, Record<string, string>> => {
+): XXX<DriveQuery.State, GetDep<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {

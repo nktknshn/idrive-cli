@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-interface */
-import { pipe } from 'fp-ts/function'
-import * as A from 'fp-ts/lib/Array'
 import * as O from 'fp-ts/lib/Option'
-import * as T from 'fp-ts/lib/Tree'
-import { TypeOf } from 'io-ts'
 import * as t from 'io-ts'
+import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../../util/util'
 import * as types from './types-io'
 

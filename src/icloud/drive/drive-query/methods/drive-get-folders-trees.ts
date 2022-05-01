@@ -8,7 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { logger } from '../../../../util/logging'
 import { NEA } from '../../../../util/types'
 import { DriveQuery } from '../..'
-import * as T from '../../icloud-drive-types'
+import * as T from '../../icloud-drive-items-types'
 import { deepFolder, FolderTree, shallowFolder } from '../../util/folder-tree'
 
 export function getFoldersTrees(

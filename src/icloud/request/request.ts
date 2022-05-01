@@ -28,8 +28,6 @@ export type AuthorizedState = BasicState & {
   accountData: AccountData
 }
 
-export type AuthorizedRequest<A, S = AuthorizedState, R = RequestEnv> = ApiRequest<A, S, R>
-
 export type RequestEnv = {
   fetchClient: FetchClientEither
 }
@@ -284,7 +282,7 @@ export const basicJsonResponse = <
     )
 }
 
-export const basicDriveJsonRequest = <S extends AuthorizedState, A, R extends RequestEnv>(
+export const basicJsonRequest = <S extends BasicState, A, R extends RequestEnv>(
   f: (a: { state: S; env: R }) => HttpRequestConfig,
   jsonDecoder: t.Decode<unknown, A>,
 ): ApiRequest<A, S, R> => {

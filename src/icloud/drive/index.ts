@@ -1,5 +1,5 @@
-export { DepApi } from './drive-api'
-export { DepDriveApiEnv as DepDriveApiEnv } from './drive-api/deps'
+export { DepDriveApi as DepApi } from './drive-api'
+export { GetDep as GetDep } from './drive-api/deps'
 
 // export * as Drive from './drive'
 export * as DriveAction from './drive-action'
@@ -7,4 +7,4 @@ export * as DriveApi from './drive-api'
 export * as DriveQuery from './drive-query'
 export * as C from './drive-query/cache'
 export * as DriveCache from './drive-query/methods/cache-methods'
-export * as T from './icloud-drive-types'
+export * as T from './icloud-drive-items-types'

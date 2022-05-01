@@ -6,8 +6,8 @@ import { DepAskConfirmation } from '../../../../deps/DepAskConfirmation'
 import { guardProp } from '../../../../util/guards'
 import { NEA } from '../../../../util/types'
 import { DepApi, DriveApi, DriveQuery } from '../..'
+import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../icloud-drive-items-types'
 import { MoveItemToTrashResponse } from '../../icloud-drive-requests'
-import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../icloud-drive-types'
 
 export type Deps =
   & DriveQuery.Deps
