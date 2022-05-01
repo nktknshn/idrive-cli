@@ -2,11 +2,11 @@ import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
+import { DepAskConfirmation } from '../../../../deps/DepAskConfirmation'
 import { guardProp } from '../../../../util/guards'
 import { NEA } from '../../../../util/types'
-import { DepAskConfirmation } from '../../../deps'
 import { DepApi, DriveApi, DriveQuery } from '../..'
-import { MoveItemToTrashResponse } from '../../drive-api/requests'
+import { MoveItemToTrashResponse } from '../../icloud-drive-requests'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../icloud-drive-types'
 
 export type Deps =

@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { DepFs } from '../../deps/DepFs'
 import { BufferDecodingError, FileReadingError, JsonParsingError, TypeDecodingError } from '../../util/errors'
 import { tryReadJsonFile } from '../../util/files'
-import { DepFs } from '../deps'
 import { validateResponseJson } from './requests/validate'
 import { AccountData } from './types'
 

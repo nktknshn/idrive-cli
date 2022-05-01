@@ -1,4 +1,4 @@
-import { defaultApiCreator } from './icloud/deps/drive-api-env'
+import { defaultApiCreator } from './deps-providers/drive-api-env'
 import { ClientInfo } from './icloud/session/types'
 import { fetchClient, FetchError } from './util/http/fetch-client'
 import { input } from './util/prompts'

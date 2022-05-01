@@ -6,8 +6,9 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepFetchClient, DepFs } from '../../../../icloud/deps'
-import { DepDriveApi, DriveApi, DriveQuery } from '../../../../icloud/drive'
+import { DepFetchClient } from '../../../../deps/DepFetchClient'
+import { DepFs } from '../../../../deps/DepFs'
+import { DepDriveApiEnv, DriveApi, DriveQuery } from '../../../../icloud/drive'
 import { guardFstRO, isDefined } from '../../../../util/guards'
 import { XXX } from '../../../../util/types'
 import { downloadUrlsPar } from './download-helpers'
@@ -15,7 +16,7 @@ import { DownloadICloudFilesFunc, DownloadInfo } from './types'
 
 export const downloadICloudFilesChunked = (
   { chunkSize = 5 },
-): DownloadICloudFilesFunc<DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>> =>
+): DownloadICloudFilesFunc<DepDriveApiEnv<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>> =>
   ({ downloadable }) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
@@ -45,7 +46,7 @@ const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadInfo; localpath: string }>,
 ): XXX<
   DriveQuery.State,
-  DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
+  DepDriveApiEnv<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 > => {
   return pipe(

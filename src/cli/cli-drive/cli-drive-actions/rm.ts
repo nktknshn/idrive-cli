@@ -3,16 +3,16 @@ import * as A from 'fp-ts/lib/Array'
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { DepAskConfirmation } from '../../../icloud/deps'
+import { DepAskConfirmation } from '../../../deps/DepAskConfirmation'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
+import { DepDriveApiEnv } from '../../../icloud/drive/drive-api/deps'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud/drive/icloud-drive-types'
 import { guardProp } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'moveItemsToTrash'>
+  & DepDriveApiEnv<'moveItemsToTrash'>
   & DepAskConfirmation
 
 export const rm = (

@@ -3,18 +3,18 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { DepFetchClient } from '../../../icloud/deps'
-import { getUrlStream } from '../../../icloud/deps/getUrlStream'
+import { DepFetchClient } from '../../../deps/DepFetchClient'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
+import { DepDriveApiEnv } from '../../../icloud/drive/drive-api/deps'
 import { isFile } from '../../../icloud/drive/icloud-drive-types'
 import { err } from '../../../util/errors'
+import { getUrlStream } from '../../../util/http/getUrlStream'
 import { normalizePath } from '../../../util/normalize-path'
 import { consumeStreamToString } from '../../../util/util'
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'download'>
+  & DepDriveApiEnv<'download'>
   & DepFetchClient
 
 export const cat = (

@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import { Stats } from 'fs'
-import { DepFs } from '../../../../icloud/deps'
+import { DepFs } from '../../../../deps/DepFs'
 import { stripTrailingSlash } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 

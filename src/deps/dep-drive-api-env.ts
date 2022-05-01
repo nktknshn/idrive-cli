@@ -1,10 +1,15 @@
-import { NEA, XX } from '../../../../util/types'
-import { AuthorizedState } from '../../../request/request'
-import * as T from '../../icloud-drive-types'
-import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../requests'
-import { DownloadResponseBody } from '../requests/download'
-import { MoveItemsResponse } from '../requests/moveItems'
-import { SingleFileResponse, UpdateDocumentsRequest, UpdateDocumentsResponse, UploadResponse } from '../requests/upload'
+import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../icloud/drive/icloud-drive-requests'
+import { DownloadResponseBody } from '../icloud/drive/icloud-drive-requests/download'
+import { MoveItemsResponse } from '../icloud/drive/icloud-drive-requests/moveItems'
+import {
+  SingleFileResponse,
+  UpdateDocumentsRequest,
+  UpdateDocumentsResponse,
+  UploadResponse,
+} from '../icloud/drive/icloud-drive-requests/upload'
+import * as T from '../icloud/drive/icloud-drive-types'
+import { AuthorizedState } from '../icloud/request/request'
+import { NEA, XX } from '../util/types'
 
 /** basic api functions with attached dependencies */
 export type DriveApiEnv = {

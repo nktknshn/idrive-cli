@@ -1,5 +1,5 @@
 export { DepApi } from './drive-api'
-export { DepDriveApi } from './drive-api/deps'
+export { DepDriveApiEnv as DepDriveApiEnv } from './drive-api/deps'
 
 // export * as Drive from './drive'
 export * as DriveAction from './drive-action'

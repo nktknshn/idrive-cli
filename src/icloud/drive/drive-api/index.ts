@@ -1,5 +1,5 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-export { DepDriveApi } from '..'
+export { DepDriveApiEnv } from '..'
 
 import * as DriveApi from './drive-api'
 export * from './drive-api'

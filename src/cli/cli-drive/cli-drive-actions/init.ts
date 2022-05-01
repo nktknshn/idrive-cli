@@ -1,9 +1,9 @@
 import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { DepFs } from '../../../icloud/deps'
-import { authorizeState, DepAuthorizeSession } from '../../../icloud/deps/dep-authorize-session'
-import * as S from '../../../icloud/session/session-type'
+import { authorizeState, DepAuthorizeSession } from '../../../deps/dep-authorize-session'
+import { DepFs } from '../../../deps/DepFs'
+import { ICloudSession, session } from '../../../icloud/session/session-type'
 import { err } from '../../../util/errors'
 import { printerIO } from '../../../util/logging'
 import { prompts } from '../../../util/prompts'
@@ -65,12 +65,12 @@ const askPassword = () =>
   })
 
 const sessionQuest: TE.TaskEither<Error, {
-  session: S.ICloudSession
+  session: ICloudSession
 }> = pipe(
   TE.Do,
   TE.bind('username', askUsername),
   TE.bind('password', askPassword),
   TE.map(
-    ({ username, password }) => ({ session: S.session(username.value, password.value) }),
+    ({ username, password }) => ({ session: session(username.value, password.value) }),
   ),
 )

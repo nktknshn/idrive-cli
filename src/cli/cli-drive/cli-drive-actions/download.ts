@@ -6,8 +6,10 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { DepAskConfirmation, DepFetchClient, DepFs } from '../../../icloud/deps'
-import { DepDriveApi, DriveQuery } from '../../../icloud/drive'
+import { DepAskConfirmation } from '../../../deps/DepAskConfirmation'
+import { DepFetchClient } from '../../../deps/DepFetchClient'
+import { DepFs } from '../../../deps/DepFs'
+import { DepDriveApiEnv, DriveQuery } from '../../../icloud/drive'
 import { flattenFolderTreeWithBasepath } from '../../../icloud/drive/util/folder-tree'
 import { guardFst } from '../../../util/guards'
 import { printer, printerIO } from '../../../util/logging'
@@ -38,7 +40,7 @@ type Argv = {
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'downloadBatch'>
+  & DepDriveApiEnv<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
   & DepFs<

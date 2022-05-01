@@ -2,9 +2,9 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { Readable } from 'stream'
-import { err } from '../../../../util/errors'
-import { expectResponse, FetchClientEither } from '../../../../util/http/fetch-client'
-import * as AR from '../../../request'
+import { err } from '../../../util/errors'
+import { expectResponse, FetchClientEither } from '../../../util/http/fetch-client'
+import * as AR from '../../request'
 
 export interface DownloadResponseBody {
   document_id: string

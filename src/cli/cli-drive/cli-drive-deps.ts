@@ -1,6 +1,6 @@
 import * as defaults from '../../defaults'
-import { DepAskConfirmation } from '../../icloud/deps'
-import { authorizeSessionMethod } from '../../icloud/deps/authorize-session'
+import { authorizeSessionMethod } from '../../deps-providers/authorize-session'
+import { DepAskConfirmation } from '../../deps/DepAskConfirmation'
 import { ActionsDeps } from '.'
 
 export const createCliActionsDeps = (argv: {
@@ -13,7 +13,7 @@ export const createCliActionsDeps = (argv: {
 }): ActionsDeps => ({
   api: defaults.api,
   fs: defaults.fs,
-  authorizeSession: authorizeSessionMethod(defaults.apiEnv),
+  ...authorizeSessionMethod(defaults.apiEnv),
   // ...defaults.apiEnv,
   fetchClient: defaults.apiEnv.fetchClient,
   // clientInfo: defaults.clientInfo,

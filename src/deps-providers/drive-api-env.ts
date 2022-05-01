@@ -2,18 +2,17 @@ import { sequenceS } from 'fp-ts/lib/Apply'
 import { flow } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as R from 'fp-ts/Reader'
-import { InvalidResponseStatusError } from '../../util/errors'
-import { AuthorizeEnv } from '../authorization/authorize-session'
-import { DriveApiEnv } from '../drive/drive-api/deps/drive-api-env-type'
-import * as RQ from '../drive/drive-api/requests'
-import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from '../request/catch'
-import { AuthorizedState, BasicState } from '../request/request'
-import { ReqWrapper, wrapRequests } from '../request/request-wrapper'
+import { DriveApiEnv } from '../deps/dep-drive-api-env'
+import { AuthorizeEnv } from '../icloud/authorization/authorize-session'
+import * as RQ from '../icloud/drive/icloud-drive-requests'
+import { AuthorizedState, BasicState } from '../icloud/request'
+import { CatchFetchEnv, catchFetchErrorsSRTE, CatchSessEnv, catchSessErrorsSRTE } from '../icloud/request/catch'
+import { ReqWrapper, wrapRequests } from '../icloud/request/request-wrapper'
+import { InvalidResponseStatusError } from '../util/errors'
 
 const seqs = sequenceS(R.Apply)
 
 export type ApiCreator<Env> = R.Reader<Env, DriveApiEnv>
-
 export const wrapBasicReq: ReqWrapper<
   CatchFetchEnv & AuthorizeEnv,
   BasicState

@@ -3,9 +3,9 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { DepFs } from '../../deps/DepFs'
 import { BufferDecodingError, err, FileReadingError, JsonParsingError, TypeDecodingError } from '../../util/errors'
 import { tryReadJsonFile } from '../../util/files'
-import { DepFs } from '../deps'
 import { ICloudSession, sessionScheme } from './session-type'
 
 export type SessionFileReadingResult = TE.TaskEither<

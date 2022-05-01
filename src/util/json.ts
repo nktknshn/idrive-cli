@@ -5,7 +5,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 // import * as fs from 'fs/promises'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { DepFs } from '../icloud/deps'
+import { DepFs } from '../deps/DepFs'
 import { err, JsonParsingError, MissingResponseBody } from './errors'
 import { HttpResponse } from './http/fetch-client'
 

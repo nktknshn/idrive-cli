@@ -1,4 +1,4 @@
-import { DepDriveApi, useApi } from '../deps'
+import { DepDriveApiEnv, useApi } from '../deps'
 
 // FIXME
 // export function retrieveItemDetailsInFoldersSaving<R extends T.Root>(
@@ -32,20 +32,20 @@ import { DepDriveApi, useApi } from '../deps'
 // }
 /** basic icloud api requests as standalone depended functions*/
 
-export const renameItems = useApi((_: DepDriveApi<'renameItems'>) => _.api.renameItems)
+export const renameItems = useApi((_: DepDriveApiEnv<'renameItems'>) => _.api.renameItems)
 
-export const putBackItemsFromTrash = useApi((_: DepDriveApi<'putBackItemsFromTrash'>) => _.api.putBackItemsFromTrash)
+export const putBackItemsFromTrash = useApi((_: DepDriveApiEnv<'putBackItemsFromTrash'>) => _.api.putBackItemsFromTrash)
 
-export const moveItems = useApi((_: DepDriveApi<'moveItems'>) => _.api.moveItems)
+export const moveItems = useApi((_: DepDriveApiEnv<'moveItems'>) => _.api.moveItems)
 
-export const moveItemsToTrash = useApi((_: DepDriveApi<'moveItemsToTrash'>) => _.api.moveItemsToTrash)
+export const moveItemsToTrash = useApi((_: DepDriveApiEnv<'moveItemsToTrash'>) => _.api.moveItemsToTrash)
 
-export const retrieveItemDetailsInFolders = useApi((_: DepDriveApi<'retrieveItemDetailsInFolders'>) =>
+export const retrieveItemDetailsInFolders = useApi((_: DepDriveApiEnv<'retrieveItemDetailsInFolders'>) =>
   _.api.retrieveItemDetailsInFolders
 )
 
-export const download = useApi((_: DepDriveApi<'download'>) => _.api.download)
+export const download = useApi((_: DepDriveApiEnv<'download'>) => _.api.download)
 
-export const downloadBatch = useApi((_: DepDriveApi<'downloadBatch'>) => _.api.downloadBatch)
+export const downloadBatch = useApi((_: DepDriveApiEnv<'downloadBatch'>) => _.api.downloadBatch)
 
-export const createFolders = useApi((_: DepDriveApi<'createFolders'>) => _.api.createFolders)
+export const createFolders = useApi((_: DepDriveApiEnv<'createFolders'>) => _.api.createFolders)

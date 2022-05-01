@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { XX } from '../../util/types'
-import { AccountData } from '../authorization/types'
-import { BasicState } from '../request/request'
+import { AccountData } from '../icloud/authorization/types'
+import { BasicState } from '../icloud/request/request'
+import { XX } from '../util/types'
 
 export type DepAuthorizeSession = {
   authorizeSession: <S extends BasicState>() => XX<S, AccountData>

@@ -3,16 +3,16 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Stats } from 'fs'
 import mime from 'mime-types'
+import { DepFs } from '../../../../deps/DepFs'
 import { err } from '../../../../util/errors'
 import { Path } from '../../../../util/path'
-import { DepFs } from '../../../deps'
 import { AuthorizedState } from '../../../request/request'
-import { DepDriveApi, useApi } from '../deps'
+import { DepDriveApiEnv, useApi } from '../deps'
 
 export type UploadMethodDeps =
-  & DepDriveApi<'upload'>
-  & DepDriveApi<'singleFileUpload'>
-  & DepDriveApi<'updateDocuments'>
+  & DepDriveApiEnv<'upload'>
+  & DepDriveApiEnv<'singleFileUpload'>
+  & DepDriveApiEnv<'updateDocuments'>
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 

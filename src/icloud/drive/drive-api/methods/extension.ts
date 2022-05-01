@@ -7,14 +7,14 @@ import { NEA } from '../../../../util/types'
 import { AuthorizedState } from '../../../request/request'
 import * as T from '../../icloud-drive-types'
 import { getMissedFound } from '../../util/drive-helpers'
-import { DepDriveApi } from '../deps'
+import { DepDriveApiEnv } from '../deps'
 import { createFolders, download, retrieveItemDetailsInFolders } from './original'
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<
   S,
-  DepDriveApi<'retrieveItemDetailsInFolders', 'api'>,
+  DepDriveApiEnv<'retrieveItemDetailsInFolders', 'api'>,
   Error,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>

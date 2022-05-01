@@ -8,12 +8,13 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { Readable } from 'stream'
 // import { tempDir } from '../../../defaults'
-import { DepFetchClient, DepFs } from '../../../icloud/deps'
-import { getUrlStream } from '../../../icloud/deps/getUrlStream'
+import { DepFetchClient } from '../../../deps/DepFetchClient'
+import { DepFs } from '../../../deps/DepFs'
 import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepDriveApi } from '../../../icloud/drive/drive-api/deps'
+import { DepApi } from '../../../icloud/drive/drive-api'
 import { isFile } from '../../../icloud/drive/icloud-drive-types'
 import { err } from '../../../util/errors'
+import { getUrlStream } from '../../../util/http/getUrlStream'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { writeFileFromReadable } from './download/download-helpers'
@@ -21,7 +22,7 @@ import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 
 type Deps =
   & DriveQuery.Deps
-  & DepDriveApi<'download'>
+  & DepApi<'download'>
   & UploadDeps
   & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient

@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
-import * as AR from '../../../request'
-import { childrenItem } from '../../icloud-drive-types/types-io'
+import * as AR from '../../request'
+import { childrenItem } from '../icloud-drive-types/types-io'
 
 const moveItemResponse = t.type({
   items: t.array(t.union([

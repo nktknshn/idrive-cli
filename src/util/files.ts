@@ -4,7 +4,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 // import * as fs from 'fs/promises'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { TextDecoder } from 'util'
-import { DepFs } from '../icloud/deps'
+import { DepFs } from '../deps/DepFs'
 import { BufferDecodingError, FileReadingError, JsonParsingError } from './errors'
 import { tryParseJson } from './json'
 
