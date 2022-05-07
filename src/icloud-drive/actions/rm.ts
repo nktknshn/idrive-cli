@@ -2,16 +2,16 @@ import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { DepAskConfirmation } from '../../deps-types/DepAskConfirmation'
+import { DepAskConfirmation } from '../../deps-types'
 import { guardProp } from '../../util/guards'
 import { NEA } from '../../util/types'
-import { DepDriveApi, DriveApi, DriveLookup } from '..'
+import { DriveApi, DriveLookup } from '..'
 import { MoveItemToTrashResponse } from '../drive-requests'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../icloud-drive-items-types'
 
 export type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'moveItemsToTrash'>
+  & DriveApi.Dep<'moveItemsToTrash'>
   & DepAskConfirmation
 
 type Result = MoveItemToTrashResponse

@@ -89,7 +89,7 @@ export const uploadChunkPar = (
         local: { path: string; stats: Stats },
       ]
     >,
-  ): XXX<DriveLookup.State, DriveApi.UploadMethodDeps, NEA<UploadResult>> =>
+  ): XXX<DriveLookup.State, DriveApi.Dep<'upload'>, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
@@ -126,7 +126,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<DriveLookup.State, GetDep<'createFolders'>, Record<string, string>> => {
+): XXX<DriveLookup.State, DriveApi.Dep<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {

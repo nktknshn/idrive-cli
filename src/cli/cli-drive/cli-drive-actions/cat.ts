@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DepFetchClient } from '../../../deps-types/DepFetchClient'
-import { DepDriveApi, DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveApi, DriveLookup } from '../../../icloud-drive'
 import { isFile } from '../../../icloud-drive/icloud-drive-items-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
@@ -13,7 +13,7 @@ import { consumeStreamToString } from '../../../util/util'
 
 type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'download'>
+  & DriveApi.Dep<'download'>
   & DepFetchClient
 
 export const cat = (

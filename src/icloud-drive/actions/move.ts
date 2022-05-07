@@ -5,15 +5,15 @@ import { err } from '../../util/errors'
 import { normalizePath } from '../../util/normalize-path'
 import { parseFilename } from '../../util/parse-filename'
 import { NEA } from '../../util/types'
-import { DepDriveApi, DriveApi, DriveLookup } from '..'
+import { DriveApi, DriveLookup } from '..'
 import { MoveItemsResponse, RenameResponse } from '../drive-requests'
 import * as T from '../icloud-drive-items-types'
 import * as V from '../util/get-by-path-types'
 
 export type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'moveItems'>
-  & DepDriveApi<'renameItems'>
+  & DriveApi.Dep<'moveItems'>
+  & DriveApi.Dep<'renameItems'>
 
 /**
  * move a file or a directory

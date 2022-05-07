@@ -2,12 +2,12 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepDriveApi, DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveApi, DriveLookup } from '../../../icloud-drive'
 import { isTrashDetailsG } from '../../../icloud-drive/icloud-drive-items-types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 
-type Deps = DriveLookup.Deps & DepDriveApi<'putBackItemsFromTrash'>
+type Deps = DriveLookup.Deps & DriveApi.Dep<'putBackItemsFromTrash'>
 
 export const recover = (
   { path }: { path: string },

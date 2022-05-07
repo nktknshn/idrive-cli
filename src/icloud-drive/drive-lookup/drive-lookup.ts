@@ -1,7 +1,7 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { AuthorizedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
-import { DepDriveApi } from '../drive-api'
+import { DriveApi } from '..'
 import * as C from './cache'
 
 export * from './methods/cache-methods'
@@ -9,7 +9,7 @@ export { getFoldersTrees } from './methods/drive-get-folders-trees'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 
-export type Deps = DepDriveApi<'retrieveItemDetailsInFolders'>
+export type Deps = DriveApi.Dep<'retrieveItemDetailsInFolders'>
 
 export type State = { cache: C.Cache } & AuthorizedState
 

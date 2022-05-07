@@ -17,11 +17,11 @@ import { getUrlStream } from '../../../util/http/getUrlStream'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
 import { XXX } from '../../../util/types'
-import { DepDriveApi, DriveApi, DriveLookup } from '../..'
+import { DriveApi, DriveLookup } from '../..'
 import { DownloadICloudFilesFunc, DownloadItem, DownloadUrlToFile } from './types'
 
 export type Deps =
-  & DepDriveApi<'downloadBatch'>
+  & DriveApi.Dep<'downloadBatch'>
   & DepFetchClient
   & DepFs<'createWriteStream'>
 
@@ -57,7 +57,7 @@ const downloadChunkPar = (
   chunk: NA.NonEmptyArray<{ info: DownloadItem; localpath: string }>,
 ): XXX<
   DriveLookup.State,
-  DepDriveApi<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
+  DriveApi.Dep<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
   [E.Either<Error, void>, readonly [url: string, path: string]][]
 > => {
   return pipe(

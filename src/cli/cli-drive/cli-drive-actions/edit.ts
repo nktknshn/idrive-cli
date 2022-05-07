@@ -9,7 +9,7 @@ import * as O from 'fp-ts/Option'
 import { Readable } from 'stream'
 // import { tempDir } from '../../../defaults'
 import { DepFetchClient, DepFs } from '../../../deps-types'
-import { DepDriveApi, DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveApi, DriveLookup } from '../../../icloud-drive'
 import { isFile } from '../../../icloud-drive/icloud-drive-items-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
@@ -19,7 +19,7 @@ import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 
 type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'download'>
+  & DriveApi.Dep<'download'>
   & UploadDeps
   & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient

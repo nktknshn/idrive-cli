@@ -8,7 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DepAskConfirmation } from '../../../../deps-types/DepAskConfirmation'
 import { DepFs } from '../../../../deps-types/DepFs'
-import { DepDriveApi, DriveApi, DriveLookup } from '../../../../icloud-drive'
+import { DriveApi, DriveLookup } from '../../../../icloud-drive'
 import * as T from '../../../../icloud-drive/icloud-drive-items-types'
 import { findInParentFilename, getDrivewsid } from '../../../../icloud-drive/util/drive-helpers'
 import * as V from '../../../../icloud-drive/util/get-by-path-types'
@@ -19,10 +19,10 @@ import { AskingFunc } from '../upload'
 
 export type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'renameItems'>
-  & DepDriveApi<'moveItemsToTrash'>
-  & DepDriveApi<'moveItems'>
-  & DriveApi.UploadMethodDeps
+  & DriveApi.Dep<'renameItems'>
+  & DriveApi.Dep<'moveItemsToTrash'>
+  & DriveApi.Dep<'moveItems'>
+  & DriveApi.Dep<'upload'>
   & DepFs<'fstat'>
   & DepAskConfirmation
 

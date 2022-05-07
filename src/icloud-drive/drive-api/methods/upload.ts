@@ -9,7 +9,7 @@ import { err } from '../../../util/errors'
 import { Path } from '../../../util/path'
 import { GetDep, useApi } from '../deps'
 
-export type UploadMethodDeps =
+type UploadMethodDeps =
   & GetDep<'upload'>
   & GetDep<'singleFileUpload'>
   & GetDep<'updateDocuments'>

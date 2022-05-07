@@ -6,7 +6,7 @@ import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../deps-types'
-import { DepDriveApi, DriveApi, DriveLookup, T } from '../../../icloud-drive'
+import { DriveApi, DriveLookup, T } from '../../../icloud-drive'
 
 import { findInParentFilename } from '../../../icloud-drive/util/drive-helpers'
 import * as V from '../../../icloud-drive/util/get-by-path-types'
@@ -36,10 +36,10 @@ type Argv = {
 
 export type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'renameItems'>
-  & DepDriveApi<'createFolders'>
-  & DepDriveApi<'downloadBatch'>
-  & DriveApi.UploadMethodDeps
+  & DriveApi.Dep<'renameItems'>
+  & DriveApi.Dep<'createFolders'>
+  & DriveApi.Dep<'downloadBatch'>
+  & DriveApi.Dep<'upload'>
   & DepFs<'fstat' | 'opendir'>
 
 export const uploadFolder = (

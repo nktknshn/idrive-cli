@@ -2,7 +2,7 @@ import micromatch from 'micromatch'
 import { DepAskConfirmation } from '../../../deps-types/DepAskConfirmation'
 import { DepFetchClient } from '../../../deps-types/DepFetchClient'
 import { DepFs } from '../../../deps-types/DepFs'
-import { DepDriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveApi, DriveLookup } from '../../../icloud-drive'
 import { downloadShallow } from '../../../icloud-drive/actions/download/downloadShallow'
 import { downloadRecursive } from '../../../icloud-drive/drive-action'
 import { XXX } from '../../../util/types'
@@ -20,7 +20,7 @@ type Argv = {
 
 type Deps =
   & DriveLookup.Deps
-  & DepDriveApi<'downloadBatch'>
+  & DriveApi.Dep<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
   & DepFs<
