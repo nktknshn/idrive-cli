@@ -4,32 +4,32 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DepFetchClient } from '../../../deps-types/DepFetchClient'
-import { DepDriveApi, DriveApi, DriveQuery } from '../../../icloud-drive/drive'
-import { isFile } from '../../../icloud-drive/drive-requests/icloud-drive-items-types'
+import { DepDriveApi, DriveApi, DriveLookup } from '../../../icloud-drive'
+import { isFile } from '../../../icloud-drive/icloud-drive-items-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
 import { normalizePath } from '../../../util/normalize-path'
 import { consumeStreamToString } from '../../../util/util'
 
 type Deps =
-  & DriveQuery.Deps
+  & DriveLookup.Deps
   & DepDriveApi<'download'>
   & DepFetchClient
 
 export const cat = (
   { path }: { path: string },
-): DriveQuery.Effect<string, Deps> => {
+): DriveLookup.Effect<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    DriveQuery.getCachedDocwsRoot(),
+    DriveLookup.getCachedDocwsRoot(),
     SRTE.bindW('item', (root) =>
       pipe(
-        DriveQuery.getByPathsStrict(root, [npath]),
+        DriveLookup.getByPathsStrict(root, [npath]),
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.chainW(({ item }) => DriveApi.getICloudItemUrl<DriveQuery.State>(item)),
+    SRTE.chainW(({ item }) => DriveApi.getICloudItemUrl<DriveLookup.State>(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
     SRTE.chainW((url) =>
       SRTE.fromReaderTaskEither(

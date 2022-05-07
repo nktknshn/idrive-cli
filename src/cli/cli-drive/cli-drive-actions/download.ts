@@ -2,9 +2,9 @@ import micromatch from 'micromatch'
 import { DepAskConfirmation } from '../../../deps-types/DepAskConfirmation'
 import { DepFetchClient } from '../../../deps-types/DepFetchClient'
 import { DepFs } from '../../../deps-types/DepFs'
-import { DepDriveApi, DriveQuery } from '../../../icloud-drive/drive'
-import { downloadRecursive } from '../../../icloud-drive/drive/drive-action'
-import { downloadShallow } from '../../../icloud-drive/drive/drive-action/actions/download/downloadShallow'
+import { DepDriveApi, DriveLookup } from '../../../icloud-drive'
+import { downloadShallow } from '../../../icloud-drive/actions/download/downloadShallow'
+import { downloadRecursive } from '../../../icloud-drive/drive-action'
 import { XXX } from '../../../util/types'
 
 type Argv = {
@@ -19,7 +19,7 @@ type Argv = {
 }
 
 type Deps =
-  & DriveQuery.Deps
+  & DriveLookup.Deps
   & DepDriveApi<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
@@ -27,7 +27,7 @@ type Deps =
     'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'
   >
 
-export const download = (argv: Argv): XXX<DriveQuery.State, Deps, string> => {
+export const download = (argv: Argv): XXX<DriveLookup.State, Deps, string> => {
   const scan = micromatch.scan(argv.path)
 
   if (scan.isGlob) {

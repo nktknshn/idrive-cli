@@ -6,10 +6,10 @@ import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../deps-types'
-import { DepDriveApi, DriveApi, DriveQuery, T } from '../../../icloud-drive/drive'
+import { DepDriveApi, DriveApi, DriveLookup, T } from '../../../icloud-drive'
 
-import { findInParentFilename } from '../../../icloud-drive/drive/util/drive-helpers'
-import * as V from '../../../icloud-drive/drive/util/get-by-path-types'
+import { findInParentFilename } from '../../../icloud-drive/util/drive-helpers'
+import * as V from '../../../icloud-drive/util/get-by-path-types'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
@@ -35,7 +35,7 @@ type Argv = {
 }
 
 export type Deps =
-  & DriveQuery.Deps
+  & DriveLookup.Deps
   & DepDriveApi<'renameItems'>
   & DepDriveApi<'createFolders'>
   & DepDriveApi<'downloadBatch'>
@@ -44,9 +44,9 @@ export type Deps =
 
 export const uploadFolder = (
   argv: Argv,
-): XXX<DriveQuery.State, Deps, unknown> => {
+): XXX<DriveLookup.State, Deps, unknown> => {
   return pipe(
-    DriveQuery.getByPathDocwsroot(normalizePath(argv.remotepath)),
+    DriveLookup.getByPathDocwsroot(normalizePath(argv.remotepath)),
     SRTE.bindTo('dst'),
     SRTE.bind('src', () => SRTE.of(argv.localpath)),
     SRTE.bind('args', () => SRTE.of(argv)),
@@ -61,7 +61,7 @@ const handleUploadFolder = (
     dst: V.GetByPathResult<T.DetailsDocwsRoot>
     args: Argv
   },
-): XXX<DriveQuery.State, Deps, UploadResult[]> => {
+): XXX<DriveLookup.State, Deps, UploadResult[]> => {
   const dirname = Path.parse(src).base
 
   const uploadTask = pipe(
@@ -118,13 +118,13 @@ const uploadToNewFolder = (
   },
 ): (
   task: UploadTask,
-) => XXX<DriveQuery.State, Deps, UploadResult[]> =>
+) => XXX<DriveLookup.State, Deps, UploadResult[]> =>
   (task: UploadTask) =>
     pipe(
       printerIO.print(`creating folder ${remotepath}`),
       SRTE.fromIO,
       SRTE.chain(() =>
-        DriveApi.createFoldersStrict<DriveQuery.State>({
+        DriveApi.createFoldersStrict<DriveLookup.State>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })

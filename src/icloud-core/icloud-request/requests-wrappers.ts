@@ -1,13 +1,9 @@
-import { hole } from 'fp-ts/lib/function'
 import { flow, pipe } from 'fp-ts/lib/function'
-import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { authorizeSession } from '../../icloud-authorization'
-import { RQ } from '../../icloud-drive/drive'
+import { RQ } from '../../icloud-drive'
 import { EmptyObject } from '../../util/types'
-import { AuthorizedState, BasicState } from '.'
+import { BasicState } from '.'
 import { CatchFetchEnv, catchFetchErrorsSRTE } from './catch-fetch-error'
-import { CatchSessEnv, catchSessErrorsSRTE } from './catch-invalid-global-session'
 import { ReqWrapper } from './lib/request-wrapper'
 
 export const wrapBasicReq: ReqWrapper<
@@ -17,19 +13,6 @@ export const wrapBasicReq: ReqWrapper<
 > = (deps) =>
   flow(
     catchFetchErrorsSRTE(deps),
-    SRTE.local(() => deps),
-  )
-
-export const wrapAuthorizedReq: ReqWrapper<
-  CatchFetchEnv & CatchSessEnv,
-  AuthorizedState,
-  EmptyObject
-> = deps =>
-  flow(
-    catchFetchErrorsSRTE(deps),
-    // wrapBasicReq(deps),
-    // SRTE.local(() => ({ ...deps, fetchClient: failingFetch(90) })),
-    catchSessErrorsSRTE(deps),
     SRTE.local(() => deps),
   )
 

@@ -4,17 +4,13 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepAskConfirmation } from '../../../deps-types/DepAskConfirmation'
-import { DepDriveApi, DriveApi, DriveQuery } from '../../../icloud-drive/drive'
-import {
-  DriveChildrenItemFile,
-  isNotRootDetails,
-  NonRootDetails,
-} from '../../../icloud-drive/drive-requests/icloud-drive-items-types'
+import { DepDriveApi, DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud-drive/icloud-drive-items-types'
 import { guardProp } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 
 type Deps =
-  & DriveQuery.Deps
+  & DriveLookup.Deps
   & DepDriveApi<'moveItemsToTrash'>
   & DepAskConfirmation
 
@@ -25,11 +21,11 @@ export const rm = (
     recursive: boolean
     force: boolean
   },
-): DriveQuery.Effect<void, Deps> => {
+): DriveLookup.Effect<void, Deps> => {
   assert(A.isNonEmpty(paths))
 
   return pipe(
-    DriveQuery.searchGlobs(paths, recursive ? Infinity : 1),
+    DriveLookup.searchGlobs(paths, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
     SRTE.map(
       A.filter(guardProp('item', isNotRootDetails)),
@@ -51,20 +47,20 @@ const _rm = (
 ) => {
   const effect = () =>
     pipe(
-      DriveApi.moveItemsToTrash<DriveQuery.State>({
+      DriveApi.moveItemsToTrash<DriveLookup.State>({
         items: items.map(a => a.item),
         trash,
       }),
       SRTE.chainW(
         resp =>
-          DriveQuery.removeByIdsFromCache(
+          DriveLookup.removeByIdsFromCache(
             resp.items.map(_ => _.drivewsid),
           ),
       ),
     )
 
   return pipe(
-    SRTE.ask<DriveQuery.State, Deps>(),
+    SRTE.ask<DriveLookup.State, Deps>(),
     SRTE.chainTaskEitherK(deps =>
       force
         ? TE.of(true)

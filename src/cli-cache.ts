@@ -5,8 +5,9 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 import { cacheFile } from './defaults'
-import * as C from './icloud-drive/drive/drive-query/cache/cache'
-import * as GetByPathResultValid from './icloud-drive/drive/util/get-by-path-types'
+import * as C from './icloud-drive/drive-lookup/cache/cache'
+import * as trySaveFile from './icloud-drive/drive-lookup/cache/cache-file'
+import * as GetByPathResultValid from './icloud-drive/util/get-by-path-types'
 import * as fs from './util/fs'
 import { cacheLogger, logger, loggingLevels, printer } from './util/logging'
 import { normalizePath } from './util/normalize-path'
@@ -54,7 +55,7 @@ async function main() {
     RTE.Do,
     RTE.bind('cache', () =>
       pipe(
-        C.tryReadFromFile(argv.cacheFile),
+        trySaveFile.tryReadFromFile(argv.cacheFile),
       )),
     RTE.bind('root', ({ cache }) => RTE.fromEither(C.getDocwsRoot(cache))),
     RTE.map(({ cache, root }) =>

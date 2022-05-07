@@ -12,8 +12,8 @@ import { buildRequest } from '../../icloud-core/session/session-http'
 import { FetchClientEither, HttpRequest } from '../../util/http/fetch-client'
 import { apiLogger } from '../../util/logging'
 import { NEA } from '../../util/types'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from './icloud-drive-items-types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from './icloud-drive-items-types/types-io'
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../icloud-drive-items-types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../icloud-drive-items-types/types-io'
 
 export function retrieveItemDetailsInFoldersGeneric<R>(
   client: FetchClientEither,

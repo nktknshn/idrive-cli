@@ -3,7 +3,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepDriveApi, DriveApi, DriveQuery } from '../../../icloud-drive/drive'
+import { DepDriveApi, DriveApi, DriveLookup } from '../../../icloud-drive'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { logger } from '../../../util/logging'
@@ -13,12 +13,12 @@ import { XXX } from '../../../util/types'
 import { showDetailsInfo } from './ls/ls-printing'
 
 type Deps =
-  & DriveQuery.Deps
+  & DriveLookup.Deps
   & DepDriveApi<'createFoldersStrict'>
 
 export const mkdir = (
   { path }: { path: string },
-): XXX<DriveQuery.State, Deps, string> => {
+): XXX<DriveLookup.State, Deps, string> => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 
@@ -26,12 +26,12 @@ export const mkdir = (
   const nparentPath = normalizePath(Path.dirname(path))
 
   return pipe(
-    DriveQuery.getCachedDocwsRoot(),
+    DriveLookup.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
-    SRTE.bindW('parent', ({ root }) => DriveQuery.getByPathFolderStrict(root, nparentPath)),
+    SRTE.bindW('parent', ({ root }) => DriveLookup.getByPathFolderStrict(root, nparentPath)),
     SRTE.bindW('result', ({ parent }) =>
       pipe(
-        DriveApi.createFoldersStrict<DriveQuery.State>({
+        DriveApi.createFoldersStrict<DriveLookup.State>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),
@@ -43,7 +43,7 @@ export const mkdir = (
         A.matchLeft(
           () => SRTE.left(err(`createFolders returned empty result`)),
           (head) =>
-            DriveQuery.retrieveItemDetailsInFoldersSavingStrict([
+            DriveLookup.retrieveItemDetailsInFoldersSavingStrict([
               head.drivewsid,
               parent.drivewsid,
             ]),

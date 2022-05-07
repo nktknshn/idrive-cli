@@ -6,7 +6,7 @@ import { authorizeState, DepAuthorizeSession } from '../../deps-types/dep-author
 import { AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authorization'
 import { AuthorizedState, BasicState } from '../../icloud-core/icloud-request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud-core/session/session-file'
-import { C, DriveQuery } from '../../icloud-drive/drive'
+import { C, DriveLookup } from '../../icloud-drive'
 import { err } from '../../util/errors'
 import { ReadJsonFileError } from '../../util/files'
 import { loggerIO } from '../../util/loggerIO'
@@ -21,7 +21,7 @@ type Deps =
 
 /** read the state from files and executes the action in the context */
 export function driveAction<A, R, Args extends unknown[]>(
-  action: (...args: Args) => DriveQuery.Effect<A, R>,
+  action: (...args: Args) => DriveLookup.Effect<A, R>,
 ): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {
   return (...args: Args) =>
     pipe(

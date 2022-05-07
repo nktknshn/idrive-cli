@@ -4,8 +4,8 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
-import { DriveQuery } from '../../../../icloud-drive/drive'
-import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../../../icloud-drive/drive/util/folder-tree'
+import { DriveLookup } from '../../../../icloud-drive'
+import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../../../icloud-drive/util/folder-tree'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { filterTree } from '../../../../util/tree'
@@ -15,7 +15,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
   depth: number
   tree: boolean
   cached: boolean
-}): SRTE.StateReaderTaskEither<DriveQuery.State, DriveQuery.Deps, Error, string> => {
+}): SRTE.StateReaderTaskEither<DriveLookup.State, DriveLookup.Deps, Error, string> => {
   const scanned = pipe(
     paths,
     NA.map(micromatch.scan),
@@ -30,10 +30,10 @@ export const recursivels = ({ paths, depth, tree, cached }: {
 
   if (tree) {
     return pipe(
-      DriveQuery.getCachedDocwsRoot(),
+      DriveLookup.getCachedDocwsRoot(),
       SRTE.bindTo('root'),
-      SRTE.chain(({ root }) => DriveQuery.getByPathsFoldersStrict(root, basepaths)),
-      SRTE.chain(dirs => DriveQuery.getFoldersTrees(dirs, depth)),
+      SRTE.chain(({ root }) => DriveLookup.getByPathsFoldersStrict(root, basepaths)),
+      SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, depth)),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([tree, scan]) =>
         pipe(
@@ -51,7 +51,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
   }
 
   return pipe(
-    DriveQuery.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
+    DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
     SRTE.map(NA.map(A.map(_ => _.path))),
     SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),
