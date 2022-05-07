@@ -1,11 +1,10 @@
 import { constant, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { DepFetchClient } from '../deps/DepFetchClient'
-import { DepFs } from '../deps/DepFs'
-import { readAccountData } from '../icloud/authorization/accountdata-file'
-import * as AM from '../icloud/request/request'
-import { readSessionFile, saveSession } from '../icloud/session/session-file'
+import { DepFetchClient, DepFs } from '../deps-types'
+import { readAccountData } from '../icloud-authorization'
+import * as AM from '../icloud-core/icloud-request'
+import { readSessionFile, saveSession } from '../icloud-core/session/session-file'
 
 export function apiActionM<T, R>(
   action: () => AM.ApiRequest<T, AM.AuthorizedState, R>,

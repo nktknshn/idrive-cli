@@ -1,6 +1,6 @@
 import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
-import { DriveQuery } from '../../../icloud/drive'
+import { DriveQuery } from '../../../icloud-drive/drive'
 import { recursivels } from './ls/ls-recursive'
 import { shallowList } from './ls/ls-shallow'
 

@@ -3,7 +3,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepApi, DriveApi, DriveQuery } from '../../../icloud/drive'
+import { DepDriveApi, DriveApi, DriveQuery } from '../../../icloud-drive/drive'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { logger } from '../../../util/logging'
@@ -12,7 +12,9 @@ import { Path } from '../../../util/path'
 import { XXX } from '../../../util/types'
 import { showDetailsInfo } from './ls/ls-printing'
 
-type Deps = DriveQuery.Deps & DepApi<'createFolders'>
+type Deps =
+  & DriveQuery.Deps
+  & DepDriveApi<'createFoldersStrict'>
 
 export const mkdir = (
   { path }: { path: string },

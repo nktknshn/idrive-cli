@@ -6,12 +6,12 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { DepAskConfirmation } from '../../../../deps/DepAskConfirmation'
-import { DepFs } from '../../../../deps/DepFs'
-import { DepApi, DriveApi, DriveQuery } from '../../../../icloud/drive'
-import * as T from '../../../../icloud/drive/icloud-drive-items-types'
-import { findInParentFilename, getDrivewsid } from '../../../../icloud/drive/util/drive-helpers'
-import * as V from '../../../../icloud/drive/util/get-by-path-types'
+import { DepAskConfirmation } from '../../../../deps-types/DepAskConfirmation'
+import { DepFs } from '../../../../deps-types/DepFs'
+import { DepDriveApi, DriveApi, DriveQuery } from '../../../../icloud-drive/drive'
+import * as T from '../../../../icloud-drive/drive-requests/icloud-drive-items-types'
+import { findInParentFilename, getDrivewsid } from '../../../../icloud-drive/drive/util/drive-helpers'
+import * as V from '../../../../icloud-drive/drive/util/get-by-path-types'
 import { loggerIO } from '../../../../util/loggerIO'
 import { normalizePath, Path } from '../../../../util/path'
 import { XXX } from '../../../../util/types'
@@ -19,9 +19,9 @@ import { AskingFunc } from '../upload'
 
 export type Deps =
   & DriveQuery.Deps
-  & DepApi<'renameItems'>
-  & DepApi<'moveItemsToTrash'>
-  & DepApi<'moveItems'>
+  & DepDriveApi<'renameItems'>
+  & DepDriveApi<'moveItemsToTrash'>
+  & DepDriveApi<'moveItems'>
   & DriveApi.UploadMethodDeps
   & DepFs<'fstat'>
   & DepAskConfirmation

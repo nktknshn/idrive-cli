@@ -1,14 +1,12 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { authorizeState, DepAuthorizeSession } from '../../deps/dep-authorize-session'
-import { DepFs } from '../../deps/DepFs'
-import { readAccountData, saveAccountData as _saveAccountData } from '../../icloud/authorization/accountdata-file'
-import { AccountData } from '../../icloud/authorization/types'
-import { DriveQuery } from '../../icloud/drive'
-import * as C from '../../icloud/drive/drive-query/cache'
-import { AuthorizedState, BasicState } from '../../icloud/request'
-import { readSessionFile, saveSession as _saveSession } from '../../icloud/session/session-file'
+import { DepFs } from '../../deps-types'
+import { authorizeState, DepAuthorizeSession } from '../../deps-types/dep-authorize-session'
+import { AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authorization'
+import { AuthorizedState, BasicState } from '../../icloud-core/icloud-request'
+import { readSessionFile, saveSession as _saveSession } from '../../icloud-core/session/session-file'
+import { C, DriveQuery } from '../../icloud-drive/drive'
 import { err } from '../../util/errors'
 import { ReadJsonFileError } from '../../util/files'
 import { loggerIO } from '../../util/loggerIO'
@@ -113,14 +111,16 @@ const loadCache: RTE.ReaderTaskEither<
   )
 )
 
-export const saveSession = <S extends BasicState>(state: S) =>
+export const saveSession = <S extends BasicState>(
+  state: S,
+): RTE.ReaderTaskEither<{ sessionFile: string } & DepFs<'writeFile'>, Error, void> =>
   RTE.asksReaderTaskEitherW(
     _saveSession(state.session),
   )
 
 export const saveAccountData = <S extends { accountData: AccountData }>(
   state: S,
-) =>
+): RTE.ReaderTaskEither<{ sessionFile: string } & DepFs<'writeFile'>, Error, void> =>
   RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
     _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
   )

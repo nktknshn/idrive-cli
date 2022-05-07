@@ -1,13 +1,7 @@
-import { sequenceS } from 'fp-ts/lib/Apply'
-import * as R from 'fp-ts/Reader'
-import { authorizeSession as authorizeSession_ } from '../icloud/authorization'
-import { wrapRequests } from '../icloud/request/request-wrapper'
-import { wrapBasicReq } from './drive-api-env'
+import { authorizeSession as authorizeSession_ } from '../icloud-authorization'
+import { wrapRequest } from '../icloud-core/icloud-request/lib/request-wrapper'
+import { wrapBasicReq } from '../icloud-core/icloud-request/requests-wrappers'
 
-const seqs = sequenceS(R.Apply)
-
-export const authorizeSessionMethod = seqs(
-  wrapRequests({ authorizeSession: authorizeSession_ })(
-    wrapBasicReq,
-  ),
-)
+export const authorizeSession = wrapRequest(
+  wrapBasicReq,
+)(authorizeSession_)

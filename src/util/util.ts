@@ -6,7 +6,7 @@ import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { last } from 'fp-ts/Semigroup'
 import { Readable } from 'stream'
-import { NEA } from './types'
+import { NEA, UnknownObject } from './types'
 
 export type ObjectType = {}
 
@@ -61,7 +61,7 @@ export const separateEithers = flow(
   ({ left, right }) => [left, right] as const,
 )
 
-export const buildRecord = R.fromFoldable(last<string>(), A.Foldable)
+// export const buildRecord = R.fromFoldable(last<string>(), A.Foldable)
 
 export const recordFromTuples = <T, K extends string>(ts: (readonly [K, T])[]): Record<string, T> => {
   const obj: any = {}

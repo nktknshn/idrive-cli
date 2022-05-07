@@ -1,6 +1,6 @@
 import * as defaults from '../../defaults'
-import { authorizeSessionMethod } from '../../deps-providers/authorize-session'
-import { DepAskConfirmation } from '../../deps/DepAskConfirmation'
+import * as deps from '../../deps-providers'
+import { DepAskConfirmation } from '../../deps-types/DepAskConfirmation'
 import { ActionsDeps } from '.'
 
 export const createCliActionsDeps = (argv: {
@@ -11,16 +11,14 @@ export const createCliActionsDeps = (argv: {
   fileEditor?: string
   askConfirmation?: DepAskConfirmation['askConfirmation']
 }): ActionsDeps => ({
-  api: defaults.api,
-  fs: defaults.fs,
-  ...authorizeSessionMethod(defaults.apiEnv),
-  // ...defaults.apiEnv,
-  fetchClient: defaults.apiEnv.fetchClient,
-  // clientInfo: defaults.clientInfo,
+  api: deps.api,
+  fs: deps.fs,
+  authorizeSession: deps.authorizeSession,
+  fetchClient: deps.fetchClient,
+  askConfirmation: argv.askConfirmation ?? deps.askConfirmation,
   sessionFile: argv.sessionFile ?? defaults.sessionFile,
   cacheFile: argv.cacheFile ?? defaults.cacheFile,
   noCache: argv.noCache ?? false,
-  askConfirmation: argv.askConfirmation ?? defaults.askConfirmation,
   tempdir: argv.tempdir ?? defaults.tempDir,
   fileEditor: argv.fileEditor ?? defaults.fileEditor,
 })

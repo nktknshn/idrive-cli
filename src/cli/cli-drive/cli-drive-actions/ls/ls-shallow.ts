@@ -4,16 +4,16 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { DriveQuery } from '../../../../icloud/drive'
-import * as T from '../../../../icloud/drive/icloud-drive-items-types'
-import { findInParentGlob } from '../../../../icloud/drive/util/drive-helpers'
+import { DriveQuery } from '../../../../icloud-drive/drive'
+import * as T from '../../../../icloud-drive/drive-requests/icloud-drive-items-types'
+import { findInParentGlob } from '../../../../icloud-drive/drive/util/drive-helpers'
 import {
   isValidPath,
   PathInvalid,
   pathTarget,
   PathValid,
   showGetByPathResult,
-} from '../../../../icloud/drive/util/get-by-path-types'
+} from '../../../../icloud-drive/drive/util/get-by-path-types'
 import { logger } from '../../../../util/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls-printing'

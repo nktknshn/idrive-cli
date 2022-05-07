@@ -2,7 +2,6 @@ import * as TE from 'fp-ts/TaskEither'
 import { Dir, MakeDirectoryOptions, Mode, PathLike, Stats } from 'fs'
 import { createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
-import { isEnoentError } from '../../cli/cli-drive/cli-drive-actions/download/download-helpers'
 import { err } from '../errors'
 
 export type FsType = {

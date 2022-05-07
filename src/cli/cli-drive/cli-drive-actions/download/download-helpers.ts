@@ -1,259 +1,213 @@
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
-// import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
-import * as RT from 'fp-ts/lib/ReaderTask'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { Eq } from 'fp-ts/lib/string'
-import * as TE from 'fp-ts/lib/TaskEither'
-import micromatch from 'micromatch'
-import { Readable } from 'stream'
-import { DepFetchClient } from '../../../../deps/DepFetchClient'
-import { DepFs } from '../../../../deps/DepFs'
-import * as T from '../../../../icloud/drive/icloud-drive-items-types'
-import { err } from '../../../../util/errors'
-import { guardSnd } from '../../../../util/guards'
-import { getUrlStream } from '../../../../util/http/getUrlStream'
-import { loggerIO } from '../../../../util/loggerIO'
-import { printerIO } from '../../../../util/logging'
-import { stripTrailingSlash } from '../../../../util/normalize-path'
-import { Path, prependPath } from '../../../../util/path'
-import { hasOwnProperty } from '../../../../util/util'
-import { ConflictsSolver, handleLocalFilesConflicts } from './download-conflict'
-import { DownloadStructure, DownloadTask, DownloadUrlToFile, FilterTreeResult } from './types'
+// import * as A from 'fp-ts/lib/Array'
+// import * as E from 'fp-ts/lib/Either'
+// import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
+// // import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
+// import * as RT from 'fp-ts/lib/ReaderTask'
+// import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+// import { Eq } from 'fp-ts/lib/string'
+// import * as TE from 'fp-ts/lib/TaskEither'
+// import micromatch from 'micromatch'
+// import { DepFetchClient, DepFs } from '../../../../deps'
+// import { T } from '../../../../icloud/drive'
+// import { guardSnd } from '../../../../util/guards'
+// import { getUrlStream } from '../../../../util/http/getUrlStream'
+// import { loggerIO } from '../../../../util/loggerIO'
+// import { printerIO } from '../../../../util/logging'
+// import { Path, prependPath, stripTrailingSlash } from '../../../../util/path'
+// import { hasOwnProperty } from '../../../../util/util'
+// import { writeFileFromReadable } from '../../../../util/writeFileFromReadable'
+// import { ConflictsSolver, handleLocalFilesConflicts } from './download-conflict'
+// import { DownloadStructure, DownloadTask, DownloadUrlToFile, FilterTreeResult } from './types'
 
-export const writeFileFromReadable = (destpath: string) =>
-  (readble: Readable): (deps: DepFs<'createWriteStream'>) => TE.TaskEither<Error, void> =>
-    deps =>
-      TE.tryCatch(
-        () => {
-          return new Promise(
-            (resolve, reject) => {
-              const stream = deps.fs.createWriteStream(destpath)
-              readble.pipe(stream).on('close', resolve)
-            },
-          )
-        },
-        e => err(`error writing file ${destpath}: ${e}`),
-      )
+// export const createDirStruct = (
+//   dirs: string[],
+// ): RTE.ReaderTaskEither<DepFs<'mkdir'>, Error, void> =>
+//   ({ fs: { mkdir: mkdirTask } }) => {
+//     const mkdir = flow(
+//       mkdirTask,
+//       TE.orElseW(e =>
+//         isEexistError(e)
+//           ? TE.of(constVoid())
+//           : TE.left(e)
+//       ),
+//     )
 
-export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'createWriteStream'>> = (
-  url: string,
-  destpath: string,
-) =>
-  pipe(
-    loggerIO.debug(`getting ${destpath}`),
-    RTE.fromIO,
-    RTE.chain(() => getUrlStream({ url })),
-    RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
-    RTE.chainFirstIOK(() => printerIO.print(`writing ${destpath}`)),
-    RTE.chainW(writeFileFromReadable(destpath)),
-    RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
-  )
+//     return pipe(
+//       pipe(dirs, A.map(mkdir)),
+//       TE.sequenceSeqArray,
+//       TE.map(constVoid),
+//     )
+//   }
 
-export const downloadUrlsPar = (
-  urlDest: Array<readonly [url: string, localpath: string]>,
-): RT.ReaderTask<
-  DepFetchClient & DepFs<'createWriteStream'>,
-  [E.Either<Error, void>, readonly [string, string]][]
-> => {
-  return pipe(
-    urlDest,
-    A.map(([u, d]) => downloadUrlToFile(u, d)),
-    A.sequence(RT.ApplicativePar),
-    RT.map(A.zip(urlDest)),
-  )
-}
+// export const getDirectoryStructure = (paths: string[]) => {
+//   const parseDown = (path: string) => {
+//     const result = []
 
-export const createDirStruct = (
-  dirs: string[],
-): RTE.ReaderTaskEither<DepFs<'mkdir'>, Error, void> =>
-  ({ fs: { mkdir: mkdirTask } }) => {
-    const mkdir = flow(
-      mkdirTask,
-      TE.orElseW(e =>
-        isEexistError(e)
-          ? TE.of(constVoid())
-          : TE.left(e)
-      ),
-    )
+//     while (path !== '/') {
+//       result.push(path)
+//       path = Path.parse(path).dir
+//     }
 
-    return pipe(
-      pipe(dirs, A.map(mkdir)),
-      TE.sequenceSeqArray,
-      TE.map(constVoid),
-    )
-  }
+//     return A.reverse(result)
+//   }
 
-export const getDirectoryStructure = (paths: string[]) => {
-  const parseDown = (path: string) => {
-    const result = []
+//   return pipe(
+//     paths,
+//     A.map(Path.parse),
+//     A.zip(paths),
+//     A.map(([_, p]) => p.endsWith('/') ? stripTrailingSlash(p) : _.dir),
+//     A.map(parseDown),
+//     A.flatten,
+//     A.uniq<string>(Eq),
+//   )
+// }
 
-    while (path !== '/') {
-      result.push(path)
-      path = Path.parse(path).dir
-    }
+// type DefaultFunc = (opts: {
+//   include: string[]
+//   exclude: string[]
+// }) => (files: [string, T.DriveChildrenItemFile]) => boolean
 
-    return A.reverse(result)
-  }
+// const defaultFunc: DefaultFunc = ({ include, exclude }) =>
+//   ([path, item]) =>
+//     (include.length == 0 || micromatch.any(path, include, { dot: true }))
+//     && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true }))
 
-  return pipe(
-    paths,
-    A.map(Path.parse),
-    A.zip(paths),
-    A.map(([_, p]) => p.endsWith('/') ? stripTrailingSlash(p) : _.dir),
-    A.map(parseDown),
-    A.flatten,
-    A.uniq<string>(Eq),
-  )
-}
+// const filterFlatTree = ({
+//   exclude,
+//   include,
+//   func = defaultFunc({ exclude, include }),
+// }: {
+//   include: string[]
+//   exclude: string[]
+//   func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+// }) =>
+//   <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]) => {
+//     const files = pipe(
+//       flatTree,
+//       A.filter(guardSnd(T.isFile)),
+//     )
 
-type DefaultFunc = (opts: {
-  include: string[]
-  exclude: string[]
-}) => (files: [string, T.DriveChildrenItemFile]) => boolean
+//     const folders = pipe(
+//       flatTree,
+//       A.filter(guardSnd(T.isFolderLike)),
+//     )
 
-const defaultFunc: DefaultFunc = ({ include, exclude }) =>
-  ([path, item]) =>
-    (include.length == 0 || micromatch.any(path, include, { dot: true }))
-    && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true }))
+//     const { left: excluded, right: validFiles } = pipe(
+//       files,
+//       A.partition(func),
+//     )
 
-const filterFlatTree = ({
-  exclude,
-  include,
-  func = defaultFunc({ exclude, include }),
-}: {
-  include: string[]
-  exclude: string[]
-  func?: (files: [string, T.DriveChildrenItemFile]) => boolean
-}) =>
-  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]) => {
-    const files = pipe(
-      flatTree,
-      A.filter(guardSnd(T.isFile)),
-    )
+//     return {
+//       files: validFiles,
+//       folders,
+//       excluded,
+//     }
+//   }
 
-    const folders = pipe(
-      flatTree,
-      A.filter(guardSnd(T.isFolderLike)),
-    )
+// export const filterFlattenFolderTree = (opts: {
+//   include: string[]
+//   exclude: string[]
+//   func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+// }) =>
+//   <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
+//     const { excluded, files, folders } = filterFlatTree(opts)(flatTree)
 
-    const { left: excluded, right: validFiles } = pipe(
-      files,
-      A.partition(func),
-    )
+//     const { left: downloadable, right: empties } = pipe(
+//       files,
+//       A.partition(([, file]) => file.size == 0),
+//     )
 
-    return {
-      files: validFiles,
-      folders,
-      excluded,
-    }
-  }
+//     const dirstruct = pipe(
+//       A.concat(downloadable)(empties),
+//       A.concatW(folders),
+//       A.map(a => a[0]),
+//       getDirectoryStructure,
+//     )
 
-export const filterFlattenFolderTree = (opts: {
-  include: string[]
-  exclude: string[]
-  func?: (files: [string, T.DriveChildrenItemFile]) => boolean
-}) =>
-  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): FilterTreeResult => {
-    const { excluded, files, folders } = filterFlatTree(opts)(flatTree)
+//     return {
+//       dirstruct,
+//       downloadable,
+//       empties,
+//       excluded,
+//     }
+//   }
 
-    const { left: downloadable, right: empties } = pipe(
-      files,
-      A.partition(([, file]) => file.size == 0),
-    )
+// export const recursiveDirMapper = (
+//   dstpath: string,
+//   mapPath: (path: string) => string = identity,
+// ) =>
+//   (ds: DownloadStructure): DownloadTask => {
+//     return {
+//       downloadable: ds.downloadable
+//         .map(([remotepath, file]) => ({
+//           info: [remotepath, file],
+//           localpath: prependPath(dstpath)(mapPath(remotepath)),
+//         })),
+//       empties: ds.empties
+//         .map(([remotepath, file]) => ({
+//           info: [remotepath, file],
+//           localpath: prependPath(dstpath)(mapPath(remotepath)),
+//         })),
+//       localdirstruct: [
+//         dstpath,
+//         ...ds.dirstruct
+//           .map(p => prependPath(dstpath)(mapPath(p))),
+//       ],
+//     }
+//   }
 
-    const dirstruct = pipe(
-      A.concat(downloadable)(empties),
-      A.concatW(folders),
-      A.map(a => a[0]),
-      getDirectoryStructure,
-    )
+// export const createDownloadTask = <SolverDeps>(
+//   deps: {
+//     conflictsSolver: ConflictsSolver<SolverDeps>
+//     toDirMapper: (ds: DownloadStructure) => DownloadTask
+//   },
+// ) =>
+//   (ds: DownloadStructure): RTE.ReaderTaskEither<
+//     DepFs<'fstat'> & SolverDeps,
+//     Error,
+//     DownloadTask & { initialTask: DownloadTask }
+//   > => {
+//     return pipe(
+//       deps.toDirMapper(ds),
+//       handleLocalFilesConflicts({
+//         // conflictsSolver: resolveConflictsRename,
+//         // conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
+//         //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
+//         // ),
+//         conflictsSolver: deps.conflictsSolver,
+//         //  solvers.resolveConflictsAskEvery,
+//       }),
+//     )
+//   }
 
-    return {
-      dirstruct,
-      downloadable,
-      empties,
-      excluded,
-    }
-  }
+// const createEmptyFiles = (paths: string[]): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, unknown[]> => {
+//   return ({ fs: { writeFile } }) =>
+//     pipe(
+//       paths,
+//       A.map(path => writeFile(path, '')),
+//       A.sequence(TE.ApplicativePar),
+//     )
+// }
 
-export const recursiveDirMapper = (
-  dstpath: string,
-  mapPath: (path: string) => string = identity,
-) =>
-  (ds: DownloadStructure): DownloadTask => {
-    return {
-      downloadable: ds.downloadable
-        .map(([remotepath, file]) => ({
-          info: [remotepath, file],
-          localpath: prependPath(dstpath)(mapPath(remotepath)),
-        })),
-      empties: ds.empties
-        .map(([remotepath, file]) => ({
-          info: [remotepath, file],
-          localpath: prependPath(dstpath)(mapPath(remotepath)),
-        })),
-      localdirstruct: [
-        dstpath,
-        ...ds.dirstruct
-          .map(p => prependPath(dstpath)(mapPath(p))),
-      ],
-    }
-  }
+// export const createEmpties = ({ empties }: DownloadTask): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
+//   pipe(
+//     empties.length > 0
+//       ? pipe(
+//         RTE.ask<DepFs<'writeFile'>>(),
+//         RTE.chainFirstIOK(() => loggerIO.debug(`creating empty ${empties.length} files`)),
+//         RTE.chainW(({ fs: { writeFile } }) =>
+//           pipe(
+//             empties.map(_ => _.localpath),
+//             A.map(path => writeFile(path, '')),
+//             A.sequence(TE.ApplicativePar),
+//             RTE.fromTaskEither,
+//           )
+//         ),
+//         RTE.map(constVoid),
+//       )
+//       : RTE.of(constVoid()),
+//   )
 
-export const createDownloadTask = <SolverDeps>(
-  deps: {
-    conflictsSolver: ConflictsSolver<SolverDeps>
-    toDirMapper: (ds: DownloadStructure) => DownloadTask
-  },
-) =>
-  (ds: DownloadStructure): RTE.ReaderTaskEither<
-    DepFs<'fstat'> & SolverDeps,
-    Error,
-    DownloadTask & { initialTask: DownloadTask }
-  > => {
-    return pipe(
-      deps.toDirMapper(ds),
-      handleLocalFilesConflicts({
-        // conflictsSolver: resolveConflictsRename,
-        // conflictsSolver: solvers.resolveConflictsOverwrightIfSizeDifferent(
-        //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
-        // ),
-        conflictsSolver: deps.conflictsSolver,
-        //  solvers.resolveConflictsAskEvery,
-      }),
-    )
-  }
+// export const isEnoentError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'ENOENT'
 
-const createEmptyFiles = (paths: string[]): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, unknown[]> => {
-  return ({ fs: { writeFile } }) =>
-    pipe(
-      paths,
-      A.map(path => writeFile(path, '')),
-      A.sequence(TE.ApplicativePar),
-    )
-}
-
-export const createEmpties = ({ empties }: DownloadTask): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> =>
-  pipe(
-    empties.length > 0
-      ? pipe(
-        RTE.ask<DepFs<'writeFile'>>(),
-        RTE.chainFirstIOK(() => loggerIO.debug(`creating empty ${empties.length} files`)),
-        RTE.chainW(({ fs: { writeFile } }) =>
-          pipe(
-            empties.map(_ => _.localpath),
-            A.map(path => writeFile(path, '')),
-            A.sequence(TE.ApplicativePar),
-            RTE.fromTaskEither,
-          )
-        ),
-        RTE.map(constVoid),
-      )
-      : RTE.of(constVoid()),
-  )
-
-export const isEnoentError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'ENOENT'
-
-export const isEexistError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'EEXIST'
+// export const isEexistError = (e: Error) => hasOwnProperty(e, 'code') && e.code === 'EEXIST'

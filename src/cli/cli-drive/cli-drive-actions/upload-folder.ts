@@ -5,23 +5,17 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
-import { DepFs } from '../../../deps/DepFs'
-import { DriveApi, DriveQuery } from '../../../icloud/drive'
-import { DepDriveApi } from '../../../icloud/drive/drive-api'
-import {
-  DetailsAppLibrary,
-  DetailsDocwsRoot,
-  DetailsFolder,
-  isFolderLike,
-} from '../../../icloud/drive/icloud-drive-items-types'
-import { findInParentFilename } from '../../../icloud/drive/util/drive-helpers'
-import * as V from '../../../icloud/drive/util/get-by-path-types'
+import { DepFs } from '../../../deps-types'
+import { DepDriveApi, DriveApi, DriveQuery, T } from '../../../icloud-drive/drive'
+
+import { findInParentFilename } from '../../../icloud-drive/drive/util/drive-helpers'
+import * as V from '../../../icloud-drive/drive/util/get-by-path-types'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { printerIO } from '../../../util/logging'
 import { normalizePath, Path } from '../../../util/path'
 import { XXX } from '../../../util/types'
-import { walkDirRel } from './download/walkdir'
+import { walkDirRel } from '../../../util/walkdir'
 import {
   createRemoteDirStructure,
   getUploadTask,
@@ -64,7 +58,7 @@ export const uploadFolder = (
 const handleUploadFolder = (
   { src, dst, args }: {
     src: string
-    dst: V.GetByPathResult<DetailsDocwsRoot>
+    dst: V.GetByPathResult<T.DetailsDocwsRoot>
     args: Argv
   },
 ): XXX<DriveQuery.State, Deps, UploadResult[]> => {
@@ -86,7 +80,7 @@ const handleUploadFolder = (
   if (dst.valid) {
     const dstitem = V.pathTarget(dst)
 
-    if (isFolderLike(dstitem)) {
+    if (T.isFolderLike(dstitem)) {
       if (isSome(findInParentFilename(dstitem, dirname))) {
         return SRTE.left(err(`${args.remotepath} already contains an item named ${dirname}`))
       }
@@ -116,7 +110,7 @@ const handleUploadFolder = (
 
 const uploadToNewFolder = (
   { dirname, dstitem, src, chunkSize, remotepath }: {
-    dstitem: DetailsDocwsRoot | DetailsFolder | DetailsAppLibrary
+    dstitem: T.DetailsDocwsRoot | T.DetailsFolder | T.DetailsAppLibrary
     dirname: string
     src: string
     chunkSize: number
