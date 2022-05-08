@@ -1,11 +1,17 @@
 import * as TE from 'fp-ts/TaskEither'
-import { Dir, MakeDirectoryOptions, Mode, PathLike, Stats } from 'fs'
+import { Dir, MakeDirectoryOptions, Mode, PathLike } from 'fs'
 import { createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
 import { err } from '../errors'
 
+export type FsStats = {
+  isFile(): boolean
+  isDirectory(): boolean
+  size: number
+}
+
 export type FsType = {
-  fstat(path: string): TE.TaskEither<Error, Stats>
+  fstat(path: string): TE.TaskEither<Error, FsStats>
   opendir: (path: string) => TE.TaskEither<Error, Dir>
   writeFile: (path: string, data: string) => TE.TaskEither<Error, void>
   mkdir: (

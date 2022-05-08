@@ -3,13 +3,13 @@ import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveQuery } from '../../src/icloud/drive'
-import * as C from '../../src/icloud/drive/drive-query/cache'
-import { NotFoundError } from '../../src/icloud/drive/drive-query/errors'
-import { showFolderTree } from '../../src/icloud/drive/util/folder-tree'
-import { invalidPath, validPath } from '../../src/icloud/drive/util/get-by-path-types'
-import * as L from '../../src/util/logging'
-import { normalizePath, npath } from '../../src/util/normalize-path'
+import { DriveLookup } from '../../icloud-drive'
+import * as C from '../../icloud-drive/drive-lookup/cache'
+import { NotFoundError } from '../../icloud-drive/drive-lookup/errors'
+import { showFolderTree } from '../../icloud-drive/util/folder-tree'
+import { invalidPath, validPath } from '../../icloud-drive/util/get-by-path-types'
+import * as L from '../../util/logging'
+import { normalizePath, npath } from '../../util/normalize-path'
 import { complexStructure0 } from './fixtures'
 import { appLibrary, file, folder } from './helpers-drive'
 import { createEnv, createState, executeDrive, fakeicloud } from './struct'
@@ -29,7 +29,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
     const state = createState({})
     const env = createEnv(complexStructure0.itemByDrivewsid)
     const req = pipe(
-      DriveQuery.getByPathDocwsroot(
+      DriveLookup.getByPathDocwsroot(
         npath('/test2/file1.txt'),
       ),
     )
@@ -49,7 +49,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
 
   it('searchGlobs', async () => {
     const req0 = pipe(
-      DriveQuery.searchGlobs(['/*.txt']),
+      DriveLookup.searchGlobs(['/*.txt']),
       executeDrive({ itemByDrivewsid: complexStructure0.itemByDrivewsid }),
       TE.map(({ calls, res, state }) => {
         assert.deepEqual(
@@ -84,8 +84,8 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
     const state = createState({ cache: cache.right })
 
     const req0 = pipe(
-      DriveQuery.chainCachedDocwsRoot(root =>
-        DriveQuery.getFoldersTrees([
+      DriveLookup.chainCachedDocwsRoot(root =>
+        DriveLookup.getFoldersTrees([
           root,
           root,
           root,
@@ -106,7 +106,7 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid: complexStructure0.itemByDrivewsid,
       })(
-        DriveQuery.getByPathsDocwsroot([normalizePath('/')]),
+        DriveLookup.getByPathsDocwsroot([normalizePath('/')]),
       ),
       TE.map(({ calls, res, state }) => {
         assert.deepEqual(
@@ -128,7 +128,7 @@ describe('getByPaths', () => {
         // C.putDetails(complexStructure0.root.details),
         // ),
       })(
-        DriveQuery.getByPathsDocwsroot([
+        DriveLookup.getByPathsDocwsroot([
           npath('/Obsidian/my1/misc'),
           npath('/Obsidian/my1/mi'),
         ]),

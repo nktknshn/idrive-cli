@@ -7,12 +7,12 @@ import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
-import { Stats } from 'fs'
 import micromatch from 'micromatch'
 import { DriveApi, DriveLookup } from '../../../../icloud-drive'
 import { GetDep } from '../../../../icloud-drive/drive-api/deps'
 import { parseDrivewsid } from '../../../../icloud-drive/util/drive-helpers'
 import { err } from '../../../../util/errors'
+import { FsStats } from '../../../../util/fs'
 import { getDirectoryStructure } from '../../../../util/getDirectoryStructure'
 import { guardSndRO } from '../../../../util/guards'
 import { LocalTreeElement } from '../../../../util/localtreeelement'
@@ -32,9 +32,9 @@ export type UploadResult = {
 
 export type UploadTask = {
   dirstruct: string[]
-  uploadable: (readonly [string, { path: string; stats: Stats }])[]
-  empties: (readonly [string, { path: string; stats: Stats }])[]
-  excluded: (readonly [string, { path: string; stats: Stats }])[]
+  uploadable: (readonly [string, { path: string; stats: FsStats }])[]
+  empties: (readonly [string, { path: string; stats: FsStats }])[]
+  excluded: (readonly [string, { path: string; stats: FsStats }])[]
 }
 
 export const getUploadTask = (
@@ -86,7 +86,7 @@ export const uploadChunkPar = (
     chunk: NEA<
       readonly [
         remotepath: string,
-        local: { path: string; stats: Stats },
+        local: { path: string; stats: FsStats },
       ]
     >,
   ): XXX<DriveLookup.State, DriveApi.Dep<'upload'>, NEA<UploadResult>> =>

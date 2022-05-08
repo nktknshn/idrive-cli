@@ -1,8 +1,8 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveQuery } from '../../src/icloud/drive'
-import * as L from '../../src/util/logging'
+import { DriveLookup } from '../../icloud-drive'
+import * as L from '../../util/logging'
 import { file } from './helpers-drive'
 import { executeDrive, fakeicloud } from './struct'
 
@@ -25,7 +25,7 @@ describe('searchGlobs', () => {
     const run = executeDrive({ itemByDrivewsid: structure.itemByDrivewsid })
 
     const req0 = pipe(
-      run(DriveQuery.searchGlobs(['/*.txt', '/**/*.txt'])),
+      run(DriveLookup.searchGlobs(['/*.txt', '/**/*.txt'])),
       TE.map(({ calls, res, state }) => {
         expect(res).toStrictEqual(
           [

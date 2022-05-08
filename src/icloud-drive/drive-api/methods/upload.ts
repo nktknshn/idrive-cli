@@ -6,6 +6,7 @@ import mime from 'mime-types'
 import { DepFs } from '../../../deps-types/DepFs'
 import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { err } from '../../../util/errors'
+import { FsStats } from '../../../util/fs'
 import { Path } from '../../../util/path'
 import { GetDep, useApi } from '../deps'
 
@@ -44,7 +45,7 @@ export const upload = flow(
 
       // const retrying = executeRequest2(env)
       return pipe(
-        SRTE.fromTaskEither<Error, Stats, S, unknown>(
+        SRTE.fromTaskEither<Error, FsStats, S, unknown>(
           deps.fs.fstat(sourceFilePath),
         ),
         // () =>

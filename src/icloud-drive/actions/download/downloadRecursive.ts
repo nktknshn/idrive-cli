@@ -1,9 +1,9 @@
 import micromatch from 'micromatch'
+import { DepAskConfirmation } from '../../../deps-types'
 import { Path } from '../../../util/path'
-import { XXX } from '../../../util/types'
 import { DriveLookup } from '../..'
 import { solvers } from './conflict-solvers'
-import { Deps, downloadFolder } from './download-folder'
+import { Deps as DownloadFolderDeps, downloadFolder } from './download-folder'
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from './downloadICloudFilesChunked'
 import { recursiveDirMapper } from './recursiveDirMapper'
 
@@ -19,7 +19,7 @@ export type RecursiveArgv = {
 /** recursively download files */
 export const downloadRecursive = (
   argv: RecursiveArgv,
-): XXX<DriveLookup.State, Deps & DFuncDeps, string> => {
+): DriveLookup.Effect<string, DownloadFolderDeps & DFuncDeps & DepAskConfirmation> => {
   const dirname = Path.dirname(micromatch.scan(argv.path).base)
   console.log(
     dirname,

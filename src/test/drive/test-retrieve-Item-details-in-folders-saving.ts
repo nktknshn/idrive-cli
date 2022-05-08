@@ -3,13 +3,9 @@ import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/Option'
 import * as R from 'fp-ts/Record'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveQuery } from '../../src/icloud/drive'
-import { NotFoundError } from '../../src/icloud/drive/drive-query/errors'
-import { rootDrivewsid } from '../../src/icloud/drive/icloud-drive-types/types-io'
-import { invalidPath, pathTarget } from '../../src/icloud/drive/util/get-by-path-types'
-import * as L from '../../src/util/logging'
-import { npath } from '../../src/util/normalize-path'
-import { appLibrary, file, folder, removeByDrivewsid } from './helpers-drive'
+import { C, DriveLookup } from '../../icloud-drive'
+import * as L from '../../util/logging'
+import { file, folder } from './helpers-drive'
 import { executeDrive, fakeicloud } from './struct'
 L.initLoggers(
   { debug: true },
@@ -56,7 +52,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           ]),
         ),
       })(
-        DriveQuery.retrieveItemDetailsInFoldersSaving([
+        DriveLookup.retrieveItemDetailsInFoldersSaving([
           structure0.root.byName.folder1.byName.folder2.details.drivewsid,
           structure0.root.byName.folder1.byName.folder3.details.drivewsid,
         ]),

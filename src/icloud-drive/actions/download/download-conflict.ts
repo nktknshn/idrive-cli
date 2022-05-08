@@ -7,13 +7,13 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import * as Task from 'fp-ts/Task'
-import { Stats } from 'fs'
 import { DepFs } from '../../../deps-types'
+import { FsStats } from '../../../util/fs'
 import { isEnoentError } from '../../../util/fs/isEnoentError'
 import { LocalTreeElement } from '../../../util/localtreeelement'
 import { loggerIO } from '../../../util/loggerIO'
 import { Path } from '../../../util/path'
-import { NEA, UnknownObject } from '../../../util/types'
+import { EmptyObject, NEA } from '../../../util/types'
 import { DownloadItem, DownloadItemMapped, DownloadTaskMapped } from './types'
 
 // export type Conflict = readonly [
@@ -38,12 +38,12 @@ export type ConflictError = {
 export type SolutionAction = 'skip' | 'overwright'
 export type Solution = (readonly [Conflict, SolutionAction])
 
-export type ConflictsSolver<Deps = UnknownObject> = (
+export type ConflictsSolver<Deps = EmptyObject> = (
   conflicts: NEA<Conflict>,
 ) => RTE.ReaderTaskEither<Deps, Error, Solution[]>
 
 export const lookForConflictsTE = (
-  stats: (readonly [TE.TaskEither<Error, Stats>, DownloadItemMapped])[],
+  stats: (readonly [TE.TaskEither<Error, FsStats>, DownloadItemMapped])[],
 ): RT.ReaderTask<unknown, Conflict[]> =>
   pipe(
     stats,
@@ -98,7 +98,7 @@ export const lookForConflicts = (
   )
 }
 
-export const handleLocalFilesConflicts = <SolverDeps = UnknownObject>(
+export const handleLocalFilesConflicts = <SolverDeps = EmptyObject>(
   { conflictsSolver }: {
     conflictsSolver: ConflictsSolver<SolverDeps>
   },

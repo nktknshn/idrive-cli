@@ -43,8 +43,3 @@ export type DownloadICloudFilesFunc<R> = (task: { downloadable: DownloadItemMapp
 // export type FilterTreeResult = DownloadStructure & {
 //   excluded: DownloadInfo[]
 // }
-
-export type DownloadUrlToFile<R> = (
-  url: string,
-  destpath: string,
-) => RTE.ReaderTaskEither<R, Error, void>

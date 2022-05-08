@@ -74,7 +74,6 @@ Use `dry` flag to only check what is going to be downloaded
 
 export type Deps =
   & DriveLookup.Deps
-  & DepAskConfirmation
   & DepFs<
     | 'fstat'
     | 'mkdir'
@@ -93,17 +92,22 @@ type DownloadFolderOpts<SolverDeps, DownloadDeps> = {
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
 }
 
+const prepare = (task: DownloadTaskMapped) =>
+  pipe(
+    SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.State>(
+      pipe(
+        createDirStruct(task.localdirstruct),
+        RTE.chainW(() => createEmpties(task)),
+      ),
+    ),
+  )
+
 const executeTask = <DownloadDeps>(
   { downloadFiles }: { downloadFiles: DownloadICloudFilesFunc<DownloadDeps> },
 ) =>
   (task: DownloadTaskMapped) =>
     pipe(
-      SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.State>(
-        pipe(
-          createDirStruct(task.localdirstruct),
-          RTE.chainW(() => createEmpties(task)),
-        ),
-      ),
+      prepare(task),
       SRTE.chainW(() => downloadFiles(task)),
     )
 
@@ -118,7 +122,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
     conflictsSolver,
     downloadFiles,
   }: DownloadFolderOpts<SolverDeps, DownloadDeps>,
-): XXX<DriveLookup.State, Deps & SolverDeps & DownloadDeps, string> => {
+): DriveLookup.Effect<string, Deps & SolverDeps & DownloadDeps> => {
   const verbose = dry
   // const downloadFiles = downloadICloudFilesChunked({ chunkSize })
 
@@ -131,11 +135,11 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
     SRTE.chain(dir => DriveLookup.getFoldersTrees([dir], depth)),
     SRTE.map(NA.head),
     SRTE.map(flattenFolderTreeWithBasepath(Path.dirname(path))),
+    SRTE.map(filterFlattenFolderTree({ include, exclude })),
   )
 
   return pipe(
     folderTree,
-    SRTE.map(filterFlattenFolderTree({ include, exclude })),
     SRTE.chainW(ds =>
       SRTE.fromReaderTaskEither(pipe(
         toLocalMapper(ds),

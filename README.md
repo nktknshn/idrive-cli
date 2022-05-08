@@ -200,23 +200,23 @@ Use `dry` flag to only check what is going to be uploaded -->
 
 ### download <remotepath> <localpath>
 
-Download a file or a folder.
+Download a file or a folder content.
 
 `idrive download '/Obsidian/my1/note1.md' ./outputdir`
 
 `idrive download '/Obsidian/my1/*.md' ./outputdir`
 
-`idrive download -R '/Obsidian/my1/' ./outputdir`
-
 Recursively download into `./outputdir/my1/`
 
-`idrive download -R '/Obsidian/my1/diary/**/*.md' ./outputdir`
+`idrive download -R '/Obsidian/my1/' ./outputdir`
 
 Recursively download all `md` files into `./outputdir/diary/` 
 
-`idrive download -RS '/Obsidian/my1/diary/**/*.md' ./outputdir`
+`idrive download -R '/Obsidian/my1/diary/**/*.md' ./outputdir`
 
 Download download all into `./outputdir/Obsidian/my1/diary/`
+
+`idrive download -RS '/Obsidian/my1/diary/**/*.md' ./outputdir`
 
 Use `dry` flag to only check what is going to be downloaded
 

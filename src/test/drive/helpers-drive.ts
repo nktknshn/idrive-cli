@@ -2,12 +2,12 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
-import { T } from '../../src/icloud/drive/'
-import * as V from '../../src/icloud/drive/util/get-by-path-types'
-import { rootDrivewsid } from '../../src/icloud/icloud-drive-api-requests/icloud-drive-items-types/types-io'
-import { guardFst, guardFstRO, isDefined } from '../../src/util/guards'
-import { parseFilename } from '../../src/util/parse-filename'
-import { randomUUIDCap, recordFromTuples } from '../../src/util/util'
+import { T } from '../../icloud-drive'
+import { rootDrivewsid } from '../../icloud-drive/icloud-drive-items-types/types-io'
+import * as V from '../../icloud-drive/util/get-by-path-types'
+import { guardFst, guardFstRO, isDefined } from '../../util/guards'
+import { parseFilename } from '../../util/parse-filename'
+import { randomUUIDCap, recordFromTuples } from '../../util/util'
 
 type File<N extends string> = {
   type: 'FILE'
@@ -350,9 +350,9 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
         zone: 'com.apple.CloudDocs',
       }),
     ),
-    A.map(
-      c => addValidPath(c, V.validPath([details])),
-    ),
+    // A.map(
+    //   c => addValidPath(c, V.validPath([details])),
+    // ),
   )
 
   const byName = pipe(

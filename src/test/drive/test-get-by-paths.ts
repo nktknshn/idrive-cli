@@ -1,12 +1,12 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveQuery } from '../../src/icloud/drive'
-import { NotFoundError } from '../../src/icloud/drive/drive-query/errors'
-import { rootDrivewsid } from '../../src/icloud/drive/icloud-drive-types/types-io'
-import { invalidPath, pathTarget } from '../../src/icloud/drive/util/get-by-path-types'
-import * as L from '../../src/util/logging'
-import { npath } from '../../src/util/normalize-path'
+import { C, DriveLookup } from '../../icloud-drive'
+import { NotFoundError } from '../../icloud-drive/drive-lookup/errors'
+import { rootDrivewsid } from '../../icloud-drive/icloud-drive-items-types/types-io'
+import { invalidPath, pathTarget } from '../../icloud-drive/util/get-by-path-types'
+import * as L from '../../util/logging'
+import { npath } from '../../util/normalize-path'
 import { appLibrary, file, folder, removeByDrivewsid } from './helpers-drive'
 import { executeDrive, fakeicloud } from './struct'
 
@@ -61,7 +61,7 @@ describe('getByPaths', () => {
 
   it('works fully cached', async () => {
     const req0 = pipe(
-      DriveQuery.getByPathsDocwsroot([
+      DriveLookup.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
       ]),
       executeDrive({
@@ -97,7 +97,7 @@ describe('getByPaths', () => {
 
   it('works fully cached multiple dirs', async () => {
     const req0 = pipe(
-      DriveQuery.getByPathsDocwsroot([
+      DriveLookup.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
         npath('/folder1/subfolder1/sources/tsconfig.json'),
       ]),
@@ -139,7 +139,7 @@ describe('getByPaths', () => {
       ),
     )
     const req0 = pipe(
-      DriveQuery.getByPathsDocwsroot([
+      DriveLookup.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
       ]),
       executeDrive({

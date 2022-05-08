@@ -5,10 +5,10 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
-import { DepApi, DriveQuery, T } from '../../src/icloud/drive'
-import { DriveApiEnv } from '../../src/icloud/drive/drive-api/deps'
-import * as C from '../../src/icloud/drive/drive-query/cache'
-import * as L from '../../src/util/logging'
+import { DriveApi, DriveLookup, T } from '../../icloud-drive'
+import { DriveApiEnv } from '../../icloud-drive/drive-api-env/dep-drive-api-env'
+import * as C from '../../icloud-drive/drive-lookup/cache'
+import * as L from '../../util/logging'
 import { authorizedState } from '../fixtures'
 import { createRootDetails, docwsroot } from './helpers-drive'
 
@@ -40,7 +40,7 @@ const retrieveItemDetailsInFolders = (
 
 export const createEnv = (
   details: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
-): Calls & DepApi<'retrieveItemDetailsInFolders'> => {
+): Calls & DriveApi.Dep<'retrieveItemDetailsInFolders'> => {
   const calls = {
     retrieveItemDetailsInFolders: 0,
     total: 0,
@@ -68,7 +68,7 @@ export const executeDrive = ({
 }: {
   itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>
   cache?: E.Either<Error, C.Cache>
-}): <A>(m: DriveQuery.Effect<A>) => TE.TaskEither<Error, { res: A; state: DriveQuery.State } & Calls> => {
+}): <A>(m: DriveLookup.Effect<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
   return m =>
     pipe(
       TE.fromEither(cache),
