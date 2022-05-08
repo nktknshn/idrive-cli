@@ -51,16 +51,20 @@ describe('getFoldersTrees', () => {
     return pipe(
       DriveLookup.getFoldersTreesByPathsDocwsroot(
         [
-          npath('/test1/'),
+          npath('/test1/test2'),
           npath('/test1/test2/test3'),
         ],
       ),
       executeDrive({
         itemByDrivewsid: struct0.itemByDrivewsid,
-        // cache: pipe(
-        //   C.cachef(),
-        //   C.putDetailss(struct0.allFolders),
-        // ),
+        cache: pipe(
+          C.cachef(),
+          C.putDetailss([
+            struct0.r.d,
+            struct0.r.c.test1.d,
+            struct0.r.c.test1.c.test2.d,
+          ]),
+        ),
       }),
       TE.map(res => {
         console.log(

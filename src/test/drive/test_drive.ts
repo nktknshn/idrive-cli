@@ -43,7 +43,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
 
     assert.deepEqual(
       res1.right[0].file.value,
-      complexStructure0.root.children[1].children[0].details,
+      complexStructure0.r.children[1].children[0].d,
     )
   })
 
@@ -56,7 +56,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           res,
           [[{
             path: '/fileinroot.txt',
-            item: complexStructure0.root.c['fileinroot.txt'],
+            item: complexStructure0.r.c['fileinroot.txt'],
           }]],
         )
       }),
@@ -66,7 +66,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
   })
 
   it('getFoldersTrees', async () => {
-    const { itemByDrivewsid: details, root: tree } = fakeicloud(
+    const { itemByDrivewsid: details, r: tree } = fakeicloud(
       file({ name: 'file1.txt' }),
       folder({ name: 'test1' })(
         file({ name: 'file2.txt' }),
@@ -76,7 +76,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
     const env = createEnv(details)
     const cache = pipe(
       C.cachef(),
-      C.putDetails(tree.details),
+      C.putDetails(tree.d),
     )
 
     assert(cache._tag === 'Right')
@@ -111,7 +111,7 @@ describe('getByPaths', () => {
       TE.map(({ calls, res, state }) => {
         assert.deepEqual(
           res,
-          [validPath([complexStructure0.root.details])],
+          [validPath([complexStructure0.r.d])],
         )
       }),
     )
@@ -137,16 +137,16 @@ describe('getByPaths', () => {
         expect(res).toEqual(
           [
             validPath([
-              complexStructure0.root.details,
-              complexStructure0.root.c.Obsidian.details,
-              complexStructure0.root.c.Obsidian.c.my1.details,
-              complexStructure0.root.c.Obsidian.c.my1.c.misc.details,
+              complexStructure0.r.d,
+              complexStructure0.r.c.Obsidian.d,
+              complexStructure0.r.c.Obsidian.c.my1.d,
+              complexStructure0.r.c.Obsidian.c.my1.c.misc.d,
             ]),
             invalidPath(
               [
-                complexStructure0.root.details,
-                complexStructure0.root.c.Obsidian.details,
-                complexStructure0.root.c.Obsidian.c.my1.details,
+                complexStructure0.r.d,
+                complexStructure0.r.c.Obsidian.d,
+                complexStructure0.r.c.Obsidian.c.my1.d,
               ],
               ['mi'],
               expect.any(NotFoundError),

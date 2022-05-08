@@ -3,15 +3,10 @@ import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-// TODO
-// export const validateCacheJson = (json: unknown): json is C.CacheF => {
-//   return isObjectWithOwnProperty(json, 'byDrivewsid')
-// }
-import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as m from 'monocle-ts'
 import { err } from '../../../util/errors'
-import { cacheLogger, logReturnS } from '../../../util/logging'
+import { cacheLogger } from '../../../util/logging'
 import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
 import { sequenceArrayNEA } from '../../../util/util'

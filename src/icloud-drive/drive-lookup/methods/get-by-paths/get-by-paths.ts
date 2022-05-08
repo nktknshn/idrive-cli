@@ -7,12 +7,10 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Eq } from 'fp-ts/lib/string'
 import { fst } from 'fp-ts/lib/Tuple'
 import { err } from '../../../../util/errors'
 import { guardFst } from '../../../../util/guards'
 import { loggerIO } from '../../../../util/loggerIO'
-import { logg, logger } from '../../../../util/logging'
 import { NormalizedPath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
 import { recordFromTuples } from '../../../../util/util'
@@ -30,8 +28,18 @@ export const getByPaths = <R extends T.Root>(
     loggerIO.debug(`getByPaths(${paths})`),
     SRTE.fromIO,
     SRTE.chain(() => DriveLookup.getByPathsFromCache(root, paths)),
+    SRTE.chain(cached => getByPathsC(paths, cached)),
+  )
+
+export const getByPathsC = <R extends T.Root>(
+  paths: NEA<NormalizedPath>,
+  cached: NEA<V.GetByPathResult<R>>,
+): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> =>
+  pipe(
+    DriveLookup.of(cached),
+    SRTE.chainFirstIOK(() => loggerIO.debug(`getByPathsC(${paths})`)),
     SRTE.chainFirstIOK(
-      (cached) => loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join(', ')}`),
+      (cached) => loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join('\n')}`),
     ),
     SRTE.chain((cached) =>
       pipe(
@@ -42,9 +50,9 @@ export const getByPaths = <R extends T.Root>(
         SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
       )
     ),
-    SRTE.chainFirstIOK(
-      paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
-    ),
+    // SRTE.chainFirstIOK(
+    //   paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
+    // ),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
@@ -97,12 +105,14 @@ const validateCachedHierarchies = <R extends T.Root>(
   )
 
   return pipe(
-    logg(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
-    () =>
+    loggerIO.debug(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
+    SRTE.fromIO,
+    SRTE.chain(() =>
       DriveLookup.retrieveItemDetailsInFoldersSaving<R>([
         cachedRoot.drivewsid,
         ...drivewsids,
-      ]),
+      ])
+    ),
     SRTE.map(([actualRoot, ...actualRest]) => {
       const detailsRecord = recordFromTuples(
         A.zip(drivewsids, actualRest),
@@ -157,7 +167,7 @@ const concatCachedWithValidated = <R extends T.Root>(
       }
       else {
         // if not file was targeted then the cached path is still valid
-        logger.debug(`V.validResult: ${showDetails(NA.last(validated.details))}`)
+        loggerIO.debug(`V.validResult: ${showDetails(NA.last(validated.details))}`)()
         return V.validPath(validated.details)
       }
     }
@@ -187,9 +197,9 @@ const concatCachedWithValidated = <R extends T.Root>(
 const getActuals = <R extends T.Root>(
   validationResults: NEA<[V.PathValidation<R>, NormalizedPath]>,
 ): DriveLookup.Effect<NEA<V.PathValidation<R>>> => {
-  logger.debug(
+  loggerIO.debug(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
-  )
+  )()
   return pipe(
     modifySubset(
       validationResults,
@@ -215,16 +225,16 @@ type DeeperFolders<R extends T.Root> =
 const handleInvalidPaths = <R extends T.Root>(
   partialPaths: NEA<V.PathInvalid<R>>,
 ): DriveLookup.Effect<NEA<V.PathValidation<R>>> => {
-  logger.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)
+  loggerIO.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)()
 
   const handleSubfolders = <R extends T.Root>(
     subfolders: NEA<DeeperFolders<R>>,
   ): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> => {
-    logger.debug(`handleSubfolders: ${
+    loggerIO.debug(`handleSubfolders: ${
       subfolders.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}. rest: [${rest}]`
       })
-    }`)
+    }`)()
 
     const foldersToRetrieve = pipe(
       subfolders,
@@ -299,11 +309,11 @@ const handleInvalidPaths = <R extends T.Root>(
   const handleFoundItems = <R extends T.Root>(
     found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
   ): DriveLookup.Effect<V.GetByPathResult<R>[]> => {
-    logger.debug(`handleFoundItems. ${
+    loggerIO.debug(`handleFoundItems. ${
       found.map(([item, [rest, partial]]) => {
         return `item: ${T.fileName(item.value)}.`
       })
-    }`)
+    }`)()
 
     const selectFolders = (
       v: [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]],

@@ -1,3 +1,4 @@
+import { semigroup } from 'fp-ts'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from '../../icloud-drive-items-types'
@@ -40,29 +41,26 @@ export const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> =>
 
 export const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(), map(({ cache }) => f(cache)))
 
+export const askCache = (): Effect<C.Cache> => pipe(state(), map(({ cache }) => cache))
+
 export const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> =>
   pipe(state(), chain(({ cache }) => f(cache)))
 
 export const withCache = (newCache: C.Cache) =>
   <A>(ma: Effect<A>): Effect<A> =>
     pipe(
-      SRTE.gets(({ cache }: State) => cache),
-      SRTE.chainW((oldcache) =>
+      askCache(),
+      SRTE.chain((oldcache) =>
         pipe(
           putCache(newCache),
-          SRTE.chainW(() => ma),
-          SRTE.chainW(res =>
-            pipe(
-              chainCache(cache =>
-                SRTE.fromEither(
-                  pipe(
-                    oldcache,
-                    C.putDetailss(C.getAllDetails(cache)),
-                  ),
-                )
-              ),
-              SRTE.chain(putCache),
-              SRTE.map(() => res),
+          SRTE.chain(() => ma),
+          SRTE.chain((res) =>
+            chainCache(curcache =>
+              pipe(
+                putCache(oldcache),
+                SRTE.chain(() => putDetailss(C.getAllDetails(curcache))),
+                SRTE.map(() => res),
+              )
             )
           ),
         )

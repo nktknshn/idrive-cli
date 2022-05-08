@@ -5,13 +5,13 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { logger } from '../../../util/logging'
-import { NEA } from '../../../util/types'
+import { loggerIO } from '../../../util/loggerIO'
+import { NEA, XXX } from '../../../util/types'
 import { C, DriveLookup } from '../..'
+import { GetDep } from '../../drive-api/deps'
 import * as T from '../../icloud-drive-items-types'
 import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
-import { State } from '../drive-lookup'
-import { chainCache, modifyCache, putCache, putDetailss, withCache } from './cache-methods'
+import { withCache } from './cache-methods'
 
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
@@ -33,12 +33,13 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
     const doGoDeeper = depth > 0 && subfolders.length > 0
     const depthExceed = subfolders.length > 0 && depth == 0
 
-    logger.debug(`getFoldersTrees(${folders.map(_ => _.drivewsid)}, ${depth})`)
+    loggerIO.debug(`getFoldersTrees(${folders.map(_ => _.drivewsid)}, ${depth})`)()
 
     return pipe(
       A.isNonEmpty(subfolders) && doGoDeeper
         ? pipe(
-          DriveLookup.retrieveItemDetailsInFoldersCachedStrict(
+          // DriveLookup.retrieveItemDetailsInFoldersCachedStrict(
+          DriveLookup.retrieveItemDetailsInFoldersSavingStrict(
             pipe(subfolders, NA.uniq(eq.fromEquals((a, b) => a.drivewsid === b.drivewsid)), NA.map(_ => _.drivewsid)),
           ),
           SRTE.chain(
@@ -64,7 +65,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
 
   return pipe(
     go(folders, depth),
-    withCache(C.cachef()),
+    // withCache(C.cachef()),
   )
 }
 

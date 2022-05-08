@@ -18,7 +18,10 @@ export * from './methods/get-by-paths'
 
 export type Deps = DriveApi.Dep<'retrieveItemDetailsInFolders'>
 
-export type State = { cache: C.Cache } & AuthorizedState
+export type State = {
+  cache: C.Cache
+  tempCache: C.Cache
+} & AuthorizedState
 
 export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<State, R, Error, A>
 export type Action<R, A> = SRTE.StateReaderTaskEither<State, R, Error, A>

@@ -4,7 +4,7 @@ import { Eq } from 'fp-ts/lib/Eq'
 import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { normalizePath } from '../../util/normalize-path'
+import { NormalizedPath, normalizePath } from '../../util/normalize-path'
 import { NEA } from '../../util/types'
 import * as T from '../icloud-drive-items-types'
 
@@ -82,12 +82,13 @@ export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): str
   if (p.valid) {
     return `valid: ${p.details.map(T.fileName)} file: ${pipe(p.file, O.fold(() => `none`, T.fileName))}`
   }
-  return `invalid (${p.error.message}). valid part ${p.details.map(T.fileName)}, rest: ${p.rest}`
+  // ${p.error.message}
+  return `invalid (). valid part ${p.details.map(T.fileName)}, rest: ${p.rest}`
 }
 
 export const validAsString = <R extends T.Root>(
   result: PathValid<R>,
-): import('/home/horn/Workspace/Typescript/Deno/node-icloud1/src/util/normalize-path').NormalizedPath => {
+): NormalizedPath => {
   return normalizePath(
     [
       ...result.details.map(T.fileName),

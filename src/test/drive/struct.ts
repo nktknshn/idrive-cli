@@ -16,7 +16,8 @@ export const fakeicloud = flow(docwsroot, createRootDetails)
 // complexStructure0.aa.Obsidian.children.my1.children.misc.children.images
 export const createState = ({
   cache = C.cachef(),
-}) => ({ ...authorizedState, cache })
+  tempCache = C.cachef(),
+}) => ({ ...authorizedState, cache, tempCache })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
@@ -73,7 +74,10 @@ export const executeDrive = ({
     pipe(
       TE.fromEither(cache),
       TE.chain(cache => {
-        const state = createState({ cache })
+        const state = createState({
+          cache,
+          tempCache: C.cachef(),
+        })
         const env = createEnv(details)
 
         return pipe(

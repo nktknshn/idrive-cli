@@ -38,39 +38,39 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
         itemByDrivewsid: pipe(
           structure0.itemByDrivewsid,
           R.deleteAt(
-            structure0.root.c.folder1.c.folder2.details.drivewsid,
+            structure0.r.c.folder1.c.folder2.d.drivewsid,
           ),
         ),
         cache: pipe(
           C.cachef(),
           C.putDetailss([
-            structure0.root.details,
-            structure0.root.c.folder1.details,
-            structure0.root.c.folder1.c.folder2.details,
-            structure0.root.c.folder1.c.folder3.details,
-            structure0.root.c.folder1.c.folder4.details,
+            structure0.r.d,
+            structure0.r.c.folder1.d,
+            structure0.r.c.folder1.c.folder2.d,
+            structure0.r.c.folder1.c.folder3.d,
+            structure0.r.c.folder1.c.folder4.d,
           ]),
         ),
       })(
         DriveLookup.retrieveItemDetailsInFoldersSaving([
-          structure0.root.c.folder1.c.folder2.details.drivewsid,
-          structure0.root.c.folder1.c.folder3.details.drivewsid,
+          structure0.r.c.folder1.c.folder2.d.drivewsid,
+          structure0.r.c.folder1.c.folder3.d.drivewsid,
         ]),
       ),
       TE.map(({ calls, res, state }) => {
         expect(res).toMatchObject([
           O.none,
           O.some({
-            drivewsid: structure0.root.c.folder1.c.folder3.details.drivewsid,
+            drivewsid: structure0.r.c.folder1.c.folder3.d.drivewsid,
           }),
         ])
 
         expect(
-          state.cache.byDrivewsid[structure0.root.c.folder1.c.folder2.details.drivewsid],
+          state.cache.byDrivewsid[structure0.r.c.folder1.c.folder2.d.drivewsid],
         ).toBeUndefined()
 
         expect(
-          state.cache.byDrivewsid[structure0.root.c.folder1.c.folder4.details.drivewsid],
+          state.cache.byDrivewsid[structure0.r.c.folder1.c.folder4.d.drivewsid],
         ).toBeDefined()
       }),
     )

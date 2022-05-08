@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
@@ -97,6 +98,4 @@ export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, 
 
 export const sequenceArrayNEA: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
 
-import { randomUUID } from 'crypto'
-
-export const randomUUIDCap = () => randomUUID().toUpperCase()
+export const randomUUIDCap = (): string => randomUUID().toUpperCase()

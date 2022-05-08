@@ -40,7 +40,10 @@ export const getFoldersTreesByPathFlattenWPDocwsroot = (
   NEA<FlattenFolderTreeWithP<T.DetailsDocwsRoot | T.NonRootDetails>>
 > =>
   pipe(
+    // provide existing cache for getByPathsFromCache
+    // and accumulate new details here
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
+    // and use hear
     SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, depth)),
     SRTE.map(NA.zip(paths)),
     SRTE.map(NA.map(

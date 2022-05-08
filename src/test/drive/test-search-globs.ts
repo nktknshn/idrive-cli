@@ -29,37 +29,14 @@ describe('searchGlobs', () => {
     ),
   )
 
-  const c = structure.root.c
+  const c = structure.r.c
 
-  const f1 = {
-    path: '/fileinroot.txt',
-    item: c['fileinroot.txt'].details,
-  }
-
-  const f2 = {
-    path: '/fileinroot2.txt',
-    item: c['fileinroot2.txt'].details,
-  }
-
-  const test1folder = {
-    path: '/test1',
-    item: c['test1'].details,
-  }
-
-  const test2folder = {
-    path: '/test1/test2',
-    item: c['test1'].c['test2'].details,
-  }
-
-  const package1 = {
-    item: c['test1'].c['package.json'].details,
-    path: '/test1/package.json',
-  }
-
-  const package2 = {
-    item: c['test1'].c['test2'].c['package.json'].details,
-    path: '/test1/test2/package.json',
-  }
+  const f1 = { path: '/fileinroot.txt', item: c['fileinroot.txt'].d }
+  const f2 = { path: '/fileinroot2.txt', item: c['fileinroot2.txt'].d }
+  const test1folder = { path: '/test1', item: c['test1'].d }
+  const test2folder = { path: '/test1/test2', item: c['test1'].c['test2'].d }
+  const package1 = { path: '/test1/package.json', item: c['test1'].c['package.json'].d }
+  const package2 = { path: '/test1/test2/package.json', item: c['test1'].c['test2'].c['package.json'].d }
 
   const run = executeDrive({ itemByDrivewsid: structure.itemByDrivewsid })
 

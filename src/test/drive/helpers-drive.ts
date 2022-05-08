@@ -24,7 +24,7 @@ type DocwsRoot<T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>
 type RootResult<T> = T extends [infer A, ...(infer Rest)] ? [
   A extends Folder<infer G, infer N> ? (
     Omit<Folder<G, N>, 'children'> & {
-      details: T.DetailsFolder
+      d: T.DetailsFolder
       children: RootResult<G>
       validPath: V.PathValid<T.DetailsDocwsRoot>
       // detailsPath: V.Hierarchy<T.DetailsDocwsRoot>
@@ -32,14 +32,14 @@ type RootResult<T> = T extends [infer A, ...(infer Rest)] ? [
   )
     : A extends AppLibray<infer G, infer N> ? (
       Omit<AppLibray<G, N>, 'children'> & {
-        details: T.DetailsAppLibrary
+        d: T.DetailsAppLibrary
         children: RootResult<G>
         validPath: V.PathValid<T.DetailsDocwsRoot>
         // detailsPath: V.Hierarchy<T.DetailsDocwsRoot>
       }
     )
     : (File<any> & {
-      details: T.DriveChildrenItemFile
+      d: T.DriveChildrenItemFile
       validPath: V.PathValid<T.DetailsDocwsRoot>
       // detailsPath:V.Hierarchy<T.DetailsDocwsRoot>
     }),
@@ -53,7 +53,7 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
       Record<
         N,
         {
-          details: T.DetailsFolder
+          d: T.DetailsFolder
           c: RootDict<G>
           validPath: V.PathValid<T.DetailsDocwsRoot>
         } & Folder<G, N>
@@ -63,13 +63,13 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
         Record<
           N,
           {
-            details: T.DetailsAppLibrary
+            d: T.DetailsAppLibrary
             c: RootDict<G>
             validPath: V.PathValid<T.DetailsDocwsRoot>
           } & AppLibray<G, N>
         >
       )
-      : A extends File<infer N> ? (Record<N, File<N> & { details: T.DriveChildrenItemFile }>)
+      : A extends File<infer N> ? (Record<N, File<N> & { d: T.DriveChildrenItemFile }>)
       : never
     // ...RootDict<Rest>,
   )
@@ -148,7 +148,7 @@ export const docwsroot = <T extends (Folder<any[], any> | AppLibray<any[], any> 
 
 const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
   (f: Folder<any[], any>): Folder<any[], any> & {
-    details: T.DetailsFolder
+    d: T.DetailsFolder
     children: RootResult<any>
     c: RootDict<any>
   } => {
@@ -168,7 +168,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       recordFromTuples,
     )
 
-    const details: T.DetailsFolder = {
+    const d: T.DetailsFolder = {
       'dateCreated': '2022-02-18T13:49:00Z',
       'drivewsid': `FOLDER::${zone}::${docwsid}` as any,
       parentId,
@@ -182,7 +182,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       'shareCount': 0,
       'shareAliasCount': 0,
       'directChildrenCount': 2,
-      items: children.map(_ => _.details),
+      items: children.map(_ => _.d),
       // items: children.map(_ => ({
       //   ..._.details,
       //   items: undefined,
@@ -193,7 +193,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
 
     return {
       ...f,
-      details,
+      d: d,
       children: pipe(children) as any,
       c,
     }
@@ -201,7 +201,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
 
 const makeAppLibrary = () =>
   (f: AppLibray<any[], any>): AppLibray<any[], any> & {
-    details: T.DetailsAppLibrary
+    d: T.DetailsAppLibrary
     children: RootResult<any>
     c: RootDict<any>
   } => {
@@ -217,7 +217,7 @@ const makeAppLibrary = () =>
       recordFromTuples,
     )
 
-    const details: T.DetailsAppLibrary = {
+    const d: T.DetailsAppLibrary = {
       'dateCreated': '2021-07-27T04:01:10Z',
       'drivewsid': drivewsid as any,
       'docwsid': f.docwsid,
@@ -231,7 +231,7 @@ const makeAppLibrary = () =>
       'supportedExtensions': [],
       numberOfItems: children.length,
       // items: children.map(_ => ({ ..._.details, items: undefined })),
-      items: children.map(_ => _.details),
+      items: children.map(_ => _.d),
       status: 'OK',
       supportedTypes: [],
       // extension: '',
@@ -239,7 +239,7 @@ const makeAppLibrary = () =>
 
     return {
       ...f,
-      details,
+      d: d,
       children: children as RootResult<any>,
       c,
     }
@@ -248,12 +248,12 @@ const makeAppLibrary = () =>
 const makeFile = (
   { parentId, zone, size = Math.round(randomRange(0, 128000)()) }: { parentId: string; zone: string; size?: number },
 ) =>
-  (f: File<any>): File<any> & { details: T.DriveChildrenItemFile } => {
+  (f: File<any>): File<any> & { d: T.DriveChildrenItemFile } => {
     const docwsid = f.docwsid ?? (randomUUIDCap() + '::' + f.name)
     // randomUUIDCap()
     return {
       ...f,
-      details: {
+      d: {
         'drivewsid': `FILE::${zone}::${docwsid}` as any,
         'docwsid': docwsid,
         'zone': zone,
@@ -282,22 +282,22 @@ const makeItem = (
 
 type Child =
   | (File<any> & {
-    details: T.DriveChildrenItemFile
+    d: T.DriveChildrenItemFile
   })
   | (Folder<any[], any> & {
-    details: T.DetailsFolder
+    d: T.DetailsFolder
     children: RootResult<any>
     c: RootDict<any>
   })
   | (AppLibray<any[], any> & {
-    details: T.DetailsAppLibrary
+    d: T.DetailsAppLibrary
     children: RootResult<any>
     c: RootDict<any>
   })
 
 type Item = {
   tag?: string
-  details: T.DetailsOrFile<T.DetailsDocwsRoot>
+  d: T.DetailsOrFile<T.DetailsDocwsRoot>
   children?: Child[]
 }
 
@@ -334,8 +334,8 @@ const addValidPath = <C extends Child>(
 export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]>(
   tree: DocwsRoot<T>,
 ): {
-  root: {
-    details: T.DetailsDocwsRoot
+  r: {
+    d: T.DetailsDocwsRoot
     children: RootResult<T>
     childrenWithPath: RootResult<T>
     c: RootDict<T>
@@ -362,7 +362,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     recordFromTuples,
   )
 
-  const details: T.DetailsDocwsRoot = {
+  const d: T.DetailsDocwsRoot = {
     drivewsid: rootDrivewsid,
     'dateCreated': '2021-07-26T19:34:15Z',
     'docwsid': 'root',
@@ -377,7 +377,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     'directChildrenCount': 7,
     'numberOfItems': children.length,
     'status': 'OK',
-    items: children.map(_ => _.details),
+    items: children.map(_ => _.d),
     // items: children.map(_ => ({
     //   ..._.details,
     //   items: undefined,
@@ -392,18 +392,18 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
   const itemByDrivewsid = pipe(
     children.map(getItems),
     A.flatten,
-    A.map(_ => _.details),
-    A.prependW(details),
+    A.map(_ => _.d),
+    A.prependW(d),
     A.map(_ => [_.drivewsid, _] as const),
     recordFromTuples,
   )
 
   return {
-    root: {
-      details,
+    r: {
+      d: d,
       children: children as RootResult<T>,
       childrenWithPath: children.map(
-        c => addValidPath(c, V.validPath([details])),
+        c => addValidPath(c, V.validPath([d])),
       ) as RootResult<T>,
       c: c as RootDict<T>,
     },
