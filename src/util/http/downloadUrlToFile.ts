@@ -12,7 +12,11 @@ import { getUrlStream } from './getUrlStream'
 export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'createWriteStream'>> = (
   url: string,
   destpath: string,
-) =>
+): RTE.ReaderTaskEither<
+  DepFetchClient & DepFs<'createWriteStream'>,
+  Error,
+  void
+> =>
   pipe(
     loggerIO.debug(`getting ${destpath}`),
     RTE.fromIO,
@@ -23,11 +27,16 @@ export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'create
     RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
   )
 
+export type DownloadFileResult = [
+  status: E.Either<Error, void>,
+  task: readonly [url: string, localpath: string],
+]
+
 export const downloadUrlsPar = (
   urlDest: Array<readonly [url: string, localpath: string]>,
 ): RT.ReaderTask<
   DepFetchClient & DepFs<'createWriteStream'>,
-  [E.Either<Error, void>, readonly [string, string]][]
+  DownloadFileResult[]
 > => {
   return pipe(
     urlDest,
@@ -36,6 +45,7 @@ export const downloadUrlsPar = (
     RT.map(A.zip(urlDest)),
   )
 }
+
 export type DownloadUrlToFile<R> = (
   url: string,
   destpath: string,

@@ -14,10 +14,7 @@ import { downloadRecursive } from '../../../icloud-drive/actions'
 import * as DC from '../../../icloud-drive/actions/download/download-conflict'
 import { FsStats } from '../../../util/fs'
 import { complexStructure0 } from '../fixtures'
-downloadRecursive()()({
-  api: {},
-  fs: {},
-})
+
 L.initLoggers(
   { debug: true },
   [
@@ -47,7 +44,7 @@ describe('lookForConflicts', () => {
         {
           downloadable: [
             {
-              info: [
+              remoteitem: [
                 '/fileinroot.txt',
                 complexStructure0.root.byName['fileinroot.txt'].details,
               ],

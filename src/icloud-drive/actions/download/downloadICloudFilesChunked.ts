@@ -1,5 +1,4 @@
 import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 // import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
@@ -8,11 +7,12 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DepFetchClient, DepFs } from '../../../deps-types'
+import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { guardFstRO, isDefined } from '../../../util/guards'
-import { downloadUrlsPar } from '../../../util/http/downloadUrlToFile'
+import { DownloadFileResult, downloadUrlsPar } from '../../../util/http/downloadUrlToFile'
 import { XXX } from '../../../util/types'
-import { DriveApi, DriveLookup } from '../..'
-import { DownloadICloudFilesFunc, DownloadItem } from './types'
+import { DriveApi } from '../..'
+import { DownloadICloudFilesFunc, DownloadItemMapped } from './types'
 
 export type Deps =
   & DriveApi.Dep<'downloadBatch'>
@@ -22,23 +22,26 @@ export type Deps =
 export const downloadICloudFilesChunked = (
   { chunkSize = 5 },
 ): DownloadICloudFilesFunc<Deps> =>
-  ({ downloadable }) => {
+  <S extends AuthorizedState>(
+    { downloadable }: { downloadable: DownloadItemMapped[] },
+  ) => {
     return pipe(
       splitIntoChunks(downloadable, chunkSize),
-      A.map(downloadChunkPar),
+      A.map(c => downloadChunkPar<S>(c)),
       SRTE.sequenceArray,
       SRTE.map(flow(RA.toArray, A.flatten)),
     )
   }
+
 const splitIntoChunks = (
-  files: { info: DownloadItem; localpath: string }[],
+  files: DownloadItemMapped[],
   chunkSize = 5,
-): NA.NonEmptyArray<{ info: DownloadItem; localpath: string }>[] => {
+): NA.NonEmptyArray<DownloadItemMapped>[] => {
   const filesChunks = []
 
   const byZone = pipe(
     files,
-    NA.groupBy((c) => c.info[1].zone),
+    NA.groupBy((c) => c.remoteitem[1].zone),
   )
 
   for (const zone of R.keys(byZone)) {
@@ -47,17 +50,14 @@ const splitIntoChunks = (
 
   return filesChunks
 }
-const downloadChunkPar = (
-  chunk: NA.NonEmptyArray<{ info: DownloadItem; localpath: string }>,
-): XXX<
-  DriveLookup.State,
-  DriveApi.Dep<'downloadBatch'> & DepFetchClient & DepFs<'createWriteStream'>,
-  [E.Either<Error, void>, readonly [url: string, path: string]][]
-> => {
+
+const downloadChunkPar = <S extends AuthorizedState>(
+  chunk: NA.NonEmptyArray<DownloadItemMapped>,
+): XXX<S, Deps, DownloadFileResult[]> => {
   return pipe(
-    DriveApi.downloadBatch<DriveLookup.State>({
-      docwsids: chunk.map(_ => _.info[1]).map(_ => _.docwsid),
-      zone: NA.head(chunk).info[1].zone,
+    DriveApi.downloadBatch<S>({
+      docwsids: chunk.map(_ => _.remoteitem[1]).map(_ => _.docwsid),
+      zone: NA.head(chunk).remoteitem[1].zone,
     }),
     SRTE.chainW((downloadResponses) => {
       const urls = pipe(

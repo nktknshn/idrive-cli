@@ -21,7 +21,7 @@ import { DownloadItem, DownloadItemMapped, DownloadTaskMapped } from './types'
 //   item: DownloadItemMapped,
 // ]
 
-export type Conflict = ConflictExists | ConflictError
+export type Conflict = ConflictExists | ConflictStatsError
 
 export type ConflictExists = {
   tag: 'exists'
@@ -29,8 +29,8 @@ export type ConflictExists = {
   item: DownloadItemMapped
 }
 
-export type ConflictError = {
-  tag: 'error'
+export type ConflictStatsError = {
+  tag: 'statserror'
   item: DownloadItemMapped
   error: Error
 }
@@ -55,7 +55,7 @@ export const lookForConflictsTE = (
             (error): E.Either<Conflict, DownloadItemMapped> =>
               isEnoentError(error)
                 ? E.right(item)
-                : E.left({ tag: 'error', item, error }),
+                : E.left({ tag: 'statserror', item, error }),
             (stats): E.Either<Conflict, DownloadItemMapped> =>
               E.left(
                 {
@@ -126,30 +126,28 @@ export const handleLocalFilesConflicts = <SolverDeps = EmptyObject>(
     )
   }
 
-const applySoultions = (
+export const applySoultions = (
   { downloadable, empties, localdirstruct }: DownloadTaskMapped,
 ) =>
-  (
-    solutions: Solution[],
-  ): DownloadTaskMapped & {
+  (solutions: Solution[]): DownloadTaskMapped & {
     initialTask: DownloadTaskMapped
   } => {
     const fa = (d: {
-      info: DownloadItem
+      remoteitem: DownloadItem
       localpath: string
     }) =>
       pipe(
         solutions,
         RA.findFirstMap(
           ([conflict, action]) =>
-            conflict.item.info[1].drivewsid === d.info[1].drivewsid
+            conflict.item.remoteitem[1].drivewsid === d.remoteitem[1].drivewsid
               ? O.some([conflict.item, action] as const)
               : O.none,
         ),
         O.getOrElse(() => [d, 'overwright' as SolutionAction] as const),
       )
 
-    const findAction = (fs: { info: DownloadItem; localpath: string }[]) =>
+    const findAction = (fs: { remoteitem: DownloadItem; localpath: string }[]) =>
       pipe(
         fs,
         A.map((c) => fa(c)),
@@ -167,6 +165,6 @@ const applySoultions = (
 export const showConflict = (conflict: Conflict): string =>
   conflict.tag === 'exists'
     ? `local file ${conflict.item.localpath} (${conflict.localitem.stats.size} bytes) conflicts with remote file (${
-      conflict.item.info[1].size
+      conflict.item.remoteitem[1].size
     } bytes)`
     : `error: ${conflict.error}`

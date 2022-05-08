@@ -43,7 +43,7 @@ describe('lookForConflicts', () => {
         {
           downloadable: [
             {
-              info: [
+              remoteitem: [
                 '/fileinroot.txt',
                 complexStructure0.root.byName['fileinroot.txt'].details,
               ],

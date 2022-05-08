@@ -21,13 +21,7 @@ export const getByPathsStrict = <R extends T.Root>(
   return pipe(
     getByPaths(root, paths),
     SRTE.map(NA.map(
-      V.asEither(
-        (res) =>
-          err(
-            V.showGetByPathResult(res),
-            // `error: ${res.error}. validPart=${res.details.map(T.fileName)} rest=[${res.rest}]`,
-          ),
-      ),
+      V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
     SRTE.chainEitherK(sequenceArrayNEA),
   )
@@ -46,7 +40,7 @@ export const getByPathFolderStrict = <R extends T.Root>(
     ),
   )
 
-export const getByPathFolderDocwsroot = (
+export const getByPathFolderStrictDocwsroot = (
   path: NormalizedPath,
 ): Effect<T.DetailsDocwsRoot | T.NonRootDetails> =>
   pipe(
@@ -63,6 +57,15 @@ export const getByPathsFoldersStrict = <R extends T.Root>(
     filterOrElse(
       (items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items),
       () => ItemIsNotFolderError.create(`some of the paths are not folders`),
+    ),
+  )
+
+export const getByPathsFoldersStrictDocwsroot = (
+  paths: NEA<NormalizedPath>,
+): Effect<NEA<T.DetailsDocwsRoot | T.NonRootDetails>> =>
+  pipe(
+    chainCachedDocwsRoot(
+      root => getByPathsFoldersStrict(root, paths),
     ),
   )
 

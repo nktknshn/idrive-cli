@@ -1,5 +1,5 @@
-import { T } from '../src/icloud/drive/'
-import { parseDrivewsid } from '../src/icloud/drive/util/drive-helpers'
+import { T } from '../icloud-drive'
+import { parseDrivewsid } from '../icloud-drive/util/drive-helpers'
 
 export const detailsFolder = (
   data: Partial<T.DetailsFolder> & {

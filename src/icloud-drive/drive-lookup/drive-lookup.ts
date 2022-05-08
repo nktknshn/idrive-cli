@@ -6,6 +6,12 @@ import * as C from './cache'
 
 export * from './methods/cache-methods'
 export { getFoldersTrees } from './methods/drive-get-folders-trees'
+export {
+  getFoldersTreesByPathFlattenWPDocwsroot,
+  getFoldersTreesByPathsDocwsroot,
+  getFolderTreeByPathDocwsroot,
+  getFolderTreeByPathFlattenWPDocwsroot,
+} from './methods/drive-get-folders-trees-ext'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 
@@ -16,7 +22,9 @@ export type State = { cache: C.Cache } & AuthorizedState
 export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<State, R, Error, A>
 export type Action<R, A> = SRTE.StateReaderTaskEither<State, R, Error, A>
 
-export const { map, chain, of, filterOrElse } = SRTE
+export const { map, chain, filterOrElse } = SRTE
+
+export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
 
 export const state = () => SRTE.get<State, Deps>()
 

@@ -9,20 +9,20 @@ import { logger } from '../../../util/logging'
 import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
-import { deepFolder, FolderTree, shallowFolder } from '../../util/folder-tree'
+import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
 
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
   depth: number,
-): DriveLookup.Effect<NEA<FolderTree<T.NonRootDetails>>>
+): DriveLookup.Effect<NEA<DriveFolderTree<T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DriveLookup.Effect<NEA<FolderTree<R | T.NonRootDetails>>>
+): DriveLookup.Effect<NEA<DriveFolderTree<R | T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DriveLookup.Effect<NEA<FolderTree<R | T.NonRootDetails>>> {
+): DriveLookup.Effect<NEA<DriveFolderTree<R | T.NonRootDetails>>> {
   const subfolders = getSubfolders(folders)
   const doGoDeeper = depth > 0 && subfolders.length > 0
   const depthExceed = subfolders.length > 0 && depth == 0
@@ -65,8 +65,8 @@ const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
 
 const zipWithChildren = <T extends T.Details, R extends T.Details>(
   folders: NEA<T>,
-  itemByParentId: Record<string, FolderTree<R>[]>,
-): NEA<(readonly [T, FolderTree<R>[]])> =>
+  itemByParentId: Record<string, DriveFolderTree<R>[]>,
+): NEA<(readonly [T, DriveFolderTree<R>[]])> =>
   pipe(
     folders,
     NA.map(folder =>

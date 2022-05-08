@@ -4,12 +4,13 @@ import micromatch from 'micromatch'
 import { getDirectoryStructure } from '../../../util/getDirectoryStructure'
 import { guardSnd } from '../../../util/guards'
 import { T } from '../..'
+import { FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
 import { DownloadItem, DownloadTask } from './types'
 
 type DefaultFunc = (opts: {
   include: string[]
   exclude: string[]
-}) => (files: [string, T.DriveChildrenItemFile]) => boolean
+}) => (file: [string, T.DriveChildrenItemFile]) => boolean
 
 const defaultFunc: DefaultFunc = ({ include, exclude }) =>
   ([path, item]) =>
@@ -25,7 +26,7 @@ const filterFlatTree = ({
   exclude: string[]
   func?: (files: [string, T.DriveChildrenItemFile]) => boolean
 }) =>
-  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]) => {
+  <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>) => {
     const files = pipe(
       flatTree,
       A.filter(guardSnd(T.isFile)),
@@ -53,7 +54,7 @@ export const filterFlattenFolderTree = (opts: {
   exclude: string[]
   func?: (files: [string, T.DriveChildrenItemFile]) => boolean
 }) =>
-  <T extends T.Details>(flatTree: [string, T.DetailsOrFile<T>][]): DownloadTask & {
+  <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>): DownloadTask & {
     excluded: DownloadItem[]
   } => {
     const { excluded, files, folders } = filterFlatTree(opts)(flatTree)

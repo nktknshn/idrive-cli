@@ -2,21 +2,32 @@ import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import { DepAskConfirmation } from '../../../deps-types'
 import { err } from '../../../util/errors'
 import { T } from '../..'
 import { ConflictExists, ConflictsSolver, SolutionAction } from './download-conflict'
 
-const failOnConflicts: ConflictsSolver = (conflicts) =>
+const failOnStatsError: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
       conflicts,
+      A.filter(
+        _ => _.tag === 'statserror',
+      ),
       A.match(
-        () => TE.of([]),
-        () => TE.left(err(`conflicts`)),
+        () => TE.right([]),
+        (errors) => TE.left(err(`conflicts`)),
       ),
     )
+
+const failOnConflicts: ConflictsSolver = (conflicts) =>
+  () =>
+    pipe(
+      TE.left(err(`conflicts`)),
+    )
+
 const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
@@ -63,7 +74,8 @@ const resolveConflictsOverwrightIfSizeDifferent = (
         conflicts,
         A.map((conflict) =>
           conflict.tag === 'exists'
-            ? conflict.localitem.stats.size !== conflict.item.info[1].size && !skipRemotes(conflict.item.info[1])
+            ? conflict.localitem.stats.size !== conflict.item.remoteitem[1].size
+                && !skipRemotes(conflict.item.remoteitem[1])
               ? [conflict, 'overwright' as SolutionAction] as const
               : [conflict, 'skip' as SolutionAction] as const
             : [

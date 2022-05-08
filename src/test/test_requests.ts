@@ -2,7 +2,7 @@ import assert from 'assert'
 import * as E from 'fp-ts/Either'
 import { apply, pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { retrieveHierarchy } from '../src/icloud/drive/requests/retrieveHierarchy'
+import { retrieveHierarchy } from '../icloud-drive/drive-requests/retrieveHierarchy'
 import { authorizedState, retrieveHierarchy1, validAccountdata } from './fixtures'
 
 import * as M from './mocked-client'

@@ -12,8 +12,8 @@ import { Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
+import { flattenFolderTreeWithBasepath, shallowFolder } from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
-import { flattenFolderTreeWithBasepath, shallowFolder } from '../../util/folder-tree'
 import { getFoldersTrees } from './drive-get-folders-trees'
 
 export type SearchGlobFoundItem = {
@@ -39,9 +39,7 @@ export const searchGlobs = (
   const basepaths = pipe(scanned, NA.map(_ => normalizePath(_.base)))
 
   return pipe(
-    DriveLookup.chainCachedDocwsRoot(
-      root => DriveLookup.getByPathsStrict(root, basepaths),
-    ),
+    DriveLookup.getByPathsFoldersStrictDocwsroot(basepaths),
     SRTE.chain((bases) =>
       modifySubset(
         NA.zip(bases)(scanned),

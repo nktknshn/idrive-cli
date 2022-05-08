@@ -7,7 +7,7 @@ import { isEexistError } from '../../../util/fs/isEnoentError'
 import { loggerIO } from '../../../util/loggerIO'
 import { DownloadTaskMapped } from './types'
 
-export const createDirStruct = (
+export const createLocalDirStruct = (
   dirs: string[],
 ): RTE.ReaderTaskEither<DepFs<'mkdir'>, Error, void> =>
   ({ fs: { mkdir: mkdirTask } }) => {
