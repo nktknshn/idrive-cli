@@ -27,6 +27,18 @@ export const getByPathsStrict = <R extends T.Root>(
   )
 }
 
+export const getByPathsStrictDocwsroot = (
+  paths: NEA<NormalizedPath>,
+): Effect<NEA<T.DetailsOrFile<T.DetailsDocwsRoot>>> => {
+  return pipe(
+    chainCachedDocwsRoot(root => getByPaths(root, paths)),
+    SRTE.map(NA.map(
+      V.asEither((res) => err(V.showGetByPathResult(res))),
+    )),
+    SRTE.chainEitherK(sequenceArrayNEA),
+  )
+}
+
 export const getByPathFolderStrict = <R extends T.Root>(
   root: R,
   path: NormalizedPath,

@@ -12,6 +12,7 @@ export {
   getFolderTreeByPathDocwsroot,
   getFolderTreeByPathFlattenWPDocwsroot,
 } from './methods/drive-get-folders-trees-ext'
+export { searchInPaths } from './methods/drive-search'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 

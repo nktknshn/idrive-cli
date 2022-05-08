@@ -19,7 +19,7 @@ import {
   Solution,
 } from './download-conflict'
 import { createEmpties, createLocalDirStruct } from './download-local'
-import { filterFlattenFolderTree } from './filterFlattenFolderTree'
+import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { DownloadFileResult, DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from './types'
 
 /*
@@ -73,6 +73,8 @@ type DownloadFolderOpts<SolverDeps, DownloadDeps> = {
   toLocalMapper: (ds: DownloadTask) => DownloadTaskMapped
   conflictsSolver: ConflictsSolver<SolverDeps>
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
+  // filter: <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>) => DownloadTask & {
+  //   excluded: DownloadItem[];
 }
 
 const prepare = (task: DownloadTaskMapped) =>
@@ -96,11 +98,11 @@ const executeTask = <DownloadDeps>(
 
 export const downloadFolder = <SolverDeps, DownloadDeps>(
   {
+    path,
+    depth,
     dry = false,
     exclude = [],
     include = [],
-    path,
-    depth,
     toLocalMapper,
     conflictsSolver,
     downloadFiles,
@@ -117,7 +119,9 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
   //   DriveLookup.getFolderTreeByPathFlattenWP(normalizePath(path), depth),
   //   SRTE.map(filterFlattenFolderTree({ include, exclude })),
   // )
-  const filter = filterFlattenFolderTree({ include, exclude })
+  const filter = makeDownloadTaskFromTree(
+    { filterFiles: filterByIncludeExcludeGlobs({ include, exclude }) },
+  )
 
   const aplloed = pipe(
     DriveLookup.getFolderTreeByPathFlattenWPDocwsroot(

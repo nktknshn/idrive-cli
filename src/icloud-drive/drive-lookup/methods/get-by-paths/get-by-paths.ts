@@ -7,6 +7,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { Eq } from 'fp-ts/lib/string'
 import { fst } from 'fp-ts/lib/Tuple'
 import { err } from '../../../../util/errors'
 import { guardFst } from '../../../../util/guards'
@@ -26,7 +27,9 @@ export const getByPaths = <R extends T.Root>(
   paths: NEA<NormalizedPath>,
 ): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> =>
   pipe(
-    DriveLookup.getByPathsFromCache(root, paths),
+    loggerIO.debug(`getByPaths(${paths})`),
+    SRTE.fromIO,
+    SRTE.chain(() => DriveLookup.getByPathsFromCache(root, paths)),
     SRTE.chainFirstIOK(
       (cached) => loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join(', ')}`),
     ),
@@ -226,6 +229,7 @@ const handleInvalidPaths = <R extends T.Root>(
     const foldersToRetrieve = pipe(
       subfolders,
       NA.map(([item, [rest, validPart]]) => item.value.drivewsid),
+      // NA.uniq(Eq),
     )
 
     return pipe(

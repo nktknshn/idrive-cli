@@ -32,6 +32,7 @@ export const searchGlobsShallow = (
 export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
+  options?: micromatch.Options,
 ): DriveLookup.Effect<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
@@ -39,7 +40,7 @@ export const searchGlobs = (
   const basepaths = pipe(scanned, NA.map(_ => normalizePath(_.base)))
 
   return pipe(
-    DriveLookup.getByPathsFoldersStrictDocwsroot(basepaths),
+    DriveLookup.getByPathsStrictDocwsroot(basepaths),
     SRTE.chain((bases) =>
       modifySubset(
         NA.zip(bases)(scanned),
@@ -59,14 +60,14 @@ export const searchGlobs = (
         ([scan, file]) => E.left(file),
       )
     ),
-    SRTE.map(flow(NA.zip(globs), NA.zip(scanned))),
-    SRTE.map(flow(NA.map(([[fileOrTree, globpattern], scan]) =>
+    SRTE.map(flow(NA.zip(globs), NA.zip(scanned), NA.zip(basepaths))),
+    SRTE.map(flow(NA.map(([[[fileOrTree, globpattern], scan], basepath]) =>
       pipe(
         fileOrTree,
         E.fold(
           file =>
-            !scan.isGlob
-              ? [{ path: scan.base, item: file }]
+            !scan.isGlob && micromatch.isMatch(basepath, scan.input, options)
+              ? [{ path: basepath, item: file }]
               : [],
           tree => {
             return pipe(
@@ -74,15 +75,19 @@ export const searchGlobs = (
               flattenFolderTreeWithBasepath(Path.dirname(scan.base)),
               A.filterMap(([path, item]) => {
                 if (scan.glob.length == 0) {
-                  if (normalizePath(path) == normalizePath(globpattern)) {
+                  if (micromatch.isMatch(path, globpattern, options)) {
                     return O.some({ path, item })
                   }
+                  // if (normalizePath(path) == normalizePath(globpattern)) {
+                  //   return O.some({ path, item })
+                  // }
                   return O.none
                 }
 
                 return micromatch.isMatch(
                     path.replace(/^\//, ''),
                     globpattern.replace(/^\//, ''),
+                    options,
                   )
                   ? O.some({ path, item })
                   : O.none

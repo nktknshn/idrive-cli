@@ -10,7 +10,10 @@ import { Deps, Effect, State } from '..'
 import * as C from '../cache'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from '../cache/cache-types'
 import { asksCache, chainCache, putMissedFound } from './cache-methods'
-import { retrieveItemDetailsInFoldersSaving } from './cache-retrieveItemDetailsInFolders'
+import {
+  retrieveItemDetailsInFoldersCached,
+  retrieveItemDetailsInFoldersSaving,
+} from './cache-retrieveItemDetailsInFolders'
 
 /** retrieve root from cache or from api if it's missing from cache and chain a computation*/
 
@@ -64,24 +67,3 @@ export const getTrash = (): Effect<T.DetailsTrashRoot, Deps> =>
     retrieveItemDetailsInFoldersSaving<T.DetailsTrashRoot>([trashDrivewsid]),
     SRTE.map(_ => _[0].value),
   )
-
-/** returns details from cache if they are there otherwise fetches them from icloid api.   */
-const retrieveItemDetailsInFoldersCached = (drivewsids: string[]): Effect<T.MaybeInvalidId<T.Details>[]> => {
-  return pipe(
-    chainCache(
-      SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(drivewsids)),
-    ),
-    SRTE.chain(({ missed }) =>
-      pipe(
-        missed,
-        A.matchW(
-          () => SRTE.of({ missed: [], found: [] }),
-          (missed) => API.retrieveItemDetailsInFoldersSeparated<State>(missed),
-        ),
-      )
-    ),
-    SRTE.chain(putMissedFound),
-    SRTE.chainW(() => asksCache(C.getFoldersDetailsByIds(drivewsids))),
-    SRTE.chainW(e => SRTE.fromEither(e)),
-  )
-}

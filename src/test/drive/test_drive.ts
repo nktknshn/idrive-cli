@@ -56,7 +56,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           res,
           [[{
             path: '/fileinroot.txt',
-            item: complexStructure0.root.byName['fileinroot.txt'],
+            item: complexStructure0.root.c['fileinroot.txt'],
           }]],
         )
       }),
@@ -138,15 +138,15 @@ describe('getByPaths', () => {
           [
             validPath([
               complexStructure0.root.details,
-              complexStructure0.root.byName.Obsidian.details,
-              complexStructure0.root.byName.Obsidian.byName.my1.details,
-              complexStructure0.root.byName.Obsidian.byName.my1.byName.misc.details,
+              complexStructure0.root.c.Obsidian.details,
+              complexStructure0.root.c.Obsidian.c.my1.details,
+              complexStructure0.root.c.Obsidian.c.my1.c.misc.details,
             ]),
             invalidPath(
               [
                 complexStructure0.root.details,
-                complexStructure0.root.byName.Obsidian.details,
-                complexStructure0.root.byName.Obsidian.byName.my1.details,
+                complexStructure0.root.c.Obsidian.details,
+                complexStructure0.root.c.Obsidian.c.my1.details,
               ],
               ['mi'],
               expect.any(NotFoundError),

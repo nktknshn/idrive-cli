@@ -10,21 +10,22 @@ import { DownloadItem, DownloadTask } from './types'
 type DefaultFunc = (opts: {
   include: string[]
   exclude: string[]
-}) => (file: [string, T.DriveChildrenItemFile]) => boolean
+}) => (file: [string, T.DetailsOrFile<T.Root>]) => boolean
 
-const defaultFunc: DefaultFunc = ({ include, exclude }) =>
+export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =>
   ([path, item]) =>
     (include.length == 0 || micromatch.any(path, include, { dot: true }))
     && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true }))
 
 const filterFlatTree = ({
-  exclude,
-  include,
-  func = defaultFunc({ exclude, include }),
+  // exclude,
+  // include,
+  filterFiles,
+  //  = filterByIncludeExcludeGlobs({ exclude, include }),
 }: {
-  include: string[]
-  exclude: string[]
-  func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+  // include: string[]
+  // exclude: string[]
+  filterFiles: (files: [string, T.DriveChildrenItemFile]) => boolean
 }) =>
   <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>) => {
     const files = pipe(
@@ -39,7 +40,7 @@ const filterFlatTree = ({
 
     const { left: excluded, right: validFiles } = pipe(
       files,
-      A.partition(func),
+      A.partition(filterFiles),
     )
 
     return {
@@ -49,10 +50,8 @@ const filterFlatTree = ({
     }
   }
 
-export const filterFlattenFolderTree = (opts: {
-  include: string[]
-  exclude: string[]
-  func?: (files: [string, T.DriveChildrenItemFile]) => boolean
+export const makeDownloadTaskFromTree = (opts: {
+  filterFiles: (files: [string, T.DriveChildrenItemFile]) => boolean
 }) =>
   <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>): DownloadTask & {
     excluded: DownloadItem[]

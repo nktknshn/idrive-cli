@@ -45,7 +45,7 @@ describe('lookForConflicts', () => {
             {
               remoteitem: [
                 '/fileinroot.txt',
-                complexStructure0.root.byName['fileinroot.txt'].details,
+                complexStructure0.root.c['fileinroot.txt'].details,
               ],
               localpath: './output/fileinroot.txt',
             },

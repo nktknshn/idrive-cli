@@ -4,6 +4,7 @@ import * as T from '../../icloud-drive-items-types'
 import { chain, map, state } from '..'
 import { Effect, State } from '..'
 import * as C from '../cache'
+
 export const putCache = (cache: C.Cache): Effect<void> =>
   pipe(
     state(),
@@ -41,3 +42,29 @@ export const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(state(
 
 export const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> =>
   pipe(state(), chain(({ cache }) => f(cache)))
+
+export const withCache = (newCache: C.Cache) =>
+  <A>(ma: Effect<A>): Effect<A> =>
+    pipe(
+      SRTE.gets(({ cache }: State) => cache),
+      SRTE.chainW((oldcache) =>
+        pipe(
+          putCache(newCache),
+          SRTE.chainW(() => ma),
+          SRTE.chainW(res =>
+            pipe(
+              chainCache(cache =>
+                SRTE.fromEither(
+                  pipe(
+                    oldcache,
+                    C.putDetailss(C.getAllDetails(cache)),
+                  ),
+                )
+              ),
+              SRTE.chain(putCache),
+              SRTE.map(() => res),
+            )
+          ),
+        )
+      ),
+    )

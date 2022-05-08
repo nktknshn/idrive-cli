@@ -14,6 +14,7 @@ import { err } from '../../../util/errors'
 import { cacheLogger, logReturnS } from '../../../util/logging'
 import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
+import { sequenceArrayNEA } from '../../../util/util'
 import * as T from '../../icloud-drive-items-types'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
 import { GetByPathResult } from '../../util/get-by-path-types'
@@ -55,6 +56,14 @@ export const getTrash = (cache: CT.CacheF): E.Either<Error, CT.CacheEntityFolder
     E.fromOption(() => MissinRootError.create(`getTrashE(): missing trash`)),
     E.filterOrElse(CT.isTrashCacheEntity, () => err('getTrashE(): invalid trash details')),
   )
+
+export const getAllDetails = (cache: CT.CacheF): (T.DetailsDocwsRoot | T.DetailsFolder | T.DetailsAppLibrary)[] => {
+  return pipe(
+    Object.values(cache.byDrivewsid),
+    A.filter(CT.isDetailsCacheEntity),
+    A.map(_ => _.content),
+  )
+}
 
 export const getByIdO = (drivewsid: string) =>
   (cache: CT.CacheF): O.Option<CT.CacheEntity> => {
@@ -155,15 +164,15 @@ export const getFoldersDetailsByIdsSeparated = (
     )
 
 export const getFoldersDetailsByIds = (
-  drivewsids: string[],
+  drivewsids: NEA<string>,
 ) =>
-  (cache: CT.CacheF): E.Either<Error, T.MaybeInvalidId<T.Details>[]> => {
+  (cache: CT.CacheF): E.Either<Error, NEA<T.MaybeInvalidId<T.Details>>> => {
     return pipe(
       drivewsids,
-      A.map(id => getFolderDetailsByIdO(id)(cache)),
-      A.map(O.fold(() => E.right<Error, T.MaybeInvalidId<T.Details>>(T.invalidId), E.map(v => v.content))),
-      E.sequenceArray,
-      E.map(RA.toArray),
+      NA.map(id => getFolderDetailsByIdO(id)(cache)),
+      NA.map(O.fold(() => E.right<Error, T.MaybeInvalidId<T.Details>>(T.invalidId), E.map(v => v.content))),
+      sequenceArrayNEA,
+      // E.map(RA.toArray),
     )
   }
 

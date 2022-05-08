@@ -30,15 +30,15 @@ describe('getFoldersTrees', () => {
       file({ name: 'file1.txt' }),
       folder({ name: 'test1' })(
         file({ name: 'file2.txt' }),
-        folder({ name: 'test1' })(
+        folder({ name: 'test2' })(
           file({ name: 'file2.txt' }),
-          folder({ name: 'test1' })(
+          folder({ name: 'test3' })(
             file({ name: 'file2.txt' }),
-            folder({ name: 'test1' })(
+            folder({ name: 'test4' })(
               file({ name: 'file2.txt' }),
-              folder({ name: 'test1' })(
+              folder({ name: 'test5' })(
                 file({ name: 'file2.txt' }),
-                folder({ name: 'test1' })(
+                folder({ name: 'test6' })(
                   file({ name: 'file2.txt' }),
                 ),
               ),
@@ -49,15 +49,18 @@ describe('getFoldersTrees', () => {
     )
 
     return pipe(
-      DriveLookup.getFolderTreeByPathFlattenWPDocwsroot(
-        npath('/test1/test1/test1'),
+      DriveLookup.getFoldersTreesByPathsDocwsroot(
+        [
+          npath('/test1/'),
+          npath('/test1/test2/test3'),
+        ],
       ),
       executeDrive({
         itemByDrivewsid: struct0.itemByDrivewsid,
-        cache: pipe(
-          C.cachef(),
-          C.putDetailss(struct0.allFolders),
-        ),
+        // cache: pipe(
+        //   C.cachef(),
+        //   C.putDetailss(struct0.allFolders),
+        // ),
       }),
       TE.map(res => {
         console.log(

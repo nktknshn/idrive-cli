@@ -84,7 +84,7 @@ describe('getByPaths', () => {
         expect(
           pathTarget(res[0]),
         ).toStrictEqual(
-          structure.root.byName.Obsidian.byName.my1.byName.misc.byName.images.details,
+          structure.root.c.Obsidian.c.my1.c.misc.c.images.details,
         )
 
         // expect(
@@ -118,7 +118,7 @@ describe('getByPaths', () => {
       TE.map(({ calls, res, state }) => {
         expect(res).toMatchObject(
           [
-            structure.root.byName.Obsidian.byName.my1.byName.misc.byName.images.validPath,
+            structure.root.c.Obsidian.c.my1.c.misc.c.images.validPath,
             // validPath([]),
           ],
         )
@@ -135,7 +135,7 @@ describe('getByPaths', () => {
     const itemByDrivewsid = pipe(
       structure.itemByDrivewsid,
       removeByDrivewsid(
-        structure.root.byName.Obsidian.byName.my1.details.drivewsid,
+        structure.root.c.Obsidian.c.my1.details.drivewsid,
       ),
     )
     const req0 = pipe(
@@ -156,7 +156,7 @@ describe('getByPaths', () => {
               [
                 expect.objectContaining({ drivewsid: rootDrivewsid }),
                 expect.objectContaining({
-                  drivewsid: structure.root.byName.Obsidian.details.drivewsid,
+                  drivewsid: structure.root.c.Obsidian.details.drivewsid,
                 }),
               ],
               ['my1', 'misc', 'images'],

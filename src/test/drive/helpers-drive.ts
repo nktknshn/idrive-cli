@@ -54,7 +54,7 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
         N,
         {
           details: T.DetailsFolder
-          byName: RootDict<G>
+          c: RootDict<G>
           validPath: V.PathValid<T.DetailsDocwsRoot>
         } & Folder<G, N>
       >
@@ -64,7 +64,7 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
           N,
           {
             details: T.DetailsAppLibrary
-            byName: RootDict<G>
+            c: RootDict<G>
             validPath: V.PathValid<T.DetailsDocwsRoot>
           } & AppLibray<G, N>
         >
@@ -150,7 +150,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
   (f: Folder<any[], any>): Folder<any[], any> & {
     details: T.DetailsFolder
     children: RootResult<any>
-    byName: RootDict<any>
+    c: RootDict<any>
   } => {
     const docwsid = f.docwsid ?? (randomUUIDCap() + '::' + f.name)
     // randomUUIDCap()
@@ -163,7 +163,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       }),
     )
 
-    const byName = pipe(
+    const c = pipe(
       children.map(_ => [_.name, _] as const),
       recordFromTuples,
     )
@@ -182,10 +182,11 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       'shareCount': 0,
       'shareAliasCount': 0,
       'directChildrenCount': 2,
-      items: children.map(_ => ({
-        ..._.details,
-        items: undefined,
-      })),
+      items: children.map(_ => _.details),
+      // items: children.map(_ => ({
+      //   ..._.details,
+      //   items: undefined,
+      // })),
       'numberOfItems': children.length,
       'status': 'OK',
     }
@@ -194,7 +195,7 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       ...f,
       details,
       children: pipe(children) as any,
-      byName,
+      c,
     }
   }
 
@@ -202,7 +203,7 @@ const makeAppLibrary = () =>
   (f: AppLibray<any[], any>): AppLibray<any[], any> & {
     details: T.DetailsAppLibrary
     children: RootResult<any>
-    byName: RootDict<any>
+    c: RootDict<any>
   } => {
     const drivewsid = `FOLDER::${f.zone}::${f.docwsid}`
 
@@ -211,7 +212,7 @@ const makeAppLibrary = () =>
       zone: f.zone,
     }))
 
-    const byName = pipe(
+    const c = pipe(
       children.map(_ => [_.name, _] as const),
       recordFromTuples,
     )
@@ -229,7 +230,8 @@ const makeAppLibrary = () =>
       'icons': [],
       'supportedExtensions': [],
       numberOfItems: children.length,
-      items: children.map(_ => ({ ..._.details, items: undefined })),
+      // items: children.map(_ => ({ ..._.details, items: undefined })),
+      items: children.map(_ => _.details),
       status: 'OK',
       supportedTypes: [],
       // extension: '',
@@ -239,7 +241,7 @@ const makeAppLibrary = () =>
       ...f,
       details,
       children: children as RootResult<any>,
-      byName,
+      c,
     }
   }
 
@@ -285,12 +287,12 @@ type Child =
   | (Folder<any[], any> & {
     details: T.DetailsFolder
     children: RootResult<any>
-    byName: RootDict<any>
+    c: RootDict<any>
   })
   | (AppLibray<any[], any> & {
     details: T.DetailsAppLibrary
     children: RootResult<any>
-    byName: RootDict<any>
+    c: RootDict<any>
   })
 
 type Item = {
@@ -336,7 +338,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     details: T.DetailsDocwsRoot
     children: RootResult<T>
     childrenWithPath: RootResult<T>
-    byName: RootDict<T>
+    c: RootDict<T>
   }
   itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>
   allFolders: (T.DetailsDocwsRoot | T.NonRootDetails)[]
@@ -355,7 +357,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     // ),
   )
 
-  const byName = pipe(
+  const c = pipe(
     children.map(_ => [_.name, _] as const),
     recordFromTuples,
   )
@@ -375,10 +377,11 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     'directChildrenCount': 7,
     'numberOfItems': children.length,
     'status': 'OK',
-    items: children.map(_ => ({
-      ..._.details,
-      items: undefined,
-    })),
+    items: children.map(_ => _.details),
+    // items: children.map(_ => ({
+    //   ..._.details,
+    //   items: undefined,
+    // })),
   }
 
   // const children1 = pipe(
@@ -402,7 +405,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
       childrenWithPath: children.map(
         c => addValidPath(c, V.validPath([details])),
       ) as RootResult<T>,
-      byName: byName as RootDict<T>,
+      c: c as RootDict<T>,
     },
     itemByDrivewsid: itemByDrivewsid,
     byTag: pipe(

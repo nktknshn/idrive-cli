@@ -16,11 +16,11 @@ export const getFolderTreeByPathDocwsroot = (
   )
 
 export const getFoldersTreesByPathsDocwsroot = (
-  path: NEA<NormalizedPath>,
+  paths: NEA<NormalizedPath>,
   depth = Infinity,
 ): DriveLookup.Effect<NEA<DriveFolderTree<T.DetailsDocwsRoot | T.NonRootDetails>>> =>
   pipe(
-    DriveLookup.getByPathsFoldersStrictDocwsroot(path),
+    DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     SRTE.chain(dir => DriveLookup.getFoldersTrees(dir, depth)),
   )
 
