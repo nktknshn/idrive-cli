@@ -91,6 +91,8 @@ const loadDriveState = pipe(
   loadSession,
   RTE.chain(loadAccountData),
   RTE.bindW('cache', () => loadCache),
+  RTE.bindW('tempCache', () => RTE.of(C.cachef())),
+  RTE.bindW('tempCacheActive', () => RTE.of(false)),
 )
 
 const loadCache: RTE.ReaderTaskEither<

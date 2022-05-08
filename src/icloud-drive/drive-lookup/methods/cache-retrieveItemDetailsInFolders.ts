@@ -5,6 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { Eq } from 'fp-ts/lib/string'
 import * as O from 'fp-ts/Option'
 import { err } from '../../../util/errors'
+import { loggerIO } from '../../../util/loggerIO'
 import { NEA, XXX } from '../../../util/types'
 import { recordFromTuples } from '../../../util/util'
 import { C, DriveApi, T } from '../..'
@@ -14,11 +15,11 @@ import { chain, of } from '..'
 import { Effect, State } from '..'
 import { asksCache, chainCache, putMissedFound } from './cache-methods'
 
-type D = {
-  retrieveItemDetailsInFolders<S>(
-    drivewsids: NEA<string>,
-  ): XXX<S, DriveApi.Dep<'retrieveItemDetailsInFolders'>, NEA<T.NonRootDetails>>
-}
+// type D = {
+//   retrieveItemDetailsInFoldersTempCache<S>(
+//     drivewsids: NEA<string>,
+//   ): XXX<S, DriveApi.Dep<'retrieveItemDetailsInFolders'>, NEA<T.NonRootDetails>>
+// }
 // when no special context enabled it behaves just like retrieveItemDetailsInFoldersSaving
 // but when inside the context it works like retrieveItemDetailsInFoldersCached
 // but using the context cache
@@ -45,7 +46,9 @@ export function retrieveItemDetailsInFoldersSaving(
   const uniqids = pipe(drivewsids, NA.uniq(Eq))
 
   return pipe(
-    DriveApi.retrieveItemDetailsInFolders<State>({ drivewsids: uniqids }),
+    loggerIO.debug(`retrieveItemDetailsInFoldersSaving`),
+    SRTE.fromIO,
+    SRTE.chain(() => DriveApi.retrieveItemDetailsInFolders<State>({ drivewsids: uniqids })),
     SRTE.map((details) => pipe(uniqids, NA.zip(details), recordFromTuples)),
     SRTE.map(rec => pipe(drivewsids, NA.map(dwid => rec[dwid]))),
     chain((details) =>
@@ -61,10 +64,14 @@ export function retrieveItemDetailsInFoldersSaving(
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
 export const retrieveItemDetailsInFoldersCached = (
   drivewsids: NEA<string>,
-): Effect<NEA<T.MaybeInvalidId<T.Details>>> => {
+): Effect<NEA<O.Option<T.Details>>> => {
   return pipe(
-    chainCache(
-      SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(drivewsids)),
+    loggerIO.debug(`retrieveItemDetailsInFoldersCached`),
+    SRTE.fromIO,
+    SRTE.chain(() =>
+      chainCache(
+        SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(drivewsids)),
+      )
     ),
     SRTE.chain(({ missed }) =>
       pipe(
@@ -78,6 +85,7 @@ export const retrieveItemDetailsInFoldersCached = (
     SRTE.chain(putMissedFound),
     SRTE.chainW(() => asksCache(C.getFoldersDetailsByIds(drivewsids))),
     SRTE.chainW(e => SRTE.fromEither(e)),
+    SRTE.chain((details) => of(NA.map(T.invalidIdToOption)(details))),
   )
 }
 
@@ -108,7 +116,7 @@ export function retrieveItemDetailsInFoldersCachedStrict(
 ): Effect<NEA<T.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersCached(drivewsids),
-    SRTE.map(NA.map(T.invalidIdToOption)),
+    // SRTE.map(NA.map(T.invalidIdToOption)),
     SRTE.chain(
       flow(
         O.sequenceArray,

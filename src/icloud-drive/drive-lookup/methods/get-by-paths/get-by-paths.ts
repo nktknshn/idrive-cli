@@ -108,7 +108,11 @@ const validateCachedHierarchies = <R extends T.Root>(
     loggerIO.debug(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
     SRTE.fromIO,
     SRTE.chain(() =>
-      DriveLookup.retrieveItemDetailsInFoldersSaving<R>([
+      // DriveLookup.retrieveItemDetailsInFoldersSaving<R>([
+      //   cachedRoot.drivewsid,
+      //   ...drivewsids,
+      // ])
+      DriveLookup.retrieveItemDetailsInFoldersTempCached<R>([
         cachedRoot.drivewsid,
         ...drivewsids,
       ])
@@ -243,7 +247,8 @@ const handleInvalidPaths = <R extends T.Root>(
     )
 
     return pipe(
-      DriveLookup.retrieveItemDetailsInFoldersSavingStrict(foldersToRetrieve),
+      // DriveLookup.retrieveItemDetailsInFoldersSavingStrict(foldersToRetrieve),
+      DriveLookup.retrieveItemDetailsInFoldersTempCachedStrict(foldersToRetrieve),
       SRTE.map(NA.zip(subfolders)),
       SRTE.chain((details) => {
         return modifySubset(

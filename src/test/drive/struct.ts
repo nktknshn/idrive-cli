@@ -17,7 +17,8 @@ export const fakeicloud = flow(docwsroot, createRootDetails)
 export const createState = ({
   cache = C.cachef(),
   tempCache = C.cachef(),
-}) => ({ ...authorizedState, cache, tempCache })
+  tempCacheActive = false,
+}) => ({ ...authorizedState, cache, tempCache, tempCacheActive })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
@@ -77,6 +78,7 @@ export const executeDrive = ({
         const state = createState({
           cache,
           tempCache: C.cachef(),
+          tempCacheActive: false,
         })
         const env = createEnv(details)
 

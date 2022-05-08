@@ -5,6 +5,7 @@ import { NormalizedPath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
 import { DriveLookup, T } from '../..'
 import { DriveFolderTree, flattenFolderTreeWithBasepath, FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
+import { usingTempCache } from './cache-temp-cache'
 
 export const getFolderTreeByPathDocwsroot = (
   path: NormalizedPath,
@@ -22,6 +23,7 @@ export const getFoldersTreesByPathsDocwsroot = (
   pipe(
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     SRTE.chain(dir => DriveLookup.getFoldersTrees(dir, depth)),
+    usingTempCache,
   )
 
 export const getFolderTreeByPathFlattenWPDocwsroot = (
