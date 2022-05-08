@@ -65,12 +65,14 @@ export function retrieveItemDetailsInFoldersSaving(
 export const retrieveItemDetailsInFoldersCached = (
   drivewsids: NEA<string>,
 ): Effect<NEA<O.Option<T.Details>>> => {
+  const uniqids = pipe(drivewsids, NA.uniq(Eq))
+
   return pipe(
     loggerIO.debug(`retrieveItemDetailsInFoldersCached`),
     SRTE.fromIO,
     SRTE.chain(() =>
       chainCache(
-        SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(drivewsids)),
+        SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(uniqids)),
       )
     ),
     SRTE.chain(({ missed }) =>

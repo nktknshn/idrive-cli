@@ -2,6 +2,7 @@ import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
 import { DriveLookup } from '../../icloud-drive'
+import { usingTempCache } from '../../icloud-drive/drive-lookup'
 import * as L from '../../util/logging'
 import { file, folder } from './helpers-drive'
 import { executeDrive, fakeicloud } from './struct'
@@ -42,19 +43,22 @@ describe('searchGlobs', () => {
 
   it('basic', async () => {
     return pipe(
-      run(DriveLookup.searchGlobs(
-        [
-          '/*.txt',
-          '/**/*.txt',
-          '/fileinroot.txt',
-          'fileinroot.txt',
-          '/test1',
-          '/**/*.json',
-          '/test1/test2',
-          '/test1/test2/**/*.exe',
-          '/test1/**/*.json',
-          '/test1/test2/',
-        ],
+      run(pipe(
+        DriveLookup.searchGlobs(
+          [
+            '/*.txt',
+            '/**/*.txt',
+            '/fileinroot.txt',
+            'fileinroot.txt',
+            '/test1',
+            '/**/*.json',
+            '/test1/test2',
+            '/test1/test2/**/*.exe',
+            '/test1/**/*.json',
+            '/test1/test2/',
+          ],
+        ),
+        usingTempCache,
       )),
       TE.map(({ calls, res, state }) => {
         expect(res).toEqual(
