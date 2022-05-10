@@ -1,9 +1,7 @@
-import { semigroup } from 'fp-ts'
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from '../../icloud-drive-items-types'
-import { chain, map, state } from '..'
-import { Effect, State } from '..'
+import { chain, Effect, map, State, state } from '..'
 import * as C from '../cache'
 
 export const putCache = (cache: C.Cache): Effect<void> =>

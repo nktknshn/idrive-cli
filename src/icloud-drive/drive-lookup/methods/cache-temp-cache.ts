@@ -5,13 +5,11 @@ import * as O from 'fp-ts/Option'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
 import { C, T } from '../..'
-import { Effect, State, state, TempCacheState } from '../drive-lookup'
-import { putDetailss, withCache } from './cache-methods'
+import { chainState, Effect, State, TempCacheState } from '../drive-lookup'
+import { putDetailss } from './cache-methods'
 import {
   retrieveItemDetailsInFoldersCached,
-  retrieveItemDetailsInFoldersCachedStrict,
   retrieveItemDetailsInFoldersSaving,
-  retrieveItemDetailsInFoldersSavingStrict,
 } from './cache-retrieveItemDetailsInFolders'
 
 const activateTempCache = <S extends TempCacheState>(s: S) => ({
@@ -29,17 +27,49 @@ const deactivateTempCache = <S extends TempCacheState>(s: S) => ({
 export const usingTempCache = <A>(ma: Effect<A>): Effect<A> =>
   pipe(
     SRTE.modify((s: State) => activateTempCache(s)),
-    SRTE.chainW(() => ma),
+    SRTE.chain(() => ma),
     SRTE.chain(res =>
       pipe(
-        state(),
-        SRTE.chain((s: State) =>
+        chainState((s: State) =>
           pipe(
             SRTE.put(deactivateTempCache(s)),
             SRTE.chain(() => putDetailss(C.getAllDetails(s.tempCache))),
           )
         ),
         SRTE.map(() => res),
+      )
+    ),
+  )
+
+export const usingTempCacheAsCache = <A>(ma: Effect<A>): Effect<A> =>
+  pipe(
+    chainState(prevstate =>
+      pipe(
+        SRTE.put({
+          ...prevstate,
+          cache: prevstate.tempCache,
+        }),
+        SRTE.chain(() => pipe(ma)),
+        SRTE.chainW((res) =>
+          pipe(
+            chainState(s =>
+              pipe(
+                SRTE.put({
+                  ...s,
+                  tempCache: s.cache,
+                  cache: prevstate.cache,
+                }),
+                SRTE.chain(
+                  () =>
+                    putDetailss(
+                      C.getAllDetails(s.cache),
+                    ),
+                ),
+              )
+            ),
+            SRTE.map(() => res),
+          )
+        ),
       )
     ),
   )
@@ -54,30 +84,11 @@ export function retrieveItemDetailsInFoldersTempCached(
   drivewsids: NEA<string>,
 ): Effect<NEA<O.Option<T.Details>>> {
   return pipe(
-    state(),
-    SRTE.chainW(s =>
-      s.tempCacheActive
+    chainState(prevstate =>
+      prevstate.tempCacheActive
         ? pipe(
-          state(),
-          SRTE.chain(prevstate =>
-            pipe(
-              SRTE.put({ ...prevstate, cache: prevstate.tempCache }),
-              SRTE.chain(() =>
-                pipe(
-                  retrieveItemDetailsInFoldersCached(drivewsids),
-                )
-              ),
-              SRTE.chainW((res) =>
-                pipe(
-                  state(),
-                  SRTE.chain(s => SRTE.put({ ...s, tempCache: s.cache, cache: prevstate.cache })),
-                  SRTE.map(() => res),
-                )
-              ),
-            )
-          ),
-          // SRTE.modify(s => ({ ...s, tempCache })),
-          // withCache(s.tempCache),
+          retrieveItemDetailsInFoldersCached(drivewsids),
+          usingTempCacheAsCache,
         )
         : retrieveItemDetailsInFoldersSaving(drivewsids)
     ),

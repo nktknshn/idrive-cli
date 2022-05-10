@@ -1,7 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-// import { fstat, mkdir as mkdirTask, writeFile } from '../../../../lib/fs'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
@@ -20,7 +19,7 @@ export type Deps =
   & DepFs<'createWriteStream'>
 
 export const downloadICloudFilesChunked = (
-  { chunkSize = 5 },
+  { chunkSize = 5 }: { chunkSize: number },
 ): DownloadICloudFilesFunc<Deps> =>
   <S extends AuthorizedState>(
     { downloadable }: { downloadable: DownloadItemMapped[] },

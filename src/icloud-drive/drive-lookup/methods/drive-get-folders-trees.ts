@@ -6,12 +6,10 @@ import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { loggerIO } from '../../../util/loggerIO'
-import { NEA, XXX } from '../../../util/types'
-import { C, DriveLookup } from '../..'
-import { GetDep } from '../../drive-api/deps'
+import { NEA } from '../../../util/types'
+import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
 import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
-import { withCache } from './cache-methods'
 
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,

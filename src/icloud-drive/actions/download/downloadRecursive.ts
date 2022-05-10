@@ -16,11 +16,13 @@ export type RecursiveArgv = {
   keepStructure: boolean
   chunkSize: number
 }
+
 /** recursively download files */
 export const downloadRecursive = (
   argv: RecursiveArgv,
 ): DriveLookup.Effect<string, DownloadFolderDeps & DFuncDeps & DepAskConfirmation> => {
   const dirname = Path.dirname(micromatch.scan(argv.path).base)
+
   console.log(
     dirname,
   )

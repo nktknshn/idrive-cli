@@ -11,49 +11,31 @@ import { normalizePath } from '../../../util/path'
 import { DriveLookup, T } from '../..'
 import { usingTempCache } from '../../drive-lookup'
 import { FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
-import {
-  applySoultions,
-  Conflict,
-  ConflictsSolver,
-  handleLocalFilesConflicts,
-  lookForConflicts,
-  Solution,
-} from './download-conflict'
+import { applySoultions, Conflict, ConflictsSolver, lookForConflicts, Solution } from './download-conflict'
 import { createEmpties, createLocalDirStruct } from './download-local'
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { DownloadFileResult, DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from './types'
 
 /*
-
 Download a file or a folder content.
 
 `idrive download '/Obsidian/my1/note1.md' ./outputdir`
-
 `idrive download -S '/Obsidian/my1/note1.md' ./outputdir`
-
 `idrive download /Obsidian/my1/note1.md /Obsidian/my1/note2.md ./outputdir`
-
 `idrive download -S /Obsidian/my1/note1.md /Obsidian/my1/note2.md ./outputdir`
-
 `idrive download '/Obsidian/my1/*.md' ./outputdir`
 
 Recursively download into `./outputdir/my1/`
-
 `idrive download -R '/Obsidian/my1/' ./outputdir`
 
 Recursively download all `md` files into `./outputdir/diary/`
-
 `idrive download -R '/Obsidian/my1/diary/**\/*.md' ./outputdir`
 
 Download download all into `./outputdir/Obsidian/my1/diary/`
-
 `idrive download -RS '/Obsidian/my1/diary/**\/*.md' ./outputdir`
 
 Use `dry` flag to only check what is going to be downloaded
-
 ` include` and `exclude` flags are also supported
-
-
 */
 
 export type Deps =
@@ -64,18 +46,32 @@ export type Deps =
     | 'writeFile'
   >
 
-type DownloadFolderOpts<SolverDeps, DownloadDeps> = {
+type Argv = {
   path: string
   dry: boolean
   include: string[]
   exclude: string[]
   depth: number
-  // downloadTaskMapper: DownloadTaskMapper<R>
+}
+
+type DownloadFolderOpts<SolverDeps, DownloadDeps> = Argv & {
   toLocalMapper: (ds: DownloadTask) => DownloadTaskMapped
   conflictsSolver: ConflictsSolver<SolverDeps>
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
-  // filter: <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>) => DownloadTask & {
-  //   excluded: DownloadItem[];
+}
+
+type DownloadFolderInfo = {
+  folderTree: FlattenFolderTreeWithP<
+    T.DetailsDocwsRoot | T.NonRootDetails
+  >
+  downloadTask: DownloadTask & {
+    excluded: DownloadItem[]
+  }
+  mappedTask: DownloadTaskMapped
+  conflicts: Conflict[]
+  solutions: Solution[]
+  result: DownloadTaskMapped
+  args: Argv
 }
 
 const prepare = (task: DownloadTaskMapped) =>
@@ -110,21 +106,16 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
   }: DownloadFolderOpts<SolverDeps, DownloadDeps>,
 ): DriveLookup.Effect<string, Deps & SolverDeps & DownloadDeps> => {
   const verbose = dry
-  // const downloadFiles = downloadICloudFilesChunked({ chunkSize })
 
   printerIO.print(
     { path, dry, exclude, include },
   )()
 
-  // const downloadTask = pipe(
-  //   DriveLookup.getFolderTreeByPathFlattenWP(normalizePath(path), depth),
-  //   SRTE.map(filterFlattenFolderTree({ include, exclude })),
-  // )
-  const filter = makeDownloadTaskFromTree(
-    { filterFiles: filterByIncludeExcludeGlobs({ include, exclude }) },
-  )
+  const filter = makeDownloadTaskFromTree({
+    filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
+  })
 
-  const aplloed = pipe(
+  const downloadFolderTask = pipe(
     DriveLookup.getFolderTreeByPathFlattenWPDocwsroot(
       normalizePath(path),
       depth,
@@ -132,6 +123,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
     usingTempCache,
     SRTE.bindTo('folderTree'),
     SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(filter(folderTree))),
+    SRTE.bind('args', () => SRTE.of({ path, dry, exclude, include, depth })),
     SRTE.bind('mappedTask', ({ downloadTask }) =>
       pipe(
         SRTE.of(toLocalMapper(downloadTask)),
@@ -156,22 +148,17 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
   )
 
   return pipe(
-    // mappedTask,
-    // SRTE.chainW(ds =>
-    //   SRTE.fromReaderTaskEither(pipe(
-    //     ds,
-    //     handleLocalFilesConflicts({
-    //       conflictsSolver,
-    //     }),
-    //   ))
-    // ),
-    aplloed,
-    // SRTE.map(_ => _.result),
-    SRTE.chainFirstIOK(flow(showVerbose({ verbose }), printerIO.print)),
+    downloadFolderTask,
+    SRTE.chainFirstIOK(flow(
+      showVerbose({ verbose }),
+      printerIO.print,
+    )),
     SRTE.map(({ result }) => result),
     dry
       ? SRTE.map(() => [])
-      : SRTE.chainW(executeTask({ downloader: downloadFiles })),
+      : SRTE.chainW(executeTask({
+        downloader: downloadFiles,
+      })),
     SRTE.map(resultsJson),
     SRTE.map(JSON.stringify),
   )
@@ -179,22 +166,14 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
 
 const showVerbose = ({ verbose = false }) =>
   ({
-    folderTree,
-    downloadTask,
     mappedTask,
+    result,
+    downloadTask,
+    folderTree,
     conflicts,
     solutions,
-    result,
-  }: {
-    folderTree: FlattenFolderTreeWithP<T.DetailsDocwsRoot | T.NonRootDetails>
-    downloadTask: DownloadTask & {
-      excluded: DownloadItem[]
-    }
-    mappedTask: DownloadTaskMapped
-    conflicts: Conflict[]
-    solutions: Solution[]
-    result: DownloadTaskMapped
-  }) => {
+    args,
+  }: DownloadFolderInfo) => {
     return showTask({ verbose })({
       ...result,
       initialTask: mappedTask,

@@ -1,2 +1,3 @@
-import { input } from '../util/prompts'
-export const getCode = () => input({ message: 'code: ' })
+import { Getcode, input } from '../util/prompts'
+
+export const getCode: Getcode = () => input({ message: 'code: ' })

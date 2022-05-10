@@ -36,8 +36,9 @@ const download = <T>(y: y.Argv<T>) =>
         .positional('dstpath', { type: 'string', demandOption: true })
         .options({
           dry: { default: false, type: 'boolean' },
-          include: { default: [], type: 'string', array: false },
-          exclude: { default: [], type: 'string', array: false },
+          overwright: { default: false, type: 'boolean' },
+          include: { default: [], type: 'string', array: true },
+          exclude: { default: [], type: 'string', array: true },
           recursive: { alias: ['R'], default: false, type: 'boolean' },
           keepStructure: { alias: ['S'], default: false, type: 'boolean' },
           chunkSize: { default: defaults.downloadChunkSize, type: 'number' },

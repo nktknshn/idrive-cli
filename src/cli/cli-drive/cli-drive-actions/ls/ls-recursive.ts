@@ -33,7 +33,9 @@ export const recursivels = ({ paths, depth, tree, cached }: {
     return pipe(
       DriveLookup.getCachedDocwsRoot(),
       SRTE.bindTo('root'),
-      SRTE.chain(({ root }) => DriveLookup.getByPathsFoldersStrict(root, basepaths)),
+      SRTE.chain(
+        ({ root }) => DriveLookup.getByPathsFoldersStrict(root, basepaths),
+      ),
       SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, depth)),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([tree, scan]) =>

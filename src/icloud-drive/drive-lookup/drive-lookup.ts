@@ -35,6 +35,10 @@ export const { map, chain, filterOrElse } = SRTE
 
 export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
 
-export const state = () => SRTE.get<State, Deps>()
+export const state = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
+
+export const chainState = <A>(
+  f: (s: State) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
+): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(state())
 
 export const errS = <A>(s: string): Effect<A> => SRTE.left(err(s))

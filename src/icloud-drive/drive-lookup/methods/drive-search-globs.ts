@@ -79,9 +79,7 @@ export const searchGlobs = (
                   if (micromatch.isMatch(path, globpattern, options)) {
                     return O.some({ path, item })
                   }
-                  // if (normalizePath(path) == normalizePath(globpattern)) {
-                  //   return O.some({ path, item })
-                  // }
+
                   return O.none
                 }
 

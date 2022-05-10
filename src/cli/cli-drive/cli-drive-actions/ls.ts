@@ -4,13 +4,6 @@ import { DriveLookup } from '../../../icloud-drive'
 import { recursivels } from './ls/ls-recursive'
 import { shallowList } from './ls/ls-shallow'
 
-type ShowOpts = {
-  showDocwsid: boolean
-  showDrivewsid: boolean
-  showEtag: boolean
-  showHeader: boolean
-}
-
 type Argv = {
   paths: string[]
   fullPath: boolean

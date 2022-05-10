@@ -3,7 +3,6 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { runCliAction } from './cli/cli-drive'
 import { readArgv } from './cli/cli-drive/cli-drive-args'
 import { createCliActionsDeps } from './cli/cli-drive/cli-drive-deps'
-import { getCode } from './deps-providers/getCode'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './util/logging'
 
 async function main() {

@@ -12,6 +12,7 @@ type Argv = {
   dstpath: string
   dry: boolean
   recursive: boolean
+  overwright: boolean
   include: string[]
   exclude: string[]
   keepStructure: boolean
