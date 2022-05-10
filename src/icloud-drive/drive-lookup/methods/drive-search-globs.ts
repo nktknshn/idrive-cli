@@ -96,5 +96,6 @@ export const searchGlobs = (
         ),
       )
     ))),
+    usingTempCache,
   )
 }

@@ -1,7 +1,7 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveLookup } from '../../icloud-drive'
+import { C, DriveLookup } from '../../icloud-drive'
 import { usingTempCache } from '../../icloud-drive/drive-lookup'
 import * as L from '../../util/logging'
 import { file, folder } from './helpers-drive'
@@ -39,7 +39,13 @@ describe('searchGlobs', () => {
   const package1 = { path: '/test1/package.json', item: c['test1'].c['package.json'].d }
   const package2 = { path: '/test1/test2/package.json', item: c['test1'].c['test2'].c['package.json'].d }
 
-  const run = executeDrive({ itemByDrivewsid: structure.itemByDrivewsid })
+  const run = executeDrive({
+    itemByDrivewsid: structure.itemByDrivewsid,
+    cache: pipe(
+      C.cachef(),
+      C.putDetails(structure.r.d),
+    ),
+  })
 
   it('basic', async () => {
     return pipe(
@@ -75,6 +81,8 @@ describe('searchGlobs', () => {
             [],
           ],
         )
+
+        expect(calls().total).toBe(4)
       }),
       TE.mapLeft((e) => {
         expect(false).toBe(true)

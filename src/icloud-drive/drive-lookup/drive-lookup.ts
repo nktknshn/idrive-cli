@@ -7,7 +7,7 @@ import * as C from './cache'
 export * from './methods/cache-methods'
 export { getFoldersTrees } from './methods/drive-get-folders-trees'
 export {
-  getFoldersTreesByPathFlattenWPDocwsroot,
+  getFoldersTreesByPathFlattenDocwsroot as getFoldersTreesByPathFlattenWPDocwsroot,
   getFoldersTreesByPathsDocwsroot,
   getFolderTreeByPathDocwsroot,
   getFolderTreeByPathFlattenWPDocwsroot,

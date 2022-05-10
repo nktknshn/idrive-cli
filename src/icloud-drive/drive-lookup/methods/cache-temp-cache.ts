@@ -26,18 +26,24 @@ const deactivateTempCache = <S extends TempCacheState>(s: S) => ({
 
 export const usingTempCache = <A>(ma: Effect<A>): Effect<A> =>
   pipe(
-    SRTE.modify((s: State) => activateTempCache(s)),
-    SRTE.chain(() => ma),
-    SRTE.chain(res =>
-      pipe(
-        chainState((s: State) =>
-          pipe(
-            SRTE.put(deactivateTempCache(s)),
-            SRTE.chain(() => putDetailss(C.getAllDetails(s.tempCache))),
-          )
-        ),
-        SRTE.map(() => res),
-      )
+    chainState(s =>
+      !s.tempCacheActive
+        ? pipe(
+          SRTE.modify((s: State) => activateTempCache(s)),
+          SRTE.chain(() => ma),
+          SRTE.chain(res =>
+            pipe(
+              chainState((s: State) =>
+                pipe(
+                  SRTE.put(deactivateTempCache(s)),
+                  SRTE.chain(() => putDetailss(C.getAllDetails(s.tempCache))),
+                )
+              ),
+              SRTE.map(() => res),
+            )
+          ),
+        )
+        : ma
     ),
   )
 
