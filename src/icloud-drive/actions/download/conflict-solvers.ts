@@ -111,7 +111,13 @@ const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts
       pipe(
         conflicts,
         A.filter((_): _ is ConflictExists => _.tag === 'exists'),
-        A.map((conflict) => askConfirmation({ message: `overwright ${conflict.localitem.path}` })),
+        A.map((conflict) =>
+          askConfirmation({
+            message: `overwright ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${
+              conflict.item.remoteitem[1].size
+            } bytes`,
+          })
+        ),
         TE.sequenceSeqArray,
       )
     ),

@@ -27,7 +27,7 @@ export function input({
 }): TE.TaskEither<Error, number> {
   return pipe(
     prompts({
-      type: 'number',
+      type: 'text',
       name: 'value',
       message,
     }, {

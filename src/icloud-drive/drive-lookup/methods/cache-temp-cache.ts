@@ -5,7 +5,7 @@ import * as O from 'fp-ts/Option'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
 import { C, T } from '../..'
-import { Effect, State, state } from '../drive-lookup'
+import { Effect, State, state, TempCacheState } from '../drive-lookup'
 import { putDetailss, withCache } from './cache-methods'
 import {
   retrieveItemDetailsInFoldersCached,
@@ -14,26 +14,28 @@ import {
   retrieveItemDetailsInFoldersSavingStrict,
 } from './cache-retrieveItemDetailsInFolders'
 
+const activateTempCache = <S extends TempCacheState>(s: S) => ({
+  ...s,
+  tempCacheActive: true,
+  tempCache: C.cachef(),
+})
+
+const deactivateTempCache = <S extends TempCacheState>(s: S) => ({
+  ...s,
+  tempCacheActive: false,
+  tempCache: C.cachef(),
+})
+
 export const usingTempCache = <A>(ma: Effect<A>): Effect<A> =>
   pipe(
-    SRTE.modify(
-      (s: State) => ({
-        ...s,
-        tempCacheActive: true,
-        tempCache: C.cachef(),
-      }),
-    ),
+    SRTE.modify((s: State) => activateTempCache(s)),
     SRTE.chainW(() => ma),
     SRTE.chain(res =>
       pipe(
         state(),
         SRTE.chain((s: State) =>
           pipe(
-            SRTE.put({
-              ...s,
-              tempCacheActive: false,
-              tempCache: C.cachef(),
-            }),
+            SRTE.put(deactivateTempCache(s)),
             SRTE.chain(() => putDetailss(C.getAllDetails(s.tempCache))),
           )
         ),

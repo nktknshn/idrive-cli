@@ -14,18 +14,19 @@ type ShallowArgs = {
   dstpath: string
   dry: boolean
   chunkSize: number
+  include: string[]
 }
 
 /** download file of files from a directory */
 export const downloadShallow = (
-  { path, dry, dstpath, chunkSize }: ShallowArgs,
+  { path, dry, dstpath, chunkSize, include }: ShallowArgs,
 ): XXX<DriveLookup.State, Deps & DFuncDeps & DepAskConfirmation, string> => {
   return pipe(
     downloadFolder(
       {
-        path: Path.dirname(path),
+        path,
         exclude: [],
-        include: [path],
+        include,
         dry,
         depth: 0,
         conflictsSolver: solvers.resolveConflictsAskEvery,

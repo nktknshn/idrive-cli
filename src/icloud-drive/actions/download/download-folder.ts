@@ -9,6 +9,7 @@ import { guardFst } from '../../../util/guards'
 import { printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/path'
 import { DriveLookup, T } from '../..'
+import { usingTempCache } from '../../drive-lookup'
 import { FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
 import {
   applySoultions,
@@ -111,9 +112,9 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
   const verbose = dry
   // const downloadFiles = downloadICloudFilesChunked({ chunkSize })
 
-  // printer.print(
-  //   { path, dstpath, dry, exclude, include, keepStructure },
-  // )
+  printerIO.print(
+    { path, dry, exclude, include },
+  )()
 
   // const downloadTask = pipe(
   //   DriveLookup.getFolderTreeByPathFlattenWP(normalizePath(path), depth),
@@ -128,6 +129,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
       normalizePath(path),
       depth,
     ),
+    usingTempCache,
     SRTE.bindTo('folderTree'),
     SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(filter(folderTree))),
     SRTE.bind('mappedTask', ({ downloadTask }) =>
@@ -193,7 +195,10 @@ const showVerbose = ({ verbose = false }) =>
     solutions: Solution[]
     result: DownloadTaskMapped
   }) => {
-    const output = ''
+    return showTask({ verbose })({
+      ...result,
+      initialTask: mappedTask,
+    })
   }
 
 const showTask = ({ verbose = false }) =>
