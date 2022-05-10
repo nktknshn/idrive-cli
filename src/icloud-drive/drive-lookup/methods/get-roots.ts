@@ -1,22 +1,18 @@
-import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as API from '../../drive-api'
 import * as T from '../../icloud-drive-items-types'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
-import { chain, map, of } from '..'
-import { Deps, Effect, State } from '..'
+import { chain, Deps, Effect, map, of } from '..'
 import * as C from '../cache'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from '../cache/cache-types'
-import { asksCache, chainCache, putMissedFound } from './cache-methods'
+import { chainCache } from './cache-methods'
 import {
   retrieveItemDetailsInFoldersCached,
   retrieveItemDetailsInFoldersSaving,
 } from './cache-retrieveItemDetailsInFolders'
 
 /** retrieve root from cache or from api if it's missing from cache and chain a computation*/
-
 export const chainCachedDocwsRoot = <A>(
   f: (root: T.DetailsDocwsRoot) => Effect<A>,
 ): Effect<A> => {
@@ -54,8 +50,8 @@ export const chainCachedTrash = <A>(
     chain(f),
   )
 }
-// FIXME
 
+// FIXME
 export const getDocwsRoot = (): Effect<T.DetailsDocwsRoot, Deps> =>
   pipe(
     retrieveItemDetailsInFoldersSaving<T.DetailsDocwsRoot>([rootDrivewsid]),

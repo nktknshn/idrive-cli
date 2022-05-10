@@ -50,7 +50,7 @@ describe('getFoldersTrees', () => {
         npath('/test1/'),
       ]),
       SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, Infinity)),
-      usingTempCache,
+      DriveLookup.usingTempCache,
       executeDrive({
         itemByDrivewsid: struct0.itemByDrivewsid,
         cache: pipe(

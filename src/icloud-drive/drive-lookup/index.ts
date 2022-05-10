@@ -8,3 +8,4 @@ export * from './methods/get-by-paths'
 export * from './methods/get-roots'
 
 export * from './drive-lookup'
+export * from './methods/cache-temp-cache'

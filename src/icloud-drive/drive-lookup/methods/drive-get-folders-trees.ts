@@ -10,7 +10,6 @@ import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
 import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
-import { usingTempCache } from './cache-temp-cache'
 
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
@@ -65,7 +64,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
 
   return pipe(
     go(folders, depth),
-    usingTempCache,
+    DriveLookup.usingTempCache,
     // withCache(C.cachef()),
   )
 }

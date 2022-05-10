@@ -5,7 +5,6 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import { DriveLookup } from '../../../../icloud-drive'
-import { usingTempCache } from '../../../../icloud-drive/drive-lookup'
 import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../../../icloud-drive/util/drive-folder-tree'
 import { normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
@@ -33,7 +32,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
     return pipe(
       DriveLookup.getByPathsFoldersStrictDocwsroot(basepaths),
       SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, depth)),
-      usingTempCache,
+      DriveLookup.usingTempCache,
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([tree, scan]) =>
         pipe(
@@ -52,7 +51,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
 
   return pipe(
     DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
-    usingTempCache,
+    DriveLookup.usingTempCache,
     SRTE.map(NA.map(A.map(_ => _.path))),
     SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),

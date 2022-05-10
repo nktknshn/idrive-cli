@@ -96,6 +96,6 @@ export const searchGlobs = (
         ),
       )
     ))),
-    usingTempCache,
+    DriveLookup.usingTempCache,
   )
 }

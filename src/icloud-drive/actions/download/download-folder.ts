@@ -9,7 +9,6 @@ import { guardFst } from '../../../util/guards'
 import { printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/path'
 import { DriveLookup, T } from '../..'
-import { usingTempCache } from '../../drive-lookup'
 import { FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
 import { applySoultions, Conflict, ConflictsSolver, lookForConflicts, Solution } from './download-conflict'
 import { createEmpties, createLocalDirStruct } from './download-local'
@@ -120,7 +119,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
       normalizePath(path),
       depth,
     ),
-    usingTempCache,
+    DriveLookup.usingTempCache,
     SRTE.bindTo('folderTree'),
     SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(filter(folderTree))),
     SRTE.bind('args', () => SRTE.of({ path, dry, exclude, include, depth })),

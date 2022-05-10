@@ -64,7 +64,7 @@ describe('searchGlobs', () => {
             '/test1/test2/',
           ],
         ),
-        usingTempCache,
+        DriveLookup.usingTempCache,
       )),
       TE.map(({ calls, res, state }) => {
         expect(res).toEqual(

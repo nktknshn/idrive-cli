@@ -2,7 +2,6 @@ import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup, GetDep } from '../../icloud-drive'
-import { usingTempCache } from '../../icloud-drive/drive-lookup'
 import { DetailsDocwsRoot, NonRootDetails } from '../../icloud-drive/icloud-drive-items-types'
 import { FlattenFolderTreeWithP } from '../../icloud-drive/util/drive-folder-tree'
 import * as L from '../../util/logging'
@@ -42,7 +41,7 @@ describe('usingTempCache', () => {
     ),
   })
 
-  const req = usingTempCache(
+  const req = DriveLookup.usingTempCache(
     DriveLookup.getFoldersTreesByPathFlattenWPDocwsroot([
       npath('/test1/test2/'),
       npath('/test1/'),
@@ -88,24 +87,24 @@ describe('usingTempCache', () => {
   it('works1', async () => {
     return pipe(
       req,
-      usingTempCache,
+      DriveLookup.usingTempCache,
       check,
     )
   })
 
   it('works2', async () => {
     return pipe(
-      usingTempCache(req),
-      usingTempCache,
+      DriveLookup.usingTempCache(req),
+      DriveLookup.usingTempCache,
       check,
     )
   })
 
   it('works3', async () => {
     return pipe(
-      usingTempCache(req),
-      usingTempCache,
-      usingTempCache,
+      DriveLookup.usingTempCache(req),
+      DriveLookup.usingTempCache,
+      DriveLookup.usingTempCache,
       check,
     )
   })
