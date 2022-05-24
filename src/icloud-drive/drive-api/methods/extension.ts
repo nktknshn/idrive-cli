@@ -6,7 +6,7 @@ import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
 import * as T from '../../icloud-drive-items-types'
-import { getMissedFound } from '../../util/drive-helpers'
+import { makeMissedFound } from '../../util/drive-helpers'
 import { GetDep } from '../deps'
 import { createFolders, download, retrieveItemDetailsInFolders } from './original'
 
@@ -20,7 +20,7 @@ export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>
 > =>
   pipe(
     retrieveItemDetailsInFolders<S>({ drivewsids }),
-    SRTE.map(ds => getMissedFound(drivewsids, ds)),
+    SRTE.map(ds => makeMissedFound(drivewsids, ds)),
   )
 
 export const retrieveItemDetailsInFolder = (

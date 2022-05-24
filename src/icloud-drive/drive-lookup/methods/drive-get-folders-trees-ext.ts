@@ -25,7 +25,7 @@ export const getFolderTreeByPathDocwsroot = (
     SRTE.map(NA.head),
   )
 
-export const getFoldersTreesByPathFlattenDocwsroot = (
+export const getFoldersTreesByPathsFlattenDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
 ): DriveLookup.Effect<
@@ -49,6 +49,6 @@ export const getFolderTreeByPathFlattenWPDocwsroot = (
   depth = Infinity,
 ): DriveLookup.Effect<FlattenFolderTreeWithP<T.DetailsDocwsRoot | T.NonRootDetails>> =>
   pipe(
-    getFoldersTreesByPathFlattenDocwsroot([path], depth),
+    getFoldersTreesByPathsFlattenDocwsroot([path], depth),
     SRTE.map(NA.head),
   )

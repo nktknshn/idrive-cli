@@ -14,7 +14,6 @@ import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
 import { flattenFolderTreeWithBasepath, shallowFolder } from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
-import { usingTempCache } from './cache-temp-cache'
 import { getFoldersTrees } from './drive-get-folders-trees'
 
 export type SearchGlobFoundItem = {
@@ -61,6 +60,7 @@ export const searchGlobs = (
         ([scan, file]) => E.left(file),
       )
     ),
+    DriveLookup.usingTempCache,
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned), NA.zip(basepaths))),
     SRTE.map(flow(NA.map(([[[fileOrTree, globpattern], scan], basepath]) =>
       pipe(
@@ -96,6 +96,5 @@ export const searchGlobs = (
         ),
       )
     ))),
-    DriveLookup.usingTempCache,
   )
 }

@@ -30,9 +30,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
 
   if (tree) {
     return pipe(
-      DriveLookup.getByPathsFoldersStrictDocwsroot(basepaths),
-      SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, depth)),
-      DriveLookup.usingTempCache,
+      DriveLookup.getFoldersTreesByPathsDocwsroot(basepaths, depth),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([tree, scan]) =>
         pipe(
@@ -51,7 +49,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
 
   return pipe(
     DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
-    DriveLookup.usingTempCache,
+    // DriveLookup.usingTempCache,
     SRTE.map(NA.map(A.map(_ => _.path))),
     SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),

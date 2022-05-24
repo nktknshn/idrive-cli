@@ -44,23 +44,23 @@ export const askCache = (): Effect<C.Cache> => pipe(state(), map(({ cache }) => 
 export const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> =>
   pipe(state(), chain(({ cache }) => f(cache)))
 
-export const withCache = (newCache: C.Cache) =>
-  <A>(ma: Effect<A>): Effect<A> =>
-    pipe(
-      askCache(),
-      SRTE.chain((oldcache) =>
-        pipe(
-          putCache(newCache),
-          SRTE.chain(() => ma),
-          SRTE.chain((res) =>
-            chainCache(curcache =>
-              pipe(
-                putCache(oldcache),
-                SRTE.chain(() => putDetailss(C.getAllDetails(curcache))),
-                SRTE.map(() => res),
-              )
-            )
-          ),
-        )
-      ),
-    )
+// export const withCache = (newCache: C.Cache) =>
+//   <A>(ma: Effect<A>): Effect<A> =>
+//     pipe(
+//       askCache(),
+//       SRTE.chain((oldcache) =>
+//         pipe(
+//           putCache(newCache),
+//           SRTE.chain(() => ma),
+//           SRTE.chain((res) =>
+//             chainCache(curcache =>
+//               pipe(
+//                 putCache(oldcache),
+//                 SRTE.chain(() => putDetailss(C.getAllDetails(curcache))),
+//                 SRTE.map(() => res),
+//               )
+//             )
+//           ),
+//         )
+//       ),
+//     )

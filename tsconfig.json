@@ -75,6 +75,7 @@
   "exclude": [
     "node_modules",
     "**/node_modules/*",
+    "src/test/**/*"
     // "src/webdav.ts"
   ],
   "typeRoots": [

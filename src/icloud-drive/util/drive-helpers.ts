@@ -7,7 +7,7 @@ import micromatch from 'micromatch'
 import Path from 'path'
 import * as T from '../icloud-drive-items-types'
 
-export const getMissedFound = <T>(
+export const makeMissedFound = <T>(
   drivewsids: string[],
   details: T.MaybeInvalidId<T>[],
 ): { missed: string[]; found: T[] } => {

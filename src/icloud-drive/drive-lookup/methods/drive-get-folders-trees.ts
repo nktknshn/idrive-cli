@@ -36,8 +36,6 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
     return pipe(
       A.isNonEmpty(subfolders) && doGoDeeper
         ? pipe(
-          // DriveLookup.retrieveItemDetailsInFoldersCachedStrict(
-          // DriveLookup.retrieveItemDetailsInFoldersSavingStrict(
           DriveLookup.retrieveItemDetailsInFoldersTempCachedStrict(
             pipe(subfolders, NA.uniq(eq.fromEquals((a, b) => a.drivewsid === b.drivewsid)), NA.map(_ => _.drivewsid)),
           ),
@@ -64,8 +62,6 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
 
   return pipe(
     go(folders, depth),
-    DriveLookup.usingTempCache,
-    // withCache(C.cachef()),
   )
 }
 

@@ -10,7 +10,7 @@ import { NEA, XXX } from '../../../util/types'
 import { recordFromTuples } from '../../../util/util'
 import { C, DriveApi, T } from '../..'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
-import { getMissedFound } from '../../util/drive-helpers'
+import { makeMissedFound } from '../../util/drive-helpers'
 import { chain, of } from '..'
 import { Effect, State } from '..'
 import { asksCache, chainCache, putMissedFound } from './cache-methods'
@@ -53,7 +53,7 @@ export function retrieveItemDetailsInFoldersSaving(
     SRTE.map(rec => pipe(drivewsids, NA.map(dwid => rec[dwid]))),
     chain((details) =>
       pipe(
-        getMissedFound(drivewsids, details),
+        makeMissedFound(drivewsids, details),
         putMissedFound,
         chain(() => of(NA.map(T.invalidIdToOption)(details))),
       )

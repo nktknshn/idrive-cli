@@ -9,15 +9,8 @@ import { npath } from '../../../util/normalize-path'
 import { file, folder } from '../helpers-drive'
 import { executeDrive, fakeicloud } from '../struct'
 
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+L.initLoggers({ debug: true }, [L.logger, L.stderrLogger, L.apiLogger])
+L.initLoggers({ debug: false }, [L.cacheLogger])
 
 const struct0 = fakeicloud(
   file({ name: 'file1.txt' }),

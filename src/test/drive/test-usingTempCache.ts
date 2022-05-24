@@ -41,13 +41,11 @@ describe('usingTempCache', () => {
     ),
   })
 
-  const req = DriveLookup.usingTempCache(
-    DriveLookup.getFoldersTreesByPathFlattenWPDocwsroot([
-      npath('/test1/test2/'),
-      npath('/test1/'),
-      npath('/test1/test2/test3/'),
-    ]),
-  )
+  const req = DriveLookup.getFoldersTreesByPathFlattenWPDocwsroot([
+    npath('/test1/test2/'),
+    npath('/test1/'),
+    npath('/test1/test2/test3/'),
+  ])
 
   const check = (
     req: DriveLookup.Effect<
@@ -55,8 +53,7 @@ describe('usingTempCache', () => {
     >,
   ) => {
     return pipe(
-      req,
-      run,
+      run(req),
       TE.map(({ calls, res, state }) => {
         expect(res).toEqual(
           [expect.any(Array), expect.any(Array), expect.any(Array)],

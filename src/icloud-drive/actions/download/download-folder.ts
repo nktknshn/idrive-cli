@@ -119,7 +119,6 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
       normalizePath(path),
       depth,
     ),
-    DriveLookup.usingTempCache,
     SRTE.bindTo('folderTree'),
     SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(filter(folderTree))),
     SRTE.bind('args', () => SRTE.of({ path, dry, exclude, include, depth })),

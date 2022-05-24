@@ -2,7 +2,7 @@
 
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
@@ -31,7 +31,7 @@ export const getByPaths = <R extends T.Root>(
     SRTE.chain(cached => getByPathsC(paths, cached)),
   )
 
-export const getByPathsC = <R extends T.Root>(
+const getByPathsC = <R extends T.Root>(
   paths: NEA<NormalizedPath>,
   cached: NEA<V.GetByPathResult<R>>,
 ): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> =>
@@ -56,27 +56,6 @@ export const getByPathsC = <R extends T.Root>(
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
-
-// const validateCachedPaths = <R extends T.Root>(
-//   root: R,
-//   paths: NEA<NormalizedPath>,
-// ): Drive.Effect<NEA<V.GetByPathResult<R>>> => {
-//   logg(`validateCachedPaths: ${paths}`)
-//   return pipe(
-//     Drive.getByPathsFromCache(root, paths),
-//     SRTE.chainFirstIOK((cached) =>
-//       loggerIO.debug(`cached: ${cached.map(V.showGetByPathResult).join('      &&      ')}`)
-//     ),
-//     SRTE.chain((cached) =>
-//       pipe(
-//         validateCachedHierarchies(pipe(cached, NA.map(_ => _.details))),
-//         SRTE.map(NA.zip(cached)),
-//         SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
-//       )
-//     ),
-//     SRTE.chainFirstIOK(paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`)),
-//   )
-// }
 
 /**
 Given cached root and a cached hierarchy determine which part of the hierarchy is unchanged
