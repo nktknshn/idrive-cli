@@ -79,7 +79,7 @@ export const invalidPath = <R extends T.Root>(
 })
 
 export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): string => {
-  if (p.valid) {
+  if (p.valid === true) {
     return `valid: ${p.details.map(T.fileName)} file: ${pipe(p.file, O.fold(() => `none`, T.fileName))}`
   }
   // ${p.error.message}
@@ -136,5 +136,5 @@ export const asEither = <R extends T.Root, E>(
   path: GetByPathResult<R>,
 ) => E.Either<E, R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile> =>
   (path: GetByPathResult<R>) => {
-    return path.valid ? E.of(pathTarget(path)) : E.left(onLeft(path))
+    return path.valid === true ? E.of(pathTarget(path)) : E.left(onLeft(path))
   }

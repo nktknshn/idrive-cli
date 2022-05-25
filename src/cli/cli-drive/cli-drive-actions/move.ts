@@ -53,7 +53,7 @@ const handle = (
     return DriveLookup.errS(`src cant be root`)
   }
 
-  if (dstitem.valid) {
+  if (dstitem.valid === true) {
     const dst = V.pathTarget(dstitem)
 
     if (!T.isDetails(dst)) {

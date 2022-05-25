@@ -6,7 +6,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
 import * as L from '../../src/util/logging'
 import './debug'
-import { file, folder } from './util/helpers-drive'
+import { file, folder } from './util/mocked-api'
 import { executeDrive, fakeicloud } from './util/struct'
 
 describe('retrieveItemDetailsInFoldersSaving', () => {

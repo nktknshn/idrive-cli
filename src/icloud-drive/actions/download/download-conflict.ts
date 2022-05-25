@@ -12,6 +12,7 @@ import { FsStats } from '../../../util/fs'
 import { isEnoentError } from '../../../util/fs/isEnoentError'
 import { LocalTreeElement } from '../../../util/localtreeelement'
 import { loggerIO } from '../../../util/loggerIO'
+import { logger } from '../../../util/logging'
 import { Path } from '../../../util/path'
 import { EmptyObject, NEA } from '../../../util/types'
 import { DownloadItem, DownloadItemMapped, DownloadTaskMapped } from './types'
@@ -52,10 +53,11 @@ export const lookForConflictsTE = (
         pipe(
           stat,
           TE.match(
-            (error): E.Either<Conflict, DownloadItemMapped> =>
-              isEnoentError(error)
+            (error): E.Either<Conflict, DownloadItemMapped> => {
+              return isEnoentError(error)
                 ? E.right(item)
-                : E.left({ tag: 'statserror', item, error }),
+                : E.left({ tag: 'statserror', item, error })
+            },
             (stats): E.Either<Conflict, DownloadItemMapped> =>
               E.left(
                 {

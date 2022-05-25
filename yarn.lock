@@ -5214,10 +5214,10 @@
   dependencies:
     "is-typedarray" "^1.0.0"
 
-"typescript@*", "typescript@^4.4.3", "typescript@>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta", "typescript@>=3.8 <5.0":
-  "integrity" "sha512-4xfscpisVgqqDfPaJo5vkd+Qd/ItkoagnHpufr+i2QCHBsNYp+G7UAoyFl8aPtx879u38wPV65rZ8qbGZijalA=="
-  "resolved" "https://registry.npmjs.org/typescript/-/typescript-4.4.3.tgz"
-  "version" "4.4.3"
+"typescript@*", "typescript@^4.7.2", "typescript@>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta", "typescript@>=3.8 <5.0":
+  "integrity" "sha512-Mamb1iX2FDUpcTRzltPxgWMKy3fhg0TN378ylbktPGPK/99KbDtMQ4W1hwgsbPAsG3a0xKa1vmw4VKZQbkvz5A=="
+  "resolved" "https://registry.npmjs.org/typescript/-/typescript-4.7.2.tgz"
+  "version" "4.7.2"
 
 "unique-filename@^1.1.1":
   "integrity" "sha512-Vmp0jIp2ln35UTXuryvjzkjGdRyf9b2lTXuSYUiPmzRcl3FDtYqAwOnTJkAngD9SWhnoJzDbTKwaOrZ+STtxNQ=="

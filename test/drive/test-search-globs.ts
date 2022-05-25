@@ -4,8 +4,8 @@ import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
 
 import * as L from '../../src/util/logging'
-import { file, folder } from './util/helpers-drive'
-import { executeDrive, fakeicloud } from './util/struct'
+import { executeDrive, fakeicloud } from './util/mocked-api'
+import { file, folder } from './util/mocked-drive'
 
 import './debug'
 

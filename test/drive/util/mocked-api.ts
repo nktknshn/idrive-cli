@@ -10,10 +10,10 @@ import { DriveApiEnv } from '../../../src/icloud-drive/drive-api-env/dep-drive-a
 import * as C from '../../../src/icloud-drive/drive-lookup/cache'
 import * as L from '../../../src/util/logging'
 import { authorizedState } from '../fixtures/session'
-import { createRootDetails, docwsroot } from './helpers-drive'
+import { createRootDetails, docwsroot } from './mocked-drive'
 
 export const fakeicloud = flow(docwsroot, createRootDetails)
-// complexStructure0.aa.Obsidian.children.my1.children.misc.children.images
+
 export const createState = ({
   cache = C.cachef(),
   tempCache = O.none,

@@ -5,7 +5,7 @@ import * as R from 'fp-ts/Record'
 import { T } from '../../../src/icloud-drive'
 import { rootDrivewsid } from '../../../src/icloud-drive/icloud-drive-items-types/types-io'
 import * as V from '../../../src/icloud-drive/util/get-by-path-types'
-import { guardFst, guardFstRO, isDefined } from '../../../src/util/guards'
+import { guardFstRO, isDefined } from '../../../src/util/guards'
 import { parseFilename } from '../../../src/util/parse-filename'
 import { randomUUIDCap, recordFromTuples } from '../../../src/util/util'
 
@@ -71,7 +71,6 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
       )
       : A extends File<infer N> ? (Record<N, File<N> & { d: T.DriveChildrenItemFile }>)
       : never
-    // ...RootDict<Rest>,
   )
   & RootDict<Rest>
   : Record<string, unknown>
@@ -153,7 +152,6 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
     c: RootDict<any>
   } => {
     const docwsid = f.docwsid ?? (randomUUIDCap() + '::' + f.name)
-    // randomUUIDCap()
     const drivewsid = `FOLDER::${zone}::${docwsid}`
 
     const children = f.children.map(
@@ -183,10 +181,6 @@ const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
       'shareAliasCount': 0,
       'directChildrenCount': 2,
       items: children.map(_ => _.d),
-      // items: children.map(_ => ({
-      //   ..._.details,
-      //   items: undefined,
-      // })),
       'numberOfItems': children.length,
       'status': 'OK',
     }
@@ -230,11 +224,9 @@ const makeAppLibrary = () =>
       'icons': [],
       'supportedExtensions': [],
       numberOfItems: children.length,
-      // items: children.map(_ => ({ ..._.details, items: undefined })),
       items: children.map(_ => _.d),
       status: 'OK',
       supportedTypes: [],
-      // extension: '',
     }
 
     return {
@@ -250,7 +242,6 @@ const makeFile = (
 ) =>
   (f: File<any>): File<any> & { d: T.DriveChildrenItemFile } => {
     const docwsid = f.docwsid ?? (randomUUIDCap() + '::' + f.name)
-    // randomUUIDCap()
     return {
       ...f,
       d: {
@@ -309,25 +300,11 @@ const addValidPath = <C extends Child>(
   item: C,
   parentPath: V.PathValid<T.DetailsDocwsRoot>,
 ): C & {
-  // children?: (C & { validPath: V.PathValid<T.DetailsDocwsRoot> })[]
   validPath: V.PathValid<T.DetailsDocwsRoot>
 } => {
   return {
     ...item,
     validPath: parentPath,
-    // children: 'children' in item
-    //   ? pipe(
-    //     item.children,
-    //     A.map(a =>
-    //       addValidPath(
-    //         a,
-    //         V.validPath(
-    //           V.concat(parentPath.details, [item.details]),
-    //         ),
-    //       )
-    //     ),
-    //   )
-    //   : undefined,
   }
 }
 
@@ -378,16 +355,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     'numberOfItems': children.length,
     'status': 'OK',
     items: children.map(_ => _.d),
-    // items: children.map(_ => ({
-    //   ..._.details,
-    //   items: undefined,
-    // })),
   }
-
-  // const children1 = pipe(
-  //   children,
-  //   A.map(c => ({ ...c, detailsPath: [details] })),
-  // )
 
   const itemByDrivewsid = pipe(
     children.map(getItems),
@@ -421,16 +389,6 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     ),
   }
 }
-
-// export const removeByTag = () => {
-// }
-// import * as O from 'fp-ts/Option'
-
-// const validPathByDrivewsid = (drivewsid: string) =>
-//   (
-//     itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
-//   ) => {
-//   }
 
 export const removeByDrivewsid = (drivewsid: string) =>
   (

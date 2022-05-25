@@ -12,7 +12,17 @@ import * as DC from '../../../src/icloud-drive/actions/download/download-conflic
 import { FsStats } from '../../../src/util/fs'
 import { complexStructure0 } from '../fixtures/drive'
 
-import '../debug'
+// import '../debug'
+
+L.initLoggers(
+  { debug: true },
+  [
+    L.logger,
+    L.cacheLogger,
+    L.stderrLogger,
+    L.apiLogger,
+  ],
+)
 
 class Enoent extends Error {
   code = 'ENOENT'
@@ -20,7 +30,9 @@ class Enoent extends Error {
 
 describe('lookForConflicts', () => {
   it('works', async () => {
-    const fstat = (path: string): TE.TaskEither<Error, FsStats> => TE.left(new Enoent())
+    const fstat = (
+      path: string,
+    ): TE.TaskEither<Error, FsStats> => TE.left(new Enoent())
     // TE.of({
     //   isFile: () => true,
     //   isDirectory: () => false,

@@ -7,7 +7,7 @@ import { rootDrivewsid } from '../../src/icloud-drive/icloud-drive-items-types/t
 import { invalidPath, pathTarget, showGetByPathResult, validPath } from '../../src/icloud-drive/util/get-by-path-types'
 import * as L from '../../src/util/logging'
 import { npath } from '../../src/util/normalize-path'
-import { appLibrary, file, folder, removeByDrivewsid } from './util/helpers-drive'
+import { appLibrary, file, folder, removeByDrivewsid } from './util/fake-drive'
 import { executeDrive, fakeicloud } from './util/struct'
 
 import './debug'
@@ -52,7 +52,7 @@ describe('getByPaths', () => {
   )
 
   it('works fully cached', async () => {
-    const req0 = pipe(
+    return pipe(
       DriveLookup.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
       ]),
@@ -83,8 +83,10 @@ describe('getByPaths', () => {
         //   Object.keys(state.cache.byDrivewsid).length,
         // ).toBe(2)
       }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
     )
-    assert((await req0())._tag === 'Right')
   })
 
   it('works fully cached multiple dirs', async () => {
@@ -136,7 +138,7 @@ describe('getByPaths', () => {
         structure.r.c.Obsidian.c.my1.d.drivewsid,
       ),
     )
-    const req0 = pipe(
+    return pipe(
       DriveLookup.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
       ]),
@@ -167,8 +169,9 @@ describe('getByPaths', () => {
           calls().retrieveItemDetailsInFolders,
         ).toBe(1)
       }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
     )
-
-    assert((await req0())._tag === 'Right')
   })
 })
