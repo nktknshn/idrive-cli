@@ -18,16 +18,6 @@ export const makeMissedFound = <T>(
   )
 }
 
-// export const findInParentFilename = <R extends T.Root>(
-//   parent: T.NonRootDetails | R,
-//   itemName: string,
-// ): O.Option<T.DriveChildrenItem | T.DriveChildrenTrashItem> => {
-//   return pipe(
-//     parent.items,
-//     A.findFirst((item: T.DriveChildrenItem | T.DriveChildrenTrashItem) => T.fileName(item) == itemName),
-//   )
-// }
-
 export function findInParentFilename(
   parent: T.NonRootDetails | T.DetailsDocwsRoot,
   itemName: string,

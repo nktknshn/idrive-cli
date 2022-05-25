@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/icloud-drive-items-types'
@@ -7,21 +8,24 @@ import { npath } from '../../src/util/normalize-path'
 import { NEA } from '../../src/util/types'
 import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
-import './debug'
+import { chain } from '../../src/icloud-drive/drive-lookup'
+import { enableDebug } from './debug'
+
+enableDebug(false)
+
+const structure = fakeicloud(
+  file({ name: 'fileinroot.txt' }),
+  file({ name: 'fileinroot2.txt' }),
+  folder({ name: 'test1' })(
+    file({ name: 'package.json' }),
+    folder({ name: 'test2' })(
+      file({ name: 'package.json' }),
+      folder({ name: 'test3' })(),
+    ),
+  ),
+)
 
 describe('usingTempCache', () => {
-  const structure = fakeicloud(
-    file({ name: 'fileinroot.txt' }),
-    file({ name: 'fileinroot2.txt' }),
-    folder({ name: 'test1' })(
-      file({ name: 'package.json' }),
-      folder({ name: 'test2' })(
-        file({ name: 'package.json' }),
-        folder({ name: 'test3' })(),
-      ),
-    ),
-  )
-
   const run = executeDrive({
     itemByDrivewsid: structure.itemByDrivewsid,
     cache: pipe(
@@ -56,15 +60,9 @@ describe('usingTempCache', () => {
           [expect.anything(), expect.anything(), expect.anything(), expect.anything()],
         )
 
-        // assert(state.tempCache._tag === 'None')
         expect(
-          // C.getAllDetails(state.tempCache.value),
           state.tempCache._tag,
         ).toEqual('None')
-
-        // expect(
-        //   state.tempCacheActive,
-        // ).toEqual(false)
       }),
       TE.mapLeft((e) => {
         expect(false).toBe(true)
@@ -95,5 +93,45 @@ describe('usingTempCache', () => {
       DriveLookup.usingTempCache,
       check,
     )
+  })
+})
+
+describe('usingTempCache2', () => {
+  const req = pipe(
+    DriveLookup.getByPathDocwsroot(npath('/test1/test2/')),
+    chain(() => DriveLookup.getByPathDocwsroot(npath('/test1/'))),
+  )
+
+  const run = executeDrive({
+    itemByDrivewsid: structure.itemByDrivewsid,
+    cache: pipe(
+      C.cachef(),
+      C.putDetails(structure.r.d),
+    ),
+  })
+
+  it('works1', async () => {
+    return pipe(
+      DriveLookup.usingTempCache(req),
+      run,
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(3)
+      }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
+    )()
+  })
+
+  it('works2', async () => {
+    return pipe(
+      run(req),
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(4)
+      }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
+    )()
   })
 })

@@ -30,3 +30,11 @@ export const getByPathsFromCache = <R extends T.Root>(
   asksCache(
     C.getByPaths(root, paths),
   )
+
+export const getByPathsFromCacheTemp = <R extends T.Root>(
+  root: R,
+  paths: NEA<NormalizedPath>,
+): Effect<NEA<GetByPathResult<R>>> =>
+  asksCache(
+    C.getByPaths(root, paths),
+  )

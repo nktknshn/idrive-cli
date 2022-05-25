@@ -18,15 +18,15 @@ export const cacheEntityFromDetails = (
     ? new CT.CacheEntityFolderDetails(details)
     : new CT.CacheEntityAppLibraryDetails(details)
 
-export const cacheEntityFromItem = (
-  item: T.DriveChildrenItem,
-): CT.CacheEntity => {
-  return item.type === 'FILE'
-    ? new CT.CacheEntityFile(item)
-    : item.type === 'FOLDER'
-    ? new CT.CacheEntityFolderItem(item)
-    : new CT.CacheEntityAppLibraryItem(item)
-}
+// export const cacheEntityFromItem = (
+//   item: T.DriveChildrenItem,
+// ): CT.CacheEntity => {
+//   return item.type === 'FILE'
+//     ? new CT.CacheEntityFile(item)
+//     : item.type === 'FOLDER'
+//     ? new CT.CacheEntityFolderItem(item)
+//     : new CT.CacheEntityAppLibraryItem(item)
+// }
 
 export const assertFolderWithDetailsEntity = (
   entity: CT.CacheEntity,

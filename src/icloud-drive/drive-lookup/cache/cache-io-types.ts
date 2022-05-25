@@ -55,10 +55,7 @@ export const cacheEntity = t.union([
   cacheEntityFolderRootDetails,
   cacheEntityFolderTrashDetails,
   cacheEntityFolderDetails,
-  cacheEntityFolderItem,
   cacheEntityAppLibraryDetails,
-  cacheEntityAppLibraryItem,
-  cacheEntityFile,
 ])
 
 export const cache = t.type({

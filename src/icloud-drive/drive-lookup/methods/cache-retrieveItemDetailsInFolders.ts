@@ -13,8 +13,66 @@ import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/ty
 import { makeMissedFound } from '../../util/drive-helpers'
 import { chain, of } from '..'
 import { Effect, State } from '..'
-import { asksCache, chainCache, putMissedFound } from './cache-methods'
-import { usingCache } from './cache-temp-cache'
+import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
+
+/** returns details from cache if they are there otherwise fetches them from icloid api.   */
+export const retrieveItemDetailsInFoldersCached = (
+  drivewsids: NEA<string>,
+): Effect<NEA<O.Option<T.Details>>> => {
+  const uniqids = pipe(drivewsids, NA.uniq(Eq))
+
+  return pipe(
+    askCache(),
+    SRTE.chain(
+      c =>
+        SRTE.fromIO(
+          loggerIO.debug(`retrieveItemDetailsInFoldersCached: ${C.getAllDetails(c).map(_ => _.drivewsid)}`),
+        ),
+    ),
+    SRTE.chain(() =>
+      chainCache(
+        SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(uniqids)),
+      )
+    ),
+    SRTE.chain(({ missed }) =>
+      pipe(
+        missed,
+        A.matchW(
+          () => SRTE.of({ missed: [], found: [] }),
+          (missed) => DriveApi.retrieveItemDetailsInFoldersSeparated<State>(missed),
+        ),
+      )
+    ),
+    SRTE.chain(putMissedFound),
+    SRTE.chainW(() => asksCache(C.getFoldersDetailsByIds(drivewsids))),
+    SRTE.chainW(e => SRTE.fromEither(e)),
+    SRTE.chain((details) => of(NA.map(T.invalidIdToOption)(details))),
+  )
+}
+
+export function retrieveItemDetailsInFoldersCachedStrict(
+  drivewsids: NEA<string>,
+): Effect<NEA<T.NonRootDetails>>
+export function retrieveItemDetailsInFoldersCachedStrict(
+  drivewsids: NEA<string>,
+): Effect<NEA<T.Details>> {
+  return pipe(
+    retrieveItemDetailsInFoldersCached(drivewsids),
+    // SRTE.map(NA.map(T.invalidIdToOption)),
+    SRTE.chain(
+      flow(
+        O.sequenceArray,
+        SRTE.fromOption(() => err(`some of the ids was not found`)),
+        v => v as Effect<NEA<T.Details>>,
+      ),
+    ),
+  )
+}
+
+// const retrieveItemDetailsInFoldersSaving=  flow(
+//   retrieveItemDetailsInFoldersCached,
+//   usingCache(C.cachef()),
+// )
 
 // type D = {
 //   retrieveItemDetailsInFoldersTempCache<S>(
@@ -44,51 +102,15 @@ export function retrieveItemDetailsInFoldersSaving(
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
 ): Effect<NEA<O.Option<T.Details>>> {
-  const uniqids = pipe(drivewsids, NA.uniq(Eq))
-
   return pipe(
     loggerIO.debug(`retrieveItemDetailsInFoldersSaving`),
     SRTE.fromIO,
-    SRTE.chain(() => DriveApi.retrieveItemDetailsInFolders<State>({ drivewsids: uniqids })),
-    SRTE.map((details) => pipe(uniqids, NA.zip(details), recordFromTuples)),
-    SRTE.map(rec => pipe(drivewsids, NA.map(dwid => rec[dwid]))),
-    chain((details) =>
-      pipe(
-        makeMissedFound(drivewsids, details),
-        putMissedFound,
-        chain(() => of(NA.map(T.invalidIdToOption)(details))),
-      )
-    ),
-  )
-}
-
-/** returns details from cache if they are there otherwise fetches them from icloid api.   */
-export const retrieveItemDetailsInFoldersCached = (
-  drivewsids: NEA<string>,
-): Effect<NEA<O.Option<T.Details>>> => {
-  const uniqids = pipe(drivewsids, NA.uniq(Eq))
-
-  return pipe(
-    loggerIO.debug(`retrieveItemDetailsInFoldersCached`),
-    SRTE.fromIO,
     SRTE.chain(() =>
-      chainCache(
-        SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(uniqids)),
-      )
-    ),
-    SRTE.chain(({ missed }) =>
       pipe(
-        missed,
-        A.matchW(
-          () => SRTE.of({ missed: [], found: [] }),
-          (missed) => DriveApi.retrieveItemDetailsInFoldersSeparated<State>(missed),
-        ),
+        retrieveItemDetailsInFoldersCached(drivewsids),
+        usingCache(C.cachef()),
       )
     ),
-    SRTE.chain(putMissedFound),
-    SRTE.chainW(() => asksCache(C.getFoldersDetailsByIds(drivewsids))),
-    SRTE.chainW(e => SRTE.fromEither(e)),
-    SRTE.chain((details) => of(NA.map(T.invalidIdToOption)(details))),
   )
 }
 
@@ -110,27 +132,3 @@ export function retrieveItemDetailsInFoldersSavingStrict(
     ),
   )
 }
-
-export function retrieveItemDetailsInFoldersCachedStrict(
-  drivewsids: NEA<string>,
-): Effect<NEA<T.NonRootDetails>>
-export function retrieveItemDetailsInFoldersCachedStrict(
-  drivewsids: NEA<string>,
-): Effect<NEA<T.Details>> {
-  return pipe(
-    retrieveItemDetailsInFoldersCached(drivewsids),
-    // SRTE.map(NA.map(T.invalidIdToOption)),
-    SRTE.chain(
-      flow(
-        O.sequenceArray,
-        SRTE.fromOption(() => err(`some of the ids was not found`)),
-        v => v as Effect<NEA<T.Details>>,
-      ),
-    ),
-  )
-}
-
-// const retrieveItemDetailsInFoldersSaving=  flow(
-//   retrieveItemDetailsInFoldersCached,
-//   usingCache(C.cachef()),
-// )

@@ -57,7 +57,7 @@ describe('lookForConflicts', () => {
         },
       ),
       Task.map(cfs => {
-        expect(cfs.length).toBe(1)
+        expect(cfs.length).toBe(0)
       }),
     )()
   })

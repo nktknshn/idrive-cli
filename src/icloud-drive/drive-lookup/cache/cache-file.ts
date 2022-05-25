@@ -13,7 +13,7 @@ import * as CT from './cache-types'
 
 export const trySaveFile = (
   cache: Cache,
-) =>
+): (cacheFilePath: string) => RTE.ReaderTaskEither<DepFs<'writeFile', 'fs'>, Error, void> =>
   (cacheFilePath: string) => {
     cacheLogger.debug(`saving cache: ${R.keys(cache.byDrivewsid).length} items`)
 

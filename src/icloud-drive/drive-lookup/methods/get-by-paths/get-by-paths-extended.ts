@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { err } from '../../../../util/errors'
+import { logger } from '../../../../util/logging'
 import { NormalizedPath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
 import { sequenceArrayNEA } from '../../../../util/util'
@@ -89,6 +90,7 @@ export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Effe
 }
 
 export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>): Effect<NEA<V.GetByPathResult<T.DetailsDocwsRoot>>> => {
+  logger.debug('getByPathsDocwsroot')
   return pipe(
     chainCachedDocwsRoot(root => getByPaths(root, paths)),
   )

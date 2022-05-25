@@ -17,7 +17,10 @@ export const fakeicloud = flow(docwsroot, createRootDetails)
 export const createState = ({
   cache = C.cachef(),
   tempCache = O.none,
-}) => ({ ...authorizedState, cache, tempCache })
+}: {
+  cache?: C.Cache
+  tempCache?: O.Option<never>
+}): DriveLookup.State => ({ ...authorizedState, cache, tempCache })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
@@ -65,19 +68,18 @@ export const createEnv = (
 
 export const executeDrive = ({
   itemByDrivewsid: details,
-  cache = E.of(C.cachef()),
+  cache = C.cachef(),
 }: {
   itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>
-  cache?: E.Either<Error, C.Cache>
+  cache?: C.Cache
 }): <A>(m: DriveLookup.Effect<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
   return m =>
     pipe(
-      TE.fromEither(cache),
+      TE.of(cache),
       TE.chain(cache => {
         const state = createState({
           cache,
           tempCache: O.none,
-          // tempCacheActive: false,
         })
         const env = createEnv(details)
 

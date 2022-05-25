@@ -15,17 +15,13 @@ export type CacheEntityFolderLike =
   | CacheEntityFolderRootDetails
   | CacheEntityFolderTrashDetails
   | CacheEntityFolderDetails
-  | CacheEntityFolderItem
-  | CacheEntityAppLibraryDetails
-  | CacheEntityAppLibraryItem
-
-export type CacheEntityAppLibrary =
-  | CacheEntityAppLibraryItem
   | CacheEntityAppLibraryDetails
 
-export type CacheEntity =
-  | CacheEntityFolderLike
-  | CacheEntityFile
+export type CacheEntityAppLibrary = // | CacheEntityAppLibraryItem
+  CacheEntityAppLibraryDetails
+
+export type CacheEntity = CacheEntityFolderLike
+// | CacheEntityFile
 
 export type CacheEntityWithParentId = Exclude<CacheEntity, CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails>
 
@@ -67,15 +63,15 @@ export class CacheEntityFolderDetails {
   ) {}
 }
 
-export class CacheEntityFolderItem {
-  readonly type = 'FOLDER'
-  readonly hasDetails = false
+// export class CacheEntityFolderItem {
+//   readonly type = 'FOLDER'
+//   readonly hasDetails = false
 
-  constructor(
-    public readonly content: CT.DriveChildrenItemFolder,
-    public readonly created: Date = new Date(),
-  ) {}
-}
+//   constructor(
+//     public readonly content: CT.DriveChildrenItemFolder,
+//     public readonly created: Date = new Date(),
+//   ) {}
+// }
 
 export class CacheEntityAppLibraryDetails {
   readonly type = 'APP_LIBRARY'
@@ -87,15 +83,15 @@ export class CacheEntityAppLibraryDetails {
   ) {}
 }
 
-export class CacheEntityAppLibraryItem {
-  readonly type = 'APP_LIBRARY'
-  readonly hasDetails = false
+// export class CacheEntityAppLibraryItem {
+//   readonly type = 'APP_LIBRARY'
+//   readonly hasDetails = false
 
-  constructor(
-    public readonly content: CT.DriveChildrenItemAppLibrary,
-    public readonly created: Date = new Date(),
-  ) {}
-}
+//   constructor(
+//     public readonly content: CT.DriveChildrenItemAppLibrary,
+//     public readonly created: Date = new Date(),
+//   ) {}
+// }
 
 export class CacheEntityFile {
   readonly type = 'FILE'
@@ -124,9 +120,9 @@ export const isFolderLikeCacheEntity = (
 
 export const isDetailsCacheEntity = (
   entity: CacheEntity,
-): entity is CacheEntityFolderRootDetails | CacheEntityFolderDetails | CacheEntityAppLibraryDetails =>
-  isFolderLikeCacheEntity(entity) && entity.hasDetails
+): entity is CacheEntityFolderLike => isFolderLikeCacheEntity(entity) && entity.hasDetails
 
 export const isFolderLikeType = (
   type: CacheEntity['type'],
-): type is (CacheEntityFolderLike | CacheEntityAppLibrary)['type'] => type !== 'FILE'
+): type is (CacheEntityFolderLike | CacheEntityAppLibrary)['type'] => true
+// type !== 'FILE'

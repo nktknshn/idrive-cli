@@ -62,16 +62,6 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
       ),
     )
 
-    const env = createEnv(details)
-    const cache = pipe(
-      C.cachef(),
-      C.putDetails(tree.d),
-    )
-
-    assert(cache._tag === 'Right')
-
-    const state = createState({ cache: cache.right })
-
     return pipe(
       DriveLookup.chainCachedDocwsRoot(root =>
         DriveLookup.getFoldersTrees([

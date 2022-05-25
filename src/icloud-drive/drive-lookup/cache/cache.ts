@@ -18,12 +18,11 @@ import { getFromCacheByPath } from './cache-get-by-path'
 import {
   assertFolderWithDetailsEntity,
   cacheEntityFromDetails,
-  cacheEntityFromItem,
+  // cacheEntityFromItem,
   hierarchyToPath,
   parsePath,
 } from './cache-helpers'
 import * as CT from './cache-types'
-import { MissingParentError } from './errors'
 export * from './cache-file'
 
 export type Cache = CT.CacheF
@@ -52,7 +51,9 @@ export const getTrash = (cache: CT.CacheF): E.Either<Error, CT.CacheEntityFolder
     E.filterOrElse(CT.isTrashCacheEntity, () => err('getTrashE(): invalid trash details')),
   )
 
-export const getAllDetails = (cache: CT.CacheF): (T.DetailsDocwsRoot | T.DetailsFolder | T.DetailsAppLibrary)[] => {
+export const getAllDetails = (
+  cache: CT.CacheF,
+): (T.DetailsDocwsRoot | T.DetailsFolder | T.DetailsAppLibrary | T.DetailsTrashRoot)[] => {
   return pipe(
     Object.values(cache.byDrivewsid),
     A.filter(CT.isDetailsCacheEntity),
@@ -167,7 +168,6 @@ export const getFoldersDetailsByIds = (
       NA.map(id => getFolderDetailsByIdO(id)(cache)),
       NA.map(O.fold(() => E.right<Error, T.MaybeInvalidId<T.Details>>(T.invalidId), E.map(v => v.content))),
       sequenceArrayNEA,
-      // E.map(RA.toArray),
     )
   }
 
@@ -226,18 +226,7 @@ export const getByIdWithPath = (drivewsid: string) =>
       E.bind('path', () => getCachedPathForId(drivewsid)(cache)),
     )
 
-const addItems = (items: T.DriveChildrenItem[]) =>
-  (cache: CT.CacheF): E.Either<Error, CT.CacheF> => {
-    return pipe(
-      items,
-      A.reduce(
-        E.of(cache),
-        (acc, cur) => pipe(acc, E.chain(putItem(cur))),
-      ),
-    )
-  }
-
-export const removeById = (drivewsid: string) =>
+export const removeById = (drivewsid: string): (cache: CT.CacheF) => CT.CacheF =>
   (cache: CT.CacheF) =>
     pipe(
       cache,
@@ -246,17 +235,17 @@ export const removeById = (drivewsid: string) =>
 
 export const putDetailss = (
   detailss: T.Details[],
-): ((cache: CT.CacheF) => E.Either<Error, CT.CacheF>) => {
+): ((cache: CT.CacheF) => CT.CacheF) => {
   return cache =>
     pipe(
       detailss,
-      A.reduce(E.of(cache), (c, d) => pipe(c, E.chain(putDetails(d)))),
+      A.reduce(cache, (c, d) => pipe(c, putDetails(d))),
     )
 }
 
 export const putDetails = (
   details: T.Details,
-): ((cache: CT.CacheF) => E.Either<Error, CT.CacheF>) => {
+): ((cache: CT.CacheF) => CT.CacheF) => {
   cacheLogger.debug(
     `putting ${details.drivewsid} ${T.fileName(details)} etag: ${
       T.isTrashDetailsG(details) ? 'trash' : details.etag
@@ -270,40 +259,7 @@ export const putDetails = (
         cacheEntityFromDetails(details),
       ),
     ),
-    addItems(details.items),
   )
-}
-
-const putItem = (
-  item: T.DriveChildrenItem,
-): ((cache: CT.CacheF) => E.Either<Error, CT.CacheF>) => {
-  const shouldBeUpdated = (cached: O.Option<CT.CacheEntity>) => {
-    return O.isNone(cached)
-      // || cached.value.content.etag !== item.etag
-      || !cached.value.hasDetails
-  }
-
-  return (cache: CT.CacheF) =>
-    pipe(
-      getByIdE(item.parentId)(cache),
-      E.mapLeft(() =>
-        MissingParentError.create(
-          `putItem: missing parent ${item.parentId} in cache while putting ${T.fileName(item)}`,
-        )
-      ),
-      E.map(() => {
-        if (shouldBeUpdated(getByIdO(item.drivewsid)(cache))) {
-          return pipe(
-            cache,
-            lens.byDrivewsid.modify(
-              R.upsertAt(item.drivewsid, cacheEntityFromItem(item)),
-            ),
-          )
-        }
-
-        return cache
-      }),
-    )
 }
 
 export const removeByIds = (drivewsids: string[]) =>
@@ -312,3 +268,9 @@ export const removeByIds = (drivewsids: string[]) =>
       drivewsids,
       A.reduce(cache, (cache, cur) => removeById(cur)(cache)),
     )
+
+export const concat = (c1: Cache, c2: Cache): CT.CacheF =>
+  pipe(
+    c1,
+    putDetailss(getAllDetails(c2)),
+  )
