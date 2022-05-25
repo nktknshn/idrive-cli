@@ -4,12 +4,11 @@ import { AuthorizedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
 import { DriveApi } from '..'
 import * as C from './cache'
-
 export * from './methods/cache-methods'
 export { getFoldersTrees } from './methods/drive-get-folders-trees'
 export {
   getFoldersTreesByPathsDocwsroot,
-  getFoldersTreesByPathsFlattenDocwsroot as getFoldersTreesByPathFlattenWPDocwsroot,
+  getFoldersTreesByPathsFlattenDocwsroot,
   getFolderTreeByPathDocwsroot,
   getFolderTreeByPathFlattenWPDocwsroot,
 } from './methods/drive-get-folders-trees-ext'
@@ -21,7 +20,6 @@ export type Deps = DriveApi.Dep<'retrieveItemDetailsInFolders'>
 
 export type TempCacheState = {
   tempCache: O.Option<C.Cache>
-  // tempCacheActive: boolean
 }
 
 export type State =
@@ -32,7 +30,7 @@ export type State =
 export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<State, R, Error, A>
 export type Action<R, A> = SRTE.StateReaderTaskEither<State, R, Error, A>
 
-export const { map, chain, filterOrElse } = SRTE
+export const { map, chain: chain_, filterOrElse } = SRTE
 
 export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
 
@@ -43,3 +41,5 @@ export const chainState = <A>(
 ): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(get())
 
 export const errS = <A>(s: string): Effect<A> => SRTE.left(err(s))
+
+export const chain = chain_ as (<A, B>(f: (a: A) => Effect<B>) => (ma: Effect<A>) => Effect<B>)

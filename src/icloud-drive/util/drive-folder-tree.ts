@@ -5,28 +5,32 @@ import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
 import { T } from '..'
 
-export type FolderDeep<T extends T.Details> = {
-  readonly details: T
+export type FolderDeep<R extends T.Details> = {
+  readonly details: T.DetailsOfRoot<R>
   readonly deep: true
 }
 
-export type FolderShallow<T extends T.Details> = {
-  readonly details: T
+export type FolderShallow<R extends T.Details> = {
+  readonly details: T.DetailsOfRoot<R>
   readonly deep: false
 }
 
-export type DriveFolderTree<T extends T.Details> = TR.Tree<FolderTreeValue<T>>
+export type DriveFolderTree<R extends T.Details> = TR.Tree<FolderTreeValue<R>>
 
-export type FolderTreeValue<T extends T.Details> = FolderDeep<T> | FolderShallow<T>
+export type FolderTreeValue<R extends T.Details> = FolderDeep<R> | FolderShallow<R>
 
-export type FlattenTreeItemP<T extends T.Details> = [
-  path: string,
-  item: T.DetailsOrFile<T>,
-]
+export type FlattenTreeItemP<R extends T.Details> = {
+  remotepath: string
+  remotefile: T.DetailsOrFile<R>
+}
+// [
+//   path: string,
+//   item: T.DetailsOrFile<T>,
+// ]
 
-export type FlattenFolderTreeWithP<T extends T.Details> = FlattenTreeItemP<T>[]
+export type FlattenFolderTreeWithP<R extends T.Details> = FlattenTreeItemP<R>[]
 
-export const shallowFolder = <T extends T.Details>(details: T): DriveFolderTree<T> =>
+export const shallowFolder = <R extends T.Details>(details: T.DetailsOfRoot<R>): DriveFolderTree<R> =>
   TR.make(
     {
       details,
@@ -34,17 +38,19 @@ export const shallowFolder = <T extends T.Details>(details: T): DriveFolderTree<
     },
   )
 
-export const deepFolder = <T extends T.Details | T.NonRootDetails>(
-  details: T,
-  children: TR.Forest<FolderTreeValue<T>>,
-): DriveFolderTree<T> =>
+export const deepFolder = <R extends T.Details>(
+  details: R,
+  children: TR.Forest<FolderTreeValue<R>>,
+): DriveFolderTree<R> =>
   TR.make({
     details,
     deep: true,
   }, children)
 
-export const treeWithFiles = <T extends T.Details>(tree: DriveFolderTree<T>): TR.Tree<T | T.DriveChildrenItemFile> => {
-  const files: (T | T.DriveChildrenItemFile)[] = pipe(
+export const treeWithFiles = <R extends T.Details>(
+  tree: DriveFolderTree<R>,
+): TR.Tree<T.DetailsOfRoot<R> | T.DriveChildrenItemFile> => {
+  const files: (T.DetailsOfRoot<R> | T.DriveChildrenItemFile)[] = pipe(
     tree.value.details.items,
     A.filter(T.isFile),
   )
@@ -80,7 +86,7 @@ export const addPathToFolderTree = <T>(
 export const flattenFolderTreeWithBasepath = (
   parentPath: string,
 ) =>
-  <T extends T.Details>(tree: DriveFolderTree<T>): FlattenFolderTreeWithP<T> => {
+  <R extends T.Root>(tree: DriveFolderTree<R>): FlattenFolderTreeWithP<R> => {
     const name = T.fileName(tree.value.details)
     const path = Path.normalize(Path.join(parentPath, name) //  + '/'
     )
@@ -95,6 +101,7 @@ export const flattenFolderTreeWithBasepath = (
       A.map(T.fileName),
       A.map(f => Path.join(path, f)),
       A.zip(subfiles),
+      A.map(([remotepath, remotefile]) => ({ remotepath, remotefile })),
     )
 
     const subfolders = pipe(
@@ -104,14 +111,14 @@ export const flattenFolderTreeWithBasepath = (
     )
 
     return [
-      [path, tree.value.details],
+      { remotefile: tree.value.details, remotepath: path },
       ...zippedsubfiles,
       ...subfolders,
     ]
   }
 
-export const showFolderTree = <T extends T.Details>(tree: DriveFolderTree<T>): string => {
-  const getSubTrees = (tree: DriveFolderTree<T>): TR.Tree<T.HasName> => {
+export const showFolderTree = <R extends T.Root>(tree: DriveFolderTree<R>): string => {
+  const getSubTrees = (tree: DriveFolderTree<R>): TR.Tree<T.HasName> => {
     const files: T.HasName[] = pipe(
       tree.value.details.items,
       A.filter(T.isFile),
@@ -132,7 +139,7 @@ export const showFolderTree = <T extends T.Details>(tree: DriveFolderTree<T>): s
   )
 }
 
-export const drawFolderTree = <T extends T.Details>(tree: DriveFolderTree<T>): string => {
+export const drawFolderTree = <R extends T.Root>(tree: DriveFolderTree<R>): string => {
   return pipe(
     tree,
     TR.map(_ => T.fileNameAddSlash(_.details)),

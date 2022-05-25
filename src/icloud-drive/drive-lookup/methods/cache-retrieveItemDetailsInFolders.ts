@@ -6,13 +6,11 @@ import { Eq } from 'fp-ts/lib/string'
 import * as O from 'fp-ts/Option'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
-import { NEA, XXX } from '../../../util/types'
-import { recordFromTuples } from '../../../util/util'
+import { NEA } from '../../../util/types'
+import { sequenceArrayE, sequenceArrayO } from '../../../util/util'
 import { C, DriveApi, T } from '../..'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
-import { makeMissedFound } from '../../util/drive-helpers'
-import { chain, of } from '..'
-import { Effect, State } from '..'
+import { chain, Effect, of, State } from '..'
 import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
@@ -58,13 +56,10 @@ export function retrieveItemDetailsInFoldersCachedStrict(
 ): Effect<NEA<T.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersCached(drivewsids),
-    // SRTE.map(NA.map(T.invalidIdToOption)),
-    SRTE.chain(
-      flow(
-        O.sequenceArray,
-        SRTE.fromOption(() => err(`some of the ids was not found`)),
-        v => v as Effect<NEA<T.Details>>,
-      ),
+    SRTE.chain(res =>
+      SRTE.fromOption(() => err(`some of the ids was not found`))(
+        sequenceArrayO(res),
+      )
     ),
   )
 }

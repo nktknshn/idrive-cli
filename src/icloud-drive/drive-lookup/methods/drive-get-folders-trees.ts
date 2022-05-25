@@ -22,11 +22,11 @@ export function getFoldersTrees<R extends T.Root>(
 export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DriveLookup.Effect<NEA<DriveFolderTree<R | T.NonRootDetails>>> {
+): DriveLookup.Effect<NEA<DriveFolderTree<R>>> {
   const go = <R extends T.Root | T.NonRootDetails>(
     folders: NEA<R | T.NonRootDetails>,
     depth: number,
-  ): DriveLookup.Effect<NEA<DriveFolderTree<R | T.NonRootDetails>>> => {
+  ): DriveLookup.Effect<NEA<DriveFolderTree<R>>> => {
     const subfolders = getSubfolders(folders)
     const doGoDeeper = depth > 0 && subfolders.length > 0
     const depthExceed = subfolders.length > 0 && depth == 0

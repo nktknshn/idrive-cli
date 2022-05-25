@@ -2,20 +2,20 @@ import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import micromatch from 'micromatch'
 import { getDirectoryStructure } from '../../../util/getDirectoryStructure'
-import { guardSnd } from '../../../util/guards'
+import { guardProp, guardSnd } from '../../../util/guards'
 import { T } from '../..'
-import { FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
+import { FlattenFolderTreeWithP, FlattenTreeItemP } from '../../util/drive-folder-tree'
 import { DownloadItem, DownloadTask } from './types'
 
 type DefaultFunc = (opts: {
   include: string[]
   exclude: string[]
-}) => (file: [string, T.DetailsOrFile<T.Root>]) => boolean
+}) => (file: FlattenTreeItemP<T.Root>) => boolean
 
 export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =>
-  ([path, item]) =>
-    (include.length == 0 || micromatch.any(path, include, { dot: true }))
-    && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true }))
+  ({ remotefile, remotepath }) =>
+    (include.length == 0 || micromatch.any(remotepath, include, { dot: true }))
+    && (exclude.length == 0 || !micromatch.any(remotepath, exclude, { dot: true }))
 
 const filterFlatTree = ({
   // exclude,
@@ -25,17 +25,20 @@ const filterFlatTree = ({
 }: {
   // include: string[]
   // exclude: string[]
-  filterFiles: (files: [string, T.DriveChildrenItemFile]) => boolean
+  filterFiles: (files: {
+    remotepath: string
+    remotefile: T.DriveChildrenItemFile
+  }) => boolean
 }) =>
-  <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>) => {
+  <T extends T.Root>(flatTree: FlattenFolderTreeWithP<T>) => {
     const files = pipe(
       flatTree,
-      A.filter(guardSnd(T.isFile)),
+      A.filter(guardProp('remotefile', T.isFile)),
     )
 
     const folders = pipe(
       flatTree,
-      A.filter(guardSnd(T.isFolderLike)),
+      A.filter(guardProp('remotefile', T.isFolderLike)),
     )
 
     const { left: excluded, right: validFiles } = pipe(
@@ -51,22 +54,25 @@ const filterFlatTree = ({
   }
 
 export const makeDownloadTaskFromTree = (opts: {
-  filterFiles: (files: [string, T.DriveChildrenItemFile]) => boolean
+  filterFiles: (files: {
+    remotepath: string
+    remotefile: T.DriveChildrenItemFile
+  }) => boolean
 }) =>
-  <T extends T.Details>(flatTree: FlattenFolderTreeWithP<T>): DownloadTask & {
+  <T extends T.Root>(flatTree: FlattenFolderTreeWithP<T>): DownloadTask & {
     excluded: DownloadItem[]
   } => {
     const { excluded, files, folders } = filterFlatTree(opts)(flatTree)
 
     const { left: downloadable, right: empties } = pipe(
       files,
-      A.partition(([, file]) => file.size == 0),
+      A.partition(({ remotefile }) => remotefile.size == 0),
     )
 
     const dirstruct = pipe(
       A.concat(downloadable)(empties),
       A.concatW(folders),
-      A.map(a => a[0]),
+      A.map(a => a.remotepath),
       getDirectoryStructure,
     )
 

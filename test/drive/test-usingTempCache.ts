@@ -34,7 +34,7 @@ describe('usingTempCache', () => {
     ),
   })
 
-  const req = DriveLookup.getFoldersTreesByPathFlattenWPDocwsroot([
+  const req = DriveLookup.getFoldersTreesByPathsFlattenDocwsroot([
     npath('/test1/test2/'),
     npath('/test1/'),
     npath('/test1/test2/test3/'),

@@ -5,7 +5,7 @@ import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../util/util'
 import * as types from './types-io'
 
-export type DetailsOrFile<R> = (R | NonRootDetails | DriveChildrenItemFile)
+export type DetailsOrFile<R extends Details> = (R | NonRootDetails | DriveChildrenItemFile)
 
 export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>
 
@@ -27,6 +27,10 @@ export type Root =
 
 export type Details =
   | Root
+  | NonRootDetails
+
+export type DetailsOfRoot<R extends Details> =
+  | R
   | NonRootDetails
 
 export type NonRootDetails =
@@ -131,12 +135,12 @@ export type FolderLike =
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary
 
-export const isFolderLike = (
-  entity: Details | DetailsTrashRoot | DriveChildrenItem,
-): entity is FolderLike =>
-  entity.drivewsid === types.trashDrivewsid
-  || hasOwnProperty(entity, 'type') && entity.type === 'APP_LIBRARY'
-  || hasOwnProperty(entity, 'type') && entity.type === 'FOLDER'
+export const isFolderLike = <R extends Root>(
+  entity: DetailsOfRoot<R> | DriveChildrenItem,
+): entity is DetailsFolder | DetailsAppLibrary | R => !(hasOwnProperty(entity, 'type') && entity.type === 'FILE')
+// entity.drivewsid === types.trashDrivewsid
+// || hasOwnProperty(entity, 'type') && entity.type === 'APP_LIBRARY'
+// || hasOwnProperty(entity, 'type') && entity.type === 'FOLDER'
 
 export const isDetails = (
   entity: Details | DriveChildrenItem,

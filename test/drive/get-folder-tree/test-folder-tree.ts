@@ -55,15 +55,7 @@ describe('getFoldersTrees', () => {
       ]),
       SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, Infinity)),
       DriveLookup.usingTempCache,
-      executeDrive({
-        itemByDrivewsid: struct0.itemByDrivewsid,
-        cache: pipe(
-          C.cachef(),
-          C.putDetailss([
-            struct0.r.d,
-          ]),
-        ),
-      }),
+      runWithRootData,
       TE.map(({ calls }) => {
         expect(calls().total).toBe(7)
       }),

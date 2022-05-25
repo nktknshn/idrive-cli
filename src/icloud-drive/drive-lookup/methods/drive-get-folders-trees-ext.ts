@@ -9,7 +9,7 @@ import { DriveFolderTree, flattenFolderTreeWithBasepath, FlattenFolderTreeWithP 
 export const getFoldersTreesByPathsDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
-): DriveLookup.Effect<NEA<DriveFolderTree<T.DetailsDocwsRoot | T.NonRootDetails>>> =>
+): DriveLookup.Effect<NEA<DriveFolderTree<T.DetailsDocwsRoot>>> =>
   pipe(
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     SRTE.chain(dir => DriveLookup.getFoldersTrees(dir, depth)),
@@ -19,7 +19,7 @@ export const getFoldersTreesByPathsDocwsroot = (
 export const getFolderTreeByPathDocwsroot = (
   path: NormalizedPath,
   depth = Infinity,
-): DriveLookup.Effect<DriveFolderTree<T.DetailsDocwsRoot | T.NonRootDetails>> =>
+): DriveLookup.Effect<DriveFolderTree<T.DetailsDocwsRoot>> =>
   pipe(
     getFoldersTreesByPathsDocwsroot([path], depth),
     SRTE.map(NA.head),
@@ -29,25 +29,26 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
 ): DriveLookup.Effect<
-  NEA<FlattenFolderTreeWithP<T.DetailsDocwsRoot | T.NonRootDetails>>
-> =>
-  pipe(
+  NEA<FlattenFolderTreeWithP<T.DetailsDocwsRoot>>
+> => {
+  return pipe(
     // provide existing cache for getByPathsFromCache
     // and accumulate new details here
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     // and use here
-    SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, depth)),
+    SRTE.chain(dirs => DriveLookup.getFoldersTrees<T.DetailsDocwsRoot>(dirs, depth)),
     SRTE.map(NA.zip(paths)),
     SRTE.map(NA.map(
-      ([tree, path]) => flattenFolderTreeWithBasepath(Path.dirname(path))(tree),
+      ([tree, path]) => flattenFolderTreeWithBasepath(Path.dirname(path))<T.DetailsDocwsRoot>(tree),
     )),
     DriveLookup.usingTempCache,
   )
+}
 
 export const getFolderTreeByPathFlattenWPDocwsroot = (
   path: NormalizedPath,
   depth = Infinity,
-): DriveLookup.Effect<FlattenFolderTreeWithP<T.DetailsDocwsRoot | T.NonRootDetails>> =>
+): DriveLookup.Effect<FlattenFolderTreeWithP<T.DetailsDocwsRoot>> =>
   pipe(
     getFoldersTreesByPathsFlattenDocwsroot([path], depth),
     SRTE.map(NA.head),

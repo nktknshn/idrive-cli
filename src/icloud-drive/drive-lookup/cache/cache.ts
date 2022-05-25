@@ -9,19 +9,13 @@ import { err } from '../../../util/errors'
 import { cacheLogger } from '../../../util/logging'
 import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
-import { sequenceArrayNEA } from '../../../util/util'
+import { sequenceArrayE } from '../../../util/util'
 import * as T from '../../icloud-drive-items-types'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
 import { GetByPathResult } from '../../util/get-by-path-types'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { getFromCacheByPath } from './cache-get-by-path'
-import {
-  assertFolderWithDetailsEntity,
-  cacheEntityFromDetails,
-  // cacheEntityFromItem,
-  hierarchyToPath,
-  parsePath,
-} from './cache-helpers'
+import { assertFolderWithDetailsEntity, cacheEntityFromDetails, hierarchyToPath, parsePath } from './cache-helpers'
 import * as CT from './cache-types'
 export * from './cache-file'
 
@@ -167,7 +161,7 @@ export const getFoldersDetailsByIds = (
       drivewsids,
       NA.map(id => getFolderDetailsByIdO(id)(cache)),
       NA.map(O.fold(() => E.right<Error, T.MaybeInvalidId<T.Details>>(T.invalidId), E.map(v => v.content))),
-      sequenceArrayNEA,
+      sequenceArrayE,
     )
   }
 

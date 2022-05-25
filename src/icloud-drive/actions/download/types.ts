@@ -6,10 +6,15 @@ import { DriveLookup, T } from '../..'
 import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
 import { XXX } from '../../../util/types'
 
-export type DownloadItem = (readonly [
-  remotepath: string,
-  remotefile: T.DriveChildrenItemFile,
-])
+export type DownloadItem = {
+  remotepath: string
+  remotefile: T.DriveChildrenItemFile
+}
+
+// (readonly [
+//   remotepath: string,
+//   remotefile: T.DriveChildrenItemFile,
+// ])
 
 export type DownloadTask = {
   dirstruct: string[]

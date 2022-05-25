@@ -31,13 +31,11 @@ export interface CacheEntityFolderRootDetails {
   readonly type: 'ROOT'
   readonly hasDetails: true
   readonly content: CT.DetailsDocwsRoot
-  // readonly updated: Date
 }
 
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true
-  // readonly updated: Date = new Date()
   constructor(
     public readonly content: CT.DetailsDocwsRoot,
     public readonly created: Date = new Date(),
@@ -63,16 +61,6 @@ export class CacheEntityFolderDetails {
   ) {}
 }
 
-// export class CacheEntityFolderItem {
-//   readonly type = 'FOLDER'
-//   readonly hasDetails = false
-
-//   constructor(
-//     public readonly content: CT.DriveChildrenItemFolder,
-//     public readonly created: Date = new Date(),
-//   ) {}
-// }
-
 export class CacheEntityAppLibraryDetails {
   readonly type = 'APP_LIBRARY'
   readonly hasDetails = true
@@ -82,16 +70,6 @@ export class CacheEntityAppLibraryDetails {
     public readonly created: Date = new Date(),
   ) {}
 }
-
-// export class CacheEntityAppLibraryItem {
-//   readonly type = 'APP_LIBRARY'
-//   readonly hasDetails = false
-
-//   constructor(
-//     public readonly content: CT.DriveChildrenItemAppLibrary,
-//     public readonly created: Date = new Date(),
-//   ) {}
-// }
 
 export class CacheEntityFile {
   readonly type = 'FILE'
@@ -125,4 +103,3 @@ export const isDetailsCacheEntity = (
 export const isFolderLikeType = (
   type: CacheEntity['type'],
 ): type is (CacheEntityFolderLike | CacheEntityAppLibrary)['type'] => true
-// type !== 'FILE'

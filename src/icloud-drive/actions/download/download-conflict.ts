@@ -142,7 +142,7 @@ export const applySoultions = (
         solutions,
         RA.findFirstMap(
           ([conflict, action]) =>
-            conflict.item.remoteitem[1].drivewsid === d.remoteitem[1].drivewsid
+            conflict.item.remoteitem.remotefile.drivewsid === d.remoteitem.remotefile.drivewsid
               ? O.some([conflict.item, action] as const)
               : O.none,
         ),
@@ -166,7 +166,5 @@ export const applySoultions = (
 
 export const showConflict = (conflict: Conflict): string =>
   conflict.tag === 'exists'
-    ? `local file ${conflict.item.localpath} (${conflict.localitem.stats.size} bytes) conflicts with remote file (${
-      conflict.item.remoteitem[1].size
-    } bytes)`
+    ? `local file ${conflict.item.localpath} (${conflict.localitem.stats.size} bytes) conflicts with remote file (${conflict.item.remoteitem.remotefile.size} bytes)`
     : `error: ${conflict.error}`

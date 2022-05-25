@@ -8,9 +8,9 @@ import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
 import { FlattenTreeItemP } from '../../util/drive-folder-tree'
 
-export type SearchInPathFoundItem = {
-  path: string
-  item: T.DetailsOrFile<T.DetailsDocwsRoot>
+export type SearchInPathFoundItem<R extends T.Root> = {
+  remotepath: string
+  remotefile: T.DetailsOrFile<R>
 }
 
 export const searchInPaths = (
@@ -18,13 +18,10 @@ export const searchInPaths = (
   query: (item: FlattenTreeItemP<T.DetailsDocwsRoot>) => boolean,
   depth = Infinity,
 ): DriveLookup.Effect<
-  NA.NonEmptyArray<SearchInPathFoundItem[]>
+  NA.NonEmptyArray<SearchInPathFoundItem<T.DetailsDocwsRoot>[]>
 > => {
   return pipe(
-    DriveLookup.getFoldersTreesByPathFlattenWPDocwsroot(paths, depth),
-    SRTE.map(NA.map(flow(
-      A.filter(query),
-      A.map(([path, item]) => ({ path, item })),
-    ))),
+    DriveLookup.getFoldersTreesByPathsFlattenDocwsroot(paths, depth),
+    SRTE.map(NA.map(A.filter(query))),
   )
 }

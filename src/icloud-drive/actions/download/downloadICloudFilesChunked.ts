@@ -40,7 +40,7 @@ const splitIntoChunks = (
 
   const byZone = pipe(
     files,
-    NA.groupBy((c) => c.remoteitem[1].zone),
+    NA.groupBy((c) => c.remoteitem.remotefile.zone),
   )
 
   for (const zone of R.keys(byZone)) {
@@ -55,8 +55,8 @@ const downloadChunkPar = <S extends AuthorizedState>(
 ): XXX<S, Deps, DownloadFileResult[]> => {
   return pipe(
     DriveApi.downloadBatch<S>({
-      docwsids: chunk.map(_ => _.remoteitem[1]).map(_ => _.docwsid),
-      zone: NA.head(chunk).remoteitem[1].zone,
+      docwsids: chunk.map(_ => _.remoteitem.remotefile).map(_ => _.docwsid),
+      zone: NA.head(chunk).remoteitem.remotefile.zone,
     }),
     SRTE.chainW((downloadResponses) => {
       const urls = pipe(

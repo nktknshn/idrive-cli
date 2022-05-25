@@ -6,7 +6,7 @@ import { err } from '../../../../util/errors'
 import { logger } from '../../../../util/logging'
 import { NormalizedPath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
-import { sequenceArrayNEA } from '../../../../util/util'
+import { sequenceArrayE } from '../../../../util/util'
 import * as T from '../../../icloud-drive-items-types'
 import * as V from '../../../util/get-by-path-types'
 import { Effect, filterOrElse, map } from '../..'
@@ -24,7 +24,7 @@ export const getByPathsStrict = <R extends T.Root>(
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
-    SRTE.chainEitherK(sequenceArrayNEA),
+    SRTE.chainEitherK(sequenceArrayE),
   )
 }
 
@@ -36,7 +36,7 @@ export const getByPathsStrictDocwsroot = (
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
-    SRTE.chainEitherK(sequenceArrayNEA),
+    SRTE.chainEitherK(sequenceArrayE),
   )
 }
 

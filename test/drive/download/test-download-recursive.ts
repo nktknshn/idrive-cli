@@ -15,7 +15,9 @@ class Enoent extends Error {
 
 describe('lookForConflicts', () => {
   it('works', async () => {
-    const fstat = (path: string): TE.TaskEither<Error, FsStats> => TE.left(new Enoent())
+    const fstat = (
+      path: string,
+    ): TE.TaskEither<Error, FsStats> => TE.left(new Enoent())
     // TE.of({
     //   isFile: () => true,
     //   isDirectory: () => false,
@@ -28,13 +30,13 @@ describe('lookForConflicts', () => {
         {
           downloadable: [
             {
-              remoteitem: [
-                '/fileinroot.txt',
+              remoteitem: {
+                remotepath: '/fileinroot.txt',
                 // complexStructure0.r.c['fileinroot.txt'].d,
-                fakeicloud(
+                remotefile: fakeicloud(
                   file({ name: 'fileinroot.txt' }),
                 ).r.c['fileinroot.txt'].d,
-              ],
+              },
               localpath: './output/fileinroot.txt',
             },
           ],

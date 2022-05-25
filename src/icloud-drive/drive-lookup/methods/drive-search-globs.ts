@@ -74,21 +74,21 @@ export const searchGlobs = (
             return pipe(
               tree,
               flattenFolderTreeWithBasepath(Path.dirname(scan.base)),
-              A.filterMap(([path, item]) => {
+              A.filterMap(({ remotepath, remotefile }) => {
                 if (scan.glob.length == 0) {
-                  if (micromatch.isMatch(path, globpattern, options)) {
-                    return O.some({ path, item })
+                  if (micromatch.isMatch(remotepath, globpattern, options)) {
+                    return O.some({ path: remotepath, item: remotefile })
                   }
 
                   return O.none
                 }
 
                 return micromatch.isMatch(
-                    path.replace(/^\//, ''),
+                    remotepath.replace(/^\//, ''),
                     globpattern.replace(/^\//, ''),
                     options,
                   )
-                  ? O.some({ path, item })
+                  ? O.some({ path: remotepath, item: remotefile })
                   : O.none
               }),
             )

@@ -184,7 +184,7 @@ const showTask = ({ verbose = false }) =>
       ? verbose
         ? `will be downloaded: \n${
           [...task.downloadable, ...task.empties].map(({ remoteitem: info, localpath }) =>
-            `${info[0]} into ${localpath}`
+            `${info.remotepath} into ${localpath}`
           )
             .join(
               '\n',

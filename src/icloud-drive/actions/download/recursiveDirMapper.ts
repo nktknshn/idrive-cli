@@ -9,14 +9,14 @@ export const recursiveDirMapper = (
   (ds: DownloadTask): DownloadTaskMapped => {
     return {
       downloadable: ds.downloadable
-        .map(([remotepath, file]) => ({
-          remoteitem: [remotepath, file],
-          localpath: prependPath(dstpath)(mapPath(remotepath)),
+        .map((item) => ({
+          remoteitem: item,
+          localpath: prependPath(dstpath)(mapPath(item.remotepath)),
         })),
       empties: ds.empties
-        .map(([remotepath, file]) => ({
-          remoteitem: [remotepath, file],
-          localpath: prependPath(dstpath)(mapPath(remotepath)),
+        .map((item) => ({
+          remoteitem: item,
+          localpath: prependPath(dstpath)(mapPath(item.remotepath)),
         })),
       localdirstruct: [
         dstpath,
@@ -30,11 +30,11 @@ export const shallowDirMapper = (dstpath: string) =>
   (ds: DownloadTask) => ({
     downloadable: ds.downloadable.map(remoteitem => ({
       remoteitem,
-      localpath: Path.join(dstpath, Path.basename(remoteitem[0])),
+      localpath: Path.join(dstpath, Path.basename(remoteitem.remotepath)),
     })),
     empties: ds.empties.map(remoteitem => ({
       remoteitem,
-      localpath: Path.join(dstpath, Path.basename(remoteitem[0])),
+      localpath: Path.join(dstpath, Path.basename(remoteitem.remotepath)),
     })),
     localdirstruct: [dstpath],
   })

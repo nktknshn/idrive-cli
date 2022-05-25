@@ -96,6 +96,8 @@ export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, 
   })
 }
 
-export const sequenceArrayNEA: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
+export const sequenceArrayE: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
+
+export const sequenceArrayO: <A>(as: NEA<O.Option<A>>) => O.Option<NEA<A>> = O.sequenceArray as any
 
 export const randomUUIDCap = (): string => randomUUID().toUpperCase()
