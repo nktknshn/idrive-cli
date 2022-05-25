@@ -3,26 +3,18 @@ import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveLookup } from '../../icloud-drive'
-import * as C from '../../icloud-drive/drive-lookup/cache'
-import { NotFoundError } from '../../icloud-drive/drive-lookup/errors'
-import { showFolderTree } from '../../icloud-drive/util/drive-folder-tree'
-import { invalidPath, validPath } from '../../icloud-drive/util/get-by-path-types'
-import * as L from '../../util/logging'
-import { normalizePath, npath } from '../../util/normalize-path'
-import { complexStructure0 } from './fixtures'
-import { appLibrary, file, folder } from './helpers-drive'
-import { createEnv, createState, executeDrive, fakeicloud } from './struct'
+import { DriveLookup } from '../../src/icloud-drive'
+import * as C from '../../src/icloud-drive/drive-lookup/cache'
+import { NotFoundError } from '../../src/icloud-drive/drive-lookup/errors'
+import { showFolderTree } from '../../src/icloud-drive/util/drive-folder-tree'
+import { invalidPath, validPath } from '../../src/icloud-drive/util/get-by-path-types'
+import * as L from '../../src/util/logging'
+import { normalizePath, npath } from '../../src/util/normalize-path'
+import { complexStructure0 } from './fixtures/drive'
+import { file, folder } from './util/helpers-drive'
+import { createEnv, createState, executeDrive, fakeicloud } from './util/struct'
 
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+import './debug'
 
 describe('retrieveItemDetailsInFoldersSaving', () => {
   it('works', async () => {
@@ -56,7 +48,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           res,
           [[{
             path: '/fileinroot.txt',
-            item: complexStructure0.r.c['fileinroot.txt'],
+            item: complexStructure0.r.c['fileinroot.txt'].d,
           }]],
         )
       }),
@@ -83,7 +75,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
 
     const state = createState({ cache: cache.right })
 
-    const req0 = pipe(
+    return pipe(
       DriveLookup.chainCachedDocwsRoot(root =>
         DriveLookup.getFoldersTrees([
           root,
@@ -92,10 +84,6 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
         ], Infinity)
       ),
       SRTE.map(NA.map(showFolderTree)),
-    )
-
-    console.log(
-      await req0(state)(env)(),
     )
   })
 })

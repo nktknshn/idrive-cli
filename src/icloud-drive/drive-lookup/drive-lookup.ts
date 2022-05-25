@@ -1,4 +1,5 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as O from 'fp-ts/Option'
 import { AuthorizedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
 import { DriveApi } from '..'
@@ -19,8 +20,8 @@ export * from './methods/get-by-paths'
 export type Deps = DriveApi.Dep<'retrieveItemDetailsInFolders'>
 
 export type TempCacheState = {
-  tempCache: C.Cache
-  tempCacheActive: boolean
+  tempCache: O.Option<C.Cache>
+  // tempCacheActive: boolean
 }
 
 export type State =

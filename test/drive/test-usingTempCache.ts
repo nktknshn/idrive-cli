@@ -1,24 +1,16 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup, GetDep } from '../../icloud-drive'
-import { DetailsDocwsRoot, NonRootDetails } from '../../icloud-drive/icloud-drive-items-types'
-import { FlattenFolderTreeWithP } from '../../icloud-drive/util/drive-folder-tree'
-import * as L from '../../util/logging'
-import { npath } from '../../util/normalize-path'
-import { NEA } from '../../util/types'
-import { file, folder } from './helpers-drive'
-import { executeDrive, fakeicloud } from './struct'
+import { C, DriveLookup, GetDep } from '../../src/icloud-drive'
+import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/icloud-drive-items-types'
+import { FlattenFolderTreeWithP } from '../../src/icloud-drive/util/drive-folder-tree'
+import * as L from '../../src/util/logging'
+import { npath } from '../../src/util/normalize-path'
+import { NEA } from '../../src/util/types'
+import { file, folder } from './util/helpers-drive'
+import { executeDrive, fakeicloud } from './util/struct'
 
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+import './debug'
 
 describe('usingTempCache', () => {
   const structure = fakeicloud(
@@ -67,13 +59,15 @@ describe('usingTempCache', () => {
           [expect.anything(), expect.anything(), expect.anything(), expect.anything()],
         )
 
+        // assert(state.tempCache._tag === 'None')
         expect(
-          C.getAllDetails(state.tempCache),
-        ).toEqual([])
+          // C.getAllDetails(state.tempCache.value),
+          state.tempCache._tag,
+        ).toEqual('None')
 
-        expect(
-          state.tempCacheActive,
-        ).toEqual(false)
+        // expect(
+        //   state.tempCacheActive,
+        // ).toEqual(false)
       }),
       TE.mapLeft((e) => {
         expect(false).toBe(true)

@@ -14,6 +14,7 @@ import { makeMissedFound } from '../../util/drive-helpers'
 import { chain, of } from '..'
 import { Effect, State } from '..'
 import { asksCache, chainCache, putMissedFound } from './cache-methods'
+import { usingCache } from './cache-temp-cache'
 
 // type D = {
 //   retrieveItemDetailsInFoldersTempCache<S>(
@@ -128,3 +129,8 @@ export function retrieveItemDetailsInFoldersCachedStrict(
     ),
   )
 }
+
+// const retrieveItemDetailsInFoldersSaving=  flow(
+//   retrieveItemDetailsInFoldersCached,
+//   usingCache(C.cachef()),
+// )

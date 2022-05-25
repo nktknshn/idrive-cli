@@ -1,21 +1,13 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../icloud-drive'
-import { usingTempCache } from '../../icloud-drive/drive-lookup'
-import * as L from '../../util/logging'
-import { file, folder } from './helpers-drive'
-import { executeDrive, fakeicloud } from './struct'
+import { C, DriveLookup } from '../../src/icloud-drive'
 
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+import * as L from '../../src/util/logging'
+import { file, folder } from './util/helpers-drive'
+import { executeDrive, fakeicloud } from './util/struct'
+
+import './debug'
 
 describe('searchGlobs', () => {
   const structure = fakeicloud(

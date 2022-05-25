@@ -6,24 +6,13 @@ import * as Task from 'fp-ts/lib/Task'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as TE from 'fp-ts/TaskEither'
 
-import * as L from '../../../util/logging'
+import * as L from '../../../src/util/logging'
 
-import { recursiveDirMapper, shallowDirMapper } from '../../../icloud-drive/actions/download/recursiveDirMapper'
+import * as DC from '../../../src/icloud-drive/actions/download/download-conflict'
+import { FsStats } from '../../../src/util/fs'
+import { complexStructure0 } from '../fixtures/drive'
 
-import { downloadRecursive } from '../../../icloud-drive/actions'
-import * as DC from '../../../icloud-drive/actions/download/download-conflict'
-import { FsStats } from '../../../util/fs'
-import { complexStructure0 } from '../fixtures'
-
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+import '../debug'
 
 class Enoent extends Error {
   code = 'ENOENT'

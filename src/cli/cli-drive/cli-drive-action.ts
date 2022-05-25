@@ -1,6 +1,7 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import * as O from 'fp-ts/Option'
 import { DepFs } from '../../deps-types'
 import { authorizeState, DepAuthorizeSession } from '../../deps-types/dep-authorize-session'
 import { AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authorization'
@@ -91,8 +92,8 @@ const loadDriveState = pipe(
   loadSession,
   RTE.chain(loadAccountData),
   RTE.bindW('cache', () => loadCache),
-  RTE.bindW('tempCache', () => RTE.of(C.cachef())),
-  RTE.bindW('tempCacheActive', () => RTE.of(false)),
+  RTE.bindW('tempCache', () => RTE.of(O.none)),
+  // RTE.bindW('tempCacheActive', () => RTE.of(false)),
 )
 
 const loadCache: RTE.ReaderTaskEither<

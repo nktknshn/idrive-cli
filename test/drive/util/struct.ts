@@ -5,20 +5,19 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveApi, DriveLookup, T } from '../../icloud-drive'
-import { DriveApiEnv } from '../../icloud-drive/drive-api-env/dep-drive-api-env'
-import * as C from '../../icloud-drive/drive-lookup/cache'
-import * as L from '../../util/logging'
-import { authorizedState } from '../fixtures'
+import { DriveApi, DriveLookup, T } from '../../../src/icloud-drive'
+import { DriveApiEnv } from '../../../src/icloud-drive/drive-api-env/dep-drive-api-env'
+import * as C from '../../../src/icloud-drive/drive-lookup/cache'
+import * as L from '../../../src/util/logging'
+import { authorizedState } from '../fixtures/session'
 import { createRootDetails, docwsroot } from './helpers-drive'
 
 export const fakeicloud = flow(docwsroot, createRootDetails)
 // complexStructure0.aa.Obsidian.children.my1.children.misc.children.images
 export const createState = ({
   cache = C.cachef(),
-  tempCache = C.cachef(),
-  tempCacheActive = false,
-}) => ({ ...authorizedState, cache, tempCache, tempCacheActive })
+  tempCache = O.none,
+}) => ({ ...authorizedState, cache, tempCache })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
@@ -77,8 +76,8 @@ export const executeDrive = ({
       TE.chain(cache => {
         const state = createState({
           cache,
-          tempCache: C.cachef(),
-          tempCacheActive: false,
+          tempCache: O.none,
+          // tempCacheActive: false,
         })
         const env = createEnv(details)
 

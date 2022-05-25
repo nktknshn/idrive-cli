@@ -1,7 +1,9 @@
 import * as O from 'fp-ts/Option'
-import { AccountData } from '../icloud-authorization/types'
-import { AuthorizedState } from '../icloud-core/icloud-request'
-import { ICloudSession } from '../icloud-core/session/session-type'
+import { AccountData } from '../../../src/icloud-authorization/types'
+import { AuthorizedState } from '../../../src/icloud-core/icloud-request'
+import { ICloudSession } from '../../../src/icloud-core/session/session-type'
+import { T } from '../../../src/icloud-drive'
+import { parseDrivewsid } from '../../../src/icloud-drive/util/drive-helpers'
 
 export const validSession: ICloudSession = {
   accountCountry: O.some('RUS'),
@@ -157,45 +159,4 @@ export const validAccountdata: AccountData = {
 export const authorizedState: AuthorizedState = {
   session: validSession,
   accountData: validAccountdata,
-}
-
-export const retrieveHierarchy1 = {
-  dateCreated: '2021-09-25T20:39:45Z',
-  drivewsid: 'FOLDER::F3LWYJ7GM7.com.apple.mobilegarageband::documents',
-  docwsid: 'documents',
-  zone: 'F3LWYJ7GM7.com.apple.mobilegarageband',
-  name: 'GarageBand for iOS',
-  parentId: 'FOLDER::com.apple.CloudDocs::root',
-  etag: '9',
-  type: 'APP_LIBRARY',
-  maxDepth: 'ANY',
-  icons: [
-    {
-      url: 'https://p46-drivews.icloud.com/getIcons?id=F3LWYJ7GM7.com.apple.mobilegarageband&field=icon120x120_iOS',
-      type: 'IOS',
-      size: 120,
-    },
-    {
-      url: 'https://p46-drivews.icloud.com/getIcons?id=F3LWYJ7GM7.com.apple.mobilegarageband&field=icon80x80_iOS',
-      type: 'IOS',
-      size: 80,
-    },
-    {
-      url: 'https://p46-drivews.icloud.com/getIcons?id=F3LWYJ7GM7.com.apple.mobilegarageband&field=icon40x40_iOS',
-      type: 'IOS',
-      size: 40,
-    },
-  ],
-  supportedExtensions: ['gbproj', 'band'],
-  supportedTypes: ['com.apple.garageband.project'],
-  items: [
-    {
-      drivewsid: 'FILE::F3LWYJ7GM7.com.apple.mobilegarageband::2FBEE2CE-8FCA-4397-A99A-8E7949162AAF',
-      docwsid: '2FBEE2CE-8FCA-4397-A99A-8E7949162AAF',
-      etag: '7::6',
-    },
-  ],
-  numberOfItems: 1,
-  status: 'OK',
-  hierarchy: [{ drivewsid: 'FOLDER::com.apple.CloudDocs::root' }],
 }

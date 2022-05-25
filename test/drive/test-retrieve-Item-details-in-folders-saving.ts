@@ -3,19 +3,11 @@ import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/Option'
 import * as R from 'fp-ts/Record'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../icloud-drive'
-import * as L from '../../util/logging'
-import { file, folder } from './helpers-drive'
-import { executeDrive, fakeicloud } from './struct'
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+import { C, DriveLookup } from '../../src/icloud-drive'
+import * as L from '../../src/util/logging'
+import './debug'
+import { file, folder } from './util/helpers-drive'
+import { executeDrive, fakeicloud } from './util/struct'
 
 describe('retrieveItemDetailsInFoldersSaving', () => {
   it('works', async () => {
@@ -33,7 +25,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
       ),
     )
 
-    const req0 = pipe(
+    return pipe(
       executeDrive({
         itemByDrivewsid: pipe(
           structure0.itemByDrivewsid,
@@ -73,8 +65,9 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           state.cache.byDrivewsid[structure0.r.c.folder1.c.folder4.d.drivewsid],
         ).toBeDefined()
       }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
     )
-
-    assert((await req0())._tag === 'Right')
   })
 })

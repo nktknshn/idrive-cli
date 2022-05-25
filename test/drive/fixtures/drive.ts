@@ -1,5 +1,5 @@
-import { appLibrary, file, folder } from './helpers-drive'
-import { fakeicloud } from './struct'
+import { appLibrary, file, folder } from '../util/helpers-drive'
+import { fakeicloud } from '../util/struct'
 
 export const complexStructure0 = fakeicloud(
   folder({ name: 'test1' })(),

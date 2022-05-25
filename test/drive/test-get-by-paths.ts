@@ -1,24 +1,16 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../icloud-drive'
-import { NotFoundError } from '../../icloud-drive/drive-lookup/errors'
-import { rootDrivewsid } from '../../icloud-drive/icloud-drive-items-types/types-io'
-import { invalidPath, pathTarget } from '../../icloud-drive/util/get-by-path-types'
-import * as L from '../../util/logging'
-import { npath } from '../../util/normalize-path'
-import { appLibrary, file, folder, removeByDrivewsid } from './helpers-drive'
-import { executeDrive, fakeicloud } from './struct'
+import { C, DriveLookup } from '../../src/icloud-drive'
+import { NotFoundError } from '../../src/icloud-drive/drive-lookup/errors'
+import { rootDrivewsid } from '../../src/icloud-drive/icloud-drive-items-types/types-io'
+import { invalidPath, pathTarget, showGetByPathResult, validPath } from '../../src/icloud-drive/util/get-by-path-types'
+import * as L from '../../src/util/logging'
+import { npath } from '../../src/util/normalize-path'
+import { appLibrary, file, folder, removeByDrivewsid } from './util/helpers-drive'
+import { executeDrive, fakeicloud } from './util/struct'
 
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+import './debug'
 
 describe('getByPaths', () => {
   const structure = fakeicloud(
@@ -96,7 +88,7 @@ describe('getByPaths', () => {
   })
 
   it('works fully cached multiple dirs', async () => {
-    const req0 = pipe(
+    return pipe(
       DriveLookup.getByPathsDocwsroot([
         npath('/Obsidian/my1/misc/images/'),
         npath('/folder1/subfolder1/sources/tsconfig.json'),
@@ -116,6 +108,10 @@ describe('getByPaths', () => {
         ),
       }),
       TE.map(({ calls, res, state }) => {
+        // L.logger.debug(
+        //   showGetByPathResult(structure.r.c.Obsidian.c.my1.c.misc.c.images.validPath),
+        // )
+
         expect(res).toMatchObject(
           [
             structure.r.c.Obsidian.c.my1.c.misc.c.images.validPath,
@@ -127,8 +123,10 @@ describe('getByPaths', () => {
         //   Object.keys(state.cache.byDrivewsid).length,
         // ).toBe(2)
       }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
     )
-    assert((await req0())._tag === 'Right')
   })
 
   it('works', async () => {

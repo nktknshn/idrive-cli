@@ -1,16 +1,13 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveLookup } from '../../../icloud-drive'
-import { usingTempCache } from '../../../icloud-drive/drive-lookup'
-import * as C from '../../../icloud-drive/drive-lookup/cache'
-import * as L from '../../../util/logging'
-import { npath } from '../../../util/normalize-path'
-import { file, folder } from '../helpers-drive'
-import { executeDrive, fakeicloud } from '../struct'
-
-L.initLoggers({ debug: true }, [L.logger, L.stderrLogger, L.apiLogger])
-L.initLoggers({ debug: false }, [L.cacheLogger])
+import { DriveLookup } from '../../../src/icloud-drive'
+import * as C from '../../../src/icloud-drive/drive-lookup/cache'
+import * as L from '../../../src/util/logging'
+import { npath } from '../../../src/util/normalize-path'
+import '../debug'
+import { file, folder } from '../util/helpers-drive'
+import { executeDrive, fakeicloud } from '../util/struct'
 
 const struct0 = fakeicloud(
   file({ name: 'file1.txt' }),

@@ -8,7 +8,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': 'ts-jest'
   },
-  testRegex: 'test',
+  testRegex: 'test-',
   moduleFileExtensions: ['ts', 'js'],
   coverageThreshold: {
     global: {
@@ -18,4 +18,9 @@ module.exports = {
       statements: 100
     }
   },
+  roots: [
+    // "<rootDir>/src/",
+    "<rootDir>/test/",
+  ]
+  // testMatch: ['<rootDir>/test/**/*.test.ts'],
 }

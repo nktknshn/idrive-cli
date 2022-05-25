@@ -1,6 +1,6 @@
 import { hole } from 'fp-ts/lib/function'
 import { PathLike } from 'fs'
-import { FsType } from '..//util/fs'
+import { FsType } from '../../src/util/fs'
 
 export const mockedFs = (): FsType => ({
   fstat: (path: string) => hole(),
