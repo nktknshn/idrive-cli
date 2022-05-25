@@ -1,6 +1,6 @@
 import * as L from '../../src/util/logging'
 
-export const enableDebug = (enable: boolean) => {
+export const enableDebug = (enable: boolean): void => {
   L.initLoggers(
     { debug: enable },
     [

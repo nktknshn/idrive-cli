@@ -70,7 +70,7 @@ describe('usingTempCache', () => {
     )()
   }
 
-  it('works1', async () => {
+  it('nested1', async () => {
     return pipe(
       req,
       DriveLookup.usingTempCache,
@@ -78,7 +78,7 @@ describe('usingTempCache', () => {
     )
   })
 
-  it('works2', async () => {
+  it('nested2', async () => {
     return pipe(
       DriveLookup.usingTempCache(req),
       DriveLookup.usingTempCache,
@@ -86,7 +86,7 @@ describe('usingTempCache', () => {
     )
   })
 
-  it('works3', async () => {
+  it('nested3', async () => {
     return pipe(
       DriveLookup.usingTempCache(req),
       DriveLookup.usingTempCache,
@@ -96,7 +96,7 @@ describe('usingTempCache', () => {
   })
 })
 
-describe('usingTempCache2', () => {
+describe('usingTempCache with getByPath method', () => {
   const req = pipe(
     DriveLookup.getByPathDocwsroot(npath('/test1/test2/')),
     chain(() => DriveLookup.getByPathDocwsroot(npath('/test1/'))),

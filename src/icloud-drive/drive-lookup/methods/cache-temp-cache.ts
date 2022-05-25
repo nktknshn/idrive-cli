@@ -4,15 +4,11 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
-import { logger } from '../../../util/logging'
 import { NEA } from '../../../util/types'
 import { C, T } from '../..'
-import { chain, chainState, Effect, get, map, of, State, TempCacheState } from '../drive-lookup'
-import { putCache, putDetailss, usingCache } from './cache-methods'
-import {
-  retrieveItemDetailsInFoldersCached,
-  retrieveItemDetailsInFoldersSaving,
-} from './cache-retrieveItemDetailsInFolders'
+import { chainState, Effect, get, map, TempCacheState } from '../drive-lookup'
+import { putCache, usingCache } from './cache-methods'
+import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
 const setActive = <S extends TempCacheState>(s: S): S => ({
   ...s,

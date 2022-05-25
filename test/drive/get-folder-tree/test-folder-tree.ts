@@ -1,3 +1,4 @@
+import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
@@ -6,8 +7,11 @@ import * as C from '../../../src/icloud-drive/drive-lookup/cache'
 import * as L from '../../../src/util/logging'
 import { npath } from '../../../src/util/normalize-path'
 import '../debug'
+import { enableDebug } from '../debug'
 import { executeDrive, fakeicloud } from '../util/mocked-drive'
 import { file, folder } from '../util/mocked-drive'
+
+// enableDebug(true)
 
 const struct0 = fakeicloud(
   file({ name: 'file1.txt' }),
@@ -31,8 +35,18 @@ const struct0 = fakeicloud(
   ),
 )
 
+const runWithRootData = executeDrive({
+  itemByDrivewsid: struct0.itemByDrivewsid,
+  cache: pipe(
+    C.cachef(),
+    C.putDetailss([
+      struct0.r.d,
+    ]),
+  ),
+})
+
 describe('getFoldersTrees', () => {
-  it('with temp cache', async () => {
+  it('with getByPaths and temp cache', async () => {
     return pipe(
       DriveLookup.getByPathsFoldersStrictDocwsroot([
         npath('/test1/test2/test3'),
@@ -59,6 +73,43 @@ describe('getFoldersTrees', () => {
     )()
   })
 
+  it('must save calls in combination with temp cache', async () => {
+    const r0 = await runWithRootData(DriveLookup.getByPathsFoldersStrictDocwsroot([
+      npath('/test1/test2/test3'),
+      npath('/test1/test2'),
+      npath('/test1/'),
+    ]))()
+
+    assert(r0._tag === 'Right')
+
+    const req1 = pipe(
+      DriveLookup.getFoldersTrees(r0.right.res, Infinity),
+      runWithRootData,
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(5)
+      }),
+      TE.mapLeft(() => {
+        expect(false).toBe(true)
+      }),
+    )
+
+    const req2 = pipe(
+      DriveLookup.getFoldersTrees(r0.right.res, Infinity),
+      DriveLookup.usingTempCache,
+      runWithRootData,
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(3)
+      }),
+      TE.mapLeft(() => {
+        expect(false).toBe(true)
+      }),
+    )
+
+    return pipe(
+      TE.sequenceSeqArray([req1, req2]),
+    )()
+  })
+
   it('getFolderTreeByPathFlattenWP', async () => {
     return pipe(
       DriveLookup.getFoldersTreesByPathsDocwsroot(
@@ -78,8 +129,8 @@ describe('getFoldersTrees', () => {
           ]),
         ),
       }),
-      TE.map(res => {
-        expect(res.calls().total).toBe(5)
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(5)
       }),
       TE.mapLeft(() => {
         expect(false).toBe(true)
