@@ -1,13 +1,10 @@
-import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/Option'
 import * as R from 'fp-ts/Record'
 import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
-import * as L from '../../src/util/logging'
 import './debug'
-import { file, folder } from './util/mocked-api'
-import { executeDrive, fakeicloud } from './util/struct'
+import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
 describe('retrieveItemDetailsInFoldersSaving', () => {
   it('works', async () => {

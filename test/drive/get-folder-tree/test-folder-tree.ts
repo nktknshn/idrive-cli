@@ -6,7 +6,7 @@ import * as C from '../../../src/icloud-drive/drive-lookup/cache'
 import * as L from '../../../src/util/logging'
 import { npath } from '../../../src/util/normalize-path'
 import '../debug'
-import { executeDrive, fakeicloud } from '../util/mocked-api'
+import { executeDrive, fakeicloud } from '../util/mocked-drive'
 import { file, folder } from '../util/mocked-drive'
 
 const struct0 = fakeicloud(

@@ -1,5 +1,5 @@
-import { fakeicloud } from '../util/mocked-api'
-import { appLibrary, file, folder } from '../util/mocked-drive'
+import { fakeicloud } from '../util/mocked-drive/mocked-api'
+import { appLibrary, file, folder } from '../util/mocked-drive/mocked-drive'
 
 export const complexStructure0 = fakeicloud(
   folder({ name: 'test1' })(),

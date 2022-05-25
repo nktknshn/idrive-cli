@@ -1,13 +1,8 @@
-import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
-
-import * as L from '../../src/util/logging'
-import { executeDrive, fakeicloud } from './util/mocked-api'
-import { file, folder } from './util/mocked-drive'
-
 import './debug'
+import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
 describe('searchGlobs', () => {
   const structure = fakeicloud(

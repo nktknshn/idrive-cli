@@ -1,14 +1,11 @@
-import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup, GetDep } from '../../src/icloud-drive'
+import { C, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/icloud-drive-items-types'
 import { FlattenFolderTreeWithP } from '../../src/icloud-drive/util/drive-folder-tree'
-import * as L from '../../src/util/logging'
 import { npath } from '../../src/util/normalize-path'
 import { NEA } from '../../src/util/types'
-import { file, folder } from './util/helpers-drive'
-import { executeDrive, fakeicloud } from './util/struct'
+import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
 import './debug'
 

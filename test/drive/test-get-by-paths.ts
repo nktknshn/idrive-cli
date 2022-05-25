@@ -4,13 +4,10 @@ import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
 import { NotFoundError } from '../../src/icloud-drive/drive-lookup/errors'
 import { rootDrivewsid } from '../../src/icloud-drive/icloud-drive-items-types/types-io'
-import { invalidPath, pathTarget, showGetByPathResult, validPath } from '../../src/icloud-drive/util/get-by-path-types'
-import * as L from '../../src/util/logging'
+import { invalidPath, pathTarget } from '../../src/icloud-drive/util/get-by-path-types'
 import { npath } from '../../src/util/normalize-path'
-import { appLibrary, file, folder, removeByDrivewsid } from './util/fake-drive'
-import { executeDrive, fakeicloud } from './util/struct'
-
 import './debug'
+import { appLibrary, executeDrive, fakeicloud, file, folder, removeByDrivewsid } from './util/mocked-drive'
 
 describe('getByPaths', () => {
   const structure = fakeicloud(

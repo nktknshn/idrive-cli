@@ -8,13 +8,10 @@ import * as C from '../../src/icloud-drive/drive-lookup/cache'
 import { NotFoundError } from '../../src/icloud-drive/drive-lookup/errors'
 import { showFolderTree } from '../../src/icloud-drive/util/drive-folder-tree'
 import { invalidPath, validPath } from '../../src/icloud-drive/util/get-by-path-types'
-import * as L from '../../src/util/logging'
 import { normalizePath, npath } from '../../src/util/normalize-path'
-import { complexStructure0 } from './fixtures/drive'
-import { file, folder } from './util/helpers-drive'
-import { createEnv, createState, executeDrive, fakeicloud } from './util/struct'
-
 import './debug'
+import { complexStructure0 } from './fixtures/drive'
+import { createEnv, createState, executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
 describe('retrieveItemDetailsInFoldersSaving', () => {
   it('works', async () => {
