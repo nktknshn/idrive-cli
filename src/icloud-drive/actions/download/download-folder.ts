@@ -9,8 +9,9 @@ import { guardFst } from '../../../util/guards'
 import { printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/path'
 import { DriveLookup, T } from '../..'
-import { FlattenFolderTreeWithP } from '../../util/drive-folder-tree'
-import { applySoultions, Conflict, ConflictsSolver, lookForConflicts, Solution } from './download-conflict'
+import { FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
+import { applySoultions, ConflictsSolver, Solution } from './conflict-solution'
+import { Conflict, lookForLocalConflicts } from './download-conflict'
 import { createEmpties, createLocalDirStruct } from './download-local'
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { DownloadFileResult, DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from './types'
@@ -60,7 +61,7 @@ type DownloadFolderOpts<SolverDeps, DownloadDeps> = Argv & {
 }
 
 type DownloadFolderInfo = {
-  folderTree: FlattenFolderTreeWithP<
+  folderTree: FlattenFolderTreeWPath<
     T.DetailsDocwsRoot | T.NonRootDetails
   >
   downloadTask: DownloadTask & {
@@ -129,7 +130,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
     SRTE.bindW('conflicts', ({ mappedTask }) =>
       pipe(
         SRTE.fromReaderTaskEither(
-          RTE.fromReaderTaskK(lookForConflicts)(mappedTask),
+          RTE.fromReaderTaskK(lookForLocalConflicts)(mappedTask),
         ),
       )),
     SRTE.bindW('solutions', ({ conflicts }) =>
@@ -183,7 +184,7 @@ const showTask = ({ verbose = false }) =>
     task.downloadable.length > 0
       ? verbose
         ? `will be downloaded: \n${
-          [...task.downloadable, ...task.empties].map(({ remoteitem: info, localpath }) =>
+          [...task.downloadable, ...task.empties].map(({ item: info, localpath }) =>
             `${info.remotepath} into ${localpath}`
           )
             .join(

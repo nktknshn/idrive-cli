@@ -5,8 +5,9 @@ import * as O from 'fp-ts/Option'
 import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { NEA } from '../../../util/types'
+import { sequenceArrayO } from '../../../util/util'
 import { C, T } from '../..'
-import { chainState, Effect, get, map, TempCacheState } from '../drive-lookup'
+import { chainState, Effect, get, map, of, TempCacheState } from '../drive-lookup'
 import { putCache, usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
@@ -20,43 +21,54 @@ const setInactive = <S extends TempCacheState>(s: S): S => ({
   tempCache: O.none,
 })
 
+// export const usingTempCache2 = <A>(ma: Effect<A>): Effect<A> =>
+//   pipe(
+//     get(),
+//     SRTE.bindTo('prevstate'),
+//     SRTE.chain(({ prevstate }) =>
+//       pipe(
+//         SRTE.fromOption(prevstate.tempCache),
+//       )
+//     ),
+//     SRTE.bindW('newstate', get),
+//     SRTE.chain(({ prevstate, newstate }) => pipe()),
+//     // SRTE.bind('tempCache' , ()),
+//   )
 /**
  * execute effect with empty temp cache
  * afterwise add resulting temp cache to the main cache
  */
 export const usingTempCache = <A>(ma: Effect<A>): Effect<A> =>
-  pipe(
-    chainState((prevstate) =>
-      pipe(
-        prevstate.tempCache,
-        O.match(
-          () =>
-            pipe(
-              SRTE.modify(setActive),
-              SRTE.chain(() => ma),
-              SRTE.bindTo('res'),
-              SRTE.bindW('newstate', get),
-              SRTE.chain(({ res, newstate }) =>
-                pipe(
-                  O.isSome(newstate.tempCache)
-                    ? pipe(
-                      putCache(
-                        C.concat(
-                          prevstate.cache,
-                          newstate.tempCache.value,
-                        ),
+  chainState((prevstate) =>
+    pipe(
+      prevstate.tempCache,
+      O.match(
+        () =>
+          pipe(
+            SRTE.modify(setActive),
+            SRTE.chain(() => ma),
+            SRTE.bindTo('res'),
+            SRTE.bindW('newstate', get),
+            SRTE.chain(({ res, newstate }) =>
+              pipe(
+                O.isSome(newstate.tempCache)
+                  ? pipe(
+                    putCache(
+                      C.concat(
+                        prevstate.cache,
+                        newstate.tempCache.value,
                       ),
-                      SRTE.chain(() => SRTE.modify(setInactive)),
-                    )
-                    : SRTE.of(constVoid()),
-                  SRTE.map(() => res),
-                )
-              ),
+                    ),
+                    SRTE.chain(() => SRTE.modify(setInactive)),
+                  )
+                  : SRTE.of(constVoid()),
+                SRTE.map(() => res),
+              )
             ),
-          () => ma,
-        ),
-      )
-    ),
+          ),
+        () => ma,
+      ),
+    )
   )
 
 /**
@@ -82,7 +94,7 @@ export function retrieveItemDetailsInFoldersTempCached(
       SRTE.chain(() => retrieveItemDetailsInFoldersCached(drivewsids)),
       usingCache(pipe(
         prevstate.tempCache,
-        O.fold(() => C.cachef(), identity),
+        O.getOrElse(C.cachef),
       )),
       SRTE.bindTo('res'),
       SRTE.bindW('newstate', get),
@@ -114,12 +126,12 @@ export function retrieveItemDetailsInFoldersTempCachedStrict(
 ): Effect<NEA<T.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersTempCached(drivewsids),
-    SRTE.chain(
-      flow(
-        O.sequenceArray,
-        SRTE.fromOption(() => err(`some of the ids was not found`)),
-        v => v as Effect<NEA<T.Details>>,
-      ),
+    SRTE.chain(res =>
+      pipe(
+        SRTE.fromOption(
+          () => err(`some of the ids was not found`),
+        )(sequenceArrayO(res)),
+      )
     ),
   )
 }

@@ -4,7 +4,7 @@ import micromatch from 'micromatch'
 import { getDirectoryStructure } from '../../../util/getDirectoryStructure'
 import { guardProp, guardSnd } from '../../../util/guards'
 import { T } from '../..'
-import { FlattenFolderTreeWithP, FlattenTreeItemP } from '../../util/drive-folder-tree'
+import { FlattenFolderTreeWPath, FlattenTreeItemP, RemoteFile } from '../../util/drive-folder-tree'
 import { DownloadItem, DownloadTask } from './types'
 
 type DefaultFunc = (opts: {
@@ -17,20 +17,10 @@ export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =
     (include.length == 0 || micromatch.any(remotepath, include, { dot: true }))
     && (exclude.length == 0 || !micromatch.any(remotepath, exclude, { dot: true }))
 
-const filterFlatTree = ({
-  // exclude,
-  // include,
-  filterFiles,
-  //  = filterByIncludeExcludeGlobs({ exclude, include }),
-}: {
-  // include: string[]
-  // exclude: string[]
-  filterFiles: (files: {
-    remotepath: string
-    remotefile: T.DriveChildrenItemFile
-  }) => boolean
+const filterFlatTree = ({ filterFiles }: {
+  filterFiles: (files: RemoteFile) => boolean
 }) =>
-  <T extends T.Root>(flatTree: FlattenFolderTreeWithP<T>) => {
+  <T extends T.Root>(flatTree: FlattenFolderTreeWPath<T>) => {
     const files = pipe(
       flatTree,
       A.filter(guardProp('remotefile', T.isFile)),
@@ -54,12 +44,9 @@ const filterFlatTree = ({
   }
 
 export const makeDownloadTaskFromTree = (opts: {
-  filterFiles: (files: {
-    remotepath: string
-    remotefile: T.DriveChildrenItemFile
-  }) => boolean
+  filterFiles: (files: RemoteFile) => boolean
 }) =>
-  <T extends T.Root>(flatTree: FlattenFolderTreeWithP<T>): DownloadTask & {
+  <T extends T.Root>(flatTree: FlattenFolderTreeWPath<T>): DownloadTask & {
     excluded: DownloadItem[]
   } => {
     const { excluded, files, folders } = filterFlatTree(opts)(flatTree)

@@ -41,14 +41,14 @@ describe('lookForConflicts', () => {
 
     return pipe(
       { fs: { fstat } },
-      DC.lookForConflicts(
+      DC.lookForLocalConflicts(
         {
           downloadable: [
             {
-              remoteitem: [
-                '/fileinroot.txt',
-                complexStructure0.r.c['fileinroot.txt'].d,
-              ],
+              item: {
+                remotepath: '/fileinroot.txt',
+                remotefile: complexStructure0.r.c['fileinroot.txt'].d,
+              },
               localpath: './output/fileinroot.txt',
             },
           ],

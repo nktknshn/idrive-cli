@@ -7,7 +7,8 @@ import * as RA from 'fp-ts/ReadonlyArray'
 import { DepAskConfirmation } from '../../../deps-types'
 import { err } from '../../../util/errors'
 import { T } from '../..'
-import { ConflictExists, ConflictsSolver, SolutionAction } from './download-conflict'
+import { ConflictsSolver, SolutionAction } from './conflict-solution'
+import { ConflictExists } from './download-conflict'
 
 const failOnStatsError: ConflictsSolver = (conflicts) =>
   () =>
@@ -74,8 +75,8 @@ const resolveConflictsOverwrightIfSizeDifferent = (
         conflicts,
         A.map((conflict) =>
           conflict.tag === 'exists'
-            ? conflict.localitem.stats.size !== conflict.item.remoteitem.remotefile.size
-                && !skipRemotes(conflict.item.remoteitem.remotefile)
+            ? conflict.localitem.stats.size !== conflict.item.item.remotefile.size
+                && !skipRemotes(conflict.item.item.remotefile)
               ? [conflict, 'overwright' as SolutionAction] as const
               : [conflict, 'skip' as SolutionAction] as const
             : [
@@ -104,6 +105,7 @@ const resolveConflictsAskAll: ConflictsSolver<DepAskConfirmation> = (conflicts) 
     RTE.chainW(a => a ? resolveConflictsOverwrightAll(conflicts) : failOnConflicts(conflicts)),
   )
 }
+
 const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
   return pipe(
     RTE.ask<DepAskConfirmation>(),
@@ -114,7 +116,7 @@ const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts
         A.map((conflict) =>
           askConfirmation({
             message:
-              `overwright ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${conflict.item.remoteitem.remotefile.size} bytes`,
+              `overwright ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${conflict.item.item.remotefile.size} bytes`,
           })
         ),
         TE.sequenceSeqArray,

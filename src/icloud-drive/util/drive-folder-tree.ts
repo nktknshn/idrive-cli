@@ -19,33 +19,27 @@ export type DriveFolderTree<R extends T.Details> = TR.Tree<FolderTreeValue<R>>
 
 export type FolderTreeValue<R extends T.Details> = FolderDeep<R> | FolderShallow<R>
 
-export type FlattenTreeItemP<R extends T.Details> = {
+type RemoteFolder<R extends T.Details> = {
   remotepath: string
-  remotefile: T.DetailsOrFile<R>
+  remotefile: T.DetailsOfRoot<R>
 }
-// [
-//   path: string,
-//   item: T.DetailsOrFile<T>,
-// ]
 
-export type FlattenFolderTreeWithP<R extends T.Details> = FlattenTreeItemP<R>[]
+export type FlattenTreeItemP<R extends T.Details> = RemoteFile | RemoteFolder<R>
+
+export type RemoteFile = {
+  remotepath: string
+  remotefile: T.DriveChildrenItemFile
+}
+
+export type FlattenFolderTreeWPath<R extends T.Details> = FlattenTreeItemP<R>[]
 
 export const shallowFolder = <R extends T.Details>(details: T.DetailsOfRoot<R>): DriveFolderTree<R> =>
-  TR.make(
-    {
-      details,
-      deep: false,
-    },
-  )
+  TR.make({ details, deep: false })
 
 export const deepFolder = <R extends T.Details>(
   details: R,
   children: TR.Forest<FolderTreeValue<R>>,
-): DriveFolderTree<R> =>
-  TR.make({
-    details,
-    deep: true,
-  }, children)
+): DriveFolderTree<R> => TR.make({ details, deep: true }, children)
 
 export const treeWithFiles = <R extends T.Details>(
   tree: DriveFolderTree<R>,
@@ -86,7 +80,7 @@ export const addPathToFolderTree = <T>(
 export const flattenFolderTreeWithBasepath = (
   parentPath: string,
 ) =>
-  <R extends T.Root>(tree: DriveFolderTree<R>): FlattenFolderTreeWithP<R> => {
+  <R extends T.Root>(tree: DriveFolderTree<R>): FlattenFolderTreeWPath<R> => {
     const name = T.fileName(tree.value.details)
     const path = Path.normalize(Path.join(parentPath, name) //  + '/'
     )

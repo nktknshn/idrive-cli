@@ -1,6 +1,6 @@
 import { identity } from 'fp-ts/lib/function'
 import { Path, prependPath } from '../../../util/path'
-import { DownloadTask, DownloadTaskMapped } from './types'
+import { DownloadTask, DownloadTaskMapped, DownloadTaskMapper } from './types'
 
 export const recursiveDirMapper = (
   dstpath: string,
@@ -10,12 +10,12 @@ export const recursiveDirMapper = (
     return {
       downloadable: ds.downloadable
         .map((item) => ({
-          remoteitem: item,
+          item,
           localpath: prependPath(dstpath)(mapPath(item.remotepath)),
         })),
       empties: ds.empties
         .map((item) => ({
-          remoteitem: item,
+          item,
           localpath: prependPath(dstpath)(mapPath(item.remotepath)),
         })),
       localdirstruct: [
@@ -27,14 +27,14 @@ export const recursiveDirMapper = (
   }
 
 export const shallowDirMapper = (dstpath: string) =>
-  (ds: DownloadTask) => ({
-    downloadable: ds.downloadable.map(remoteitem => ({
-      remoteitem,
-      localpath: Path.join(dstpath, Path.basename(remoteitem.remotepath)),
+  (ds: DownloadTask): DownloadTaskMapped => ({
+    downloadable: ds.downloadable.map(item => ({
+      item,
+      localpath: Path.join(dstpath, Path.basename(item.remotepath)),
     })),
-    empties: ds.empties.map(remoteitem => ({
-      remoteitem,
-      localpath: Path.join(dstpath, Path.basename(remoteitem.remotepath)),
+    empties: ds.empties.map(item => ({
+      item,
+      localpath: Path.join(dstpath, Path.basename(item.remotepath)),
     })),
     localdirstruct: [dstpath],
   })

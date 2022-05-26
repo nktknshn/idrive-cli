@@ -35,13 +35,11 @@ const struct0 = fakeicloud(
   ),
 )
 
-const runWithRootData = executeDrive({
+const runWithRootCache = executeDrive({
   itemByDrivewsid: struct0.itemByDrivewsid,
   cache: pipe(
     C.cachef(),
-    C.putDetailss([
-      struct0.r.d,
-    ]),
+    C.putDetailss([struct0.r.d]),
   ),
 })
 
@@ -55,7 +53,7 @@ describe('getFoldersTrees', () => {
       ]),
       SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, Infinity)),
       DriveLookup.usingTempCache,
-      runWithRootData,
+      runWithRootCache,
       TE.map(({ calls }) => {
         expect(calls().total).toBe(7)
       }),
@@ -66,7 +64,7 @@ describe('getFoldersTrees', () => {
   })
 
   it('must save calls in combination with temp cache', async () => {
-    const r0 = await runWithRootData(DriveLookup.getByPathsFoldersStrictDocwsroot([
+    const r0 = await runWithRootCache(DriveLookup.getByPathsFoldersStrictDocwsroot([
       npath('/test1/test2/test3'),
       npath('/test1/test2'),
       npath('/test1/'),
@@ -76,7 +74,7 @@ describe('getFoldersTrees', () => {
 
     const req1 = pipe(
       DriveLookup.getFoldersTrees(r0.right.res, Infinity),
-      runWithRootData,
+      runWithRootCache,
       TE.map(({ calls }) => {
         expect(calls().total).toBe(5)
       }),
@@ -88,7 +86,7 @@ describe('getFoldersTrees', () => {
     const req2 = pipe(
       DriveLookup.getFoldersTrees(r0.right.res, Infinity),
       DriveLookup.usingTempCache,
-      runWithRootData,
+      runWithRootCache,
       TE.map(({ calls }) => {
         expect(calls().total).toBe(3)
       }),

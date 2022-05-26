@@ -9,7 +9,8 @@ import { DepAskConfirmation } from '../../../deps-types'
 import { err } from '../../../util/errors'
 import { EmptyObject, NEA } from '../../../util/types'
 import { T } from '../..'
-import { Conflict, ConflictExists, ConflictsSolver, SolutionAction } from './download-conflict'
+import { ConflictsSolver, SolutionAction } from './conflict-solution'
+import { Conflict, ConflictExists } from './download-conflict'
 import { DownloadTaskMapped } from './types'
 
 export type ConflictsSolver2<Deps = EmptyObject, AddInfo = EmptyObject> = (

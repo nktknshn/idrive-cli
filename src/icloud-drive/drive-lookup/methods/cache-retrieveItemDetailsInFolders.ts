@@ -44,7 +44,7 @@ export const retrieveItemDetailsInFoldersCached = (
     SRTE.chain(putMissedFound),
     SRTE.chainW(() => asksCache(C.getFoldersDetailsByIds(drivewsids))),
     SRTE.chainW(e => SRTE.fromEither(e)),
-    SRTE.chain((details) => of(NA.map(T.invalidIdToOption)(details))),
+    SRTE.map(NA.map(T.invalidIdToOption)),
   )
 }
 

@@ -23,7 +23,7 @@ export type DownloadTask = {
 }
 
 export type DownloadItemMapped = {
-  remoteitem: DownloadItem
+  item: DownloadItem
   localpath: string
 }
 

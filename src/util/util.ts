@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { randomUUID } from 'crypto'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
+import { Pointed1 } from 'fp-ts/lib/Pointed'
 import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { last } from 'fp-ts/Semigroup'
@@ -101,3 +103,13 @@ export const sequenceArrayE: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<
 export const sequenceArrayO: <A>(as: NEA<O.Option<A>>) => O.Option<NEA<A>> = O.sequenceArray as any
 
 export const randomUUIDCap = (): string => randomUUID().toUpperCase()
+
+export const tupleAsObject = <P1 extends string, P2 extends string>(
+  prop1: P1,
+  prop2: P2,
+) =>
+  <A, B>([a, b]: readonly [A, B]): Record<P1, A> & Record<P2, B> =>
+    ({
+      [prop1]: a,
+      [prop2]: b,
+    }) as Record<P1, A> & Record<P2, B>

@@ -1,13 +1,11 @@
 import { pipe } from 'fp-ts/lib/function'
 import { DepAskConfirmation } from '../../../deps-types'
-import { Path } from '../../../util/path'
 import { XXX } from '../../../util/types'
 import { DriveLookup } from '../..'
 import { solvers } from './conflict-solvers'
 import { Deps, downloadFolder } from './download-folder'
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from './downloadICloudFilesChunked'
 import { shallowDirMapper } from './recursiveDirMapper'
-import { DownloadTask } from './types'
 
 type ShallowArgs = {
   path: string

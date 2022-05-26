@@ -3,7 +3,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { C, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/icloud-drive-items-types'
-import { FlattenFolderTreeWithP } from '../../src/icloud-drive/util/drive-folder-tree'
+import { FlattenFolderTreeWPath } from '../../src/icloud-drive/util/drive-folder-tree'
 import { npath } from '../../src/util/normalize-path'
 import { NEA } from '../../src/util/types'
 import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
@@ -42,7 +42,7 @@ describe('usingTempCache', () => {
 
   const check = (
     req: DriveLookup.Effect<
-      NEA<FlattenFolderTreeWithP<DetailsDocwsRoot | NonRootDetails>>
+      NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>
     >,
   ) => {
     return pipe(
@@ -52,9 +52,7 @@ describe('usingTempCache', () => {
           [expect.any(Array), expect.any(Array), expect.any(Array)],
         )
 
-        expect(
-          calls().total,
-        ).toBe(4)
+        expect(calls().total).toBe(4)
 
         expect(C.getAllDetails(state.cache)).toEqual(
           [expect.anything(), expect.anything(), expect.anything(), expect.anything()],
