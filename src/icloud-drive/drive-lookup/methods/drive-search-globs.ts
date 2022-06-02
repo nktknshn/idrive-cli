@@ -40,36 +40,44 @@ export const searchGlobs = (
   const basepaths = pipe(scanned, NA.map(_ => normalizePath(_.base)))
 
   return pipe(
+    // look for the paths leading the glob patterns
     DriveLookup.getByPathsStrictDocwsroot(basepaths),
     SRTE.chain((bases) =>
       modifySubset(
         NA.zip(bases)(scanned),
+        // separate folders and files
         guardSnd(T.isNotFile),
         (dirs) =>
           modifySubset(
             dirs,
+            // separate globs and plain paths
             ([scan, dir]) => scan.isGlob,
-            // recursively get content for globs
-            parents =>
+            // recursively get content of the parents of globs
+            globParents =>
               pipe(
-                getFoldersTrees(pipe(parents, NA.map(snd)), depth),
+                getFoldersTrees(pipe(globParents, NA.map(snd)), depth),
                 SRTE.map(NA.map(E.of)),
               ),
+            //
             ([scan, dir]) => E.of(shallowFolder(dir)),
           ),
         ([scan, file]) => E.left(file),
       )
     ),
+    // execute `getByPathsStrictDocwsroot` and `getFoldersTrees` with temp cache
     DriveLookup.usingTempCache,
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned), NA.zip(basepaths))),
     SRTE.map(flow(NA.map(([[[fileOrTree, globpattern], scan], basepath]) =>
       pipe(
         fileOrTree,
         E.fold(
+          // handle basepaths that turned out to be files
+          // FIXME
           file =>
             !scan.isGlob && micromatch.isMatch(basepath, scan.input, options)
               ? [{ path: basepath, item: file }]
               : [],
+          // handle trees
           tree => {
             return pipe(
               tree,

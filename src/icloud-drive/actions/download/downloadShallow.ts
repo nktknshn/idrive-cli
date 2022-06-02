@@ -5,6 +5,7 @@ import { DriveLookup } from '../..'
 import { solvers } from './conflict-solvers'
 import { Deps, downloadFolder } from './download-folder'
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from './downloadICloudFilesChunked'
+import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { shallowDirMapper } from './recursiveDirMapper'
 
 type ShallowArgs = {
@@ -24,15 +25,18 @@ export const downloadShallow = (
     downloadFolder(
       {
         path,
-        exclude,
-        include,
+        // exclude,
+        // include,
         dry,
         depth: 0,
+        treefilter: makeDownloadTaskFromTree({
+          filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
+        }),
         conflictsSolver: solvers.resolveConflictsAskEvery,
         // solvers.resolveConflictsOverwrightIfSizeDifferent(
         //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
         // ),
-        toLocalMapper: shallowDirMapper(dstpath),
+        toLocalFileSystemMapper: shallowDirMapper(dstpath),
         downloadFiles: downloadICloudFilesChunked({ chunkSize }),
       },
     ),

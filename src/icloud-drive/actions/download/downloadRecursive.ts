@@ -5,6 +5,7 @@ import { DriveLookup } from '../..'
 import { solvers } from './conflict-solvers'
 import { Deps as DownloadFolderDeps, downloadFolder } from './download-folder'
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from './downloadICloudFilesChunked'
+import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { recursiveDirMapper } from './recursiveDirMapper'
 
 export type RecursiveArgv = {
@@ -31,7 +32,10 @@ export const downloadRecursive = (
     {
       ...argv,
       depth: Infinity,
-      toLocalMapper: argv.keepStructure
+      treefilter: makeDownloadTaskFromTree({
+        filterFiles: filterByIncludeExcludeGlobs(argv),
+      }),
+      toLocalFileSystemMapper: argv.keepStructure
         ? recursiveDirMapper(argv.dstpath)
         : recursiveDirMapper(
           argv.dstpath,

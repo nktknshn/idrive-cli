@@ -10,6 +10,7 @@ import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import * as T from '../../icloud-drive-items-types'
 import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
+import { equalsDrivewsId } from '../../util/drive-helpers'
 
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
@@ -37,7 +38,11 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
       A.isNonEmpty(subfolders) && doGoDeeper
         ? pipe(
           DriveLookup.retrieveItemDetailsInFoldersTempCachedStrict(
-            pipe(subfolders, NA.uniq(eq.fromEquals((a, b) => a.drivewsid === b.drivewsid)), NA.map(_ => _.drivewsid)),
+            pipe(
+              subfolders,
+              NA.uniq(equalsDrivewsId()),
+              NA.map(_ => _.drivewsid),
+            ),
           ),
           SRTE.chain(
             subfoldersdetails =>

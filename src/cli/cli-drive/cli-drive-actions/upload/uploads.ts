@@ -92,7 +92,7 @@ const handleSingleFileUpload = (
     skipTrash: boolean
   },
 ): XXX<DriveLookup.State, Deps, void> => {
-  // if the target path already exists at icloud drive
+  // if the target path already exists in icloud drive
   if (dst.valid) {
     const dstitem = V.pathTarget(dst)
 

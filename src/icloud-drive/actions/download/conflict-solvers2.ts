@@ -13,15 +13,15 @@ import { ConflictsSolver, SolutionAction } from './conflict-solution'
 import { Conflict, ConflictExists } from './download-conflict'
 import { DownloadTaskMapped } from './types'
 
-export type ConflictsSolver2<Deps = EmptyObject, AddInfo = EmptyObject> = (
+export type ConflictsSolver2<TDeps = EmptyObject, TAddInfo = EmptyObject> = (
   data: {
     conflicts: NEA<Conflict>
     mappedTask: DownloadTaskMapped
   },
 ) => RTE.ReaderTaskEither<
-  Deps,
+  TDeps,
   Error,
-  ConflictData & AddInfo
+  ConflictData & TAddInfo
 >
 
 type ConflictData = {

@@ -9,6 +9,7 @@ import { guardFst } from '../../../util/guards'
 import { printerIO } from '../../../util/logging'
 import { normalizePath } from '../../../util/path'
 import { DriveLookup, T } from '../..'
+import { of } from '../../drive-lookup'
 import { FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
 import { applySoultions, ConflictsSolver, Solution } from './conflict-solution'
 import { Conflict, lookForLocalConflicts } from './download-conflict'
@@ -49,15 +50,18 @@ export type Deps =
 type Argv = {
   path: string
   dry: boolean
-  include: string[]
-  exclude: string[]
+  // include: string[]
+  // exclude: string[]
   depth: number
 }
 
 type DownloadFolderOpts<SolverDeps, DownloadDeps> = Argv & {
-  toLocalMapper: (ds: DownloadTask) => DownloadTaskMapped
+  toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped
   conflictsSolver: ConflictsSolver<SolverDeps>
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
+  treefilter: <T extends T.Root>(flatTree: FlattenFolderTreeWPath<T>) => DownloadTask & {
+    excluded: DownloadItem[]
+  }
 }
 
 type DownloadFolderInfo = {
@@ -74,7 +78,7 @@ type DownloadFolderInfo = {
   args: Argv
 }
 
-const prepare = (task: DownloadTaskMapped) =>
+const prepareLocalFs = (task: DownloadTaskMapped) =>
   pipe(
     SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.State>(
       pipe(
@@ -84,48 +88,49 @@ const prepare = (task: DownloadTaskMapped) =>
     ),
   )
 
-const executeTask = <DownloadDeps>(
-  { downloader }: { downloader: DownloadICloudFilesFunc<DownloadDeps> },
+export const executeDownloadTask = <TDownloadDeps>(
+  { downloader }: { downloader: DownloadICloudFilesFunc<TDownloadDeps> },
 ) =>
   (task: DownloadTaskMapped) =>
     pipe(
-      prepare(task),
+      prepareLocalFs(task),
       SRTE.chainW(() => downloader(task)),
     )
 
-export const downloadFolder = <SolverDeps, DownloadDeps>(
+export const downloadFolder = <TSolverDeps, TDownloadDeps>(
   {
     path,
     depth,
     dry = false,
-    exclude = [],
-    include = [],
-    toLocalMapper,
+
+    treefilter,
+    toLocalFileSystemMapper,
     conflictsSolver,
     downloadFiles,
-  }: DownloadFolderOpts<SolverDeps, DownloadDeps>,
-): DriveLookup.Effect<string, Deps & SolverDeps & DownloadDeps> => {
+  }: DownloadFolderOpts<TSolverDeps, TDownloadDeps>,
+): DriveLookup.Effect<string, Deps & TSolverDeps & TDownloadDeps> => {
   const verbose = dry
 
   printerIO.print(
-    { path, dry, exclude, include },
+    { path, dry },
   )()
 
-  const filter = makeDownloadTaskFromTree({
-    filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
-  })
+  // const filter = makeDownloadTaskFromTree({
+  //   filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
+  // })
 
   const downloadFolderTask = pipe(
-    DriveLookup.getFolderTreeByPathFlattenWPDocwsroot(
-      normalizePath(path),
-      depth,
-    ),
-    SRTE.bindTo('folderTree'),
-    SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(filter(folderTree))),
-    SRTE.bind('args', () => SRTE.of({ path, dry, exclude, include, depth })),
+    of({ args: { path, dry, depth } }),
+    SRTE.bind('folderTree', () =>
+      DriveLookup.getFolderTreeByPathFlattenWPDocwsroot(
+        normalizePath(path),
+        depth,
+      )),
+    SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(treefilter(folderTree))),
+    // SRTE.bind('args', () => ),
     SRTE.bind('mappedTask', ({ downloadTask }) =>
       pipe(
-        SRTE.of(toLocalMapper(downloadTask)),
+        SRTE.of(toLocalFileSystemMapper(downloadTask)),
       )),
     SRTE.bindW('conflicts', ({ mappedTask }) =>
       pipe(
@@ -133,7 +138,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
           RTE.fromReaderTaskK(lookForLocalConflicts)(mappedTask),
         ),
       )),
-    SRTE.bindW('solutions', ({ conflicts }) =>
+    SRTE.bindW('solutions', ({ conflicts, mappedTask }) =>
       SRTE.fromReaderTaskEither(pipe(
         conflicts,
         A.matchW(() => RTE.of([]), conflictsSolver),
@@ -155,7 +160,7 @@ export const downloadFolder = <SolverDeps, DownloadDeps>(
     SRTE.map(({ result }) => result),
     dry
       ? SRTE.map(() => [])
-      : SRTE.chainW(executeTask({
+      : SRTE.chainW(executeDownloadTask({
         downloader: downloadFiles,
       })),
     SRTE.map(resultsJson),
