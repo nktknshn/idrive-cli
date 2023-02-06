@@ -19,7 +19,7 @@ import { assertFolderWithDetailsEntity, cacheEntityFromDetails, hierarchyToPath,
 import * as CT from './cache-types'
 export * from './cache-file'
 
-export type Cache = CT.CacheF
+export type LookupCache = CT.CacheF
 
 class lens {
   public static byDrivewsid = m.Lens.fromProp<CT.CacheF>()('byDrivewsid')
@@ -210,7 +210,7 @@ export const getCachedPathForId = (drivewsid: string) =>
   }
 
 export const getByIdWithPath = (drivewsid: string) =>
-  (cache: Cache): E.Either<Error, {
+  (cache: LookupCache): E.Either<Error, {
     readonly entity: CT.CacheEntity
     readonly path: string
   }> =>
@@ -257,13 +257,13 @@ export const putDetails = (
 }
 
 export const removeByIds = (drivewsids: string[]) =>
-  (cache: CT.CacheF): Cache =>
+  (cache: CT.CacheF): LookupCache =>
     pipe(
       drivewsids,
       A.reduce(cache, (cache, cur) => removeById(cur)(cache)),
     )
 
-export const concat = (c1: Cache, c2: Cache): CT.CacheF =>
+export const concat = (c1: LookupCache, c2: LookupCache): CT.CacheF =>
   pipe(
     c1,
     putDetailss(getAllDetails(c2)),

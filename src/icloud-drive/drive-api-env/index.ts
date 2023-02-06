@@ -2,7 +2,7 @@ import { sequenceS } from 'fp-ts/lib/Apply'
 import { flow } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as R from 'fp-ts/Reader'
-import { AuthorizedState, RequestEnv } from '../../icloud-core/icloud-request'
+import { AuthorizedState, RequestDeps } from '../../icloud-core/icloud-request'
 import { CatchFetchEnv, catchFetchErrorsSRTE } from '../../icloud-core/icloud-request/catch-fetch-error'
 import { CatchSessEnv, catchSessErrorsSRTE } from '../../icloud-core/icloud-request/catch-invalid-global-session'
 import { ReqWrapper, wrapRequests } from '../../icloud-core/icloud-request/lib/request-wrapper'
@@ -44,7 +44,7 @@ const handle409: ReqWrapper<
   )
 
 export const createDriveApiEnv: R.Reader<
-  CatchFetchEnv & CatchSessEnv & RequestEnv,
+  CatchFetchEnv & CatchSessEnv & RequestDeps,
   DriveApiEnv
 > = seqs(
   {

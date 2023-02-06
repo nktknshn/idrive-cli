@@ -6,12 +6,10 @@ import { createCliActionsDeps } from './cli/cli-drive/cli-drive-deps'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger } from './util/logging'
 
 async function main() {
-  // const { argv, showHelp } = parseArgs()
-  // const [action] = argv._
-  const t = readArgv()
+  const argv = readArgv()
 
   initLoggers(
-    { debug: t.argv.debug },
+    { debug: argv.argv.debug },
     [
       logger,
       cacheLogger,
@@ -21,23 +19,10 @@ async function main() {
   )
 
   await pipe(
-    // getCode(),
-    createCliActionsDeps(t.argv),
-    runCliAction(t),
+    createCliActionsDeps(argv.argv),
+    runCliAction(argv),
     TE.fold(printer.errorTask, printer.printTask),
   )()
-
-  // if (!isValidAction(action)) {
-  //   printer.error(`invalid action ${action}`)
-  //   showHelp()
-  //   sys.exit(1)
-  //   return
-  // }
-  // await pipe(
-  //   cliActionsDeps(argv),
-  //   runCliAction(action)(argv),
-  //   TE.fold(printer.errorTask, printer.printTask),
-  // )()
 }
 
 main()

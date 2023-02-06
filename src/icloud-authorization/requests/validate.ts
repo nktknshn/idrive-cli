@@ -12,13 +12,11 @@ const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Vali
 
 export const validateResponseJson = (json: unknown): json is AccountData => isRight(decode(json))
 
-// export type AccountLoginResponseBodyUnsafe = Partial<AccountLoginResponseBody>
-
-export function validateSessionM(): AR.ApiRequest<O.Option<AccountData>, {
+export function validateSession(): AR.ApiRequest<O.Option<AccountData>, {
   session: ICloudSessionWithSessionToken
 }> {
   return pipe(
-    AR.buildRequestC<{ session: ICloudSessionWithSessionToken }, AR.RequestEnv>(() => ({
+    AR.buildRequestC<{ session: ICloudSessionWithSessionToken }, AR.RequestDeps>(() => ({
       method: 'POST',
       url: 'https://setup.icloud.com/setup/ws/1/validate',
       options: { addClientInfo: true },

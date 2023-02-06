@@ -20,7 +20,7 @@ export type InitSessionDeps =
 export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
   return pipe(
     RTE.ask<InitSessionDeps>(),
-    RTE.chainFirst(({ sessionFile, fs }) =>
+    RTE.chainFirstW(({ sessionFile, fs }) =>
       pipe(
         RTE.fromTaskEither(fs.fstat(sessionFile)),
         RTE.fold((e) => RTE.of(constVoid()), () =>

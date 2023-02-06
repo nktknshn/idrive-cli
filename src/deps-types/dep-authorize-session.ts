@@ -2,21 +2,21 @@ import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { AccountData } from '../icloud-authorization/types'
-import { BasicState } from '../icloud-core/icloud-request'
+import { BaseState } from '../icloud-core/icloud-request'
 import { XX } from '../util/types'
 
 export type DepAuthorizeSession = {
-  authorizeSession: <S extends BasicState>() => XX<S, AccountData>
+  authorizeSession: <S extends BaseState>() => XX<S, AccountData>
 }
 
-export const authorizeSession = <S extends BasicState>() =>
+export const authorizeSession = <S extends BaseState>() =>
   SRTE.asksStateReaderTaskEitherW(
     (_: DepAuthorizeSession) => _.authorizeSession<S>(),
   )
 /** higher level methods based and dependent on the basic functions */
 
 export const authorizeState = <
-  S extends BasicState,
+  S extends BaseState,
 >(
   state: S,
 ): RTE.ReaderTaskEither<

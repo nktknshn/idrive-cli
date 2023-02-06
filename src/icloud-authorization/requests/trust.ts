@@ -14,7 +14,7 @@ export interface TrustResponse204 {
   trustToken: string
 }
 
-export const requestTrustDeviceM = <S extends AR.BasicState>(): AR.ApiRequest<TrustResponse204, S> => {
+export const requestTrustDevice = <S extends AR.BaseState>(): AR.ApiRequest<TrustResponse204, S> => {
   logger.debug('requestTrustDeviceM')
 
   return pipe(
@@ -25,10 +25,10 @@ export const requestTrustDeviceM = <S extends AR.BasicState>(): AR.ApiRequest<Tr
     })),
     AR.handleResponse(flow(
       AR.validateHttpResponse({ validStatuses: [200, 204] }),
-      SRTE.bind('trustToken', ({ httpResponse }) =>
-        pipe(
-          AR.fromOption(() => err('Missing trust token'))(getTrustToken(httpResponse)),
-        )),
+      SRTE.bind(
+        'trustToken',
+        ({ httpResponse }) => AR.fromOption(() => err('Missing trust token'))(getTrustToken(httpResponse)),
+      ),
       AR.applyToSession(({ httpResponse, trustToken }) =>
         flow(
           applyAuthorizationResponse(httpResponse),

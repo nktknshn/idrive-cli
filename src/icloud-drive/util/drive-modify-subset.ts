@@ -34,7 +34,7 @@ export function modifySubset<A, C>(
   )
 
   return pipe(
-    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.State, DF.Deps, Error, C[]>([]), f)),
+    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.LookupState, DF.Deps, Error, C[]>([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
     SRTE.map(res => projectIndexes(input, res, fac)),

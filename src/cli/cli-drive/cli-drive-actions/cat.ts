@@ -29,7 +29,7 @@ export const cat = (
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.chainW(({ item }) => DriveApi.getICloudItemUrl<DriveLookup.State>(item)),
+    SRTE.chainW(({ item }) => DriveApi.getICloudItemUrl<DriveLookup.LookupState>(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
     SRTE.chainW((url) =>
       SRTE.fromReaderTaskEither(

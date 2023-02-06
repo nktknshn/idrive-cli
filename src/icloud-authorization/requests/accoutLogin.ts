@@ -8,17 +8,15 @@ import { err } from '../../util/errors'
 import { logger } from '../../util/logging'
 import { AccountData } from '../types'
 
-export function requestAccoutLoginM<S extends AR.BasicState>(): AR.ApiRequest<AccountData, S> {
+export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S> {
   logger.debug('requestAccoutLogin')
 
   return pipe(
     AR.readEnv<S>(),
-    SRTE.chainW(({ state }) =>
-      pipe(
-        AR.fromOption(() => err(`session missing sessionToken`))(state.session.sessionToken),
-      )
+    SRTE.chainW(({ state, deps }) =>
+      SRTE.fromOption(() => err(`session missing sessionToken`))(state.session.sessionToken)
     ),
-    SRTE.chain(sessionToken =>
+    SRTE.chainW(sessionToken =>
       pipe(
         AR.buildRequestC<S>((
           { state: { session } },

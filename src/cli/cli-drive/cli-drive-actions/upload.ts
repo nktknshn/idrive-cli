@@ -33,7 +33,7 @@ export const upload = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<DriveLookup.State, UploadDeps & UploadFolderDeps, unknown> => {
+): XXX<DriveLookup.LookupState, UploadDeps & UploadFolderDeps, unknown> => {
   assert(A.isNonEmpty(argv.uploadargs))
   assert(argv.uploadargs.length > 1)
 

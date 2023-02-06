@@ -1,6 +1,7 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { err } from '../../../util/errors'
@@ -44,6 +45,7 @@ export const getICloudItemUrl = flow(
   SRTE.map(
     _ => _.data_token?.url ?? _.package_token?.url,
   ),
+  // SRTE.map(O.fromNullable),
 )
 
 export const createFoldersNEA = <S extends AuthorizedState>(args: {

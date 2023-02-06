@@ -85,7 +85,7 @@ const caseMove = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
   dst: T.Details,
 ): DriveLookup.Action<Deps, MoveItemsResponse> => {
-  return DriveApi.moveItems<DriveLookup.State>({
+  return DriveApi.moveItems<DriveLookup.LookupState>({
     destinationDrivewsId: dst.drivewsid,
     items: [{ drivewsid: src.drivewsid, etag: src.etag }],
   })
@@ -108,7 +108,7 @@ const caseMoveAndRename = (
   name: string,
 ): DriveLookup.Action<Deps, RenameResponse> => {
   return pipe(
-    DriveApi.moveItems<DriveLookup.State>(
+    DriveApi.moveItems<DriveLookup.LookupState>(
       {
         destinationDrivewsId: dst.drivewsid,
         items: [{ drivewsid: src.drivewsid, etag: src.etag }],

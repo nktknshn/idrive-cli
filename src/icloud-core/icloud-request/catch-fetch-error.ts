@@ -3,6 +3,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { loggerIO } from '../../util/loggerIO'
+import { EmptyObject } from '../../util/types'
 
 export type CatchFetchEnv = {
   catchFetchErrorsRetries: number
@@ -43,7 +44,7 @@ const catchFetchErrorsTE = (
 export const catchFetchErrorsSRTE = (
   env: CatchFetchEnv,
 ) =>
-  <S, R, A>(
+  <S, R extends EmptyObject, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,
   ): SRTE.StateReaderTaskEither<S, R, Error, A> => {
     return (s: S) =>

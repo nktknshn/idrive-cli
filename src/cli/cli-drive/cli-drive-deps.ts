@@ -22,20 +22,3 @@ export const createCliActionsDeps = (argv: {
   tempdir: argv.tempdir ?? defaults.tempDir,
   fileEditor: argv.fileEditor ?? defaults.fileEditor,
 })
-
-// export const cliActionsDependencies = <ApiCreatorEnv>() =>
-//   pipe(
-//     R.ask<
-//       & DepFetchClient
-//       & DepAskConfirmation
-//       & { tempdir: string }
-//       & { sessionFile: string }
-//       & { cacheFile: string; noCache: boolean }
-//       & { fs: fs.FsType }
-//     >(),
-//     R.bindW('api', () =>
-//       R.asksReaderW((c: {
-//         apiCreator: ApiCreator<ApiCreatorEnv>
-//       }) => c.apiCreator)),
-//     // R.bindW('fs', () => R.of(fs)),
-//   )

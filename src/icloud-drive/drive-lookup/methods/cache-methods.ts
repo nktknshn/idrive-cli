@@ -2,14 +2,14 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import * as T from '../../icloud-drive-items-types'
-import { chain, Effect, get, map, State } from '..'
+import { chain, Effect, get, LookupState, map } from '..'
 import * as C from '../cache'
 
-export const putCache = (cache: C.Cache): Effect<void> =>
+export const putCache = (cache: C.LookupCache): Effect<void> =>
   pipe(
     get(),
     SRTE.chain(
-      (state: State) => SRTE.put({ ...state, cache }),
+      (state: LookupState) => SRTE.put({ ...state, cache }),
     ),
   )
 
@@ -35,10 +35,10 @@ export const removeByIdsFromCache = (
   drivewsids: string[],
 ): Effect<void> => modifyCache(C.removeByIds(drivewsids))
 
-export const modifyCache = (f: (cache: C.Cache) => C.Cache): Effect<void> =>
+export const modifyCache = (f: (cache: C.LookupCache) => C.LookupCache): Effect<void> =>
   chainCache(flow(f, putCache, map(constVoid)))
 
-export const askCache = (): Effect<C.Cache> =>
+export const askCache = (): Effect<C.LookupCache> =>
   pipe(
     get(),
     map(({ cache, tempCache }) =>
@@ -48,12 +48,12 @@ export const askCache = (): Effect<C.Cache> =>
     ),
   )
 
-export const asksCache = <A>(f: (cache: C.Cache) => A): Effect<A> => pipe(askCache(), map(f))
+export const asksCache = <A>(f: (cache: C.LookupCache) => A): Effect<A> => pipe(askCache(), map(f))
 
-export const chainCache = <A>(f: (cache: C.Cache) => Effect<A>): Effect<A> =>
+export const chainCache = <A>(f: (cache: C.LookupCache) => Effect<A>): Effect<A> =>
   pipe(get(), chain(({ cache }) => f(cache)))
 
-export const usingCache = (cache: C.Cache) =>
+export const usingCache = (cache: C.LookupCache) =>
   <A>(ma: Effect<A>): Effect<A> =>
     pipe(
       putCache(cache),

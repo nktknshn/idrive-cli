@@ -2,13 +2,13 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { RQ } from '../../icloud-drive'
 import { EmptyObject } from '../../util/types'
-import { BasicState } from '.'
+import { BaseState } from '.'
 import { CatchFetchEnv, catchFetchErrorsSRTE } from './catch-fetch-error'
 import { ReqWrapper } from './lib/request-wrapper'
 
 export const wrapBasicReq: ReqWrapper<
   CatchFetchEnv,
-  BasicState,
+  BaseState,
   EmptyObject
 > = (deps) =>
   flow(

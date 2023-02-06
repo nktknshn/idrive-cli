@@ -7,12 +7,12 @@ import { TypeDecodingError } from '../../../util/errors'
 import { ReadJsonFileError, tryReadJsonFile } from '../../../util/files'
 import { saveJson } from '../../../util/json'
 import { cacheLogger } from '../../../util/logging'
-import { Cache } from './cache'
+import { LookupCache } from './cache'
 import * as cachIo from './cache-io-types'
 import * as CT from './cache-types'
 
 export const trySaveFile = (
-  cache: Cache,
+  cache: LookupCache,
 ): (cacheFilePath: string) => RTE.ReaderTaskEither<DepFs<'writeFile', 'fs'>, Error, void> =>
   (cacheFilePath: string) => {
     cacheLogger.debug(`saving cache: ${R.keys(cache.byDrivewsid).length} items`)

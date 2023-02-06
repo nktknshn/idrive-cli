@@ -6,7 +6,8 @@ import { EmptyObject } from '../../util/types'
 import { applyAuthorizationResponse } from './authorization-session'
 import { authorizationHeaders } from './headers'
 
-export const requestSecurityCodeM = <S extends AR.BasicState>(
+/** */
+export const requestSecurityCode = <S extends AR.BaseState>(
   code: number,
 ): AR.ApiRequest<EmptyObject, S> => {
   return pipe(

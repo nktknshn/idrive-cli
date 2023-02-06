@@ -44,7 +44,7 @@ export type Deps =
 
 export const uploadFolder = (
   argv: Argv,
-): XXX<DriveLookup.State, Deps, unknown> => {
+): XXX<DriveLookup.LookupState, Deps, unknown> => {
   return pipe(
     DriveLookup.getByPathDocwsroot(normalizePath(argv.remotepath)),
     SRTE.bindTo('dst'),
@@ -61,7 +61,7 @@ const handleUploadFolder = (
     dst: V.GetByPathResult<T.DetailsDocwsRoot>
     args: Argv
   },
-): XXX<DriveLookup.State, Deps, UploadResult[]> => {
+): XXX<DriveLookup.LookupState, Deps, UploadResult[]> => {
   const dirname = Path.parse(src).base
 
   const uploadTask = pipe(
@@ -118,13 +118,13 @@ const uploadToNewFolder = (
   },
 ): (
   task: UploadTask,
-) => XXX<DriveLookup.State, Deps, UploadResult[]> =>
+) => XXX<DriveLookup.LookupState, Deps, UploadResult[]> =>
   (task: UploadTask) =>
     pipe(
       printerIO.print(`creating folder ${remotepath}`),
       SRTE.fromIO,
       SRTE.chain(() =>
-        DriveApi.createFoldersStrict<DriveLookup.State>({
+        DriveApi.createFoldersStrict<DriveLookup.LookupState>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })

@@ -23,7 +23,7 @@ export type DriveApiEnv = {
   // ) => RTE.ReaderTaskEither<{}, Error, [S, NEA<(T.Details | T.InvalidId)>]>
 
   download: <S extends AuthorizedState>(
-    { docwsid: documentId, zone }: {
+    { docwsid, zone }: {
       docwsid: string
       zone: string
     },

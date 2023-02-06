@@ -1,5 +1,6 @@
 import { EmptyObject } from '../util/types'
 
+/** Contain information about the icloud account */
 export interface AccountData {
   dsInfo: DsInfo
   hasMinimumDeviceForPhotosWeb: boolean

@@ -1,5 +1,5 @@
 import { AuthorizeEnv } from '../icloud-authorization'
-import { RequestEnv } from '../icloud-core/icloud-request'
+import { RequestDeps } from '../icloud-core/icloud-request'
 import { CatchFetchEnv } from '../icloud-core/icloud-request/catch-fetch-error'
 import { CatchSessEnv } from '../icloud-core/icloud-request/catch-invalid-global-session'
 import { createDriveApiEnv } from '../icloud-drive/drive-api-env'
@@ -10,7 +10,7 @@ export { askConfirmation } from './askConfirmation'
 export { fs } from './fs'
 export { fetchClient }
 
-const requestEnv: RequestEnv = {
+const requestEnv: RequestDeps = {
   fetchClient,
 }
 

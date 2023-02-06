@@ -80,7 +80,7 @@ type DownloadFolderInfo = {
 
 const prepareLocalFs = (task: DownloadTaskMapped) =>
   pipe(
-    SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.State>(
+    SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.LookupState>(
       pipe(
         createLocalDirStruct(task.localdirstruct),
         RTE.chainW(() => createEmpties(task)),
@@ -126,26 +126,24 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
         normalizePath(path),
         depth,
       )),
-    SRTE.bind('downloadTask', ({ folderTree }) => SRTE.of(treefilter(folderTree))),
-    // SRTE.bind('args', () => ),
-    SRTE.bind('mappedTask', ({ downloadTask }) =>
+    SRTE.bindW('downloadTask', ({ folderTree }) => DriveLookup.of(treefilter(folderTree))),
+    SRTE.bindW('mappedTask', ({ downloadTask }) =>
       pipe(
-        SRTE.of(toLocalFileSystemMapper(downloadTask)),
+        DriveLookup.of(toLocalFileSystemMapper(downloadTask)),
       )),
     SRTE.bindW('conflicts', ({ mappedTask }) =>
-      pipe(
-        SRTE.fromReaderTaskEither(
-          RTE.fromReaderTaskK(lookForLocalConflicts)(mappedTask),
-        ),
-      )),
+      SRTE.fromReaderTaskEither(pipe(
+        mappedTask,
+        RTE.fromReaderTaskK(lookForLocalConflicts),
+      ))),
     SRTE.bindW('solutions', ({ conflicts, mappedTask }) =>
       SRTE.fromReaderTaskEither(pipe(
         conflicts,
         A.matchW(() => RTE.of([]), conflictsSolver),
       ))),
-    SRTE.bind('result', ({ mappedTask, solutions }) =>
+    SRTE.bindW('result', ({ mappedTask, solutions }) =>
       pipe(
-        SRTE.of(
+        DriveLookup.of(
           applySoultions(mappedTask)(solutions),
         ),
       )),

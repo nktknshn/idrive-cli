@@ -18,6 +18,7 @@ import { writeFileFromReadable } from '../../../util/writeFileFromReadable'
 import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 
 type Deps =
+  // lookup deps
   & DriveLookup.Deps
   & DriveApi.Dep<'download'>
   & UploadDeps
@@ -61,25 +62,19 @@ export const edit = (
   return pipe(
     DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPathsStrict(root, [npath])),
     SRTE.map(NA.head),
-    SRTE.filterOrElse(isFile, () => err(`you cannot edit a directory`)),
+    SRTE.filterOrElse(isFile, () => err(`You cannot edit a directory.`)),
     SRTE.chainW((item) => DriveApi.getICloudItemUrl(item)),
-    SRTE.chainW((url) =>
-      pipe(
-        O.fromNullable(url),
-        O.match(
-          () => SRTE.left(err(`empty file url returnes`)),
-          url =>
-            SRTE.fromReaderTaskEither(pipe(
-              getUrlStream({ url }),
-              // RTE.chainTaskEitherK(consumeStreamToString),
-            )),
-        ),
-      )
+    SRTE.map(O.fromNullable),
+    SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
+    a => a,
+    // SRTE.chainReaderTaskEitherKW(url => getUrlStream({ url })),
+    SRTE.chainW(url =>
+      SRTE.fromReaderTaskEitherK((url: string) => getUrlStream({ url }))<DriveLookup.LookupState>(url)
     ),
     SRTE.chainW(readable =>
       pipe(
-        SRTE.of<DriveLookup.State, Deps, Error, { readable: Readable }>({ readable }),
-        SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
+        SRTE.of<DriveLookup.LookupState, Deps, Error, { readable: Readable }>({ readable }),
+        SRTE.bind('tempFile', ({ readable }) => SRTE.fromReader(R.asks(tempFile))),
         SRTE.bind('fileEditor', () => SRTE.asks(s => s.fileEditor)),
         SRTE.bindW('writeRrsult', ({ readable, tempFile }) =>
           SRTE.fromReaderTaskEither(

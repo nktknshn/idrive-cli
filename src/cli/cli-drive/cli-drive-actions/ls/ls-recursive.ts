@@ -15,7 +15,7 @@ export const recursivels = ({ paths, depth, tree, cached }: {
   depth: number
   tree: boolean
   cached: boolean
-}): SRTE.StateReaderTaskEither<DriveLookup.State, DriveLookup.Deps, Error, string> => {
+}): SRTE.StateReaderTaskEither<DriveLookup.LookupState, DriveLookup.Deps, Error, string> => {
   const scanned = pipe(
     paths,
     NA.map(micromatch.scan),

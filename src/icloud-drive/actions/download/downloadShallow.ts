@@ -20,7 +20,7 @@ type ShallowArgs = {
 /** download file of files from a directory */
 export const downloadShallow = (
   { path, dry, dstpath, chunkSize, include, exclude }: ShallowArgs,
-): XXX<DriveLookup.State, Deps & DFuncDeps & DepAskConfirmation, string> => {
+): XXX<DriveLookup.LookupState, Deps & DFuncDeps & DepAskConfirmation, string> => {
   return pipe(
     downloadFolder(
       {

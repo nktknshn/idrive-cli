@@ -10,7 +10,7 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
     cacheFile: string
   } & DepFs<'readFile'>,
   Error | ReadJsonFileError,
-  C.Cache
+  C.LookupCache
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache

@@ -1,5 +1,5 @@
 #!/usr/bin/fish
 
-cd /home/horn/Workspace/Typescript/Deno/node-icloud1
+cd /home/horn/Workspace/node-icloud1
 
 ./scripts/drive.sh $argv

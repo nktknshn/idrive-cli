@@ -2,11 +2,11 @@ import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { authorizeState, DepAuthorizeSession, DepFs } from '../../deps-types'
 import * as Auth from '../../icloud-authorization'
-import { AuthorizedState, BasicState } from '../../icloud-core/icloud-request'
+import { AuthorizedState, BaseState } from '../../icloud-core/icloud-request'
 import { loggerIO } from '../../util/loggerIO'
 
 export const loadAccountDataFromFile = (
-  { session }: BasicState,
+  { session }: BaseState,
 ): RTE.ReaderTaskEither<
   DepAuthorizeSession & { sessionFile: string } & DepFs<'readFile'>,
   Error,

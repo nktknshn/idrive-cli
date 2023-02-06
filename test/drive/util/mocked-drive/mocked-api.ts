@@ -18,9 +18,9 @@ export const createState = ({
   cache = C.cachef(),
   tempCache = O.none,
 }: {
-  cache?: C.Cache
+  cache?: C.LookupCache
   tempCache?: O.Option<never>
-}): DriveLookup.State => ({ ...authorizedState, cache, tempCache })
+}): DriveLookup.LookupState => ({ ...authorizedState, cache, tempCache })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
@@ -71,8 +71,8 @@ export const executeDrive = ({
   cache = C.cachef(),
 }: {
   itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>
-  cache?: C.Cache
-}): <A>(m: DriveLookup.Effect<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
+  cache?: C.LookupCache
+}): <A>(m: DriveLookup.Effect<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.LookupState } & Calls> => {
   return m =>
     pipe(
       TE.of(cache),

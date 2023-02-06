@@ -45,7 +45,7 @@ export function download<S extends AR.AuthorizedState>(
 
 export function downloadBatch<S extends AR.AuthorizedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
-): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestEnv> {
+): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestDeps> {
   return AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

@@ -34,7 +34,7 @@ export const uploads = (
       | AskingFunc
     skipTrash: boolean
   },
-): XXX<DriveLookup.State, Deps, string> => {
+): XXX<DriveLookup.LookupState, Deps, string> => {
   assert(A.isNonEmpty(uploadargs))
   assert(uploadargs.length > 1)
 
@@ -45,7 +45,7 @@ export const uploads = (
     DriveLookup.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
     SRTE.bind('dstDetails', ({ root }) => DriveLookup.getByPathFolderStrict(root, normalizePath(dstpath))),
-    SRTE.bindW('deps', () => SRTE.ask<DriveLookup.State, Deps>()),
+    SRTE.bindW('deps', () => SRTE.ask<DriveLookup.LookupState, Deps>()),
     SRTE.chain(({ dstDetails, deps }) =>
       pipe(
         srcpaths,
@@ -71,7 +71,7 @@ export const uploadSingleFile = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<DriveLookup.State, Deps, string> => {
+): XXX<DriveLookup.LookupState, Deps, string> => {
   return pipe(
     DriveLookup.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
@@ -91,7 +91,7 @@ const handleSingleFileUpload = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<DriveLookup.State, Deps, void> => {
+): XXX<DriveLookup.LookupState, Deps, void> => {
   // if the target path already exists in icloud drive
   if (dst.valid) {
     const dstitem = V.pathTarget(dst)
@@ -118,7 +118,7 @@ const handleSingleFileUpload = (
 
     if (T.isFolderLike(dstitem)) {
       return pipe(
-        DriveApi.upload<DriveLookup.State>({
+        DriveApi.upload<DriveLookup.LookupState>({
           sourceFilePath: src,
           docwsid: dstitem.docwsid,
           fname,
@@ -141,7 +141,7 @@ const uploadFileToFolder = (
     src: string
     skipTrash: boolean
   },
-): XXX<DriveLookup.State, Deps, void> => {
+): XXX<DriveLookup.LookupState, Deps, void> => {
   const fname = Path.basename(src)
 
   const actualFile = pipe(
@@ -173,7 +173,7 @@ const uploadFileToFolder = (
   }
 
   return pipe(
-    DriveApi.upload<DriveLookup.State>({
+    DriveApi.upload<DriveLookup.LookupState>({
       sourceFilePath: src,
       docwsid: dstDetails.docwsid,
       zone: dstDetails.zone,
@@ -189,22 +189,22 @@ const uploadOverwrighting = (
     src: string
     skipTrash: boolean
   },
-): XXX<DriveLookup.State, Deps, void> => {
+): XXX<DriveLookup.LookupState, Deps, void> => {
   // const dstitem = V.target(dst)
   // const parent = NA.last(dst.path.details)
   return pipe(
-    DriveApi.upload<DriveLookup.State>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
+    DriveApi.upload<DriveLookup.LookupState>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
     logging(loggerIO.debug(`uploading`)),
     SRTE.bindTo('uploadResult'),
     SRTE.bindW('removeResult', () =>
       pipe(
-        DriveApi.moveItemsToTrash<DriveLookup.State>({ items: [dstitem], trash: !skipTrash }),
+        DriveApi.moveItemsToTrash<DriveLookup.LookupState>({ items: [dstitem], trash: !skipTrash }),
         logging(loggerIO.debug(`moving previous file to trash`)),
       )),
     SRTE.chainW(({ uploadResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        DriveApi.renameItems<DriveLookup.State>({
+        DriveApi.renameItems<DriveLookup.LookupState>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

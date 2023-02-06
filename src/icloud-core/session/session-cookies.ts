@@ -12,7 +12,6 @@ const parse = (webauthTokenCookie: string): string | undefined =>
       .replace(/^"/, '')
       .replace(/"$/, '')
       .split(':'),
-    // .map(_ => splitPair('=', _)),
     A.map(_ => splitPair('=', _)),
     A.filterMap(identity),
     _ => _ as [string, string][],
@@ -20,7 +19,6 @@ const parse = (webauthTokenCookie: string): string | undefined =>
       { concat: (a: string, b: string) => b },
       A.Foldable,
     ),
-    // a => ({ v: a['v'] }),
     a => a['t'],
   )
 

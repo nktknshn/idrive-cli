@@ -8,9 +8,9 @@ import { err } from '../../../util/errors'
 import { loggerIO } from '../../../util/loggerIO'
 import { NEA } from '../../../util/types'
 import { sequenceArrayE, sequenceArrayO } from '../../../util/util'
-import { C, DriveApi, T } from '../..'
+import { C, DriveApi, DriveLookup, T } from '../..'
 import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
-import { chain, Effect, of, State } from '..'
+import { chain, Effect, LookupState, of } from '..'
 import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
@@ -32,12 +32,12 @@ export const retrieveItemDetailsInFoldersCached = (
         SRTE.fromEitherK(C.getFoldersDetailsByIdsSeparated(uniqids)),
       )
     ),
-    SRTE.chain(({ missed }) =>
+    SRTE.chainW(({ missed }) =>
       pipe(
         missed,
         A.matchW(
-          () => SRTE.of({ missed: [], found: [] }),
-          (missed) => DriveApi.retrieveItemDetailsInFoldersSeparated<State>(missed),
+          () => DriveLookup.of({ missed: [], found: [] }),
+          (missed) => DriveApi.retrieveItemDetailsInFoldersSeparated<LookupState>(missed),
         ),
       )
     ),

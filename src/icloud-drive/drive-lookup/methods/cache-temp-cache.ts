@@ -7,16 +7,16 @@ import { loggerIO } from '../../../util/loggerIO'
 import { NEA } from '../../../util/types'
 import { sequenceArrayO } from '../../../util/util'
 import { C, T } from '../..'
-import { chainState, Effect, get, map, of, TempCacheState } from '../drive-lookup'
+import { chainState, Effect, get, map, of, TempLookupCacheState } from '../drive-lookup'
 import { putCache, usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
-const setActive = <S extends TempCacheState>(s: S): S => ({
+const setActive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
   tempCache: O.some(C.cachef()),
 })
 
-const setInactive = <S extends TempCacheState>(s: S): S => ({
+const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
   tempCache: O.none,
 })

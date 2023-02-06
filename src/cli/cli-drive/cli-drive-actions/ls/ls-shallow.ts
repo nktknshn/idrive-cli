@@ -30,7 +30,7 @@ export const shallowList = (
     cached: boolean
     etag: boolean
     header: boolean
-  }): SRTE.StateReaderTaskEither<DriveLookup.State, DriveLookup.Deps, Error, string> => {
+  }): SRTE.StateReaderTaskEither<DriveLookup.LookupState, DriveLookup.Deps, Error, string> => {
     assert(A.isNonEmpty(paths))
 
     const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }

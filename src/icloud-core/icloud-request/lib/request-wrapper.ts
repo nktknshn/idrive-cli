@@ -3,7 +3,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { EmptyObject, XX, XXX } from '../../../util/types'
 
 export const wrapRequest = <WR, WRS, RR>(wrapper: ReqWrapper<WR, WRS, RR>) =>
-  <Args extends unknown[], A, R>(
+  <Args extends unknown[], A, R extends EmptyObject>(
     req: <S extends WRS>(...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
   ) =>
     (deps: WR & R): <S extends WRS>(...args: Args) => XXX<S, EmptyObject extends RR ? EmptyObject : (RR & R), A> =>
@@ -35,7 +35,7 @@ export const wrapRequests = <
     return r
   }
 
-export type ReqWrapper<WR, SS, RR = WR> = <R>(r: R & WR) => <A, S extends SS>(
+export type ReqWrapper<WR, SS, RR = WR> = <R extends EmptyObject>(r: R & WR) => <A, S extends SS>(
   req: SRTE.StateReaderTaskEither<S, R, Error, A>,
 ) => SRTE.StateReaderTaskEither<
   S,

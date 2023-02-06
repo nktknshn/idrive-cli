@@ -4,40 +4,31 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as AR from '../icloud-core/icloud-request/lib/request'
 import { authLogger } from '../util/logging'
 import { Getcode } from '../util/prompts'
-import { requestAccoutLoginM } from './requests/accoutLogin'
-import { requestSecurityCodeM } from './requests/securitycode'
-import { isHsa2Required, requestSignInM } from './requests/signin'
-import { requestTrustDeviceM } from './requests/trust'
+import { requestAccoutLogin } from './requests/accoutLogin'
+import { requestSecurityCode } from './requests/securitycode'
+import { isHsa2Required, requestSignIn } from './requests/signin'
+import { requestTrustDevice } from './requests/trust'
 import { AccountData } from './types'
 
-export type AuthorizeEnv = AR.RequestEnv & { getCode: Getcode }
+/**  */
+export type AuthorizeDeps = AR.RequestDeps & { getCode: Getcode }
 
-export function authorizeSession<S extends AR.BasicState>(): AR.ApiRequest<AccountData, S, AuthorizeEnv> {
+/** Authorizes a session returning `AccountData`*/
+export function authorizeSession<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S, AuthorizeDeps> {
   authLogger.debug('authorizeSession')
 
   return pipe(
-    requestSignInM<S>(),
+    requestSignIn<S>(),
     SRTE.chain((resp) =>
       isHsa2Required(resp)
         ? pipe(
-          SRTE.ask<S, AuthorizeEnv>(),
+          SRTE.ask<S, AuthorizeDeps>(),
           SRTE.chain(({ getCode }) => SRTE.fromTaskEither(getCode())),
-          SRTE.chainW(code => requestSecurityCodeM(code)),
-          SRTE.chainW(() => requestTrustDeviceM()),
+          SRTE.chainW(code => requestSecurityCode(code)),
+          SRTE.chainW(() => requestTrustDevice()),
         )
         : SRTE.of({})
     ),
-    SRTE.chainW(() => requestAccoutLoginM()),
+    SRTE.chainW(() => requestAccoutLogin()),
   )
 }
-
-// export function authorizeState<
-//   S extends AR.BasicState,
-// >(state: S): RTE.ReaderTaskEither<AuthorizeEnv, Error, { accountData: AccountData } & S> {
-//   authLogger.debug('authorizeSession')
-
-//   return pipe(
-//     authorizeSession<S>()(state),
-//     RTE.map(([accountData, state]) => ({ ...state, accountData })),
-//   )
-// }

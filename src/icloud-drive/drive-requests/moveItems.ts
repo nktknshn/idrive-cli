@@ -15,7 +15,7 @@ export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 export const moveItems = <S extends AR.AuthorizedState>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
-}): AR.ApiRequest<MoveItemsResponse, S, AR.RequestEnv> =>
+}): AR.ApiRequest<MoveItemsResponse, S, AR.RequestDeps> =>
   AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',

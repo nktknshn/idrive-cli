@@ -8,6 +8,7 @@ export const cacheFile = 'data/cli-drive-cache.json'
 export const downloadChunkSize = 5
 
 export const countryCode = 'RUS'
+
 export const clientInfo: ClientInfo = {
   appIdentifier: 'iclouddrive',
   reqIdentifier: '9d4788f6-fc48-47e1-8d38-13c46d8d85db',

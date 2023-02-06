@@ -15,25 +15,25 @@ import { NEA } from '../../util/types'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../icloud-drive-items-types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../icloud-drive-items-types/types-io'
 
-export function retrieveItemDetailsInFoldersGeneric<R>(
-  client: FetchClientEither,
-  { accountData, session }: AuthorizedState,
-  data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
-  handleResponse: ResponseHandler<R>,
-): TE.TaskEither<Error, ResponseWithSession<R>> {
-  apiLogger.debug(`retrieveItemDetailsInFolders: ${data.map(_ => _.drivewsid)}`)
+// export function retrieveItemDetailsInFoldersGeneric<R>(
+//   client: FetchClientEither,
+//   { accountData, session }: AuthorizedState,
+//   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
+//   handleResponse: ResponseHandler<R>,
+// ): TE.TaskEither<Error, ResponseWithSession<R>> {
+//   apiLogger.debug(`retrieveItemDetailsInFolders: ${data.map(_ => _.drivewsid)}`)
 
-  return pipe(
-    session,
-    buildRequest(
-      'POST',
-      `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
-      { addClientInfo: true, data },
-    ),
-    client,
-    handleResponse(session),
-  )
-}
+//   return pipe(
+//     session,
+//     buildRequest(
+//       'POST',
+//       `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
+//       { addClientInfo: true, data },
+//     ),
+//     client,
+//     handleResponse(session),
+//   )
+// }
 
 export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsWithHierarchy>[]> = flow(
   t.array(t.UnknownRecord).decode,
@@ -60,7 +60,7 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsW
 // eslint-disable-next-line id-length
 export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
-): AR.ApiRequest<HttpRequest, S, AR.RequestEnv> => {
+): AR.ApiRequest<HttpRequest, S, AR.RequestDeps> => {
   return pipe(
     AR.buildRequestC<S>(({ state: { accountData } }) => ({
       method: 'POST',

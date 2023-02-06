@@ -5,7 +5,7 @@ import * as O from 'fp-ts/Option'
 import { DepFs } from '../../deps-types'
 import { authorizeState, DepAuthorizeSession } from '../../deps-types/dep-authorize-session'
 import { AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authorization'
-import { AuthorizedState, BasicState } from '../../icloud-core/icloud-request'
+import { AuthorizedState, BaseState } from '../../icloud-core/icloud-request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud-core/session/session-file'
 import { C, DriveLookup } from '../../icloud-drive'
 import { err } from '../../util/errors'
@@ -68,7 +68,7 @@ const loadSession = pipe(
 )
 
 const loadAccountData = (
-  { session }: BasicState,
+  { session }: BaseState,
 ): RTE.ReaderTaskEither<
   DepAuthorizeSession & { sessionFile: string } & DepFs<'readFile'>,
   Error,
@@ -102,7 +102,7 @@ const loadCache: RTE.ReaderTaskEither<
     cacheFile: string
   } & DepFs<'readFile'>,
   Error | ReadJsonFileError,
-  C.Cache
+  C.LookupCache
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache
@@ -114,7 +114,7 @@ const loadCache: RTE.ReaderTaskEither<
   )
 )
 
-export const saveSession = <S extends BasicState>(
+export const saveSession = <S extends BaseState>(
   state: S,
 ): RTE.ReaderTaskEither<{ sessionFile: string } & DepFs<'writeFile'>, Error, void> =>
   RTE.asksReaderTaskEitherW(
@@ -128,7 +128,7 @@ export const saveAccountData = <S extends { accountData: AccountData }>(
     _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
   )
 
-const saveCache = <S extends { cache: C.Cache }>(state: S) =>
+const saveCache = <S extends { cache: C.LookupCache }>(state: S) =>
   RTE.asksReaderTaskEitherW((deps: { cacheFile: string; noCache: boolean }) =>
     deps.noCache
       ? RTE.of(constVoid())

@@ -18,27 +18,32 @@ export * from './methods/get-by-paths'
 
 export type Deps = DriveApi.Dep<'retrieveItemDetailsInFolders'>
 
-export type TempCacheState = {
-  tempCache: O.Option<C.Cache>
+export type TempLookupCacheState = {
+  tempCache: O.Option<C.LookupCache>
 }
 
-export type State =
-  & { cache: C.Cache }
-  & TempCacheState
+/** Lookup state is lookup cache and authorized state */
+export type LookupState =
+  & { cache: C.LookupCache }
+  & TempLookupCacheState
   & AuthorizedState
 
-export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<State, R, Error, A>
-export type Action<R, A> = SRTE.StateReaderTaskEither<State, R, Error, A>
+export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>
+export type Action<R, A> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>
 
 export const { map, chain: chain_, filterOrElse } = SRTE
 
-export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
+export const of: <S extends LookupState, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> =
+  SRTE.of
 
-export const get = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
+export const get = (): SRTE.StateReaderTaskEither<LookupState, Deps, never, LookupState> =>
+  SRTE.get<LookupState, Deps>()
+export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<LookupState, R, E, LookupState> =>
+  SRTE.left<LookupState, Deps, E>(e)
 
 export const chainState = <A>(
-  f: (s: State) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
-): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(get())
+  f: (s: LookupState) => SRTE.StateReaderTaskEither<LookupState, Deps, Error, A>,
+): SRTE.StateReaderTaskEither<LookupState, Deps, Error, A> => SRTE.chain(f)(get())
 
 export const errS = <A>(s: string): Effect<A> => SRTE.left(err(s))
 

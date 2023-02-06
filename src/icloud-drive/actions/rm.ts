@@ -47,7 +47,7 @@ const _rm = (
 ): DriveLookup.Action<Deps, Result> => {
   const effect = () =>
     pipe(
-      DriveApi.moveItemsToTrash<DriveLookup.State>({
+      DriveApi.moveItemsToTrash<DriveLookup.LookupState>({
         items: items.map(a => a.item),
         trash,
       }),
@@ -63,7 +63,7 @@ const _rm = (
     )
 
   return pipe(
-    SRTE.ask<DriveLookup.State, Deps>(),
+    SRTE.ask<DriveLookup.LookupState, Deps>(),
     SRTE.chainTaskEitherK(deps =>
       force
         ? TE.of(true)
