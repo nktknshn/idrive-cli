@@ -1,4 +1,5 @@
 import * as t from 'io-ts'
+import { debugTimeSRTE } from '../../cli/logging'
 import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { childrenItem } from '../drive-types/types-io'
@@ -13,14 +14,16 @@ export const renameItems = <S extends AuthorizedState>(
     items: { drivewsid: string; etag: string; name: string; extension?: string }[]
   },
 ): AR.ApiRequest<RenameResponse, S> =>
-  AR.basicJsonRequest(
-    ({ state: { accountData } }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.drivews.url}/renameItems?dsid=${accountData.dsInfo.dsid}`,
-      options: {
-        addClientInfo: true,
-        data: { items },
-      },
-    }),
-    renameResponse.decode,
+  debugTimeSRTE('renameItems')(
+    AR.basicJsonRequest(
+      ({ state: { accountData } }) => ({
+        method: 'POST',
+        url: `${accountData.webservices.drivews.url}/renameItems?dsid=${accountData.dsInfo.dsid}`,
+        options: {
+          addClientInfo: true,
+          data: { items },
+        },
+      }),
+      renameResponse.decode,
+    ),
   )

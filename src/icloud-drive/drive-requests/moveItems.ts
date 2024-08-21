@@ -1,4 +1,5 @@
 import * as t from 'io-ts'
+import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request'
 import { childrenItem } from '../drive-types/types-io'
 
@@ -16,21 +17,23 @@ export const moveItems = <S extends AR.AuthorizedState>({ items, destinationDriv
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
 }): AR.ApiRequest<MoveItemsResponse, S, AR.RequestDeps> =>
-  AR.basicJsonRequest(
-    ({ state: { accountData } }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.drivews.url}/moveItems?dsid=${accountData.dsInfo.dsid}`,
-      options: {
-        addClientInfo: true,
-        data: {
-          destinationDrivewsId,
-          items: items.map((item) => ({
-            drivewsid: item.drivewsid,
-            clientId: item.drivewsid,
-            etag: item.etag,
-          })),
+  debugTimeSRTE('moveItems')(
+    AR.basicJsonRequest(
+      ({ state: { accountData } }) => ({
+        method: 'POST',
+        url: `${accountData.webservices.drivews.url}/moveItems?dsid=${accountData.dsInfo.dsid}`,
+        options: {
+          addClientInfo: true,
+          data: {
+            destinationDrivewsId,
+            items: items.map((item) => ({
+              drivewsid: item.drivewsid,
+              clientId: item.drivewsid,
+              etag: item.etag,
+            })),
+          },
         },
-      },
-    }),
-    moveItemResponse.decode,
+      }),
+      moveItemResponse.decode,
+    ),
   )

@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
+import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request'
 import { itemFolder } from '../drive-types/types-io'
 
@@ -34,5 +35,6 @@ export function createFolders<S extends AR.AuthorizedState>(
     AR.handleResponse(
       AR.basicJsonResponse(createFolderResponse.decode),
     ),
+    debugTimeSRTE('createFolders'),
   )
 }

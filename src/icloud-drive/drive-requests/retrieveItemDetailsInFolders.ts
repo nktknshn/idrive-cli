@@ -3,6 +3,7 @@ import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as t from 'io-ts'
+import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
 import { HttpRequest } from '../../util/http/fetch-client'
@@ -58,5 +59,6 @@ export function retrieveItemDetailsInFolders<S extends AuthorizedState>(
     AR.handleResponse(AR.basicJsonResponse(
       iot.nonEmptyArray(t.union([driveDetails, invalidIdItem])).decode,
     )),
+    debugTimeSRTE('retrieveItemDetailsInFolders'),
   )
 }

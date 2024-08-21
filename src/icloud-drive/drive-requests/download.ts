@@ -2,6 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { Readable } from 'stream'
+import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
 import { expectResponse, FetchClientEither } from '../../util/http/fetch-client'
@@ -32,38 +33,42 @@ export function download<S extends AR.AuthorizedState>(
     zone: string
   },
 ): AR.ApiRequest<DownloadResponseBody, S> {
-  return AR.basicJsonRequest(
-    ({ state: { accountData } }) => ({
-      method: 'GET',
-      url:
-        `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
-      options: { addClientInfo: false },
-    }),
-    v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<DownloadResponseBody>,
+  return debugTimeSRTE('createFolders')(
+    AR.basicJsonRequest(
+      ({ state: { accountData } }) => ({
+        method: 'GET',
+        url:
+          `${accountData.webservices.docws.url}/ws/${zone}/download/by_id?document_id=${documentId}&dsid=${accountData.dsInfo.dsid}`,
+        options: { addClientInfo: false },
+      }),
+      v => t.type({ data_token: t.type({ url: t.string }) }).decode(v) as t.Validation<DownloadResponseBody>,
+    ),
   )
 }
 
 export function downloadBatch<S extends AR.AuthorizedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
 ): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestDeps> {
-  return AR.basicJsonRequest(
-    ({ state: { accountData } }) => ({
-      method: 'POST',
-      url: `${accountData.webservices.docws.url}/ws/${zone}/download/batch?dsid=${accountData.dsInfo.dsid}`,
-      options: {
-        addClientInfo: true,
-        data: docwsids.map((document_id) => ({ document_id })),
-      },
-    }),
-    v =>
-      t.array(
-        t.union(
-          [
-            t.type({ package_token: t.type({ url: t.string }) }),
-            t.type({ data_token: t.type({ url: t.string }) }),
-          ],
-        ),
-      ).decode(v) as t.Validation<DownloadResponseBody[]>,
+  return debugTimeSRTE('downloadBatch')(
+    AR.basicJsonRequest(
+      ({ state: { accountData } }) => ({
+        method: 'POST',
+        url: `${accountData.webservices.docws.url}/ws/${zone}/download/batch?dsid=${accountData.dsInfo.dsid}`,
+        options: {
+          addClientInfo: true,
+          data: docwsids.map((document_id) => ({ document_id })),
+        },
+      }),
+      v =>
+        t.array(
+          t.union(
+            [
+              t.type({ package_token: t.type({ url: t.string }) }),
+              t.type({ data_token: t.type({ url: t.string }) }),
+            ],
+          ),
+        ).decode(v) as t.Validation<DownloadResponseBody[]>,
+    ),
   )
 }
 

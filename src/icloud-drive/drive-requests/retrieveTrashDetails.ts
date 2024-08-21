@@ -1,6 +1,7 @@
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
+import { debugTimeSRTE } from '../../cli/logging'
 import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { DetailsTrashRoot, DriveChildrenItem } from '../drive-types'
@@ -23,6 +24,7 @@ export const retrieveTrashDetails = <S extends AuthorizedState>(): AR.ApiRequest
     AR.handleResponse(AR.basicJsonResponse(
       flow(scheme.decode, E.map(_ => _[0])),
     )),
+    debugTimeSRTE('retrieveTrashDetails'),
   )
 
 export const putBackItemsFromTrash = <S extends AuthorizedState>(

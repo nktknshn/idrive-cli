@@ -1,6 +1,7 @@
 import * as t from 'fp-ts-contrib/lib/time'
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 
 export const timeTE = t.time(TE.MonadTask)
@@ -26,3 +27,8 @@ export const logTimeRTE = (logger: Logger) =>
           logTimeTE(logger)(name),
         )
       }
+
+export const logTimeSRTE = (logger: Logger) =>
+  (name: string) =>
+    <S, R, E, A>(srte: SRTE.StateReaderTaskEither<S, R, E, A>): SRTE.StateReaderTaskEither<S, R, E, A> =>
+      (s) => logTimeRTE(logger)(name)(srte(s))

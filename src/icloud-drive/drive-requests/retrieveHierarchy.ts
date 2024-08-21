@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
+import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { DriveDetailsPartialWithHierarchy } from '../drive-types'
 import { driveDetailsWithHierarchyPartial } from '../drive-types/types-io'
@@ -15,4 +16,5 @@ export const retrieveHierarchy = <S extends AR.AuthorizedState>(
     AR.handleResponse(AR.basicJsonResponse(
       t.array(driveDetailsWithHierarchyPartial).decode,
     )),
+    debugTimeSRTE('retrieveHierarchy'),
   )
