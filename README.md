@@ -14,7 +14,7 @@ This is an unofficial client. Use it at your own risk. The author is not respons
 `alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
 
 ```Commands:
-  idrive init                       init
+  idrive init                       init session
   idrive auth                       auth session
   idrive ls [paths..]               list files in a folder
   idrive download <path> <dstpath>  download
@@ -57,6 +57,7 @@ Authenticate the session file
 
 ### ls
 
+`idrive ls`
 
 `idrive ls '/Obsidian/my1/'`
 
