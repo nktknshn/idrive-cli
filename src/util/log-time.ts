@@ -1,16 +1,25 @@
 import * as t from 'fp-ts-contrib/lib/time'
+import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as IO from 'fp-ts/lib/IO'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+import { randomInt } from 'fp-ts/Random'
 
 export const timeTE = t.time(TE.MonadTask)
-export const timeIO = t.time(TE.MonadTask)
+export const timeIO = t.time(IO.MonadIO)
 
 type Logger = (msg: string) => () => void
 
-// export const logTimeIO = (logger: Logger) => (name: string) => t.time(IO.MonadIO)
+export const logTimeIO = (logger: Logger) =>
+  (name: string) =>
+    <A>(f: IO.IO<A>): IO.IO<A> =>
+      pipe(
+        timeIO(f),
+        IO.chainFirst(([_, ms]) => logger(`Running ${name} took ${ms} ms`)),
+        IO.map(([res]) => res),
+      )
 
 export const logTimeTE = (logger: Logger) =>
   (name: string) =>

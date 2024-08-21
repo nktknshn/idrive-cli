@@ -1,31 +1,35 @@
+import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { runCliAction } from './cli/cli-drive'
-import { readArgv } from './cli/cli-drive/cli-drive-args'
+
+import * as w from 'yargs-command-wrapper'
+import { runCliAction as runCliCommand } from './cli/cli-drive'
+import { cmd } from './cli/cli-drive/args'
 import { createCliActionsDeps } from './cli/cli-drive/cli-drive-deps'
 import { debugTimeTE } from './cli/logging'
-import {
-  apiLogger,
-  cacheLogger,
-  initLoggers,
-  logger,
-  printer,
-  stderrLogger,
-  timeLogger,
-  timeLoggerIO,
-} from './util/logging'
+import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger, timeLogger } from './util/logging'
 
 async function main() {
-  const argv = readArgv()
+  const { result, yargs } = pipe(
+    () => w.buildAndParse(cmd),
+  )()
+
+  if (E.isLeft(result)) {
+    console.log(result.left.message)
+    yargs.showHelp('log')
+    process.exit(0)
+  }
+
+  const command = result.right
 
   initLoggers(
-    { debug: argv.argv.debug },
+    { debug: command.argv.debug },
     [logger, cacheLogger, stderrLogger, apiLogger, timeLogger],
   )
 
   await pipe(
-    createCliActionsDeps(argv.argv),
-    runCliAction(argv),
+    createCliActionsDeps(command.argv),
+    runCliCommand(command),
     debugTimeTE('runCliAction'),
     TE.fold(printer.errorTask, printer.printTask),
   )()

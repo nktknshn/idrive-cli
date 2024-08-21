@@ -27,24 +27,6 @@ const commonOptions = <T>(y: y.Argv<T>) =>
     debug: { alias: 'd', default: false, type: 'boolean' },
   })
 
-const download = <T>(y: y.Argv<T>) =>
-  y.command(
-    'download <path> <dstpath>',
-    'download',
-    (_) =>
-      _.positional('path', { type: 'string', demandOption: true })
-        .positional('dstpath', { type: 'string', demandOption: true })
-        .options({
-          dry: { default: false, type: 'boolean' },
-          overwright: { default: false, type: 'boolean' },
-          include: { default: [], type: 'string', array: true },
-          exclude: { default: [], type: 'string', array: true },
-          recursive: { alias: ['R'], default: false, type: 'boolean' },
-          keepStructure: { alias: ['S'], default: false, type: 'boolean' },
-          chunkSize: { default: defaults.downloadChunkSize, type: 'number' },
-        }),
-  )
-
 const ls = <T>(y: y.Argv<T>) =>
   y.command('ls [paths..]', 'list files in a folder', _ =>
     _
@@ -62,6 +44,24 @@ const ls = <T>(y: y.Argv<T>) =>
         depth: { alias: ['D'], default: Infinity, type: 'number', demandOption: 'recursive' },
         cached: { default: false, type: 'boolean' },
       }))
+
+const download = <T>(y: y.Argv<T>) =>
+  y.command(
+    'download <path> <dstpath>',
+    'download',
+    (_) =>
+      _.positional('path', { type: 'string', demandOption: true })
+        .positional('dstpath', { type: 'string', demandOption: true })
+        .options({
+          dry: { default: false, type: 'boolean' },
+          overwright: { default: false, type: 'boolean' },
+          include: { default: [], type: 'string', array: true },
+          exclude: { default: [], type: 'string', array: true },
+          recursive: { alias: ['R'], default: false, type: 'boolean' },
+          keepStructure: { alias: ['S'], default: false, type: 'boolean' },
+          chunkSize: { default: defaults.downloadChunkSize, type: 'number' },
+        }),
+  )
 
 const mkdir = <T>(y: y.Argv<T>) =>
   y.command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
