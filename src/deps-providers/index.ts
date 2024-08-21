@@ -10,9 +10,7 @@ export { askConfirmation } from './askConfirmation'
 export { fs } from './fs'
 export { fetchClient }
 
-const requestEnv: RequestDeps = {
-  fetchClient,
-}
+const requestEnv: RequestDeps = { fetchClient }
 
 const catchFetchEnv: CatchFetchEnv = {
   catchFetchErrorsRetries: 3,

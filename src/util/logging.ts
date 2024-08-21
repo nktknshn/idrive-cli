@@ -235,7 +235,7 @@ export const teLogS = <T>(
 export const initLoggers = (
   argv: { debug: boolean },
   loggers: winston.Logger[],
-) => {
+): void => {
   for (const logger of loggers) {
     logger.add(
       argv.debug

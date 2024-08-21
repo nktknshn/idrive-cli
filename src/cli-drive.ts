@@ -4,8 +4,8 @@ import * as TE from 'fp-ts/lib/TaskEither'
 
 import * as w from 'yargs-command-wrapper'
 import { runCliAction as runCliCommand } from './cli/cli-drive'
-import { cmd } from './cli/cli-drive/args'
-import { createCliActionsDeps } from './cli/cli-drive/cli-drive-deps'
+import { cmd } from './cli/cli-drive/cli-drive-args'
+import { createCliActionsDeps as createCliCommandsDeps } from './cli/cli-drive/cli-drive-deps'
 import { debugTimeTE } from './cli/logging'
 import { apiLogger, cacheLogger, initLoggers, logger, printer, stderrLogger, timeLogger } from './util/logging'
 
@@ -28,7 +28,7 @@ async function main() {
   )
 
   await pipe(
-    createCliActionsDeps(command.argv),
+    createCliCommandsDeps(command.argv),
     runCliCommand(command),
     debugTimeTE('runCliAction'),
     TE.fold(printer.errorTask, printer.printTask),

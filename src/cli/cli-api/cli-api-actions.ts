@@ -56,27 +56,3 @@ export const retrieveItemDetailsInFolders = (argv: {
         DriveApi.retrieveItemDetailsInFolders({ drivewsids: argv.drivewsids as NEA<string> }),
       ),
   )
-
-// export const retrieveItemDetails = (argv: {
-//   drivewsids: string[]
-// }) =>
-//   apiActionM(
-//     () =>
-//       pipe(
-//         // hole(),
-//         Api.retrieveItemsDetails(argv.drivewsids),
-//       ),
-//   )
-
-// export const retrieveHierarchy = (argv: {
-//   drivewsids: string[]
-// }) =>
-//   apiActionM(
-//     () =>
-//       pipe(
-//         hole(),
-//         // TE.Do,
-//         // TE.bind('hierarchy', () => api.retrieveHierarchy(argv.drivewsids)),
-//         // TE.bind('path', ({ hierarchy }) => TE.of(hierarchyToPath(hierarchy[0].hierarchy))),
-//       ),
-//   )

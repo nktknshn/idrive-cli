@@ -1,8 +1,8 @@
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as w from 'yargs-command-wrapper'
-import { Args, cmd } from './args'
 import { driveAction } from './cli-drive-action'
 import * as Action from './cli-drive-actions'
+import { Args, cmd } from './cli-drive-args'
 
 const handler = w.createHandlerFor(cmd, {
   ls: driveAction(Action.listUnixPath),
@@ -24,5 +24,5 @@ export const runCliAction = (action: Args): RTE.ReaderTaskEither<ActionsDeps, Er
   return handler.handle(action)
 }
 
-export type ActionsDeps = Args extends (...args: infer _) => RTE.ReaderTaskEither<infer R, infer _, infer _> ? R
+export type ActionsDeps = ReturnType<typeof handler.handle> extends RTE.ReaderTaskEither<infer R, infer A, infer B> ? R
   : never
