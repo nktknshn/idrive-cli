@@ -6,18 +6,18 @@ import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 import { DriveLookup } from '../../../../icloud-drive'
 import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../../../icloud-drive/util/drive-folder-tree'
-import { normalizePath } from '../../../../util/normalize-path'
+import { addLeadingSlash, normalizePath } from '../../../../util/normalize-path'
 import { Path } from '../../../../util/path'
 import { filterTree } from '../../../../util/tree'
 
-export const recursivels = ({ paths, depth, tree, cached }: {
+export const recursivels = ({ paths, depth, tree }: {
   paths: NA.NonEmptyArray<string>
   depth: number
   tree: boolean
-  cached: boolean
 }): SRTE.StateReaderTaskEither<DriveLookup.LookupState, DriveLookup.Deps, Error, string> => {
   const scanned = pipe(
     paths,
+    NA.map(addLeadingSlash),
     NA.map(micromatch.scan),
     NA.map(scan =>
       scan.isGlob

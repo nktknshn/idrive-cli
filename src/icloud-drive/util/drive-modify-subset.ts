@@ -41,7 +41,7 @@ export function modifySubset<A, C>(
   )
 }
 
-export const projectIndexes = <A, B>(
+const projectIndexes = <A, B>(
   as: NA.NonEmptyArray<A>,
   values: { index: number; a: B }[],
   f: (a: A) => B,

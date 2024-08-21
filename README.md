@@ -1,4 +1,4 @@
-# Unofficial ICloud drive client built on icloud.com/drive API
+# Unofficial iCloud Drive client built on the icloud.com/drive API
 
 ## Overview
 
@@ -240,7 +240,7 @@ Download download all into `./outputdir/Obsidian/my1/diary/`
 
 Use `dry` flag to only check what is going to be downloaded
 
-` include` and `exclude` flags can be used to filter files (supports globs)
+`include` and `exclude` flags can be used to filter files (supports globs)
 
 ### recover
 

@@ -24,5 +24,6 @@ export const runCliAction = (action: Args): RTE.ReaderTaskEither<ActionsDeps, Er
   return handler.handle(action)
 }
 
+/** Aggregate all dependencies of all actions into  */
 export type ActionsDeps = ReturnType<typeof handler.handle> extends RTE.ReaderTaskEither<infer R, infer A, infer B> ? R
   : never

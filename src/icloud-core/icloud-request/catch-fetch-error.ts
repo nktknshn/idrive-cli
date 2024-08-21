@@ -12,6 +12,7 @@ export type CatchFetchEnv = {
   isFetchError: (e: Error) => boolean
 }
 
+/** Catch fetch errors and retry */
 const catchFetchErrorsTE = (
   { isFetchError, catchFetchErrorsRetries, catchFetchErrorsRetryDelay, catchFetchErrors }: CatchFetchEnv,
 ) =>

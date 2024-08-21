@@ -11,8 +11,6 @@ const ls = w.command('ls [paths..]', 'list files in a folder', _ =>
       trash: { alias: ['t'], default: false, type: 'boolean' },
       tree: { default: false, type: 'boolean' },
       etag: { alias: ['e'], default: false, type: 'boolean' },
-      // glob: { default: false, type: 'boolean' },
-      // raw: { default: false, type: 'boolean' },
       recursive: { alias: ['R'], default: false, type: 'boolean' },
       depth: { alias: ['D'], default: Infinity, type: 'number', demandOption: 'recursive' },
       cached: { default: false, type: 'boolean' },

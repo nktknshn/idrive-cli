@@ -5,10 +5,10 @@ import { DepAuthorizeSession } from '../../deps-types/dep-authorize-session'
 import { InvalidGlobalSessionError } from '../../util/errors'
 import { EmptyObject } from '../../util/types'
 import { AuthorizedState } from './lib/request'
-// STE
+
 export type CatchSessEnv = { catchSessErrors: boolean } & DepAuthorizeSession
 
-/** Catches `InvalidGlobalSessionError`*/
+/** Catches `InvalidGlobalSessionError` and tries to reauthorize the session */
 export const catchSessErrorsSRTE = (
   deps: CatchSessEnv,
 ) =>

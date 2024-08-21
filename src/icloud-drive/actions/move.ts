@@ -45,20 +45,20 @@ const handle = (
   },
 ): DriveLookup.Action<Deps, MoveItemsResponse | RenameResponse> => {
   if (!srcitem.valid) {
-    return DriveLookup.errS(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
+    return DriveLookup.errString(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
   }
 
   const src = V.pathTarget(srcitem)
 
   if (!T.isNotRootDetails(src)) {
-    return DriveLookup.errS(`src cant be root`)
+    return DriveLookup.errString(`src cant be root`)
   }
 
   if (dstitem.valid) {
     const dst = V.pathTarget(dstitem)
 
     if (!T.isDetails(dst)) {
-      return DriveLookup.errS(`dst is a file`)
+      return DriveLookup.errString(`dst is a file`)
     }
 
     return caseMove(src, dst)

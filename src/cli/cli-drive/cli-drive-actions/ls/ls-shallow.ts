@@ -29,8 +29,6 @@ export const shallowList = (
     etag: boolean
     header: boolean
   }): SRTE.StateReaderTaskEither<DriveLookup.LookupState, DriveLookup.Deps, Error, string> => {
-    assert(A.isNonEmpty(paths))
-
     const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
 
     // const npaths = NA.map(normalizePath)(paths)

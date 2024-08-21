@@ -30,7 +30,7 @@ async function main() {
   await pipe(
     createCliCommandsDeps(command.argv),
     runCliCommand(command),
-    debugTimeTE('runCliAction'),
+    debugTimeTE('runCliCommand'),
     TE.fold(printer.errorTask, printer.printTask),
   )()
 }

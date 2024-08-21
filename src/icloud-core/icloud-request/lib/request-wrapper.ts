@@ -2,6 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { EmptyObject, XX, XXX } from '../../../util/types'
 
+/** Inject dependencies into a request */
 export const wrapRequest = <WR, WRS, RR>(wrapper: ReqWrapper<WR, WRS, RR>) =>
   <Args extends unknown[], A, R extends EmptyObject>(
     req: <S extends WRS>(...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
@@ -14,6 +15,7 @@ export const wrapRequest = <WR, WRS, RR>(wrapper: ReqWrapper<WR, WRS, RR>) =>
         )
       }
 
+//
 export const wrapRequests = <
   Rec extends Record<string, (...args: any[]) => SRTE.StateReaderTaskEither<any, any, any, any>>,
 >(

@@ -8,7 +8,7 @@ import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
 import * as T from '../../../../icloud-drive/drive-types'
 
-export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrashRoot>) => {
+export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrashRoot>): string => {
   return pipe(
     tree,
     TR.map(T.fileNameAddSlash),
@@ -81,7 +81,7 @@ const showElements = (elements: Element[]): string => {
 }
 
 export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (details: T.Details) =>
+  (details: T.Details): string =>
     pipe(
       [
         T.isTrashDetailsG(details)
@@ -92,7 +92,7 @@ export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = 
     )
 
 export const showFileInfo = (result: T.DriveChildrenItemFile) =>
-  ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+  ({ showDrivewsid = false, showDocwsid = false } = {}): string =>
     pipe(
       [
         // ['name', T.fileName(result)],
@@ -181,7 +181,7 @@ export const showDetailsInfo = (
       printFolderInfo?: boolean
       fullPath: boolean
     },
-  ) =>
+  ): string =>
     string.Monoid.concat(
       showHeader
         ? pipe(
@@ -202,16 +202,11 @@ export const showDetailsInfo = (
         _ => _.join('\n'),
       ),
     )
-// const showArray
+
 const nSymbols = (n: number, s: string) => {
-  const res = []
-
-  for (let i = 0; i < n; i++) {
-    res.push(s)
-  }
-
-  return res.join('')
+  return Array(n).fill(s).join('')
 }
+
 export type RecursiveFolder =
   | {
     readonly details: T.Details
@@ -247,6 +242,7 @@ const showRecursive = ({ ident = 0 }) =>
 
     return rows.join('\n')
   }
+
 const conditional = <A, B, R>(
   ref: <R>(input: A | B) => input is A,
   onTrue: (a: A) => R,

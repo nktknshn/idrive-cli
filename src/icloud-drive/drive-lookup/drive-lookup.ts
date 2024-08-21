@@ -45,6 +45,6 @@ export const chainState = <A>(
   f: (s: LookupState) => SRTE.StateReaderTaskEither<LookupState, Deps, Error, A>,
 ): SRTE.StateReaderTaskEither<LookupState, Deps, Error, A> => SRTE.chain(f)(get())
 
-export const errS = <A>(s: string): Effect<A> => SRTE.left(err(s))
+export const errString = <A>(s: string): Effect<A> => SRTE.left(err(s))
 
 export const chain = chain_ as (<A, B>(f: (a: A) => Effect<B>) => (ma: Effect<A>) => Effect<B>)

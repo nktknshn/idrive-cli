@@ -3,6 +3,7 @@ import * as deps from '../../deps-providers'
 import { DepAskConfirmation } from '../../deps-types/DepAskConfirmation'
 import { ActionsDeps } from '.'
 
+// Creates a new ActionsDeps object from the given arguments.
 export const createCliActionsDeps = (argv: {
   sessionFile?: string
   cacheFile?: string

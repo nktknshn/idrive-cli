@@ -106,7 +106,7 @@ const handleSingleFileUpload = (
     }
     // otherwise we cancel uploading
     else {
-      return DriveLookup.errS(`invalid destination path: ${V.validAsString(dst)} It's a file`)
+      return DriveLookup.errString(`invalid destination path: ${V.validAsString(dst)} It's a file`)
     }
   }
 
@@ -129,7 +129,7 @@ const handleSingleFileUpload = (
     }
   }
 
-  return DriveLookup.errS(`invalid destination path: ${V.showGetByPathResult(dst)}`)
+  return DriveLookup.errString(`invalid destination path: ${V.showGetByPathResult(dst)}`)
 }
 
 const uploadFileToFolder = (
