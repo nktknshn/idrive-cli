@@ -25,8 +25,6 @@ export const shallowList = (
     fullPath: boolean
     listInfo: boolean
     trash: boolean
-    raw: boolean
-    glob: boolean
     cached: boolean
     etag: boolean
     header: boolean

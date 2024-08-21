@@ -12,15 +12,15 @@ type Argv = {
   trash: boolean
   tree: boolean
   etag: boolean
-  glob: boolean
-  raw: boolean
+  // glob: boolean
+  // raw: boolean
   recursive: boolean
   depth: number
   cached: boolean
 }
 
 export const listUnixPath = (
-  { paths, raw, fullPath, recursive, depth, listInfo, trash, etag, cached, header, glob, tree }: Argv,
+  { paths, fullPath, recursive, depth, listInfo, trash, etag, cached, header, tree }: Argv,
 ): DriveLookup.Effect<string> => {
   assert(A.isNonEmpty(paths))
 
@@ -29,13 +29,11 @@ export const listUnixPath = (
   }
 
   return shallowList(paths)({
-    raw,
     fullPath,
     listInfo,
     trash,
     etag,
     cached,
     header,
-    glob,
   })
 }
