@@ -10,19 +10,22 @@ This is a client for iCloud Drive built on top of a non-public API. It aims to m
 This is an unofficial client. Use it at your own risk. The author is not responsible for any data loss or any other issues that may arise from using this software. Always have a backup of your data. Work in progress.
 
 ## Usage
+
+`alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
+
 ```Commands:
-  bun init                       init
-  bun auth                       auth session
-  bun ls [paths..]               list files in a folder
-  bun download <path> <dstpath>  download
-  bun mkdir <path>               mkdir
-  bun edit <path>                edit
-  bun autocomplete <path>        autocomplete
-  bun upload <uploadargs..>      upload
-  bun mv <srcpath> <dstpath>     move
-  bun cat <path>                 cat
-  bun rm [paths..]               check updates
-  bun recover <path>             recover
+  idrive init                       init
+  idrive auth                       auth session
+  idrive ls [paths..]               list files in a folder
+  idrive download <path> <dstpath>  download
+  idrive mkdir <path>               mkdir
+  idrive edit <path>                edit
+  idrive autocomplete <path>        autocomplete
+  idrive upload <uploadargs..>      upload
+  idrive mv <srcpath> <dstpath>     move
+  idrive cat <path>                 cat
+  idrive rm [paths..]               check updates
+  idrive recover <path>             recover
 
 Options:
       --help                    Show help                              [boolean]
