@@ -1,7 +1,7 @@
 import * as t from 'io-ts'
 import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
-import { childrenItem } from '../icloud-drive-items-types/types-io'
+import { childrenItem } from '../drive-types/types-io'
 
 const renameResponse = t.type({ items: t.array(childrenItem) })
 

@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepAskConfirmation } from '../../../deps-types/DepAskConfirmation'
 import { DriveApi, DriveLookup } from '../../../icloud-drive'
-import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud-drive/icloud-drive-items-types'
+import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud-drive/drive-types'
 import { guardProp } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 

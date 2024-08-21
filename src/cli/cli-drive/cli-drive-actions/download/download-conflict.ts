@@ -9,7 +9,7 @@
 // import * as Task from 'fp-ts/Task'
 // import { DepAskConfirmation } from '../../../../deps/DepAskConfirmation'
 // import { DepFs } from '../../../../deps/DepFs'
-// import * as T from '../../../../icloud/drive/icloud-drive-items-types'
+// import * as T from '../../../../icloud/drive/drive-types'
 // import { err } from '../../../../util/errors'
 // import { loggerIO } from '../../../../util/loggerIO'
 // import { Path } from '../../../../util/path'

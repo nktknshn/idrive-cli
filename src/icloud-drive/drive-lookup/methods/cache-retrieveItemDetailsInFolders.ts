@@ -9,7 +9,7 @@ import { loggerIO } from '../../../util/loggerIO'
 import { NEA } from '../../../util/types'
 import { sequenceArrayE, sequenceArrayO } from '../../../util/util'
 import { C, DriveApi, DriveLookup, T } from '../..'
-import { rootDrivewsid, trashDrivewsid } from '../../icloud-drive-items-types/types-io'
+import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import { chain, Effect, LookupState, of } from '..'
 import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
 

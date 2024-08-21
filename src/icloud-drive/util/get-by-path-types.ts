@@ -6,7 +6,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath, normalizePath } from '../../util/normalize-path'
 import { NEA } from '../../util/types'
-import * as T from '../icloud-drive-items-types'
+import * as T from '../drive-types'
 
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]
 

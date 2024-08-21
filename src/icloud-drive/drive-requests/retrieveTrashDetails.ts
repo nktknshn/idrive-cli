@@ -3,8 +3,8 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
-import { DetailsTrashRoot, DriveChildrenItem } from '../icloud-drive-items-types'
-import { detailsItem, detailsTrash } from '../icloud-drive-items-types/types-io'
+import { DetailsTrashRoot, DriveChildrenItem } from '../drive-types'
+import { detailsItem, detailsTrash } from '../drive-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
 
 export const scheme = t.tuple(

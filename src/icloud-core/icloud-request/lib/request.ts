@@ -5,7 +5,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { AccountData } from '../../../icloud-authorization/types'
+import { type AccountData } from '../../../icloud-authorization/types'
 import {
   BadRequestError,
   err,
@@ -21,7 +21,7 @@ import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../
 import { ICloudSession } from '../../session/session-type'
 
 /*
-Function for building and executing low level Api Request and decoding server response
+Module for building and executing low level Api Request and decoding server response
 */
 
 /** Bases state has only sesssion */
@@ -86,7 +86,7 @@ const putSession = <S extends { session: ICloudSession }, R extends RequestDeps>
     chain(({ state }) => SRTE.put({ ...state, session })),
   )
 
-export const buildRequestC = <S extends BaseState, R extends RequestDeps = RequestDeps>(
+export const buildRequest = <S extends BaseState, R extends RequestDeps = RequestDeps>(
   f: (a: { state: S; deps: R }) => HttpRequestConfig,
 ): ApiRequest<HttpRequest, S, R> =>
   pipe(
@@ -112,7 +112,10 @@ export const handleResponse = <A, S extends BaseState, R extends RequestDeps>(
       SRTE.bind('req', () => req),
       SRTE.chainW(({ deps: { fetchClient: fetch }, req }) =>
         SRTE.fromTaskEither(pipe(
-          logg(`${req.url.replace(/\?.+/, '')} ${JSON.stringify(req.data)}`, apiLogger.debug),
+          logg(
+            `${req.url.replace(/\?.+/, '')} ${JSON.stringify(req.data)}`,
+            a => apiLogger.debug(a),
+          ),
           () => fetch(req),
           TE.map(httpResponse => ({ httpResponse })),
         ))
@@ -295,7 +298,7 @@ export const basicJsonRequest = <S extends BaseState, A, R extends RequestDeps>(
 ): ApiRequest<A, S, R> => {
   const p = basicJsonResponse(jsonDecoder)
   return pipe(
-    buildRequestC<S, R>(f),
+    buildRequest<S, R>(f),
     handleResponse<A, S, R>(p),
   )
 }

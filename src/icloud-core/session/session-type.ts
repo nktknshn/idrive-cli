@@ -1,9 +1,9 @@
 import * as O from 'fp-ts/lib/Option'
 import { isSome, Some } from 'fp-ts/lib/Option'
 import * as t from 'io-ts'
-import { DateFromISOString } from 'io-ts-types'
-import { option } from 'io-ts-types/lib/option'
 import * as m from 'monocle-ts'
+import { DateFromISOString } from '../../util/io-date'
+import { option } from '../../util/io-option'
 
 const optionalString = option(t.string)
 

@@ -7,7 +7,7 @@ import { guardProp } from '../../util/guards'
 import { NEA } from '../../util/types'
 import { DriveApi, DriveLookup } from '..'
 import { MoveItemToTrashResponse } from '../drive-requests'
-import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../icloud-drive-items-types'
+import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../drive-types'
 
 export type Deps =
   & DriveLookup.Deps

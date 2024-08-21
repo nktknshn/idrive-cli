@@ -6,7 +6,7 @@ import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { ICloudSessionWithSessionToken } from '../../icloud-core/session/session-type'
 import { err, InvalidGlobalSessionError } from '../../util/errors'
-import { AccountData } from '../types'
+import { type AccountData } from '../types'
 
 const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountData>
 
@@ -16,7 +16,7 @@ export function validateSession(): AR.ApiRequest<O.Option<AccountData>, {
   session: ICloudSessionWithSessionToken
 }> {
   return pipe(
-    AR.buildRequestC<{ session: ICloudSessionWithSessionToken }, AR.RequestDeps>(() => ({
+    AR.buildRequest<{ session: ICloudSessionWithSessionToken }, AR.RequestDeps>(() => ({
       method: 'POST',
       url: 'https://setup.icloud.com/setup/ws/1/validate',
       options: { addClientInfo: true },

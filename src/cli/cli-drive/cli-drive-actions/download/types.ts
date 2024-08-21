@@ -1,7 +1,7 @@
 // import * as E from 'fp-ts/lib/Either'
 // import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 // import { DriveQuery } from '../../../../icloud/drive'
-// import * as T from '../../../../icloud/drive/icloud-drive-items-types'
+// import * as T from '../../../../icloud/drive/drive-types'
 
 // import { XXX } from '../../../../util/types'
 

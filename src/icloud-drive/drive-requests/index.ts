@@ -1,17 +1,17 @@
-export { createFoldersM as createFolders, CreateFoldersResponse } from './create-folders'
-export { download, downloadBatch, DownloadResponseBody } from './download'
-export { moveItems, MoveItemsResponse } from './moveItems'
-export { moveItemsToTrash, MoveItemToTrashResponse } from './moveItemsToTrash'
-export { renameItems, RenameResponse } from './rename'
+export { createFolders as createFolders, type CreateFoldersResponse } from './create-folders'
+export { download, downloadBatch, type DownloadResponseBody } from './download'
+export { moveItems, type MoveItemsResponse } from './moveItems'
+export { moveItemsToTrash, type MoveItemToTrashResponse } from './moveItemsToTrash'
+export { renameItems, type RenameResponse } from './rename'
 export { retrieveHierarchy } from './retrieveHierarchy'
 // export { retrieveItemDetails } from './retrieveItemDetails'
 export { retrieveItemDetailsInFolders } from './retrieveItemDetailsInFolders'
 export { putBackItemsFromTrash, retrieveTrashDetails } from './retrieveTrashDetails'
 export {
-  SingleFileResponse,
+  type SingleFileResponse,
   singleFileUpload,
   updateDocuments,
-  UpdateDocumentsResponse,
+  type UpdateDocumentsResponse,
   upload,
-  UploadResponse,
+  type UploadResponse,
 } from './upload'

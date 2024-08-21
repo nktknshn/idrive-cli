@@ -2,38 +2,14 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import * as iot from 'io-ts-types'
-import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
-import { ResponseHandler, ResponseWithSession } from '../../icloud-core/icloud-request/lib/request'
-import { buildRequest } from '../../icloud-core/session/session-http'
-import { FetchClientEither, HttpRequest } from '../../util/http/fetch-client'
-import { apiLogger } from '../../util/logging'
+import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
+import { HttpRequest } from '../../util/http/fetch-client'
+import * as iot from '../../util/io-nonEmptyArrays'
 import { NEA } from '../../util/types'
-import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../icloud-drive-items-types'
-import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../icloud-drive-items-types/types-io'
-
-// export function retrieveItemDetailsInFoldersGeneric<R>(
-//   client: FetchClientEither,
-//   { accountData, session }: AuthorizedState,
-//   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
-//   handleResponse: ResponseHandler<R>,
-// ): TE.TaskEither<Error, ResponseWithSession<R>> {
-//   apiLogger.debug(`retrieveItemDetailsInFolders: ${data.map(_ => _.drivewsid)}`)
-
-//   return pipe(
-//     session,
-//     buildRequest(
-//       'POST',
-//       `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
-//       { addClientInfo: true, data },
-//     ),
-//     client,
-//     handleResponse(session),
-//   )
-// }
+import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../drive-types'
+import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../drive-types/types-io'
 
 export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsWithHierarchy>[]> = flow(
   t.array(t.UnknownRecord).decode,
@@ -62,7 +38,7 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedS
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ): AR.ApiRequest<HttpRequest, S, AR.RequestDeps> => {
   return pipe(
-    AR.buildRequestC<S>(({ state: { accountData } }) => ({
+    AR.buildRequest<S>(({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.drivews.url}/retrieveItemDetailsInFolders?dsid=${accountData.dsInfo.dsid}`,
       options: { addClientInfo: true, data },

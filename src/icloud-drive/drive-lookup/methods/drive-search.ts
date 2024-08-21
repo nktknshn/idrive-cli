@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
-import * as T from '../../icloud-drive-items-types'
+import * as T from '../../drive-types'
 import { FlattenTreeItemP } from '../../util/drive-folder-tree'
 
 export type SearchInPathFoundItem<R extends T.Root> = {

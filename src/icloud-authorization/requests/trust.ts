@@ -18,7 +18,7 @@ export const requestTrustDevice = <S extends AR.BaseState>(): AR.ApiRequest<Trus
   logger.debug('requestTrustDeviceM')
 
   return pipe(
-    AR.buildRequestC<S>(() => ({
+    AR.buildRequest<S>(() => ({
       method: 'GET',
       url: 'https://idmsa.apple.com/appleauth/auth/2sv/trust',
       options: { addClientInfo: false, headers: [headers.default, authorizationHeaders] },

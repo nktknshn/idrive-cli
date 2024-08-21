@@ -10,7 +10,7 @@ import {
   UpdateDocumentsResponse,
   UploadResponse,
 } from '../drive-requests/upload'
-import * as T from '../icloud-drive-items-types'
+import * as T from '../drive-types'
 
 /** basic api functions without dependencies */
 export type DriveApiEnv = {

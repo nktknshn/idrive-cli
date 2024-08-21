@@ -49,7 +49,7 @@ export type DownloadICloudFilesFunc<R> = <S extends AuthorizedState>(
   task: { downloadable: DownloadItemMapped[] },
 ) => XXX<S, R, DownloadFileResult[]>
 
-export { DownloadFileResult }
+export { type DownloadFileResult }
 // export type FilterTreeResult = DownloadStructure & {
 //   excluded: DownloadInfo[]
 // }

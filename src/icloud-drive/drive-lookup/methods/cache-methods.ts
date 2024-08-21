@@ -1,7 +1,7 @@
 import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import * as T from '../../icloud-drive-items-types'
+import * as T from '../../drive-types'
 import { chain, Effect, get, LookupState, map } from '..'
 import * as C from '../cache'
 

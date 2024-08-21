@@ -1,7 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Stats } from 'fs'
 import mime from 'mime-types'
 import { DepFs } from '../../../deps-types/DepFs'
 import { AuthorizedState } from '../../../icloud-core/icloud-request'

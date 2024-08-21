@@ -8,7 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { loggerIO } from '../../../util/loggerIO'
 import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
-import * as T from '../../icloud-drive-items-types'
+import * as T from '../../drive-types'
 import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
 import { equalsDrivewsId } from '../../util/drive-helpers'
 

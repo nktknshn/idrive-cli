@@ -1,3 +1,6 @@
+# alias idrive="node dist/idrive.js"
+# .
+
 function __fish_autocomplete_path
   argparse 't/trash' 'f/file' 'd/dir' 'c/cached' -- $argv
   set -l ac_args

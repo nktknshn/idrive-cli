@@ -1,4 +1,4 @@
-import * as CT from '../../icloud-drive-items-types'
+import * as CT from '../../drive-types'
 
 /** Cache is just a key-val storage for files info */
 export interface CacheF {

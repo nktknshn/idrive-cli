@@ -5,7 +5,7 @@ import { DepFs } from '../deps-types/DepFs'
 import { BufferDecodingError, FileReadingError, JsonParsingError, TypeDecodingError } from '../util/errors'
 import { tryReadJsonFile } from '../util/files'
 import { validateResponseJson } from './requests/validate'
-import { AccountData } from './types'
+import { type AccountData } from './types'
 
 export function saveAccountData(
   accountData: AccountData,

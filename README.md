@@ -1,5 +1,10 @@
 # Unofficial ICLoud drive cloud built on icloud.com/drive API
 
+## Overview
+
+This is a client for ICloud Drive built on the top of non public API. It tries to
+make as less API requests as possible by using cache.
+
 ## TODO:
 - verify extension before uploading to APP_LIBRARY
 - upload multiple files
@@ -14,7 +19,7 @@
 ```Commands:
   cli-drive.js ls [paths..]                 list files in a folder
   cli-drive.js mkdir <path>                 mkdir
-  cli-drive.js rm [paths..]                 check updates
+  cli-drive.js rm [paths..]                 remove
   cli-drive.js cat <path>                   cat
   cli-drive.js mv <srcpath> <dstpath>       move
   cli-drive.js upload <srcpath> <dstpath>   upload
@@ -62,7 +67,7 @@ Use recursive flag for the globstar pattern (may take some time to process deep 
 
 `idrive ls -R '/Obsidian/my1/**/*.md'`
 
-Limit depth of the recursion
+Limit the depth of recursion
 
 `idrive ls -R --depth 2 '/Obsidian/my1/**/*.md'`
 
@@ -95,7 +100,7 @@ Multiple paths
 
 `idrive rm '/Obsidian/my1/*.md' /Camera/IMG_0198.jpg`
 
-Use recursive flag for the globstar pattern
+Use recursion flag for the globstar pattern
 
 `idrive rm -R '/Obsidian/my1/**/*.md'`
 
@@ -124,7 +129,7 @@ View the content of a text file
 
 ### mv <srcpath> <dstpath>
 
-Move or rename a file or a folder. You cannot move between different zones (between APP_LIBRARIES and Docws)
+Move or rename a file or a folder. You cannot move between different zones (e.g. between APP_LIBRARIES and Docws)
 
 Remote file will be renamed
 
@@ -147,15 +152,18 @@ Creates a folder
 
 ### upload 
 
-`upload ~/Documents/note1.md /Obsidian/my1/notes/`
+Upload a single file
+`idrive upload ~/Documents/note1.md /Obsidian/my1/notes/`
+`idrive upload ~/Documents/note1.md /Obsidian/my1/notes/different_name.md`
 
-`upload ~/Documents/note1.md /Obsidian/my1/notes/note.md`
+Upload multiple files
+`idrive upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /Obsidian/my1/notes/`
 
-`upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /Obsidian/my1/notes/`
+Upload a folder
+`idrive upload -R ~/Documents/ /Obsidian/my1/notes/`
 
-`upload -R ~/Documents/ /Obsidian/my1/notes/`
-
-`upload -R '~/Documents/**/*.md' /Obsidian/my1/notes/`
+Upload a folder 
+`idrive upload -R '~/Documents/**/*.md' /Obsidian/my1/notes/`
 
 <!-- 
 ### uploads [files..] <dstpath>
@@ -208,7 +216,7 @@ A single file
 
 `idrive download '/Obsidian/my1/note1.md' ./outputdir`
 
-Recursively download folders' shallow content into `./outputdir/my1/`
+Recursively download folders shallow content into `./outputdir/my1/`
 
 `idrive download '/Obsidian/my1/*.md' ./outputdir`
 

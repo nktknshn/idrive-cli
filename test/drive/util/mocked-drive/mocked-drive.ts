@@ -3,7 +3,7 @@ import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
 import { T } from '../../../../src/icloud-drive'
-import { rootDrivewsid } from '../../../../src/icloud-drive/icloud-drive-items-types/types-io'
+import { rootDrivewsid } from '../../../../src/icloud-drive/drive-types/types-io'
 import * as V from '../../../../src/icloud-drive/util/get-by-path-types'
 import { guardFstRO, isDefined } from '../../../../src/util/guards'
 import { parseFilename } from '../../../../src/util/parse-filename'
@@ -97,12 +97,7 @@ export const file = <N extends string>({ name, docwsid, tag }: {
   docwsid?: string
   tag?: string
 }): File<N> => {
-  return {
-    type: 'FILE',
-    name,
-    docwsid,
-    tag,
-  }
+  return { type: 'FILE', name, docwsid, tag }
 }
 
 export const appLibrary = <N extends string>(
@@ -111,14 +106,7 @@ export const appLibrary = <N extends string>(
   <T extends (Folder<any[], any> | File<any>)[]>(
     ...children: T
   ): AppLibray<T, N> => {
-    return {
-      type: 'APP_LIBRARY',
-      name,
-      docwsid,
-      zone,
-      children,
-      tag,
-    }
+    return { type: 'APP_LIBRARY', name, docwsid, zone, children, tag }
   }
 
 export const folder = <N extends string>(
@@ -127,13 +115,7 @@ export const folder = <N extends string>(
   <T extends (Folder<any[], any> | File<any>)[]>(
     ...children: T
   ): Folder<T, N> => {
-    return {
-      type: 'FOLDER',
-      name,
-      children,
-      docwsid,
-      tag,
-    }
+    return { type: 'FOLDER', name, children, docwsid, tag }
   }
 
 export const docwsroot = <T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]>(
@@ -221,8 +203,8 @@ const makeAppLibrary = () =>
       'etag': 'a3q',
       'type': 'APP_LIBRARY',
       'maxDepth': 'ANY',
-      'icons': [],
-      'supportedExtensions': [],
+      // 'icons': [],
+      // 'supportedExtensions': [],
       numberOfItems: children.length,
       items: children.map(_ => _.d),
       status: 'OK',

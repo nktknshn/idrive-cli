@@ -11,7 +11,7 @@ export const requestSecurityCode = <S extends AR.BaseState>(
   code: number,
 ): AR.ApiRequest<EmptyObject, S> => {
   return pipe(
-    AR.buildRequestC<S>(() => ({
+    AR.buildRequest<S>(() => ({
       method: 'POST',
       url: 'https://idmsa.apple.com/appleauth/auth/verify/trusteddevice/securitycode',
       options: {

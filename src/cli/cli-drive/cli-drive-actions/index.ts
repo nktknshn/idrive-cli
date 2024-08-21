@@ -1,3 +1,4 @@
+export { authSession } from './auth'
 export { autocomplete } from './autocomplete'
 export { cat } from './cat'
 export { download } from './download-cli-drive'

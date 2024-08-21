@@ -11,7 +11,6 @@ export const wrapRequest = <WR, WRS, RR>(wrapper: ReqWrapper<WR, WRS, RR>) =>
         const w = wrapper(deps)
         return pipe(
           w(req<S>(...args)),
-          // SRTE.local(() => deps),
         )
       }
 

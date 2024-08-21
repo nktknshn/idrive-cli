@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import { pipe } from 'fp-ts/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as winston from 'winston'
+import { fromWinston } from './loggerIO'
 import { isObjectWithOwnProperty } from './util'
 const { combine, timestamp, label, prettyPrint, json } = winston.format
 
@@ -78,11 +79,12 @@ export const loggingLevels = {
 }
 
 // export const setLoggingLevel()
-export const logf = <T>(msg: string, lgr = logger.debug) => logReturn<T>(() => lgr(msg))
+export const logf = <T>(msg: string, lgr = logger.debug.bind(logger)) => logReturn<T>(() => lgr(msg))
 
-export const logff = <T>(f: (v: T) => string, lgr = logger.debug) => (v: T) => logReturn<T>(() => lgr(f(v)))
+export const logff = <T>(f: (v: T) => string, lgr = logger.debug.bind(logger)) =>
+  (v: T) => logReturn<T>(() => lgr(f(v)))
 
-export const logg = (msg: string, f = logger.debug) => f(msg)
+export const logg = (msg: string, f = logger.debug.bind(logger)) => f(msg)
 
 const plain = (type: string, f: (s: string) => string = a => a) =>
   winston.format.printf(({ level, message, label, timestamp }) => {
@@ -122,6 +124,16 @@ const logger = winston.createLogger({
     plain('logger'),
   ),
 })
+
+export const timeLogger = winston.createLogger({
+  level: 'debug',
+  format: combine(
+    plain('time', chalk.blue),
+  ),
+  transports: [loggingLevels.infoToStderr],
+})
+
+export const timeLoggerIO = fromWinston(timeLogger)
 
 export const authLogger = winston.createLogger({
   level: 'debug',

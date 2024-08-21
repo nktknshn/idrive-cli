@@ -1,4 +1,3 @@
-import * as STE from 'fp-ts-contrib/StateTaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
@@ -9,6 +8,7 @@ import { AuthorizedState } from './lib/request'
 // STE
 export type CatchSessEnv = { catchSessErrors: boolean } & DepAuthorizeSession
 
+/** Catches `InvalidGlobalSessionError`*/
 export const catchSessErrorsSRTE = (
   deps: CatchSessEnv,
 ) =>
@@ -21,11 +21,7 @@ export const catchSessErrorsSRTE = (
         RTE.orElse(e =>
           deps.catchSessErrors && InvalidGlobalSessionError.is(e)
             ? pipe(
-              // authorizeSession<S>(),
-              // catchFetchErrorsSRTE(deps),
               deps.authorizeSession<S>()(s),
-              // apply(s),
-              // RTE.local(() => (deps)),
               RTE.chain(
                 ([accountData, state]) => m({ ...state, accountData }),
               ),

@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { AccountData } from '../icloud-authorization/types'
+import { type AccountData } from '../icloud-authorization/types'
 import { BaseState } from '../icloud-core/icloud-request'
 import { XX } from '../util/types'
 

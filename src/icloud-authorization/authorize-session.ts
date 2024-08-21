@@ -8,14 +8,14 @@ import { requestAccoutLogin } from './requests/accoutLogin'
 import { requestSecurityCode } from './requests/securitycode'
 import { isHsa2Required, requestSignIn } from './requests/signin'
 import { requestTrustDevice } from './requests/trust'
-import { AccountData } from './types'
+import { type AccountData } from './types'
 
 /**  */
 export type AuthorizeDeps = AR.RequestDeps & { getCode: Getcode }
 
 /** Authorizes a session returning `AccountData`*/
 export function authorizeSession<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S, AuthorizeDeps> {
-  authLogger.debug('authorizeSession')
+  // authLogger.debug('authorizeSession')
 
   return pipe(
     requestSignIn<S>(),

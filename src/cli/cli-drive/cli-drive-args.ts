@@ -154,7 +154,15 @@ const init = <T>(y: y.Argv<T>) =>
     a =>
       a.options({
         skipLogin: { default: false, type: 'boolean' },
+        // auth: { default: false, type: 'boolean', description: 'auth existing' },
       }),
+  )
+
+const auth = <T>(y: y.Argv<T>) =>
+  y.command(
+    'auth',
+    'auth session',
+    a => a.options({}),
   )
 
 const edit = <T>(y: y.Argv<T>) =>
@@ -170,11 +178,12 @@ const edit = <T>(y: y.Argv<T>) =>
   )
 
 const commands = {
+  init,
+  auth,
   download,
   ls,
   mkdir,
   edit,
-  init,
   autocomplete,
   upload,
   mv,

@@ -1,4 +1,4 @@
-export { authorizeSession, authorizeState, DepAuthorizeSession } from './dep-authorize-session'
-export { DepAskConfirmation } from './DepAskConfirmation'
-export { DepFetchClient } from './DepFetchClient'
-export { DepFs } from './DepFs'
+export { authorizeSession, authorizeState, type DepAuthorizeSession } from './dep-authorize-session'
+export { type DepAskConfirmation } from './DepAskConfirmation'
+export { type DepFetchClient } from './DepFetchClient'
+export { type DepFs } from './DepFs'

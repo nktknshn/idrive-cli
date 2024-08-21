@@ -9,7 +9,6 @@ import { headers } from '../../icloud-core/session/session-http-headers'
 import { err, UnexpectedResponse } from '../../util/errors'
 import { HttpResponse } from '../../util/http/fetch-client'
 import { getHeader } from '../../util/http/http-headers'
-import { authLogger } from '../../util/logging'
 import { arrayFromOption } from '../../util/util'
 import { applyAuthorizationResponse } from './authorization-session'
 import { authorizationHeaders } from './headers'
@@ -74,10 +73,10 @@ export function getResponse(
 }
 
 export const requestSignIn = <S extends AR.BaseState>(): AR.ApiRequest<SignInResponse, S> => {
-  authLogger.debug('requestSignInM')
+  // authLogger.debug('requestSignInM')
 
   return pipe(
-    AR.buildRequestC<S>(({ state: { session } }) => ({
+    AR.buildRequest<S>(({ state: { session } }) => ({
       method: 'POST',
       url: 'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
       options: {

@@ -7,7 +7,7 @@ import { parseFilename } from '../../util/parse-filename'
 import { NEA } from '../../util/types'
 import { DriveApi, DriveLookup } from '..'
 import { MoveItemsResponse, RenameResponse } from '../drive-requests'
-import * as T from '../icloud-drive-items-types'
+import * as T from '../drive-types'
 import * as V from '../util/get-by-path-types'
 
 export type Deps =

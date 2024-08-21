@@ -83,8 +83,8 @@ export const itemAppLibrary = t.intersection([
     parentId: t.string,
     type: t.literal('APP_LIBRARY'),
     maxDepth: t.string,
-    icons: t.array(icon),
-    supportedExtensions: t.array(t.string),
+    // icons: t.array(icon),
+    // supportedExtensions: t.array(t.string),
     supportedTypes: t.array(t.string),
   }),
 ])

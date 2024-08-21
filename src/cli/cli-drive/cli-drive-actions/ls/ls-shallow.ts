@@ -5,7 +5,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 import { DriveLookup } from '../../../../icloud-drive'
-import * as T from '../../../../icloud-drive/icloud-drive-items-types'
+import * as T from '../../../../icloud-drive/drive-types'
 import { findInParentGlob } from '../../../../icloud-drive/util/drive-helpers'
 import {
   isValidPath,

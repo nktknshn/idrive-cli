@@ -1,7 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { C } from '..'
 import { loadAccountDataFromFile } from './loadAccountDataFromFile'
 import { loadCacheFromFile } from './loadCacheFromFile'
 import { loadSessionFromFile } from './loadSessionFromFile'

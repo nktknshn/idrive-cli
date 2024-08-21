@@ -3,7 +3,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DriveApi, DriveLookup } from '../../../icloud-drive'
-import { isTrashDetailsG } from '../../../icloud-drive/icloud-drive-items-types'
+import { isTrashDetailsG } from '../../../icloud-drive/drive-types'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 

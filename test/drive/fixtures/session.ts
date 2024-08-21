@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option'
-import { AccountData } from '../../../src/icloud-authorization/types'
+import { type AccountData } from '../../../src/icloud-authorization/types'
 import { AuthorizedState } from '../../../src/icloud-core/icloud-request'
 import { ICloudSession } from '../../../src/icloud-core/session/session-type'
 import { T } from '../../../src/icloud-drive'

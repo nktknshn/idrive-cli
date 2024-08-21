@@ -6,7 +6,7 @@ import { countryCode } from '../../defaults'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { err } from '../../util/errors'
 import { logger } from '../../util/logging'
-import { AccountData } from '../types'
+import { type AccountData } from '../types'
 
 export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S> {
   logger.debug('requestAccoutLogin')
@@ -18,7 +18,7 @@ export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<Acco
     ),
     SRTE.chainW(sessionToken =>
       pipe(
-        AR.buildRequestC<S>((
+        AR.buildRequest<S>((
           { state: { session } },
         ) => ({
           method: 'POST',
