@@ -3,7 +3,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { authorizeSession as authorizeSession_ } from '../icloud-authorization'
 import { BaseState } from '../icloud-core/icloud-request'
 import { CatchFetchDeps, catchFetchErrorsSRTE } from '../icloud-core/icloud-request/catch-fetch-error'
-import { SRTEWrapper, wrapSRTE } from '../icloud-core/icloud-request/lib/srte-wrapper'
+import { SRTEWrapper, wrapSRTE } from '../util/srte-wrapper'
 import { EmptyObject } from '../util/types'
 
 /** Catch fetch errors and retry */

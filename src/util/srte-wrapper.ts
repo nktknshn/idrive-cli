@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { EmptyObject, XXX } from '../../../util/types'
+import { EmptyObject, XXX } from './types'
 
 /**
  * * Wraps an SRTE with a wrapper, returning a function that takes a combination of their dependencies.
