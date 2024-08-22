@@ -41,6 +41,7 @@ export const signInCredentials = t.type({
   password: t.string,
 })
 
+/** Authenticated session */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ICloudSession extends t.TypeOf<typeof sessionScheme> {}
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -60,10 +61,6 @@ export const session = (
   sessionId: O.none,
   sessionToken: O.none,
 })
-
-// export interface SessionCookies {
-//   [name: string]: Cookie
-// }
 
 export type SessionCookies = t.TypeOf<typeof cookies>
 

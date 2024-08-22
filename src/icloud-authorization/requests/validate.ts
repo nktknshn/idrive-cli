@@ -6,7 +6,7 @@ import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { ICloudSessionWithSessionToken } from '../../icloud-core/session/session-type'
 import { err, InvalidGlobalSessionError } from '../../util/errors'
-import { type AccountData } from '../types'
+import { type AccountData } from '../type-accountdata'
 
 const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountData>
 

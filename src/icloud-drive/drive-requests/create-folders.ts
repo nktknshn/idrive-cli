@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request'
+import { debugTimeSRTE } from '../../logging/debug-time'
 import { itemFolder } from '../drive-types/types-io'
 
 const createFolderResponse = t.type({

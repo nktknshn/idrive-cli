@@ -4,14 +4,10 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DriveLookup } from '../../../src/icloud-drive'
 import * as C from '../../../src/icloud-drive/drive-lookup/cache'
-import * as L from '../../../src/util/logging'
 import { npath } from '../../../src/util/normalize-path'
 import '../debug'
-import { enableDebug } from '../debug'
 import { executeDrive, fakeicloud } from '../util/mocked-drive'
 import { file, folder } from '../util/mocked-drive'
-
-// enableDebug(true)
 
 const struct0 = fakeicloud(
   file({ name: 'file1.txt' }),

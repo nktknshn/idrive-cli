@@ -2,7 +2,7 @@ import { apply, constVoid, identity, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { loggerIO } from '../../util/loggerIO'
+import { loggerIO } from '../../logging/loggerIO'
 import { EmptyObject } from '../../util/types'
 
 export type CatchFetchEnv = {

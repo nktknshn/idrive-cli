@@ -1,4 +1,4 @@
-import * as L from '../../src/util/logging'
+import * as L from '../../src/logging'
 
 export const enableDebug = (enable: boolean): void => {
   L.initLoggers(

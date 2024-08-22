@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
+import { debugTimeSRTE } from '../../logging/debug-time'
 import { DriveDetailsPartialWithHierarchy } from '../drive-types'
 import { driveDetailsWithHierarchyPartial } from '../drive-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'

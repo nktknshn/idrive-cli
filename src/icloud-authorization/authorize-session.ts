@@ -1,21 +1,20 @@
 import { pipe } from 'fp-ts/lib/function'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as AR from '../icloud-core/icloud-request/lib/request'
-import { authLogger } from '../util/logging'
+import { authLogger } from '../logging/logging'
 import { Getcode } from '../util/prompts'
-import { requestAccoutLogin } from './requests/accoutLogin'
+import { requestAccoutLogin } from './requests/accoutlogin'
 import { requestSecurityCode } from './requests/securitycode'
 import { isHsa2Required, requestSignIn } from './requests/signin'
 import { requestTrustDevice } from './requests/trust'
-import { type AccountData } from './types'
+import { type AccountData } from './type-accountdata'
 
-/**  */
+/** Depends on fetch client and confirmation code user input */
 export type AuthorizeDeps = AR.RequestDeps & { getCode: Getcode }
 
 /** Authorizes a session returning `AccountData`*/
 export function authorizeSession<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S, AuthorizeDeps> {
-  // authLogger.debug('authorizeSession')
+  authLogger.debug('authorizeSession')
 
   return pipe(
     requestSignIn<S>(),

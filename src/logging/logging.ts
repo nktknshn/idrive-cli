@@ -2,66 +2,9 @@ import chalk from 'chalk'
 import { pipe } from 'fp-ts/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as winston from 'winston'
+import { isObjectWithOwnProperty } from '../util/util'
 import { fromWinston } from './loggerIO'
-import { isObjectWithOwnProperty } from './util'
 const { combine, timestamp, label, prettyPrint, json } = winston.format
-
-// const jsonError = winston.format((info, opts) => {
-
-// })
-
-export const printerIO = {
-  print: <T>(value: T) =>
-    () => {
-      console.log(value)
-    },
-  error: () =>
-    (value: Error | string) =>
-      () => {
-        console.error(value)
-      },
-  printTask: <T>(value: T): () => Promise<void> =>
-    async () => {
-      console.log(value)
-    },
-  errorTask: (value: Error): () => Promise<void> =>
-    async () => {
-      console.error(value.message)
-      // console.error({
-      //   // name: value.name,
-      //   error: value.message,
-      //   name: value.name,
-      //   stack: value.stack,
-      //   input: InvalidJsonInResponse.is(value) ? value.input : undefined,
-      //   // httpResponse: InvalidJsonInResponse.is(value) ? value.httpResponse : undefined,
-      // })
-    },
-}
-
-const printer = {
-  print: <T>(value: T): void => {
-    console.log(value)
-  },
-  error: (value: Error | string): void => {
-    console.error(value)
-  },
-  printTask: <T>(value: T): () => Promise<void> =>
-    async () => {
-      console.log(value)
-    },
-  errorTask: (value: Error): () => Promise<void> =>
-    async () => {
-      console.error(value.message)
-      // console.error({
-      //   // name: value.name,
-      //   error: value.message,
-      //   name: value.name,
-      //   stack: value.stack,
-      //   input: InvalidJsonInResponse.is(value) ? value.input : undefined,
-      //   // httpResponse: InvalidJsonInResponse.is(value) ? value.httpResponse : undefined,
-      // })
-    },
-}
 
 export const loggingLevels = {
   info: new winston.transports.Console({
@@ -77,14 +20,6 @@ export const loggingLevels = {
     level: 'info',
   }),
 }
-
-// export const setLoggingLevel()
-export const logf = <T>(msg: string, lgr = logger.debug.bind(logger)) => logReturn<T>(() => lgr(msg))
-
-export const logff = <T>(f: (v: T) => string, lgr = logger.debug.bind(logger)) =>
-  (v: T) => logReturn<T>(() => lgr(f(v)))
-
-export const logg = (msg: string, f = logger.debug.bind(logger)) => f(msg)
 
 const plain = (type: string, f: (s: string) => string = a => a) =>
   winston.format.printf(({ level, message, label, timestamp }) => {
@@ -196,42 +131,6 @@ const httpfilelogger = winston.createLogger({
   ],
 })
 
-export const logReturn = <T>(logFunc: (value: T) => void) =>
-  (value: T): T => {
-    logFunc(value)
-    return value
-  }
-
-export const logReturnS = <T>(
-  logFunc: (value: T) => string,
-  _logger: (s: any) => void = logger.debug,
-) =>
-  (value: T): T => {
-    _logger(logFunc(value))
-    return value
-  }
-
-export const logReturnAs = <T>(key: string, f: (v: T) => unknown = v => JSON.stringify(v), _logger = logger.debug) =>
-  (value: T): T => {
-    _logger(`${key} = ${f(value)}`)
-
-    return value
-  }
-
-export const teLogS = <T>(
-  logFunc: (value: T) => string,
-  _logger = logger.debug,
-) =>
-  (te: TE.TaskEither<Error, T>): TE.TaskEither<Error, T> => {
-    return pipe(
-      te,
-      TE.map((v) => {
-        _logger(logFunc(v))
-        return v
-      }),
-    )
-  }
-
 export const initLoggers = (
   argv: { debug: boolean },
   loggers: winston.Logger[],
@@ -245,4 +144,4 @@ export const initLoggers = (
   }
 }
 
-export { httpfilelogger, logger, printer }
+export { httpfilelogger, logger }

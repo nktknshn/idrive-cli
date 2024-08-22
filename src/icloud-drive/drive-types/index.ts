@@ -95,10 +95,10 @@ export interface HierarchyRoot extends TypeOf<typeof types.hierarchyRoot> {}
 export interface HierarchyTrash extends TypeOf<typeof types.hierarchyTrash> {}
 export type HierarchyEntry = TypeOf<typeof types.hierarchyEntry>
 
-export const isFileHierarchyEntry = (entry: HierarchyEntry) => entry.drivewsid.startsWith('FILE')
-export const isFolderHierarchyEntry = (entry: HierarchyEntry) => entry.drivewsid.startsWith('FOLDER')
+export const isFileHierarchyEntry = (entry: HierarchyEntry): boolean => entry.drivewsid.startsWith('FILE')
+export const isFolderHierarchyEntry = (entry: HierarchyEntry): boolean => entry.drivewsid.startsWith('FOLDER')
 
-export const isFolderDrivewsid = (driwewsid: string) => driwewsid.startsWith('FOLDER')
+export const isFolderDrivewsid = (driwewsid: string): boolean => driwewsid.startsWith('FOLDER')
 
 export interface PartialItem extends TypeOf<typeof types.partialItem> {}
 
@@ -138,9 +138,6 @@ export type FolderLike =
 export const isFolderLike = <R extends Root>(
   entity: DetailsOfRoot<R> | DriveChildrenItem,
 ): entity is DetailsFolder | DetailsAppLibrary | R => !(hasOwnProperty(entity, 'type') && entity.type === 'FILE')
-// entity.drivewsid === types.trashDrivewsid
-// || hasOwnProperty(entity, 'type') && entity.type === 'APP_LIBRARY'
-// || hasOwnProperty(entity, 'type') && entity.type === 'FOLDER'
 
 export const isDetails = (
   entity: Details | DriveChildrenItem,
@@ -197,7 +194,7 @@ export const hasName = <
   ]).is(a)
 }
 
-export const fileName = (item: HasName | DetailsTrashRoot) => {
+export const fileName = (item: HasName | DetailsTrashRoot): string => {
   if (isTrashDetailsG(item)) {
     return 'TRASH_ROOT'
   }
@@ -209,7 +206,7 @@ export const fileName = (item: HasName | DetailsTrashRoot) => {
     : `${item.name}`
 }
 
-export const fileNameAddSlash = (item: HasName | DetailsTrashRoot) => {
+export const fileNameAddSlash = (item: HasName | DetailsTrashRoot): string => {
   const fname = fileName(item)
 
   if (isFolderDrivewsid(item.drivewsid) && item.drivewsid !== types.rootDrivewsid) {

@@ -4,7 +4,7 @@ import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/lib/function'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { httpfilelogger } from '../logging'
+import { httpfilelogger } from '../../logging/logging'
 
 export interface HttpRequest extends AxiosRequestConfig {
   data: unknown

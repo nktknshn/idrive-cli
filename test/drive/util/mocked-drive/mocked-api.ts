@@ -8,7 +8,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { DriveApi, DriveLookup, T } from '../../../../src/icloud-drive'
 import { DriveApiEnv } from '../../../../src/icloud-drive/drive-api-env/dep-drive-api-env'
 import * as C from '../../../../src/icloud-drive/drive-lookup/cache'
-import * as L from '../../../../src/util/logging'
+import * as L from '../../../../src/logging'
 import { authorizedState } from '../../fixtures/session'
 import { createRootDetails, docwsroot } from './mocked-drive'
 

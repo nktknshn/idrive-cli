@@ -3,8 +3,8 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { DepFs } from '../../../deps-types'
+import { loggerIO } from '../../../logging/loggerIO'
 import { isEexistError } from '../../../util/fs/isEnoentError'
-import { loggerIO } from '../../../util/loggerIO'
 import { DownloadTaskMapped } from './types'
 
 export const createLocalDirStruct = (

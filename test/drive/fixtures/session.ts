@@ -1,9 +1,7 @@
 import * as O from 'fp-ts/Option'
-import { type AccountData } from '../../../src/icloud-authorization/types'
+import { AccountData } from '../../../src/icloud-authorization'
 import { AuthorizedState } from '../../../src/icloud-core/icloud-request'
-import { ICloudSession } from '../../../src/icloud-core/session/session-type'
-import { T } from '../../../src/icloud-drive'
-import { parseDrivewsid } from '../../../src/icloud-drive/util/drive-helpers'
+import { ICloudSession } from '../../../src/icloud-core/session'
 
 export const validSession: ICloudSession = {
   accountCountry: O.some('RUS'),

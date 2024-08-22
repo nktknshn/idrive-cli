@@ -14,7 +14,7 @@ import {
   PathValid,
   showGetByPathResult,
 } from '../../../../icloud-drive/util/get-by-path-types'
-import { logger } from '../../../../util/logging'
+import { logger } from '../../../../logging/logging'
 import { normalizePath } from '../../../../util/normalize-path'
 import { showDetailsInfo, showFileInfo } from './ls-printing'
 

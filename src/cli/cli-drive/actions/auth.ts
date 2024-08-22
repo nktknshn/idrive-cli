@@ -2,9 +2,7 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthorizeSession, DepFs } from '../../../deps-types'
 import { authorizeState } from '../../../deps-types/dep-authorize-session'
-import { EmptyObject } from '../../../util/types'
-import { loadSession } from '../cli-drive-action'
-import { saveAccountData, saveSession } from '../cli-drive-action'
+import { loadSession, saveAccountData, saveSession } from '../cli-drive-action'
 
 export type AuthSessionDeps =
   & { sessionFile: string }

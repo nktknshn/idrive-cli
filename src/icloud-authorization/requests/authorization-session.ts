@@ -1,6 +1,6 @@
 import { Lazy, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { ICloudSession } from '../../icloud-core/session/session-type'
+import { ICloudSession } from '../../icloud-core/session'
 import { HttpResponse } from '../../util/http/fetch-client'
 import { getAccountCountry, getAuthAttributes, getScnt, getSessionId, getSessionToken } from './headers'
 

@@ -1,6 +1,6 @@
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Readable } from 'stream'
-import { DepFs } from '../deps-types/DepFs'
+import { DepFs } from '../deps-types/dep-fs'
 import { err } from './errors'
 
 export const writeFileFromReadable = (destpath: string) =>

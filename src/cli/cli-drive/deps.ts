@@ -1,6 +1,6 @@
 import * as defaults from '../../defaults'
 import * as deps from '../../deps-providers'
-import { DepAskConfirmation } from '../../deps-types/DepAskConfirmation'
+import { DepAskConfirmation } from '../../deps-types/dep-ask-confirmation'
 import { ActionsDeps } from '.'
 
 // Creates a new ActionsDeps object from the given arguments.

@@ -3,7 +3,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { authorizeState, DepAuthorizeSession, DepFs } from '../../deps-types'
 import * as Auth from '../../icloud-authorization'
 import { AuthorizedState, BaseState } from '../../icloud-core/icloud-request'
-import { loggerIO } from '../../util/loggerIO'
+import { loggerIO } from '../../logging/loggerIO'
 
 export const loadAccountDataFromFile = (
   { session }: BaseState,

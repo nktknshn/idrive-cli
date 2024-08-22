@@ -5,7 +5,8 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { type AccountData } from '../../../icloud-authorization/types'
+import { type AccountData } from '../../../icloud-authorization/type-accountdata'
+import { apiLogger } from '../../../logging/logging'
 import {
   BadRequestError,
   err,
@@ -16,7 +17,6 @@ import {
 } from '../../../util/errors'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../util/http/fetch-client'
 import { tryJsonFromResponse } from '../../../util/http/json'
-import { apiLogger, logg } from '../../../util/logging'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
 import { ICloudSession } from '../../session/session-type'
 
@@ -24,12 +24,12 @@ import { ICloudSession } from '../../session/session-type'
 Module for building and executing low level Api Request and decoding server response
 */
 
-/** Bases state has only sesssion */
+/** Base state has only sesssion */
 export type BaseState = {
   session: ICloudSession
 }
 
-/** accountData is added after successful athorization */
+/** AccountData is added after successful athorization */
 export type AuthorizedState = BaseState & {
   accountData: AccountData
 }
@@ -52,27 +52,19 @@ type Filter<S extends BaseState, R extends RequestDeps> = (
   ma: ApiRequest<{ httpResponse: HttpResponse }, S, R>,
 ) => ApiRequest<{ httpResponse: HttpResponse }, S, R>
 
-export type ResponseWithSession<R> = {
-  session: ICloudSession
-  response: {
-    httpResponse: HttpResponse
-    body: R
-  }
-}
-
-export type ResponseHandler<R, E1 = Error> = (
-  session: ICloudSession,
-) => (
-  ma: TE.TaskEither<E1, HttpResponse>,
-) => TE.TaskEither<MissingResponseBody | InvalidJsonInResponse | Error | E1, ResponseWithSession<R>>
-
 export const { chain, fromEither, fromOption, fromTaskEither, get, left, map, of, filterOrElse } = SRTE
-
-// export const Do = <S extends BasicState>() => of<{}, S>({})
 
 const ado = sequenceS(SRTE.Apply)
 
-export const readEnv = <S extends BaseState, R extends RequestDeps = RequestDeps>() =>
+export const readStateAndDeps = <
+  S extends BaseState,
+  R extends RequestDeps = RequestDeps,
+>(): SRTE.StateReaderTaskEither<
+  S,
+  R,
+  Error,
+  { state: S; deps: R }
+> =>
   ado({
     state: SRTE.get<S, R, Error>(),
     deps: SRTE.ask<S, R, Error>(),
@@ -82,7 +74,7 @@ const putSession = <S extends { session: ICloudSession }, R extends RequestDeps>
   session: ICloudSession,
 ): ApiRequest<void, S, R> =>
   pipe(
-    readEnv<S, R>(),
+    readStateAndDeps<S, R>(),
     chain(({ state }) => SRTE.put({ ...state, session })),
   )
 
@@ -90,7 +82,7 @@ export const buildRequest = <S extends BaseState, R extends RequestDeps = Reques
   f: (a: { state: S; deps: R }) => HttpRequestConfig,
 ): ApiRequest<HttpRequest, S, R> =>
   pipe(
-    readEnv<S, R>(),
+    readStateAndDeps<S, R>(),
     map(env =>
       pipe(
         f(env),
@@ -100,23 +92,17 @@ export const buildRequest = <S extends BaseState, R extends RequestDeps = Reques
   )
 
 export const handleResponse = <A, S extends BaseState, R extends RequestDeps>(
-  f: (
-    ma: ApiRequest<{ httpResponse: HttpResponse }, S, R>,
-  ) => ApiRequest<A, S, R>,
+  f: (ma: ApiRequest<{ httpResponse: HttpResponse }, S, R>) => ApiRequest<A, S, R>,
 ) =>
   (
     req: ApiRequest<HttpRequest, S, R>,
   ): ApiRequest<A, S, R> =>
     pipe(
-      readEnv<S, R>(),
+      readStateAndDeps<S, R>(),
       SRTE.bind('req', () => req),
       SRTE.chainW(({ deps: { fetchClient: fetch }, req }) =>
         SRTE.fromTaskEither(pipe(
-          logg(
-            `${req.url.replace(/\?.+/, '')} ${JSON.stringify(req.data)}`,
-            a => apiLogger.debug(a),
-          ),
-          () => fetch(req),
+          fetch(req),
           TE.map(httpResponse => ({ httpResponse })),
         ))
       ),
@@ -129,7 +115,8 @@ export const filterHttpResponse = <
   R extends RequestDeps,
 >(
   f: (r: Resp) => E.Either<Error, Resp>,
-) => (ma: ApiRequest<Resp, S, R>) => pipe(ma, chain(a => fromEither(f(a))))
+) =>
+  (ma: ApiRequest<Resp, S, R>): SRTE.StateReaderTaskEither<S, R, Error, Resp> => pipe(ma, chain(a => fromEither(f(a))))
 
 export const handleInvalidSession = <S extends BaseState, R extends RequestDeps>(): Filter<S, R> =>
   filterHttpResponse(
@@ -260,19 +247,16 @@ export const applyToSession = <T extends { httpResponse: HttpResponse }>(
       ma,
       chain(r =>
         pipe(
-          readEnv<S, R>(),
+          readStateAndDeps<S, R>(),
           chain(({ state: { session } }) => putSession(f(r)(session))),
           map(constant(r)),
         )
       ),
     )
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const applyCookies = <T extends { httpResponse: HttpResponse }>() =>
-  applyToSession<T>(({ httpResponse }) =>
-    flow(
-      applyCookiesToSession(httpResponse),
-    )
-  )
+  applyToSession<T>(({ httpResponse }) => applyCookiesToSession(httpResponse))
 
 export const basicJsonResponse = <
   T extends { httpResponse: HttpResponse },

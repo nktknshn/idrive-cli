@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthorizeSession, DepFs } from '../../deps-types'
-import { cacheLogger } from '../../util/logging'
+import { cacheLogger } from '../../logging/logging'
 import { DriveLookup } from '..'
 import { loadDriveStateFromFiles } from './loadDriveStateFromFiles'
 import { saveAccountData, saveCache, saveSession } from './saveSession'

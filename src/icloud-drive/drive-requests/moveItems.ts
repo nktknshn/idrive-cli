@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
-import { debugTimeSRTE } from '../../cli/logging'
 import * as AR from '../../icloud-core/icloud-request'
+import { debugTimeSRTE } from '../../logging/debug-time'
 import { childrenItem } from '../drive-types/types-io'
 
 const moveItemResponse = t.type({
