@@ -1,12 +1,12 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { AuthenticateSession } from '../../deps-types/dep-authenticate-session'
+import { DepAuthenticateSession } from '../../deps-types/dep-authenticate-session'
 import { InvalidGlobalSessionError } from '../../util/errors'
 import { EmptyObject } from '../../util/types'
 import { AuthenticatedState } from './lib/request'
 
-export type CatchSessDeps = { catchSessErrors: boolean } & AuthenticateSession
+export type CatchSessDeps = { catchSessErrors: boolean } & DepAuthenticateSession
 
 /** Catches `InvalidGlobalSessionError` and tries to reauthenticate the session */
 export const catchSessErrorsSRTE = (

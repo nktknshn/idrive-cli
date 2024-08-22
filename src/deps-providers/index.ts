@@ -4,7 +4,7 @@ import { CatchFetchDeps } from '../icloud-core/icloud-request/catch-fetch-error'
 import { CatchSessDeps } from '../icloud-core/icloud-request/catch-invalid-global-session'
 import { createWrappedDriveApi } from '../icloud-drive/drive-api-wrapped'
 import { wrappedAuthenticateSession } from './authenticate-session'
-import { fetchClient, FetchError } from './fetchclient'
+import { fetchClient, FetchError } from './fetch-client'
 import { getCode } from './get-code'
 export { askConfirmation } from './ask-confirmation'
 export { fs } from './fs'
@@ -31,7 +31,7 @@ export const authenticateSession = wrappedAuthenticateSession({
 
 const catchSessDeps: CatchSessDeps = {
   catchSessErrors: true,
-  authenticateSession: authenticateSession,
+  authenticateSession,
 }
 
 const apiDeps = {

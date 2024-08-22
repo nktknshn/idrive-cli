@@ -3,7 +3,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { EmptyObject, SRA } from './types'
 
 /**
- * * Wraps an SRTE with a wrapper, returning a function that takes a combination of their dependencies.
+ * Wraps an SRTE with a wrapper, returning a function that takes a combination of their dependencies.
  * The returned function takes those dependencies and returns an SRTE without dependencies (they are injected).
  */
 export const wrapSRTE = <WR, WRS, RR>(wrapper: SRTEWrapper<WR, WRS, RR>) =>
@@ -18,7 +18,7 @@ export const wrapSRTE = <WR, WRS, RR>(wrapper: SRTEWrapper<WR, WRS, RR>) =>
         )
       }
 
-//
+/** Wraps multiple SRTEs with a wrapper */
 export const wrapSRTERecord = <
   Rec extends Record<string, (...args: any[]) => SRTE.StateReaderTaskEither<any, any, any, any>>,
 >(
@@ -39,7 +39,7 @@ export const wrapSRTERecord = <
     return r
   }
 
-/** Wrapper is a function that wraps it's own deps `WR` */
+/** Wraps SRTE */
 export type SRTEWrapper<WR, SS, RR = WR> = <R extends EmptyObject>(r: R & WR) => <A, S extends SS>(
   req: SRTE.StateReaderTaskEither<S, R, Error, A>,
 ) => SRTE.StateReaderTaskEither<

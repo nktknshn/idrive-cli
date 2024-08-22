@@ -1,6 +1,6 @@
 import micromatch from 'micromatch'
 import { DepAskConfirmation } from '../../../deps-types/dep-ask-confirmation'
-import { DepFetchClient } from '../../../deps-types/dep-fetchclient'
+import { DepFetchClient } from '../../../deps-types/dep-fetch-client'
 import { DepFs } from '../../../deps-types/dep-fs'
 import { DriveLookup } from '../../../icloud-drive'
 import { downloadShallow } from '../../../icloud-drive/actions/download/downloadShallow'

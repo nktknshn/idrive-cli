@@ -9,13 +9,13 @@ import { CreateFoldersResponse } from '../drive-requests'
 import * as T from '../drive-types'
 import { makeMissedFound } from '../util/drive-helpers'
 import { createFolders, download, retrieveItemDetailsInFolders } from './basic'
-import { PickDriveApiWrappedMethod } from './method'
+import { DepWrappedApi } from './method'
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthenticatedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<
   S,
-  PickDriveApiWrappedMethod<'retrieveItemDetailsInFolders', 'api'>,
+  DepWrappedApi<'retrieveItemDetailsInFolders', 'api'>,
   Error,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>
@@ -28,7 +28,7 @@ export const retrieveItemDetailsInFolder = (
   drivewsid: string,
 ): SRTE.StateReaderTaskEither<
   AuthenticatedState,
-  PickDriveApiWrappedMethod<'retrieveItemDetailsInFolders'>,
+  DepWrappedApi<'retrieveItemDetailsInFolders'>,
   Error,
   T.Details | T.InvalidId
 > =>
@@ -49,7 +49,7 @@ export const createFoldersNEA = <S extends AuthenticatedState>(args: {
   names: NEA<string>
 }): SRTE.StateReaderTaskEither<
   S,
-  PickDriveApiWrappedMethod<'createFolders'>,
+  DepWrappedApi<'createFolders'>,
   Error,
   CreateFoldersResponse['folders']
 > =>

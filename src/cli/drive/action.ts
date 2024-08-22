@@ -3,11 +3,9 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import { DepFs } from '../../deps-types'
-import {
-  AuthenticateSession as DepAuthenticateSession,
-  authenticateState,
-} from '../../deps-types/dep-authenticate-session'
+import { DepAuthenticateSession } from '../../deps-types/dep-authenticate-session'
 import { type AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authentication'
+import { authenticateState } from '../../icloud-authentication/methods'
 import { AuthenticatedState, BaseState } from '../../icloud-core/icloud-request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud-core/session/session-file'
 import { C, DriveLookup } from '../../icloud-drive'

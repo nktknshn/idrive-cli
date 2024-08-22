@@ -14,7 +14,7 @@ export { type DriveApiWrapped } from './type'
 
 const seqs = sequenceS(R.Apply)
 
-/** Wrapper to catch  */
+/** Wrapper to catch fetch and session errors */
 const wrapAuthenticatedReq: SRTEWrapper<
   CatchFetchDeps & CatchSessDeps,
   AuthenticatedState,
@@ -26,7 +26,7 @@ const wrapAuthenticatedReq: SRTEWrapper<
     SRTE.local(() => deps),
   )
 
-/** Separate wrapper for 409 error that might happen while uploading documents */
+/** Separate wrapper for handling 409 errors that might occur while uploading documents */
 const wrapHandle409: SRTEWrapper<
   CatchFetchDeps & CatchSessDeps,
   AuthenticatedState,

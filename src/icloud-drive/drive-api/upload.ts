@@ -7,12 +7,12 @@ import { AuthenticatedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
 import { FsStats } from '../../util/fs'
 import { Path } from '../../util/path'
-import { apiMethod, PickDriveApiWrappedMethod } from './method'
+import { apiMethod, DepWrappedApi } from './method'
 
 type UploadMethodDeps =
-  & PickDriveApiWrappedMethod<'upload'>
-  & PickDriveApiWrappedMethod<'singleFileUpload'>
-  & PickDriveApiWrappedMethod<'updateDocuments'>
+  & DepWrappedApi<'upload'>
+  & DepWrappedApi<'singleFileUpload'>
+  & DepWrappedApi<'updateDocuments'>
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 

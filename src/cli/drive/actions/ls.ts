@@ -1,4 +1,3 @@
-import assert from 'assert'
 import * as A from 'fp-ts/lib/Array'
 import { DriveLookup } from '../../../icloud-drive'
 import { recursivels } from './ls/ls-recursive'

@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DriveApiWrapped } from '../drive-api-wrapped'
 
-/** Create a method that depends on the api */
+/** Pick a method from `api` object */
 export const apiMethod = <Args extends unknown[], S, R, A>(
   f: (r: R) => (...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
 ): (...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A> =>
@@ -14,7 +14,7 @@ export const apiMethod = <Args extends unknown[], S, R, A>(
     )
 
 /** Pick a method from DriveApiWrapped into a `api` object */
-export type PickDriveApiWrappedMethod<
+export type DepWrappedApi<
   K extends keyof DriveApiWrapped,
   RootKey extends string | number | symbol = 'api',
 > = Record<RootKey, Pick<DriveApiWrapped, K>>

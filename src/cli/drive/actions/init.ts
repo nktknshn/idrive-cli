@@ -2,7 +2,8 @@ import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepFs } from '../../../deps-types'
-import { AuthenticateSession, authenticateState } from '../../../deps-types/dep-authenticate-session'
+import { DepAuthenticateSession } from '../../../deps-types/dep-authenticate-session'
+import { authenticateState } from '../../../icloud-authentication/methods'
 import { ICloudSession, session } from '../../../icloud-core/session/session-type'
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
@@ -13,7 +14,7 @@ type Argv = { skipLogin: boolean }
 
 export type InitSessionDeps =
   & { sessionFile: string }
-  & AuthenticateSession
+  & DepAuthenticateSession
   & DepFs<'fstat'>
   & DepFs<'writeFile'>
 

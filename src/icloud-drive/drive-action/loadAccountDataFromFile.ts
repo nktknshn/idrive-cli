@@ -1,7 +1,8 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { authenticateState, DepAuthenticateSession, DepFs } from '../../deps-types'
+import { DepAuthenticateSession, DepFs } from '../../deps-types'
 import * as Auth from '../../icloud-authentication'
+import { authenticateState } from '../../icloud-authentication/methods'
 import { AuthenticatedState, BaseState } from '../../icloud-core/icloud-request'
 import { loggerIO } from '../../logging/loggerIO'
 
