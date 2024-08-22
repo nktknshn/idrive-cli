@@ -1,4 +1,4 @@
-import { apiMethod, PickDriveApiWrappedMethod } from '.'
+import { apiMethod, PickDriveApiWrappedMethod } from './method'
 
 /** Basic icloud api requests as standalone depended functions*/
 

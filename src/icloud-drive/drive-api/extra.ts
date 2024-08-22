@@ -1,7 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
@@ -9,8 +8,8 @@ import { NEA } from '../../util/types'
 import { CreateFoldersResponse } from '../drive-requests'
 import * as T from '../drive-types'
 import { makeMissedFound } from '../util/drive-helpers'
-import { PickDriveApiWrappedMethod } from '.'
 import { createFolders, download, retrieveItemDetailsInFolders } from './basic'
+import { PickDriveApiWrappedMethod } from './method'
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthenticatedState>(
   drivewsids: NEA<string>,
@@ -35,9 +34,7 @@ export const retrieveItemDetailsInFolder = (
 > =>
   pipe(
     retrieveItemDetailsInFolders({ drivewsids: [drivewsid] }),
-    SRTE.map(
-      NA.head,
-    ),
+    SRTE.map(NA.head),
   )
 
 export const getICloudItemUrl = flow(

@@ -5,8 +5,9 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveApi, DriveLookup, T } from '../../../../src/icloud-drive'
-import { DriveApiEnv } from '../../../../src/icloud-drive/drive-api-env/dep-drive-api-env'
+import { DriveLookup, T } from '../../../../src/icloud-drive'
+import { DepApiMethod } from '../../../../src/icloud-drive/drive-api'
+import { DriveApiWrapped } from '../../../../src/icloud-drive/drive-api-wrapped'
 import * as C from '../../../../src/icloud-drive/drive-lookup/cache'
 import * as L from '../../../../src/logging'
 import { authenticatedState } from '../../fixtures/session'
@@ -30,7 +31,7 @@ type Calls = {
 
 const retrieveItemDetailsInFolders = (
   detailsRec: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
-): DriveApiEnv['retrieveItemDetailsInFolders'] =>
+): DriveApiWrapped['retrieveItemDetailsInFolders'] =>
   ({ drivewsids }) => {
     return SRTE.of(pipe(
       drivewsids,
@@ -44,7 +45,7 @@ const retrieveItemDetailsInFolders = (
 
 export const createEnv = (
   details: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
-): Calls & DriveApi.Dep<'retrieveItemDetailsInFolders'> => {
+): Calls & DepApiMethod<'retrieveItemDetailsInFolders'> => {
   const calls = {
     retrieveItemDetailsInFolders: 0,
     total: 0,
