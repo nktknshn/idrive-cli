@@ -6,7 +6,7 @@ import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../deps-types'
-import { DriveLookup, T } from '../../../icloud-drive'
+import { DriveLookup, Types } from '../../../icloud-drive'
 
 import { DepApiMethod, DriveApiMethods } from '../../../icloud-drive/drive-api'
 import { findInParentFilename } from '../../../icloud-drive/util/drive-helpers'
@@ -59,7 +59,7 @@ export const uploadFolder = (
 const handleUploadFolder = (
   { src, dst, args }: {
     src: string
-    dst: V.GetByPathResult<T.DetailsDocwsRoot>
+    dst: V.GetByPathResult<Types.DetailsDocwsRoot>
     args: Argv
   },
 ): SRA<DriveLookup.LookupState, Deps, UploadResult[]> => {
@@ -81,7 +81,7 @@ const handleUploadFolder = (
   if (dst.valid) {
     const dstitem = V.pathTarget(dst)
 
-    if (T.isFolderLike(dstitem)) {
+    if (Types.isFolderLike(dstitem)) {
       if (isSome(findInParentFilename(dstitem, dirname))) {
         return SRTE.left(err(`${args.remotepath} already contains an item named ${dirname}`))
       }
@@ -111,7 +111,7 @@ const handleUploadFolder = (
 
 const uploadToNewFolder = (
   { dirname, dstitem, src, chunkSize, remotepath }: {
-    dstitem: T.DetailsDocwsRoot | T.DetailsFolder | T.DetailsAppLibrary
+    dstitem: Types.DetailsDocwsRoot | Types.DetailsFolder | Types.DetailsAppLibrary
     dirname: string
     src: string
     chunkSize: number

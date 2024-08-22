@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DriveLookup, T } from '../../../icloud-drive'
+import { DriveLookup, Types } from '../../../icloud-drive'
 import { DepApiMethod, DriveApiMethods } from '../../../icloud-drive/drive-api'
 import { MoveItemsResponse, RenameResponse } from '../../../icloud-drive/drive-requests'
 import * as V from '../../../icloud-drive/util/get-by-path-types'
@@ -21,7 +21,7 @@ type Deps =
 export const move = ({ srcpath, dstpath }: {
   srcpath: string
   dstpath: string
-}): DriveLookup.Effect<string, Deps> => {
+}): DriveLookup.Monad<string, Deps> => {
   const nsrc = normalizePath(srcpath)
   const ndst = normalizePath(dstpath)
 
@@ -41,23 +41,23 @@ export const move = ({ srcpath, dstpath }: {
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {
-    srcdst: NEA<V.PathValidation<T.DetailsDocwsRoot>>
+    srcdst: NEA<V.PathValidation<Types.DetailsDocwsRoot>>
   },
-): DriveLookup.Action<Deps, MoveItemsResponse | RenameResponse> => {
+): DriveLookup.Monad<MoveItemsResponse | RenameResponse, Deps> => {
   if (!srcitem.valid) {
     return DriveLookup.errString(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
   }
 
   const src = V.pathTarget(srcitem)
 
-  if (!T.isNotRootDetails(src)) {
+  if (!Types.isNotRootDetails(src)) {
     return DriveLookup.errString(`src cant be root`)
   }
 
   if (dstitem.valid === true) {
     const dst = V.pathTarget(dstitem)
 
-    if (!T.isDetails(dst)) {
+    if (!Types.isDetails(dst)) {
       return DriveLookup.errString(`dst is a file`)
     }
 
@@ -83,9 +83,9 @@ const handle = (
 }
 
 const caseMove = (
-  src: T.NonRootDetails | T.DriveChildrenItemFile,
-  dst: T.Details,
-): DriveLookup.Action<Deps, MoveItemsResponse> => {
+  src: Types.NonRootDetails | Types.DriveChildrenItemFile,
+  dst: Types.Details,
+): DriveLookup.Monad<MoveItemsResponse, Deps> => {
   return DriveApiMethods.moveItems<DriveLookup.LookupState>({
     destinationDrivewsId: dst.drivewsid,
     items: [{ drivewsid: src.drivewsid, etag: src.etag }],
@@ -93,9 +93,9 @@ const caseMove = (
 }
 
 const caseRename = (
-  srcitem: T.NonRootDetails | T.DriveChildrenItemFile,
+  srcitem: Types.NonRootDetails | Types.DriveChildrenItemFile,
   name: string,
-): DriveLookup.Action<Deps, RenameResponse> => {
+): DriveLookup.Monad<RenameResponse, Deps> => {
   return DriveApiMethods.renameItems({
     items: [
       { drivewsid: srcitem.drivewsid, ...parseFilename(name), etag: srcitem.etag },
@@ -104,10 +104,10 @@ const caseRename = (
 }
 
 const caseMoveAndRename = (
-  src: T.NonRootDetails | T.DriveChildrenItemFile,
-  dst: (T.Details | T.DetailsTrashRoot),
+  src: Types.NonRootDetails | Types.DriveChildrenItemFile,
+  dst: (Types.Details | Types.DetailsTrashRoot),
   name: string,
-): DriveLookup.Action<Deps, RenameResponse> => {
+): DriveLookup.Monad<RenameResponse, Deps> => {
   return pipe(
     DriveApiMethods.moveItems<DriveLookup.LookupState>(
       {

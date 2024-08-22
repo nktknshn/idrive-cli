@@ -24,7 +24,7 @@ export const rm = (
     recursive: boolean
     force: boolean
   },
-): DriveLookup.Action<Deps, Result> => {
+): DriveLookup.Monad<Result, Deps> => {
   return pipe(
     DriveLookup.searchGlobs(globs, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
@@ -45,7 +45,7 @@ const _rm = (
     force: boolean
     items: NEA<{ path: string; item: NonRootDetails | DriveChildrenItemFile }>
   },
-): DriveLookup.Action<Deps, Result> => {
+): DriveLookup.Monad<Result, Deps> => {
   const effect = () =>
     pipe(
       DriveApiMethods.moveItemsToTrash<DriveLookup.LookupState>({

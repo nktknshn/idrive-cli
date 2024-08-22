@@ -11,21 +11,21 @@ import * as DF from '../drive-lookup'
 export function modifySubset<A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
-  f: ((v: NA.NonEmptyArray<B>) => DF.Effect<C[]>),
+  f: ((v: NA.NonEmptyArray<B>) => DF.Monad<C[]>),
   fac: (a: D) => C,
-): DF.Effect<NA.NonEmptyArray<C>>
+): DF.Monad<NA.NonEmptyArray<C>>
 export function modifySubset<A, C>(
   input: NA.NonEmptyArray<A>,
   predicate: Predicate<A>,
-  f: ((v: NA.NonEmptyArray<A>) => DF.Effect<C[]>),
+  f: ((v: NA.NonEmptyArray<A>) => DF.Monad<C[]>),
   fac: (a: A) => C,
-): DF.Effect<NA.NonEmptyArray<C>>
+): DF.Monad<NA.NonEmptyArray<C>>
 export function modifySubset<A, C>(
   input: NA.NonEmptyArray<A>,
   refinement: Predicate<A>,
-  f: ((v: NA.NonEmptyArray<A>) => DF.Effect<C[]>),
+  f: ((v: NA.NonEmptyArray<A>) => DF.Monad<C[]>),
   fac: (a: A) => C,
-): DF.Effect<NA.NonEmptyArray<C>> {
+): DF.Monad<NA.NonEmptyArray<C>> {
   const subset = pipe(
     input,
     A.filterMapWithIndex(

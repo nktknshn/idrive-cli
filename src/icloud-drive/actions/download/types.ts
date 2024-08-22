@@ -1,14 +1,14 @@
 import * as E from 'fp-ts/lib/Either'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { AuthenticatedState } from '../../../icloud-core/icloud-request'
-import { DriveLookup, T } from '../..'
+import { DriveLookup, Types } from '../..'
 
 import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
 import { SRA } from '../../../util/types'
 
 export type DownloadItem = {
   remotepath: string
-  remotefile: T.DriveChildrenItemFile
+  remotefile: Types.DriveChildrenItemFile
 }
 
 // (readonly [

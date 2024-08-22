@@ -48,7 +48,7 @@ const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: stri
 
 export const edit = (
   { path }: { path: string },
-): DriveLookup.Effect<string, Deps> => {
+): DriveLookup.Monad<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   const tempFile = ({ tempdir }: Deps) =>

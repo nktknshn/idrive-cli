@@ -5,13 +5,13 @@ import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
 import * as T from '../../drive-types'
 import { GetByPathResult, pathTarget } from '../../util/get-by-path-types'
-import { Effect } from '..'
+import { Monad } from '..'
 import * as C from '../cache/cache'
 import { ItemIsNotFolderError, NotFoundError } from '../errors'
 import { asksCache, chainCache } from './cache-methods'
 
 export const getByPathFolderFromCache = <R extends T.Root>(path: NormalizedPath) =>
-  (root: R): Effect<T.Details> =>
+  (root: R): Monad<T.Details> =>
     chainCache(cache =>
       SRTE.fromEither(pipe(
         C.getByPath(root, path)(cache),
@@ -26,7 +26,7 @@ export const getByPathFolderFromCache = <R extends T.Root>(path: NormalizedPath)
 export const getByPathsFromCache = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): Effect<NEA<GetByPathResult<R>>> =>
+): Monad<NEA<GetByPathResult<R>>> =>
   asksCache(
     C.getByPaths(root, paths),
   )
@@ -34,7 +34,7 @@ export const getByPathsFromCache = <R extends T.Root>(
 export const getByPathsFromCacheTemp = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): Effect<NEA<GetByPathResult<R>>> =>
+): Monad<NEA<GetByPathResult<R>>> =>
   asksCache(
     C.getByPaths(root, paths),
   )

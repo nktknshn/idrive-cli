@@ -1,4 +1,4 @@
-import { AuthenticateDeps } from '../icloud-authentication'
+import { AuthenticateSessionDeps } from '../icloud-authentication'
 import { RequestDeps } from '../icloud-core/icloud-request'
 import { CatchFetchDeps } from '../icloud-core/icloud-request/catch-fetch-error'
 import { CatchSessDeps } from '../icloud-core/icloud-request/catch-invalid-global-session'
@@ -19,14 +19,14 @@ const catchFetchDeps: CatchFetchDeps = {
   isFetchError: FetchError.is,
 }
 
-const authenticateDeps: AuthenticateDeps = {
+const authenticateSessionDeps: AuthenticateSessionDeps = {
   getCode,
   ...requestDeps,
 }
 
 export const authenticateSession = wrappedAuthenticateSession({
   ...catchFetchDeps,
-  ...authenticateDeps,
+  ...authenticateSessionDeps,
 })
 
 const catchSessDeps: CatchSessDeps = {

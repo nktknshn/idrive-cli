@@ -3,7 +3,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as Auth from '../../icloud-authentication'
 import { BaseState } from '../../icloud-core/icloud-request'
 import { saveSession as _saveSession } from '../../icloud-core/session/session-file'
-import { C } from '..'
+import { Cache } from '..'
 
 export const saveSession = <S extends BaseState>(state: S) =>
   RTE.asksReaderTaskEitherW(
@@ -16,9 +16,9 @@ export const saveAccountData = <S extends { accountData: Auth.AccountData }>(
   RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
     Auth.saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
   )
-export const saveCache = <S extends { cache: C.LookupCache }>(state: S) =>
+export const saveCache = <S extends { cache: Cache.LookupCache }>(state: S) =>
   RTE.asksReaderTaskEitherW((deps: { cacheFile: string; noCache: boolean }) =>
     deps.noCache
       ? RTE.of(constVoid())
-      : C.trySaveFile(state.cache)(deps.cacheFile)
+      : Cache.trySaveFile(state.cache)(deps.cacheFile)
   )

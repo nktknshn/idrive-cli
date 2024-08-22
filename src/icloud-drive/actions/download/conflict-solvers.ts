@@ -6,7 +6,7 @@ import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import { DepAskConfirmation } from '../../../deps-types'
 import { err } from '../../../util/errors'
-import { T } from '../..'
+import { Types } from '../..'
 import { ConflictsSolver, SolutionAction } from './conflict-solution'
 import { ConflictExists } from './download-conflict'
 
@@ -67,7 +67,7 @@ const resolveConflictsRename: ConflictsSolver = (conflicts) =>
 
 // eslint-disable-next-line id-length
 const resolveConflictsOverwrightIfSizeDifferent = (
-  skipRemotes = (f: T.DriveChildrenItemFile) => false,
+  skipRemotes = (f: Types.DriveChildrenItemFile) => false,
 ): ConflictsSolver =>
   (conflicts) =>
     () =>

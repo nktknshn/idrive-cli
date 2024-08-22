@@ -22,7 +22,7 @@ export const rm = (
     recursive: boolean
     force: boolean
   },
-): DriveLookup.Effect<void, Deps> => {
+): DriveLookup.Monad<void, Deps> => {
   assert(A.isNonEmpty(paths))
 
   return pipe(

@@ -10,18 +10,18 @@ import { requestTrustDevice } from './requests/trust'
 import { type AccountData } from './type-accountdata'
 
 /** Depends on fetch client and confirmation code user input */
-export type AuthenticateDeps = AR.RequestDeps & { getCode: Getcode }
+export type AuthenticateSessionDeps = AR.RequestDeps & { getCode: Getcode }
 
 /** Authenticates a session returning `AccountData`*/
-export function authenticateSession<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S, AuthenticateDeps> {
-  authLogger.debug('authenticateeSession')
+export function authenticateSession<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S, AuthenticateSessionDeps> {
+  authLogger.debug('authenticateSession')
 
   return pipe(
     requestSignIn<S>(),
     SRTE.chain((resp) =>
       isHsa2Required(resp)
         ? pipe(
-          SRTE.ask<S, AuthenticateDeps>(),
+          SRTE.ask<S, AuthenticateSessionDeps>(),
           SRTE.chain(({ getCode }) => SRTE.fromTaskEither(getCode())),
           SRTE.chainW(code => requestSecurityCode(code)),
           SRTE.chainW(() => requestTrustDevice()),

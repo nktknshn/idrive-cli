@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepFs } from '../../deps-types'
 import { ReadJsonFileError } from '../../util/files'
-import { C } from '..'
+import { Cache } from '..'
 
 export const loadCacheFromFile: RTE.ReaderTaskEither<
   {
@@ -10,14 +10,14 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
     cacheFile: string
   } & DepFs<'readFile'>,
   Error | ReadJsonFileError,
-  C.LookupCache
+  Cache.LookupCache
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache
-      ? RTE.of(C.cachef())
-      : C.tryReadFromFile(deps.cacheFile),
+      ? RTE.of(Cache.cachef())
+      : Cache.tryReadFromFile(deps.cacheFile),
     RTE.orElse(
-      (e) => RTE.of(C.cachef()),
+      (e) => RTE.of(Cache.cachef()),
     ),
   )
 )

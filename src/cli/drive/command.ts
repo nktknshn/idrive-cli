@@ -8,7 +8,7 @@ import { type AccountData, readAccountData, saveAccountData as _saveAccountData 
 import { authenticateState } from '../../icloud-authentication/methods'
 import { AuthenticatedState, BaseState } from '../../icloud-core/icloud-request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud-core/session/session-file'
-import { C, DriveLookup } from '../../icloud-drive'
+import { Cache, DriveLookup } from '../../icloud-drive'
 import { debugTimeRTE } from '../../logging/debug-time'
 import { loggerIO } from '../../logging/loggerIO'
 import { cacheLogger } from '../../logging/logging'
@@ -23,8 +23,8 @@ type Deps =
   & DepFs<'readFile'>
 
 /** read the state from files and executes the action in the context */
-export function driveAction<A, R, Args extends unknown[]>(
-  action: (...args: Args) => DriveLookup.Effect<A, R>,
+export function driveCommand<A, R, Args extends unknown[]>(
+  action: (...args: Args) => DriveLookup.Monad<A, R>,
 ): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {
   return (...args: Args) =>
     pipe(
@@ -105,14 +105,14 @@ const loadCache: RTE.ReaderTaskEither<
     cacheFile: string
   } & DepFs<'readFile'>,
   Error | ReadJsonFileError,
-  C.LookupCache
+  Cache.LookupCache
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache
-      ? RTE.of(C.cachef())
-      : C.tryReadFromFile(deps.cacheFile),
+      ? RTE.of(Cache.cachef())
+      : Cache.tryReadFromFile(deps.cacheFile),
     RTE.orElse(
-      (e) => RTE.of(C.cachef()),
+      (e) => RTE.of(Cache.cachef()),
     ),
   )
 )
@@ -137,12 +137,12 @@ export const saveAccountData = <S extends { accountData: AccountData }>(
     debugTimeRTE('saveAccountData'),
   )
 
-const saveCache = <S extends { cache: C.LookupCache }>(state: S) =>
+const saveCache = <S extends { cache: Cache.LookupCache }>(state: S) =>
   pipe(
     RTE.asksReaderTaskEitherW((deps: { cacheFile: string; noCache: boolean }) =>
       deps.noCache
         ? RTE.of(constVoid())
-        : C.trySaveFile(state.cache)(deps.cacheFile)
+        : Cache.trySaveFile(state.cache)(deps.cacheFile)
     ),
     debugTimeRTE('saveCache'),
   )

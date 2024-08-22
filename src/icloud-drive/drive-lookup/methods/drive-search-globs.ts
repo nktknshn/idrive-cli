@@ -22,7 +22,7 @@ export type SearchGlobFoundItem = {
 
 export const searchGlobsShallow = (
   globs: NEA<string>,
-): DriveLookup.Effect<
+): DriveLookup.Monad<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   return searchGlobs(globs, 0)
@@ -32,7 +32,7 @@ export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
   options?: micromatch.Options,
-): DriveLookup.Effect<
+): DriveLookup.Monad<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   const scanned = pipe(globs, NA.map(micromatch.scan))

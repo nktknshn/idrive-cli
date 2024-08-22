@@ -1,21 +1,21 @@
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as w from 'yargs-command-wrapper'
-import { driveAction } from './action'
-import * as Action from './actions'
 import { CliCommands, cmd } from './args'
+import { driveCommand } from './command'
+import * as Action from './commands'
 
 const handler = w.createHandlerFor(cmd, {
-  ls: driveAction(Action.listUnixPath),
-  mkdir: driveAction(Action.mkdir),
-  rm: driveAction(Action.rm),
-  upload: cmd => driveAction(Action.upload)(cmd),
-  mv: driveAction(Action.move),
-  autocomplete: driveAction(Action.autocomplete),
-  ac: driveAction(Action.autocomplete),
-  cat: driveAction(Action.cat),
-  recover: driveAction(Action.recover),
-  download: driveAction(Action.download),
-  edit: driveAction(Action.edit),
+  ls: driveCommand(Action.listUnixPath),
+  mkdir: driveCommand(Action.mkdir),
+  rm: driveCommand(Action.rm),
+  upload: cmd => driveCommand(Action.upload)(cmd),
+  mv: driveCommand(Action.move),
+  autocomplete: driveCommand(Action.autocomplete),
+  ac: driveCommand(Action.autocomplete),
+  cat: driveCommand(Action.cat),
+  recover: driveCommand(Action.recover),
+  download: driveCommand(Action.download),
+  edit: driveCommand(Action.edit),
   init: Action.initSession,
   auth: Action.authSession,
 })

@@ -22,7 +22,7 @@ export type Deps =
 export const move = ({ srcpath, dstpath }: {
   srcpath: string
   dstpath: string
-}): DriveLookup.Action<Deps, MoveItemsResponse | RenameResponse> => {
+}): DriveLookup.Monad<MoveItemsResponse | RenameResponse, Deps> => {
   const nsrc = normalizePath(srcpath)
   const ndst = normalizePath(dstpath)
 
@@ -44,7 +44,7 @@ const handle = (
   { srcdst: [srcitem, dstitem] }: {
     srcdst: NEA<V.PathValidation<T.DetailsDocwsRoot>>
   },
-): DriveLookup.Action<Deps, MoveItemsResponse | RenameResponse> => {
+): DriveLookup.Monad<MoveItemsResponse | RenameResponse, Deps> => {
   if (!srcitem.valid) {
     return DriveLookup.errString(`src item was not found: ${V.showGetByPathResult(srcitem)}`)
   }
@@ -86,7 +86,7 @@ const handle = (
 const caseMove = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
   dst: T.Details,
-): DriveLookup.Action<Deps, MoveItemsResponse> => {
+): DriveLookup.Monad<MoveItemsResponse, Deps> => {
   return DriveApiMethods.moveItems<DriveLookup.LookupState>({
     destinationDrivewsId: dst.drivewsid,
     items: [{ drivewsid: src.drivewsid, etag: src.etag }],
@@ -96,7 +96,7 @@ const caseMove = (
 const caseRename = (
   srcitem: T.NonRootDetails | T.DriveChildrenItemFile,
   name: string,
-): DriveLookup.Action<Deps, RenameResponse> => {
+): DriveLookup.Monad<RenameResponse, Deps> => {
   return DriveApiMethods.renameItems({
     items: [
       { drivewsid: srcitem.drivewsid, ...parseFilename(name), etag: srcitem.etag },
@@ -108,7 +108,7 @@ const caseMoveAndRename = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
   dst: (T.Details | T.DetailsTrashRoot),
   name: string,
-): DriveLookup.Action<Deps, RenameResponse> => {
+): DriveLookup.Monad<RenameResponse, Deps> => {
   return pipe(
     DriveApiMethods.moveItems<DriveLookup.LookupState>(
       {

@@ -2,7 +2,7 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthenticateSession, DepFs } from '../../../deps-types'
 import { authenticateState } from '../../../icloud-authentication/methods'
-import { loadSession, saveAccountData, saveSession } from '../action'
+import { loadSession, saveAccountData, saveSession } from '../command'
 
 export type AuthSessionDeps =
   & { sessionFile: string }

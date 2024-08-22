@@ -44,7 +44,6 @@ const showWithFullPath = (path: string) => flow(T.fileName, joinWithPath(path))
 type Row = [string, string | number]
 
 type Element = Row | string | false | Element[]
-// type Component<P> = (props: P) => (Element | string | false)[]
 
 const Trash = ({ details }: { details: T.DetailsTrashRoot }): Element[] => {
   return [
@@ -93,8 +92,6 @@ export const showFileInfo = (result: T.DriveChildrenItemFile) =>
   ({ showDrivewsid = false, showDocwsid = false } = {}): string =>
     pipe(
       [
-        // ['name', T.fileName(result)],
-        // ['type', result.type],
         ['size', result.size],
         ['dateCreated', formatDate(result.dateCreated)],
         ['dateChanged', formatDate(result.dateChanged)],
@@ -107,13 +104,9 @@ export const showFileInfo = (result: T.DriveChildrenItemFile) =>
         !!result.restorePath && ['restorePath', result.restorePath],
         showDrivewsid && ['drivewsid', result.drivewsid],
         showDocwsid && ['docwsid', result.docwsid],
-        // ...[showDrivewsid ? [['drivewsid', result.drivewsid]] : []],
-        // ...[showDocwsid ? [['docwsid', result.docwsid]] : []],
       ],
       showElements,
     )
-// .map(_ => _.join(':\t'))
-// .join('\n')
 const showItemRow = ({
   short = false,
   showDrivewsid = false,
@@ -217,6 +210,7 @@ export type RecursiveFolder =
   }
 
 const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
+
 const showRecursive = ({ ident = 0 }) =>
   (folder: RecursiveFolder): string => {
     const folderName = T.fileName(folder.details)
@@ -239,16 +233,4 @@ const showRecursive = ({ ident = 0 }) =>
       : [identStr + folderName + ' ...']
 
     return rows.join('\n')
-  }
-
-const conditional = <A, B, R>(
-  ref: <R>(input: A | B) => input is A,
-  onTrue: (a: A) => R,
-  onFalse: (b: B) => R,
-) =>
-  (input: A | B): R => {
-    if (ref(input)) {
-      return onTrue(input)
-    }
-    return onFalse(input)
   }

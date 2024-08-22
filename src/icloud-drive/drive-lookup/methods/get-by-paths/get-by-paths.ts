@@ -14,16 +14,16 @@ import { guardFst } from '../../../../util/guards'
 import { NormalizedPath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
 import { recordFromTuples } from '../../../../util/util'
-import { DriveLookup, T } from '../../..'
+import { DriveLookup, Types } from '../../..'
 import { equalsDrivewsId, findInParentFilename } from '../../../util/drive-helpers'
 import { modifySubset } from '../../../util/drive-modify-subset'
 import * as V from '../../../util/get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
 
-export const getByPaths = <R extends T.Root>(
+export const getByPaths = <R extends Types.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> =>
+): DriveLookup.Monad<NEA<V.GetByPathResult<R>>> =>
   pipe(
     loggerIO.debug(`getByPaths(${paths})`),
     SRTE.fromIO,
@@ -31,10 +31,10 @@ export const getByPaths = <R extends T.Root>(
     SRTE.chain(cached => getByPathsC(paths, cached)),
   )
 
-const getByPathsC = <R extends T.Root>(
+const getByPathsC = <R extends Types.Root>(
   paths: NEA<NormalizedPath>,
   cached: NEA<V.GetByPathResult<R>>,
-): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> =>
+): DriveLookup.Monad<NEA<V.GetByPathResult<R>>> =>
   pipe(
     DriveLookup.of(cached),
     SRTE.chainFirstIOK(() => loggerIO.debug(`getByPathsC(${paths})`)),
@@ -60,13 +60,13 @@ const getByPathsC = <R extends T.Root>(
 /**
 Given cached root and a cached hierarchy determine which part of the hierarchy is unchanged
  */
-const validateCachedHierarchies = <R extends T.Root>(
+const validateCachedHierarchies = <R extends Types.Root>(
   cachedHierarchies: NEA<V.Hierarchy<R>>,
-): DriveLookup.Effect<NEA<V.PathValidation<R>>> => {
+): DriveLookup.Monad<NEA<V.PathValidation<R>>> => {
   const toActual = (
-    cachedPath: T.NonRootDetails[],
-    actualsRecord: Record<string, O.Option<T.NonRootDetails>>,
-  ): O.Option<T.NonRootDetails>[] => {
+    cachedPath: Types.NonRootDetails[],
+    actualsRecord: Record<string, O.Option<Types.NonRootDetails>>,
+  ): O.Option<Types.NonRootDetails>[] => {
     return pipe(
       cachedPath,
       A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
@@ -114,7 +114,7 @@ const validateCachedHierarchies = <R extends T.Root>(
   )
 }
 
-const concatCachedWithValidated = <R extends T.Root>(
+const concatCachedWithValidated = <R extends Types.Root>(
   cached: V.GetByPathResult<R>,
   validated: V.PathValidation<R>,
 ): V.PathValidation<R> => {
@@ -125,15 +125,15 @@ const concatCachedWithValidated = <R extends T.Root>(
       // if original path was targeting a file
       // try to find it in the actual details
       if (O.isSome(cached.file)) {
-        const fname = T.fileName(cached.file.value)
+        const fname = Types.fileName(cached.file.value)
         const parent = NA.last(validated.details)
 
         return pipe(
-          findInParentFilename(parent, T.fileName(cached.file.value)),
+          findInParentFilename(parent, Types.fileName(cached.file.value)),
           O.fold(
             () => E.left(NotFoundError.createTemplate(fname, parent.drivewsid)),
             (actualFileItem) =>
-              T.isFileItem(actualFileItem)
+              Types.isFileItem(actualFileItem)
                 ? E.of(actualFileItem)
                 : E.left(ItemIsNotFileError.createTemplate(actualFileItem)),
           ),
@@ -177,9 +177,9 @@ const concatCachedWithValidated = <R extends T.Root>(
   }
 }
 
-const getActuals = <R extends T.Root>(
+const getActuals = <R extends Types.Root>(
   validationResults: NEA<[V.PathValidation<R>, NormalizedPath]>,
-): DriveLookup.Effect<NEA<V.PathValidation<R>>> => {
+): DriveLookup.Monad<NEA<V.PathValidation<R>>> => {
   loggerIO.debug(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )()
@@ -196,26 +196,26 @@ const getActuals = <R extends T.Root>(
 }
 // : NEA<[V.PathInvalid<R>, NormalizedPath]>
 
-type DeeperFolders<R extends T.Root> =
+type DeeperFolders<R extends Types.Root> =
   // folders items with empty rest (valid, requires details)
-  | [O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>, [[], V.PathInvalid<R>]]
+  | [O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>, [[], V.PathInvalid<R>]]
   // folders items with non empty rest (incomplete paths)
   | [
-    O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
+    O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
     [NEA<string>, V.PathInvalid<R>],
   ]
 
-const handleInvalidPaths = <R extends T.Root>(
+const handleInvalidPaths = <R extends Types.Root>(
   partialPaths: NEA<V.PathInvalid<R>>,
-): DriveLookup.Effect<NEA<V.PathValidation<R>>> => {
+): DriveLookup.Monad<NEA<V.PathValidation<R>>> => {
   loggerIO.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)()
 
-  const handleSubfolders = <R extends T.Root>(
+  const handleSubfolders = <R extends Types.Root>(
     subfolders: NEA<DeeperFolders<R>>,
-  ): DriveLookup.Effect<NEA<V.GetByPathResult<R>>> => {
+  ): DriveLookup.Monad<NEA<V.GetByPathResult<R>>> => {
     loggerIO.debug(`handleSubfolders: ${
       subfolders.map(([item, [rest, partial]]) => {
-        return `item: ${T.fileName(item.value)}. rest: [${rest}]`
+        return `item: ${Types.fileName(item.value)}. rest: [${rest}]`
       })
     }`)()
 
@@ -234,9 +234,9 @@ const handleInvalidPaths = <R extends T.Root>(
           details,
           // select
           (v): v is [
-            T.NonRootDetails,
+            Types.NonRootDetails,
             [
-              O.Some<T.DriveChildrenItemFolder | T.DriveChildrenItemAppLibrary>,
+              O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
               [NEA<string>, V.PathInvalid<R>],
             ],
           ] => pipe(v, ([details, [item, [rest, partial]]]) => A.isNonEmpty(rest)),
@@ -265,10 +265,10 @@ const handleInvalidPaths = <R extends T.Root>(
     )
   }
 
-  const handleFiles = <R extends T.Root>() =>
+  const handleFiles = <R extends Types.Root>() =>
     (
       [item, [rest, partial]]: [
-        O.Some<T.DriveChildrenItemFile>,
+        O.Some<Types.DriveChildrenItemFile>,
         [string[], V.PathInvalid<R>],
       ],
     ): V.PathValidation<R> => {
@@ -284,24 +284,24 @@ const handleInvalidPaths = <R extends T.Root>(
             valid: false,
             error: ItemIsNotFolderError.create(`item is not folder`),
             details: partial.details,
-            rest: NA.concat([T.fileName(item.value)], rest),
+            rest: NA.concat([Types.fileName(item.value)], rest),
           }),
         ),
       )
     }
 
-  const handleFoundItems = <R extends T.Root>(
-    found: NEA<[O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
-  ): DriveLookup.Effect<V.GetByPathResult<R>[]> => {
+  const handleFoundItems = <R extends Types.Root>(
+    found: NEA<[O.Some<Types.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
+  ): DriveLookup.Monad<V.GetByPathResult<R>[]> => {
     loggerIO.debug(`handleFoundItems. ${
       found.map(([item, [rest, partial]]) => {
-        return `item: ${T.fileName(item.value)}.`
+        return `item: ${Types.fileName(item.value)}.`
       })
     }`)()
 
     const selectFolders = (
-      v: [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]],
-    ): v is DeeperFolders<R> => T.isFolderLikeItem(v[0].value)
+      v: [O.Some<Types.DriveChildrenItem>, [string[], V.PathInvalid<R>]],
+    ): v is DeeperFolders<R> => Types.isFolderLikeItem(v[0].value)
 
     if (A.isNonEmpty(found)) {
       return modifySubset(
@@ -324,7 +324,7 @@ const handleInvalidPaths = <R extends T.Root>(
   return modifySubset(
     nextItems,
     // select items that were found
-    (v): v is [O.Some<T.DriveChildrenItem>, [string[], V.PathInvalid<R>]] => pipe(v, fst, O.isSome),
+    (v): v is [O.Some<Types.DriveChildrenItem>, [string[], V.PathInvalid<R>]] => pipe(v, fst, O.isSome),
     handleFoundItems,
     ([item, [rest, partial]]): V.GetByPathResult<R> => {
       // : [O.None, [string[], V.PathInvalid<H.Hierarchy<R>>]]
@@ -332,7 +332,7 @@ const handleInvalidPaths = <R extends T.Root>(
         valid: false,
         error: NotFoundError.createTemplate(
           NA.head(partial.rest),
-          T.fileName(NA.last(partial.details)),
+          Types.fileName(NA.last(partial.details)),
         ),
         details: partial.details,
         rest: partial.rest,
@@ -341,9 +341,9 @@ const handleInvalidPaths = <R extends T.Root>(
   )
 }
 
-const getValidHierarchyPart = <R extends T.Root>(
+const getValidHierarchyPart = <R extends Types.Root>(
   cachedHierarchy: V.Hierarchy<R>,
-  actualDetails: [R, ...O.Option<T.NonRootDetails>[]],
+  actualDetails: [R, ...O.Option<Types.NonRootDetails>[]],
 ): V.PathValidation<R> => {
   const [actualRoot, ...actualPath] = actualDetails
   const [cachedroot, ...cachedPath] = cachedHierarchy
@@ -362,7 +362,7 @@ const getValidHierarchyPart = <R extends T.Root>(
       rest: pipe(
         cachedPath,
         A.dropLeft(_.length),
-        A.map(T.fileName),
+        A.map(Types.fileName),
       ),
     }),
     ({ validPart, rest }) =>
@@ -376,14 +376,14 @@ const getValidHierarchyPart = <R extends T.Root>(
   )
 }
 
-const showHierarchiy = (h: V.Hierarchy<T.Root>): string => {
+const showHierarchiy = (h: V.Hierarchy<Types.Root>): string => {
   const [root, ...rest] = h
 
-  return `${T.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(T.fileName).join('/')}`
+  return `${Types.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(Types.fileName).join('/')}`
 }
 
-const showDetails = (details: T.Details) => {
-  return `${T.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${T.fileName(details)}. items: [${
-    details.items.map(T.fileName)
+const showDetails = (details: Types.Details) => {
+  return `${Types.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${Types.fileName(details)}. items: [${
+    details.items.map(Types.fileName)
   }]`
 }

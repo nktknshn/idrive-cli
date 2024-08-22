@@ -3,7 +3,7 @@ import * as deps from '../../deps-providers'
 import { DepAskConfirmation } from '../../deps-types/dep-ask-confirmation'
 import { CommandsDeps } from '.'
 
-/** Create dependencies for the actions from the CLI arguments */
+/** Create dependencies for the commands */
 export const createCliActionsDeps = (argv: {
   sessionFile?: string
   cacheFile?: string

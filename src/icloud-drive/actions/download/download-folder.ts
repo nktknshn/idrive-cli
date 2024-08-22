@@ -8,7 +8,7 @@ import { DepFs } from '../../../deps-types'
 import { printerIO } from '../../../logging/printerIO'
 import { guardFst } from '../../../util/guards'
 import { normalizePath } from '../../../util/path'
-import { DriveLookup, T } from '../..'
+import { DriveLookup, Types } from '../..'
 import { of } from '../../drive-lookup'
 import { FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
 import { applySoultions, ConflictsSolver, Solution } from './conflict-solution'
@@ -59,14 +59,14 @@ type DownloadFolderOpts<SolverDeps, DownloadDeps> = Argv & {
   toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped
   conflictsSolver: ConflictsSolver<SolverDeps>
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
-  treefilter: <T extends T.Root>(flatTree: FlattenFolderTreeWPath<T>) => DownloadTask & {
+  treefilter: <T extends Types.Root>(flatTree: FlattenFolderTreeWPath<T>) => DownloadTask & {
     excluded: DownloadItem[]
   }
 }
 
 type DownloadFolderInfo = {
   folderTree: FlattenFolderTreeWPath<
-    T.DetailsDocwsRoot | T.NonRootDetails
+    Types.DetailsDocwsRoot | Types.NonRootDetails
   >
   downloadTask: DownloadTask & {
     excluded: DownloadItem[]
@@ -108,7 +108,7 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
     conflictsSolver,
     downloadFiles,
   }: DownloadFolderOpts<TSolverDeps, TDownloadDeps>,
-): DriveLookup.Effect<string, Deps & TSolverDeps & TDownloadDeps> => {
+): DriveLookup.Monad<string, Deps & TSolverDeps & TDownloadDeps> => {
   const verbose = dry
 
   printerIO.print(

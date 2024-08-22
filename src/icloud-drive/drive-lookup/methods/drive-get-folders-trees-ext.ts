@@ -3,13 +3,13 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
-import { DriveLookup, T } from '../..'
+import { DriveLookup, Types } from '../..'
 import { DriveFolderTree, flattenFolderTreeWithBasepath, FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
 
 export const getFoldersTreesByPathsDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
-): DriveLookup.Effect<NEA<DriveFolderTree<T.DetailsDocwsRoot>>> =>
+): DriveLookup.Monad<NEA<DriveFolderTree<Types.DetailsDocwsRoot>>> =>
   pipe(
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     SRTE.chain(dir => DriveLookup.getFoldersTrees(dir, depth)),
@@ -19,7 +19,7 @@ export const getFoldersTreesByPathsDocwsroot = (
 export const getFolderTreeByPathDocwsroot = (
   path: NormalizedPath,
   depth = Infinity,
-): DriveLookup.Effect<DriveFolderTree<T.DetailsDocwsRoot>> =>
+): DriveLookup.Monad<DriveFolderTree<Types.DetailsDocwsRoot>> =>
   pipe(
     getFoldersTreesByPathsDocwsroot([path], depth),
     SRTE.map(NA.head),
@@ -28,19 +28,19 @@ export const getFolderTreeByPathDocwsroot = (
 export const getFoldersTreesByPathsFlattenDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
-): DriveLookup.Effect<
-  NEA<FlattenFolderTreeWPath<T.DetailsDocwsRoot>>
+): DriveLookup.Monad<
+  NEA<FlattenFolderTreeWPath<Types.DetailsDocwsRoot>>
 > => {
   return pipe(
     // provide existing cache for getByPathsFromCache
     // and accumulate new details here
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     // and use here
-    SRTE.chain(dirs => DriveLookup.getFoldersTrees<T.DetailsDocwsRoot>(dirs, depth)),
+    SRTE.chain(dirs => DriveLookup.getFoldersTrees<Types.DetailsDocwsRoot>(dirs, depth)),
     DriveLookup.usingTempCache,
     SRTE.map(NA.zip(paths)),
     SRTE.map(NA.map(
-      ([tree, path]) => flattenFolderTreeWithBasepath(Path.dirname(path))<T.DetailsDocwsRoot>(tree),
+      ([tree, path]) => flattenFolderTreeWithBasepath(Path.dirname(path))<Types.DetailsDocwsRoot>(tree),
     )),
   )
 }
@@ -48,7 +48,7 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
 export const getFolderTreeByPathFlattenWPDocwsroot = (
   path: NormalizedPath,
   depth = Infinity,
-): DriveLookup.Effect<FlattenFolderTreeWPath<T.DetailsDocwsRoot>> =>
+): DriveLookup.Monad<FlattenFolderTreeWPath<Types.DetailsDocwsRoot>> =>
   pipe(
     getFoldersTreesByPathsFlattenDocwsroot([path], depth),
     SRTE.map(NA.head),

@@ -3,14 +3,14 @@ import { pipe } from 'fp-ts/lib/function'
 import micromatch from 'micromatch'
 import { getDirectoryStructure } from '../../../util/getDirectoryStructure'
 import { guardProp, guardSnd } from '../../../util/guards'
-import { T } from '../..'
+import { Types } from '../..'
 import { FlattenFolderTreeWPath, FlattenTreeItemP, RemoteFile } from '../../util/drive-folder-tree'
 import { DownloadItem, DownloadTask } from './types'
 
 type DefaultFunc = (opts: {
   include: string[]
   exclude: string[]
-}) => (file: FlattenTreeItemP<T.Root>) => boolean
+}) => (file: FlattenTreeItemP<Types.Root>) => boolean
 
 export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =>
   ({ remotefile, remotepath }) =>
@@ -20,15 +20,15 @@ export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =
 const filterFlatTree = ({ filterFiles }: {
   filterFiles: (files: RemoteFile) => boolean
 }) =>
-  <T extends T.Root>(flatTree: FlattenFolderTreeWPath<T>) => {
+  <T extends Types.Root>(flatTree: FlattenFolderTreeWPath<T>) => {
     const files = pipe(
       flatTree,
-      A.filter(guardProp('remotefile', T.isFile)),
+      A.filter(guardProp('remotefile', Types.isFile)),
     )
 
     const folders = pipe(
       flatTree,
-      A.filter(guardProp('remotefile', T.isFolderLike)),
+      A.filter(guardProp('remotefile', Types.isFolderLike)),
     )
 
     const { left: excluded, right: validFiles } = pipe(
@@ -46,7 +46,7 @@ const filterFlatTree = ({ filterFiles }: {
 export const makeDownloadTaskFromTree = (opts: {
   filterFiles: (files: RemoteFile) => boolean
 }) =>
-  <T extends T.Root>(flatTree: FlattenFolderTreeWPath<T>): DownloadTask & {
+  <T extends Types.Root>(flatTree: FlattenFolderTreeWPath<T>): DownloadTask & {
     excluded: DownloadItem[]
   } => {
     const { excluded, files, folders } = filterFlatTree(opts)(flatTree)

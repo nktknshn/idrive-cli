@@ -12,7 +12,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   file: boolean
   dir: boolean
   cached: boolean
-}): DriveLookup.Effect<string> => {
+}): DriveLookup.Monad<string> => {
   const npath = normalizePath(path)
   const nparentPath = normalizePath(Path.dirname(path))
 
