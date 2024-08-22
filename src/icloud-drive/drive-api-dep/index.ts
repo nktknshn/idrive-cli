@@ -9,7 +9,7 @@ import { InvalidResponseStatusError } from '../../util/errors'
 import { SRTEWrapper, wrapSRTERecord } from '../../util/srte-wrapper'
 import { EmptyObject } from '../../util/types'
 import { RQ } from '..'
-import { DriveApiEnv } from './dep-drive-api-env'
+import { DriveApi } from './type'
 
 const seqs = sequenceS(R.Apply)
 
@@ -45,7 +45,7 @@ const handle409: SRTEWrapper<
 
 export const createDriveApiEnv: R.Reader<
   CatchFetchDeps & CatchSessDeps & RequestDeps,
-  DriveApiEnv
+  DriveApi
 > = seqs(
   {
     ...wrapSRTERecord(RQ)(wrapAuthorizedReq),

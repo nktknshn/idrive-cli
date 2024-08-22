@@ -6,16 +6,17 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
+import { CreateFoldersResponse } from '../../drive-requests'
 import * as T from '../../drive-types'
 import { makeMissedFound } from '../../util/drive-helpers'
-import { GetDep } from '../deps'
-import { createFolders, download, retrieveItemDetailsInFolders } from './original'
+import { DepApi } from '../deps'
+import { createFolders, download, retrieveItemDetailsInFolders } from './basic'
 
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<
   S,
-  GetDep<'retrieveItemDetailsInFolders', 'api'>,
+  DepApi<'retrieveItemDetailsInFolders', 'api'>,
   Error,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>
@@ -28,7 +29,7 @@ export const retrieveItemDetailsInFolder = (
   drivewsid: string,
 ): SRTE.StateReaderTaskEither<
   AuthorizedState,
-  GetDep<'retrieveItemDetailsInFolders'>,
+  DepApi<'retrieveItemDetailsInFolders'>,
   Error,
   T.Details | T.InvalidId
 > =>
@@ -38,20 +39,18 @@ export const retrieveItemDetailsInFolder = (
       NA.head,
     ),
   )
-/** .data_token?.url ?? _.package_token?.url */
 
 export const getICloudItemUrl = flow(
   download,
   SRTE.map(
     _ => _.data_token?.url ?? _.package_token?.url,
   ),
-  // SRTE.map(O.fromNullable),
 )
 
 export const createFoldersNEA = <S extends AuthorizedState>(args: {
   destinationDrivewsId: string
   names: NEA<string>
-}) =>
+}): SRTE.StateReaderTaskEither<S, DepApi<'createFolders'>, Error, CreateFoldersResponse['folders']> =>
   pipe(
     createFolders<S>(args),
     SRTE.map(_ => _.folders),

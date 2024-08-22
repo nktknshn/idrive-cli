@@ -7,17 +7,17 @@ import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { err } from '../../../util/errors'
 import { FsStats } from '../../../util/fs'
 import { Path } from '../../../util/path'
-import { GetDep, useApi } from '../deps'
+import { apiMethod, DepApi } from '../deps'
 
 type UploadMethodDeps =
-  & GetDep<'upload'>
-  & GetDep<'singleFileUpload'>
-  & GetDep<'updateDocuments'>
+  & DepApi<'upload'>
+  & DepApi<'singleFileUpload'>
+  & DepApi<'updateDocuments'>
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 
 export const upload = flow(
-  useApi((deps: UploadMethodDeps) =>
+  apiMethod((deps: UploadMethodDeps) =>
     <S extends AuthorizedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string

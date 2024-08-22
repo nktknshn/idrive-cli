@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import { DepAskConfirmation } from '../../../deps-types'
-import { XXX } from '../../../util/types'
+import { SRA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import { solvers } from './conflict-solvers'
 import { Deps, downloadFolder } from './download-folder'
@@ -20,7 +20,7 @@ type ShallowArgs = {
 /** download file of files from a directory */
 export const downloadShallow = (
   { path, dry, dstpath, chunkSize, include, exclude }: ShallowArgs,
-): XXX<DriveLookup.LookupState, Deps & DFuncDeps & DepAskConfirmation, string> => {
+): SRA<DriveLookup.LookupState, Deps & DFuncDeps & DepAskConfirmation, string> => {
   return pipe(
     downloadFolder(
       {

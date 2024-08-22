@@ -9,7 +9,7 @@ import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import micromatch from 'micromatch'
 import { DriveApi, DriveLookup } from '../../../../icloud-drive'
-import { GetDep } from '../../../../icloud-drive/drive-api/deps'
+import { DepApi } from '../../../../icloud-drive/drive-api/deps'
 import { parseDrivewsid } from '../../../../icloud-drive/util/drive-helpers'
 import { printerIO } from '../../../../logging/printerIO'
 import { err } from '../../../../util/errors'
@@ -18,7 +18,7 @@ import { getDirectoryStructure } from '../../../../util/getDirectoryStructure'
 import { guardSndRO } from '../../../../util/guards'
 import { LocalTreeElement } from '../../../../util/localtreeelement'
 import { Path } from '../../../../util/path'
-import { NEA, XXX } from '../../../../util/types'
+import { NEA, SRA } from '../../../../util/types'
 
 export type UploadResult = {
   status: { status_code: number; error_message: string }
@@ -89,7 +89,7 @@ export const uploadChunkPar = (
         local: { path: string; stats: FsStats },
       ]
     >,
-  ): XXX<DriveLookup.LookupState, DriveApi.Dep<'upload'>, NEA<UploadResult>> =>
+  ): SRA<DriveLookup.LookupState, DriveApi.Dep<'upload'>, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
@@ -126,7 +126,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): XXX<DriveLookup.LookupState, DriveApi.Dep<'createFolders'>, Record<string, string>> => {
+): SRA<DriveLookup.LookupState, DriveApi.Dep<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {

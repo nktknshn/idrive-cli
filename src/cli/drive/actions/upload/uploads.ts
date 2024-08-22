@@ -14,7 +14,7 @@ import { findInParentFilename, getDrivewsid } from '../../../../icloud-drive/uti
 import * as V from '../../../../icloud-drive/util/get-by-path-types'
 import { loggerIO } from '../../../../logging/loggerIO'
 import { normalizePath, Path } from '../../../../util/path'
-import { XXX } from '../../../../util/types'
+import { SRA } from '../../../../util/types'
 import { AskingFunc } from '../upload'
 
 export type Deps =
@@ -34,7 +34,7 @@ export const uploads = (
       | AskingFunc
     skipTrash: boolean
   },
-): XXX<DriveLookup.LookupState, Deps, string> => {
+): SRA<DriveLookup.LookupState, Deps, string> => {
   assert(A.isNonEmpty(uploadargs))
   assert(uploadargs.length > 1)
 
@@ -71,7 +71,7 @@ export const uploadSingleFile = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<DriveLookup.LookupState, Deps, string> => {
+): SRA<DriveLookup.LookupState, Deps, string> => {
   return pipe(
     DriveLookup.getCachedDocwsRoot(),
     SRTE.bindTo('root'),
@@ -91,7 +91,7 @@ const handleSingleFileUpload = (
     overwright: boolean
     skipTrash: boolean
   },
-): XXX<DriveLookup.LookupState, Deps, void> => {
+): SRA<DriveLookup.LookupState, Deps, void> => {
   // if the target path already exists in icloud drive
   if (dst.valid) {
     const dstitem = V.pathTarget(dst)
@@ -141,7 +141,7 @@ const uploadFileToFolder = (
     src: string
     skipTrash: boolean
   },
-): XXX<DriveLookup.LookupState, Deps, void> => {
+): SRA<DriveLookup.LookupState, Deps, void> => {
   const fname = Path.basename(src)
 
   const actualFile = pipe(
@@ -189,7 +189,7 @@ const uploadOverwrighting = (
     src: string
     skipTrash: boolean
   },
-): XXX<DriveLookup.LookupState, Deps, void> => {
+): SRA<DriveLookup.LookupState, Deps, void> => {
   // const dstitem = V.target(dst)
   // const parent = NA.last(dst.path.details)
   return pipe(

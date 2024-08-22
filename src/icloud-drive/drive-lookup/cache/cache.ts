@@ -263,8 +263,4 @@ export const removeByIds = (drivewsids: string[]) =>
       A.reduce(cache, (cache, cur) => removeById(cur)(cache)),
     )
 
-export const concat = (c1: LookupCache, c2: LookupCache): CT.CacheF =>
-  pipe(
-    c1,
-    putDetailss(getAllDetails(c2)),
-  )
+export const concat = (c1: LookupCache, c2: LookupCache): CT.CacheF => pipe(c1, putDetailss(getAllDetails(c2)))

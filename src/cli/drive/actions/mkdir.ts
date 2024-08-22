@@ -6,7 +6,7 @@ import { loggerIO } from '../../../logging/loggerIO'
 import { logger } from '../../../logging/logging'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
-import { XXX } from '../../../util/types'
+import { SRA } from '../../../util/types'
 import { showDetailsInfo } from './ls/ls-printing'
 
 type Deps =
@@ -15,7 +15,7 @@ type Deps =
 
 export const mkdir = (
   { path }: { path: string },
-): XXX<DriveLookup.LookupState, Deps, string> => {
+): SRA<DriveLookup.LookupState, Deps, string> => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 

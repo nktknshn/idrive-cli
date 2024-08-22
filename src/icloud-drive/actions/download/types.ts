@@ -4,7 +4,7 @@ import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { DriveLookup, T } from '../..'
 
 import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
-import { XXX } from '../../../util/types'
+import { SRA } from '../../../util/types'
 
 export type DownloadItem = {
   remotepath: string
@@ -47,7 +47,7 @@ export type DownloadTaskMapper<R> = (ds: DownloadTask) => RTE.ReaderTaskEither<
 
 export type DownloadICloudFilesFunc<R> = <S extends AuthorizedState>(
   task: { downloadable: DownloadItemMapped[] },
-) => XXX<S, R, DownloadFileResult[]>
+) => SRA<S, R, DownloadFileResult[]>
 
 export { type DownloadFileResult }
 // export type FilterTreeResult = DownloadStructure & {

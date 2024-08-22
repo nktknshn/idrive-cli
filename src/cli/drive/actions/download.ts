@@ -5,7 +5,7 @@ import { DepFs } from '../../../deps-types/dep-fs'
 import { DriveApi, DriveLookup } from '../../../icloud-drive'
 import { downloadShallow } from '../../../icloud-drive/actions/download/downloadShallow'
 import { downloadRecursive } from '../../../icloud-drive/drive-action'
-import { XXX } from '../../../util/types'
+import { SRA } from '../../../util/types'
 
 type Argv = {
   path: string
@@ -56,7 +56,7 @@ Use `dry` flag to only check what is going to be downloaded
 
 */
 
-export const download = (argv: Argv): XXX<DriveLookup.LookupState, Deps, string> => {
+export const download = (argv: Argv): SRA<DriveLookup.LookupState, Deps, string> => {
   const scan = micromatch.scan(argv.path)
 
   if (scan.isGlob) {

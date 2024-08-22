@@ -48,10 +48,5 @@ export const catchFetchErrorsSRTE = (
   <S, R extends EmptyObject, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,
   ): SRTE.StateReaderTaskEither<S, R, Error, A> => {
-    return (s: S) =>
-      (r: R) =>
-        pipe(
-          m(s)(r),
-          env.catchFetchErrors ? catchFetchErrorsTE(env) : identity,
-        )
+    return (s: S) => (r: R) => pipe(m(s)(r), env.catchFetchErrors ? catchFetchErrorsTE(env) : identity)
   }

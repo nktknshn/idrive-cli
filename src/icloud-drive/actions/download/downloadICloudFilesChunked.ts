@@ -9,7 +9,7 @@ import { DepFetchClient, DepFs } from '../../../deps-types'
 import { AuthorizedState } from '../../../icloud-core/icloud-request'
 import { guardFstRO, isDefined } from '../../../util/guards'
 import { DownloadFileResult, downloadUrlsPar } from '../../../util/http/downloadUrlToFile'
-import { XXX } from '../../../util/types'
+import { SRA } from '../../../util/types'
 import { DriveApi } from '../..'
 import { DownloadICloudFilesFunc, DownloadItemMapped } from './types'
 
@@ -52,7 +52,7 @@ const splitIntoChunks = (
 
 const downloadChunkPar = <S extends AuthorizedState>(
   chunk: NA.NonEmptyArray<DownloadItemMapped>,
-): XXX<S, Deps, DownloadFileResult[]> => {
+): SRA<S, Deps, DownloadFileResult[]> => {
   return pipe(
     DriveApi.downloadBatch<S>({
       docwsids: chunk.map(_ => _.item.remotefile).map(_ => _.docwsid),

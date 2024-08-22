@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { EmptyObject, XXX } from './types'
+import { EmptyObject, SRA } from './types'
 
 /**
  * * Wraps an SRTE with a wrapper, returning a function that takes a combination of their dependencies.
@@ -10,7 +10,7 @@ export const wrapSRTE = <WR, WRS, RR>(wrapper: SRTEWrapper<WR, WRS, RR>) =>
   <Args extends unknown[], A, R extends EmptyObject>(
     req: <S extends WRS>(...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
   ) =>
-    (deps: WR & R): <S extends WRS>(...args: Args) => XXX<S, EmptyObject extends RR ? EmptyObject : (RR & R), A> =>
+    (deps: WR & R): <S extends WRS>(...args: Args) => SRA<S, EmptyObject extends RR ? EmptyObject : (RR & R), A> =>
       <S extends WRS>(...args: Args) => {
         const w = wrapper(deps)
         return pipe(
@@ -27,7 +27,7 @@ export const wrapSRTERecord = <
   <WR, WRS, WRR>(wrapper: SRTEWrapper<WR, WRS, WRR>): {
     [K in keyof Rec]: Rec[K] extends
       (...args: infer Args) => SRTE.StateReaderTaskEither<infer _S, infer _R, infer E, infer A>
-      ? (deps: _R & WR) => <S extends _S>(...args: Args) => XXX<S, WRR, A>
+      ? (deps: _R & WR) => <S extends _S>(...args: Args) => SRA<S, WRR, A>
       : never
   } => {
     const r: any = {}

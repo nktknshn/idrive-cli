@@ -1,5 +1,5 @@
 // export { DepDriveApi as DepDriveApi } from './drive-api'
-export { type GetDep } from './drive-api/deps'
+export { type DepApi as GetDep } from './drive-api/deps'
 
 // export * as Drive from './drive'
 export * as DriveAction from './drive-action'

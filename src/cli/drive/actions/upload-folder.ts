@@ -14,7 +14,7 @@ import { loggerIO } from '../../../logging/loggerIO'
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 import { normalizePath, Path } from '../../../util/path'
-import { XXX } from '../../../util/types'
+import { SRA } from '../../../util/types'
 import { walkDirRel } from '../../../util/walkdir'
 import {
   createRemoteDirStructure,
@@ -44,7 +44,7 @@ export type Deps =
 
 export const uploadFolder = (
   argv: Argv,
-): XXX<DriveLookup.LookupState, Deps, unknown> => {
+): SRA<DriveLookup.LookupState, Deps, unknown> => {
   return pipe(
     DriveLookup.getByPathDocwsroot(normalizePath(argv.remotepath)),
     SRTE.bindTo('dst'),
@@ -61,7 +61,7 @@ const handleUploadFolder = (
     dst: V.GetByPathResult<T.DetailsDocwsRoot>
     args: Argv
   },
-): XXX<DriveLookup.LookupState, Deps, UploadResult[]> => {
+): SRA<DriveLookup.LookupState, Deps, UploadResult[]> => {
   const dirname = Path.parse(src).base
 
   const uploadTask = pipe(
@@ -118,7 +118,7 @@ const uploadToNewFolder = (
   },
 ): (
   task: UploadTask,
-) => XXX<DriveLookup.LookupState, Deps, UploadResult[]> =>
+) => SRA<DriveLookup.LookupState, Deps, UploadResult[]> =>
   (task: UploadTask) =>
     pipe(
       printerIO.print(`creating folder ${remotepath}`),

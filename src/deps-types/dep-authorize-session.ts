@@ -3,10 +3,10 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { type AccountData } from '../icloud-authorization/type-accountdata'
 import { BaseState } from '../icloud-core/icloud-request'
-import { XX } from '../util/types'
+import { SA } from '../util/types'
 
 export type DepAuthorizeSession = {
-  authorizeSession: <S extends BaseState>() => XX<S, AccountData>
+  authorizeSession: <S extends BaseState>() => SA<S, AccountData>
 }
 
 export const authorizeSession = <S extends BaseState>() =>
