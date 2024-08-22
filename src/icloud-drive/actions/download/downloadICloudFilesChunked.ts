@@ -6,22 +6,22 @@ import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DepFetchClient, DepFs } from '../../../deps-types'
-import { AuthorizedState } from '../../../icloud-core/icloud-request'
+import { AuthenticatedState } from '../../../icloud-core/icloud-request'
 import { guardFstRO, isDefined } from '../../../util/guards'
 import { DownloadFileResult, downloadUrlsPar } from '../../../util/http/downloadUrlToFile'
 import { SRA } from '../../../util/types'
-import { DriveApi } from '../..'
+import { DepApiMethod, DriveApiMethods } from '../../drive-api'
 import { DownloadICloudFilesFunc, DownloadItemMapped } from './types'
 
 export type Deps =
-  & DriveApi.Dep<'downloadBatch'>
+  & DepApiMethod<'downloadBatch'>
   & DepFetchClient
   & DepFs<'createWriteStream'>
 
 export const downloadICloudFilesChunked = (
   { chunkSize = 5 }: { chunkSize: number },
 ): DownloadICloudFilesFunc<Deps> =>
-  <S extends AuthorizedState>(
+  <S extends AuthenticatedState>(
     { downloadable }: { downloadable: DownloadItemMapped[] },
   ) => {
     return pipe(
@@ -50,11 +50,11 @@ const splitIntoChunks = (
   return filesChunks
 }
 
-const downloadChunkPar = <S extends AuthorizedState>(
+const downloadChunkPar = <S extends AuthenticatedState>(
   chunk: NA.NonEmptyArray<DownloadItemMapped>,
 ): SRA<S, Deps, DownloadFileResult[]> => {
   return pipe(
-    DriveApi.downloadBatch<S>({
+    DriveApiMethods.downloadBatch<S>({
       docwsids: chunk.map(_ => _.item.remotefile).map(_ => _.docwsid),
       zone: NA.head(chunk).item.remotefile.zone,
     }),

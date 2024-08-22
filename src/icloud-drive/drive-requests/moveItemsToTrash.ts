@@ -1,5 +1,5 @@
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
 
@@ -7,7 +7,7 @@ export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
 }
 
-export const moveItemsToTrash = <S extends AuthorizedState>({ items, trash = false }: {
+export const moveItemsToTrash = <S extends AuthenticatedState>({ items, trash = false }: {
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
 }): AR.ApiRequest<MoveItemToTrashResponse, S> =>

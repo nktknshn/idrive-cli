@@ -3,20 +3,20 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { AuthorizedState } from '../../../icloud-core/icloud-request'
-import { err } from '../../../util/errors'
-import { NEA } from '../../../util/types'
-import { CreateFoldersResponse } from '../../drive-requests'
-import * as T from '../../drive-types'
-import { makeMissedFound } from '../../util/drive-helpers'
-import { DepApi } from '../deps'
+import { AuthenticatedState } from '../../icloud-core/icloud-request'
+import { err } from '../../util/errors'
+import { NEA } from '../../util/types'
+import { CreateFoldersResponse } from '../drive-requests'
+import * as T from '../drive-types'
+import { makeMissedFound } from '../util/drive-helpers'
+import { PickDriveApiWrappedMethod } from '.'
 import { createFolders, download, retrieveItemDetailsInFolders } from './basic'
 
-export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>(
+export const retrieveItemDetailsInFoldersSeparated = <S extends AuthenticatedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<
   S,
-  DepApi<'retrieveItemDetailsInFolders', 'api'>,
+  PickDriveApiWrappedMethod<'retrieveItemDetailsInFolders', 'api'>,
   Error,
   { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
 > =>
@@ -28,8 +28,8 @@ export const retrieveItemDetailsInFoldersSeparated = <S extends AuthorizedState>
 export const retrieveItemDetailsInFolder = (
   drivewsid: string,
 ): SRTE.StateReaderTaskEither<
-  AuthorizedState,
-  DepApi<'retrieveItemDetailsInFolders'>,
+  AuthenticatedState,
+  PickDriveApiWrappedMethod<'retrieveItemDetailsInFolders'>,
   Error,
   T.Details | T.InvalidId
 > =>
@@ -47,10 +47,15 @@ export const getICloudItemUrl = flow(
   ),
 )
 
-export const createFoldersNEA = <S extends AuthorizedState>(args: {
+export const createFoldersNEA = <S extends AuthenticatedState>(args: {
   destinationDrivewsId: string
   names: NEA<string>
-}): SRTE.StateReaderTaskEither<S, DepApi<'createFolders'>, Error, CreateFoldersResponse['folders']> =>
+}): SRTE.StateReaderTaskEither<
+  S,
+  PickDriveApiWrappedMethod<'createFolders'>,
+  Error,
+  CreateFoldersResponse['folders']
+> =>
   pipe(
     createFolders<S>(args),
     SRTE.map(_ => _.folders),

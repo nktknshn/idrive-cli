@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
 import { DetailsTrashRoot, DriveChildrenItem } from '../drive-types'
@@ -16,7 +16,7 @@ export const scheme = t.tuple(
 export interface RetrieveTrashDetailsResponse extends t.TypeOf<typeof scheme> {
 }
 
-export const retrieveTrashDetails = <S extends AuthorizedState>(): AR.ApiRequest<DetailsTrashRoot, S> =>
+export const retrieveTrashDetails = <S extends AuthenticatedState>(): AR.ApiRequest<DetailsTrashRoot, S> =>
   pipe(
     getRetrieveItemDetailsInFoldersHttpRequest<S>(
       [{ 'drivewsid': 'TRASH_ROOT', 'partialData': false, 'includeHierarchy': true }],
@@ -27,7 +27,7 @@ export const retrieveTrashDetails = <S extends AuthorizedState>(): AR.ApiRequest
     debugTimeSRTE('retrieveTrashDetails'),
   )
 
-export const putBackItemsFromTrash = <S extends AuthorizedState>(
+export const putBackItemsFromTrash = <S extends AuthenticatedState>(
   items: [{ drivewsid: string; etag: string }],
 ): AR.ApiRequest<{ items: DriveChildrenItem[] }, S> =>
   AR.basicJsonRequest(

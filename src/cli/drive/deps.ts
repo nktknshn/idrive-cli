@@ -14,7 +14,7 @@ export const createCliActionsDeps = (argv: {
 }): CommandsDeps => ({
   api: deps.api,
   fs: deps.fs,
-  authorizeSession: deps.authorizeSession,
+  authenticateSession: deps.authenticateSession,
   fetchClient: deps.fetchClient,
   askConfirmation: argv.askConfirmation ?? deps.askConfirmation,
   sessionFile: argv.sessionFile ?? defaults.sessionFile,

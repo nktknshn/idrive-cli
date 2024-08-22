@@ -5,7 +5,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { type AccountData } from '../../../icloud-authorization/type-accountdata'
+import { type AccountData } from '../../../icloud-authentication/type-accountdata'
 import {
   BadRequestError,
   err,
@@ -27,8 +27,8 @@ export type BaseState = {
   session: ICloudSession
 }
 
-/** AccountData is added after successful athorization */
-export type AuthorizedState = BaseState & {
+/** AccountData is added after successful authentication */
+export type AuthenticatedState = BaseState & {
   accountData: AccountData
 }
 

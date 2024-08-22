@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { DepAuthorizeSession, DepFs } from '../../deps-types'
+import { DepAuthenticateSession, DepFs } from '../../deps-types'
 import { cacheLogger } from '../../logging/logging'
 import { DriveLookup } from '..'
 import { loadDriveStateFromFiles } from './loadDriveStateFromFiles'
@@ -9,7 +9,7 @@ import { saveAccountData, saveCache, saveSession } from './saveSession'
 type Deps =
   & { sessionFile: string }
   & { cacheFile: string; noCache: boolean }
-  & DepAuthorizeSession
+  & DepAuthenticateSession
   & DepFs<'writeFile'>
   & DepFs<'readFile'>
 

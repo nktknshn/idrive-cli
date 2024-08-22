@@ -65,7 +65,7 @@ export interface Urls {
   accountRepairUI: string
   downloadICloudTerms: string
   repairDone: string
-  accountAuthorizeUI: string
+  accountAuthenticateUI: string
   vettingUrlForEmail: string
   accountCreate: string
   getICloudTerms: string

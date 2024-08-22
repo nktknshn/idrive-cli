@@ -1,9 +1,9 @@
-import { AuthorizeDeps } from '../icloud-authorization'
+import { AuthenticateDeps } from '../icloud-authentication'
 import { RequestDeps } from '../icloud-core/icloud-request'
 import { CatchFetchDeps } from '../icloud-core/icloud-request/catch-fetch-error'
 import { CatchSessDeps } from '../icloud-core/icloud-request/catch-invalid-global-session'
-import { createDriveApiEnv } from '../icloud-drive/drive-api-dep'
-import { wrappedAuthorizeSession } from './authorize-session'
+import { createWrappedDriveApi } from '../icloud-drive/drive-api-wrapped'
+import { wrappedAuthenticateSession } from './authenticate-session'
 import { fetchClient, FetchError } from './fetchclient'
 import { getCode } from './get-code'
 export { askConfirmation } from './ask-confirmation'
@@ -19,19 +19,19 @@ const catchFetchDeps: CatchFetchDeps = {
   isFetchError: FetchError.is,
 }
 
-const authorizeDeps: AuthorizeDeps = {
+const authenticateDeps: AuthenticateDeps = {
   getCode,
   ...requestDeps,
 }
 
-export const authorizeSession = wrappedAuthorizeSession({
+export const authenticateSession = wrappedAuthenticateSession({
   ...catchFetchDeps,
-  ...authorizeDeps,
+  ...authenticateDeps,
 })
 
 const catchSessDeps: CatchSessDeps = {
   catchSessErrors: true,
-  authorizeSession,
+  authenticateSession: authenticateSession,
 }
 
 const apiDeps = {
@@ -40,4 +40,4 @@ const apiDeps = {
   ...catchSessDeps,
 }
 
-export const api = createDriveApiEnv(apiDeps)
+export const api = createWrappedDriveApi(apiDeps)

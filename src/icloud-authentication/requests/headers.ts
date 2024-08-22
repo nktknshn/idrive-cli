@@ -5,7 +5,7 @@ import { Header } from '../../icloud-core/session/session-http-headers'
 import { ICloudSession } from '../../icloud-core/session/session-type'
 import { getHeader } from '../../util/http/http-headers'
 
-export const authorizationHeaders = (
+export const authenticationHeaders = (
   session: ICloudSession,
 ): Header[] => {
   const headers: Header[] = [

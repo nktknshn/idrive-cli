@@ -1,4 +1,4 @@
 export { readAccountData, saveAccountData } from './accountdata-file'
-export { authorizeSession } from './authorize-session'
-export { type AuthorizeDeps } from './authorize-session'
+export { authenticateSession } from './authenticate-session'
+export { type AuthenticateDeps } from './authenticate-session'
 export { type AccountData } from './type-accountdata'

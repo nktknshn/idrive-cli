@@ -6,7 +6,7 @@ import { DriveDetailsPartialWithHierarchy } from '../drive-types'
 import { driveDetailsWithHierarchyPartial } from '../drive-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
 
-export const retrieveHierarchy = <S extends AR.AuthorizedState>(
+export const retrieveHierarchy = <S extends AR.AuthenticatedState>(
   { drivewsids }: { drivewsids: string[] },
 ): AR.ApiRequest<DriveDetailsPartialWithHierarchy[], S> =>
   pipe(

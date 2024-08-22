@@ -10,8 +10,8 @@ import { err, UnexpectedResponse } from '../../util/errors'
 import { HttpResponse } from '../../util/http/fetch-client'
 import { getHeader } from '../../util/http/http-headers'
 import { arrayFromOption } from '../../util/util'
-import { applyAuthorizationResponse } from './authorization-session'
-import { authorizationHeaders } from './headers'
+import { applyAuthenticationResponse } from './authentication-session'
+import { authenticationHeaders } from './headers'
 
 type SignInResponse = SignInResponse409 | SignInResponse200
 
@@ -81,7 +81,7 @@ export const requestSignIn = <S extends AR.BaseState>(): AR.ApiRequest<SignInRes
       url: 'https://idmsa.apple.com/appleauth/auth/signin?isRememberMeEnabled=true',
       options: {
         addClientInfo: false,
-        headers: [headers.default, authorizationHeaders],
+        headers: [headers.default, authenticationHeaders],
         data: {
           accountName: session.username,
           password: session.password,
@@ -95,7 +95,7 @@ export const requestSignIn = <S extends AR.BaseState>(): AR.ApiRequest<SignInRes
       AR.decodeJsonEither(v => t.partial({ authType: t.string }).decode(v)),
       AR.applyToSession(({ httpResponse }) =>
         flow(
-          applyAuthorizationResponse(httpResponse),
+          applyAuthenticationResponse(httpResponse),
           applyCookiesToSession(httpResponse),
         )
       ),

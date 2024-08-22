@@ -9,7 +9,7 @@ import { DriveApi, DriveLookup, T } from '../../../../src/icloud-drive'
 import { DriveApiEnv } from '../../../../src/icloud-drive/drive-api-env/dep-drive-api-env'
 import * as C from '../../../../src/icloud-drive/drive-lookup/cache'
 import * as L from '../../../../src/logging'
-import { authorizedState } from '../../fixtures/session'
+import { authenticatedState } from '../../fixtures/session'
 import { createRootDetails, docwsroot } from './mocked-drive'
 
 export const fakeicloud = flow(docwsroot, createRootDetails)
@@ -20,7 +20,7 @@ export const createState = ({
 }: {
   cache?: C.LookupCache
   tempCache?: O.Option<never>
-}): DriveLookup.LookupState => ({ ...authorizedState, cache, tempCache })
+}): DriveLookup.LookupState => ({ ...authenticatedState, cache, tempCache })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number

@@ -27,7 +27,7 @@ export interface DownloadResponseBody {
   double_etag: string
 }
 
-export function download<S extends AR.AuthorizedState>(
+export function download<S extends AR.AuthenticatedState>(
   { docwsid: documentId, zone }: {
     docwsid: string
     zone: string
@@ -46,7 +46,7 @@ export function download<S extends AR.AuthorizedState>(
   )
 }
 
-export function downloadBatch<S extends AR.AuthorizedState>(
+export function downloadBatch<S extends AR.AuthenticatedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
 ): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestDeps> {
   return debugTimeSRTE('downloadBatch')(

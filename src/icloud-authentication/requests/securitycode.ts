@@ -3,8 +3,8 @@ import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
 import { EmptyObject } from '../../util/types'
-import { applyAuthorizationResponse } from './authorization-session'
-import { authorizationHeaders } from './headers'
+import { applyAuthenticationResponse } from './authentication-session'
+import { authenticationHeaders } from './headers'
 
 /** */
 export const requestSecurityCode = <S extends AR.BaseState>(
@@ -17,14 +17,14 @@ export const requestSecurityCode = <S extends AR.BaseState>(
       options: {
         addClientInfo: false,
         data: { securityCode: { code } },
-        headers: [headers.default, authorizationHeaders],
+        headers: [headers.default, authenticationHeaders],
       },
     })),
     AR.handleResponse(flow(
       AR.validateHttpResponse({ validStatuses: [204] }),
       AR.applyToSession(({ httpResponse }) =>
         flow(
-          applyAuthorizationResponse(httpResponse),
+          applyAuthenticationResponse(httpResponse),
           applyCookiesToSession(httpResponse),
         )
       ),

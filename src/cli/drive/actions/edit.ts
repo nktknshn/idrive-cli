@@ -7,7 +7,9 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { Readable } from 'stream'
 import { DepFetchClient, DepFs } from '../../../deps-types'
-import { DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveLookup } from '../../../icloud-drive'
+import { DepApiMethod } from '../../../icloud-drive/drive-api'
+import { getICloudItemUrl } from '../../../icloud-drive/drive-api/extra'
 import { isFile } from '../../../icloud-drive/drive-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
@@ -18,7 +20,7 @@ import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
 type Deps =
   // lookup deps
   & DriveLookup.Deps
-  & DriveApi.Dep<'download'>
+  & DepApiMethod<'download'>
   & UploadDeps
   & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient
@@ -61,7 +63,7 @@ export const edit = (
     DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPathsStrict(root, [npath])),
     SRTE.map(NA.head),
     SRTE.filterOrElse(isFile, () => err(`You cannot edit a directory.`)),
-    SRTE.chainW((item) => DriveApi.getICloudItemUrl(item)),
+    SRTE.chainW((item) => getICloudItemUrl(item)),
     SRTE.map(O.fromNullable),
     SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
     a => a,

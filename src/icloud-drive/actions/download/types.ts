@@ -1,6 +1,6 @@
 import * as E from 'fp-ts/lib/Either'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { AuthorizedState } from '../../../icloud-core/icloud-request'
+import { AuthenticatedState } from '../../../icloud-core/icloud-request'
 import { DriveLookup, T } from '../..'
 
 import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
@@ -45,7 +45,7 @@ export type DownloadTaskMapper<R> = (ds: DownloadTask) => RTE.ReaderTaskEither<
   DownloadTaskMapped & { initialTask: DownloadTaskMapped }
 >
 
-export type DownloadICloudFilesFunc<R> = <S extends AuthorizedState>(
+export type DownloadICloudFilesFunc<R> = <S extends AuthenticatedState>(
   task: { downloadable: DownloadItemMapped[] },
 ) => SRA<S, R, DownloadFileResult[]>
 

@@ -8,7 +8,7 @@ const fallback = <A>(
   onNone: Lazy<O.Option<A>>,
 ): ((v: O.Option<A>) => O.Option<A>) => O.fold(onNone, O.some)
 
-export function applyAuthorizationResponse(
+export function applyAuthenticationResponse(
   httpResponse: HttpResponse,
 ) {
   return (session: ICloudSession): ICloudSession => {

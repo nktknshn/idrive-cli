@@ -2,7 +2,7 @@ import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepFs } from '../../../deps-types'
-import { authorizeState, DepAuthorizeSession } from '../../../deps-types/dep-authorize-session'
+import { AuthenticateSession, authenticateState } from '../../../deps-types/dep-authenticate-session'
 import { ICloudSession, session } from '../../../icloud-core/session/session-type'
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
@@ -13,7 +13,7 @@ type Argv = { skipLogin: boolean }
 
 export type InitSessionDeps =
   & { sessionFile: string }
-  & DepAuthorizeSession
+  & AuthenticateSession
   & DepFs<'fstat'>
   & DepFs<'writeFile'>
 
@@ -35,7 +35,7 @@ export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessi
     RTE.chainTaskEitherK(() => sessionQuest),
     !skipLogin
       ? flow(
-        RTE.chainW(authorizeState),
+        RTE.chainW(authenticateState),
         RTE.chainFirstW(saveAccountData),
       )
       : RTE.map(identity),

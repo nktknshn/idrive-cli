@@ -1,5 +1,5 @@
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
 import { childrenItem } from '../drive-types/types-io'
@@ -9,7 +9,7 @@ const renameResponse = t.type({ items: t.array(childrenItem) })
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RenameResponse extends t.TypeOf<typeof renameResponse> {}
 
-export const renameItems = <S extends AuthorizedState>(
+export const renameItems = <S extends AuthenticatedState>(
   { items }: {
     items: { drivewsid: string; etag: string; name: string; extension?: string }[]
   },

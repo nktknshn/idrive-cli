@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option'
-import { AccountData } from '../../../src/icloud-authorization'
-import { AuthorizedState } from '../../../src/icloud-core/icloud-request'
+import { AccountData } from '../../../src/icloud-authentication'
+import { AuthenticatedState } from '../../../src/icloud-core/icloud-request'
 import { ICloudSession } from '../../../src/icloud-core/session'
 
 export const validSession: ICloudSession = {
@@ -105,8 +105,8 @@ export const validAccountdata: AccountData = {
         'https://appleid.apple.com/widget/account/?widgetKey=d39ba9916b7251055b22c7f910e2ea796ee65e98b2ddecea8f5dde8d9d1a815d#!repair',
       'downloadICloudTerms': 'https://setup.icloud.com/setup/ws/1/downloadLiteTerms',
       'repairDone': 'https://setup.icloud.com/setup/ws/1/repairDone',
-      'accountAuthorizeUI':
-        'https://idmsa.apple.com/appleauth/auth/authorize/signin?client_id=d39ba9916b7251055b22c7f910e2ea796ee65e98b2ddecea8f5dde8d9d1a815d',
+      'accountAuthenticateUI':
+        'https://idmsa.apple.com/appleauth/auth/authenticate/signin?client_id=d39ba9916b7251055b22c7f910e2ea796ee65e98b2ddecea8f5dde8d9d1a815d',
       'vettingUrlForEmail': 'https://id.apple.com/IDMSEmailVetting/vetShareEmail',
       'accountCreate': 'https://setup.icloud.com/setup/ws/1/createLiteAccount',
       'getICloudTerms': 'https://setup.icloud.com/setup/ws/1/getTerms',
@@ -154,7 +154,7 @@ export const validAccountdata: AccountData = {
   },
 }
 
-export const authorizedState: AuthorizedState = {
+export const authenticatedState: AuthenticatedState = {
   session: validSession,
   accountData: validAccountdata,
 }

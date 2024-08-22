@@ -7,8 +7,8 @@ import { headers } from '../../icloud-core/session/session-http-headers'
 import { sessionLens } from '../../icloud-core/session/session-type'
 import { logger } from '../../logging/logging'
 import { err } from '../../util/errors'
-import { applyAuthorizationResponse } from './authorization-session'
-import { authorizationHeaders, getTrustToken } from './headers'
+import { applyAuthenticationResponse } from './authentication-session'
+import { authenticationHeaders, getTrustToken } from './headers'
 
 export interface TrustResponse204 {
   trustToken: string
@@ -21,7 +21,7 @@ export const requestTrustDevice = <S extends AR.BaseState>(): AR.ApiRequest<Trus
     AR.buildRequest<S>(() => ({
       method: 'GET',
       url: 'https://idmsa.apple.com/appleauth/auth/2sv/trust',
-      options: { addClientInfo: false, headers: [headers.default, authorizationHeaders] },
+      options: { addClientInfo: false, headers: [headers.default, authenticationHeaders] },
     })),
     AR.handleResponse(flow(
       AR.validateHttpResponse({ validStatuses: [200, 204] }),
@@ -31,7 +31,7 @@ export const requestTrustDevice = <S extends AR.BaseState>(): AR.ApiRequest<Trus
       ),
       AR.applyToSession(({ httpResponse, trustToken }) =>
         flow(
-          applyAuthorizationResponse(httpResponse),
+          applyAuthenticationResponse(httpResponse),
           applyCookiesToSession(httpResponse),
           sessionLens.trustToken.set(O.some(trustToken)),
         )

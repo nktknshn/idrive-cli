@@ -5,15 +5,16 @@ import { err } from '../../util/errors'
 import { normalizePath } from '../../util/normalize-path'
 import { parseFilename } from '../../util/parse-filename'
 import { NEA } from '../../util/types'
-import { DriveApi, DriveLookup } from '..'
+import { DriveLookup } from '..'
+import { DepApiMethod, DriveApiMethods } from '../drive-api'
 import { MoveItemsResponse, RenameResponse } from '../drive-requests'
 import * as T from '../drive-types'
 import * as V from '../util/get-by-path-types'
 
 export type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'moveItems'>
-  & DriveApi.Dep<'renameItems'>
+  & DepApiMethod<'moveItems'>
+  & DepApiMethod<'renameItems'>
 
 /**
  * move a file or a directory
@@ -86,7 +87,7 @@ const caseMove = (
   src: T.NonRootDetails | T.DriveChildrenItemFile,
   dst: T.Details,
 ): DriveLookup.Action<Deps, MoveItemsResponse> => {
-  return DriveApi.moveItems<DriveLookup.LookupState>({
+  return DriveApiMethods.moveItems<DriveLookup.LookupState>({
     destinationDrivewsId: dst.drivewsid,
     items: [{ drivewsid: src.drivewsid, etag: src.etag }],
   })
@@ -96,7 +97,7 @@ const caseRename = (
   srcitem: T.NonRootDetails | T.DriveChildrenItemFile,
   name: string,
 ): DriveLookup.Action<Deps, RenameResponse> => {
-  return DriveApi.renameItems({
+  return DriveApiMethods.renameItems({
     items: [
       { drivewsid: srcitem.drivewsid, ...parseFilename(name), etag: srcitem.etag },
     ],
@@ -109,14 +110,14 @@ const caseMoveAndRename = (
   name: string,
 ): DriveLookup.Action<Deps, RenameResponse> => {
   return pipe(
-    DriveApi.moveItems<DriveLookup.LookupState>(
+    DriveApiMethods.moveItems<DriveLookup.LookupState>(
       {
         destinationDrivewsId: dst.drivewsid,
         items: [{ drivewsid: src.drivewsid, etag: src.etag }],
       },
     ),
     SRTE.chainW(() =>
-      DriveApi.renameItems({
+      DriveApiMethods.renameItems({
         items: [
           { drivewsid: src.drivewsid, ...parseFilename(name), etag: src.etag },
         ],

@@ -2,23 +2,23 @@ import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import mime from 'mime-types'
-import { DepFs } from '../../../deps-types/dep-fs'
-import { AuthorizedState } from '../../../icloud-core/icloud-request'
-import { err } from '../../../util/errors'
-import { FsStats } from '../../../util/fs'
-import { Path } from '../../../util/path'
-import { apiMethod, DepApi } from '../deps'
+import { DepFs } from '../../deps-types/dep-fs'
+import { AuthenticatedState } from '../../icloud-core/icloud-request'
+import { err } from '../../util/errors'
+import { FsStats } from '../../util/fs'
+import { Path } from '../../util/path'
+import { apiMethod, PickDriveApiWrappedMethod } from '.'
 
 type UploadMethodDeps =
-  & DepApi<'upload'>
-  & DepApi<'singleFileUpload'>
-  & DepApi<'updateDocuments'>
+  & PickDriveApiWrappedMethod<'upload'>
+  & PickDriveApiWrappedMethod<'singleFileUpload'>
+  & PickDriveApiWrappedMethod<'updateDocuments'>
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 
 export const upload = flow(
   apiMethod((deps: UploadMethodDeps) =>
-    <S extends AuthorizedState>(
+    <S extends AuthenticatedState>(
       { sourceFilePath, docwsid, fname, zone }: {
         zone: string
         sourceFilePath: string

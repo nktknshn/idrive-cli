@@ -7,10 +7,11 @@ import * as O from 'fp-ts/Option'
 import { loggerIO } from '../../../logging/loggerIO'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
-import { sequenceArrayE, sequenceArrayO } from '../../../util/util'
-import { C, DriveApi, DriveLookup, T } from '../..'
+import { sequenceArrayO } from '../../../util/util'
+import { C, DriveLookup, T } from '../..'
+import { DriveApiMethods } from '../../drive-api'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
-import { chain, Effect, LookupState, of } from '..'
+import { Effect, LookupState } from '..'
 import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
@@ -37,7 +38,7 @@ export const retrieveItemDetailsInFoldersCached = (
         missed,
         A.matchW(
           () => DriveLookup.of({ missed: [], found: [] }),
-          (missed) => DriveApi.retrieveItemDetailsInFoldersSeparated<LookupState>(missed),
+          (missed) => DriveApiMethods.retrieveItemDetailsInFoldersSeparated<LookupState>(missed),
         ),
       )
     ),

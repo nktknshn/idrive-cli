@@ -2,12 +2,13 @@ import * as A from 'fp-ts/lib/Array'
 import { constant, pipe } from 'fp-ts/lib/function'
 import { isSome } from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { fst, mapSnd } from 'fp-ts/lib/ReadonlyTuple'
+import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { DepFs } from '../../../deps-types'
-import { DriveApi, DriveLookup, T } from '../../../icloud-drive'
+import { DriveLookup, T } from '../../../icloud-drive'
 
+import { DepApiMethod, DriveApiMethods } from '../../../icloud-drive/drive-api'
 import { findInParentFilename } from '../../../icloud-drive/util/drive-helpers'
 import * as V from '../../../icloud-drive/util/get-by-path-types'
 import { loggerIO } from '../../../logging/loggerIO'
@@ -36,10 +37,10 @@ type Argv = {
 
 export type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'renameItems'>
-  & DriveApi.Dep<'createFolders'>
-  & DriveApi.Dep<'downloadBatch'>
-  & DriveApi.Dep<'upload'>
+  & DepApiMethod<'renameItems'>
+  & DepApiMethod<'createFolders'>
+  & DepApiMethod<'downloadBatch'>
+  & DepApiMethod<'upload'>
   & DepFs<'fstat' | 'opendir'>
 
 export const uploadFolder = (
@@ -124,7 +125,7 @@ const uploadToNewFolder = (
       printerIO.print(`creating folder ${remotepath}`),
       SRTE.fromIO,
       SRTE.chain(() =>
-        DriveApi.createFoldersStrict<DriveLookup.LookupState>({
+        DriveApiMethods.createFoldersStrict<DriveLookup.LookupState>({
           names: [dirname],
           destinationDrivewsId: dstitem.drivewsid,
         })

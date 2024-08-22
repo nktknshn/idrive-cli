@@ -5,13 +5,14 @@ import * as TE from 'fp-ts/TaskEither'
 import { DepAskConfirmation } from '../../deps-types'
 import { guardProp } from '../../util/guards'
 import { NEA } from '../../util/types'
-import { DriveApi, DriveLookup } from '..'
+import { DriveLookup } from '..'
+import { DepApiMethod, DriveApiMethods } from '../drive-api'
 import { MoveItemToTrashResponse } from '../drive-requests'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../drive-types'
 
 export type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'moveItemsToTrash'>
+  & DepApiMethod<'moveItemsToTrash'>
   & DepAskConfirmation
 
 type Result = MoveItemToTrashResponse
@@ -47,7 +48,7 @@ const _rm = (
 ): DriveLookup.Action<Deps, Result> => {
   const effect = () =>
     pipe(
-      DriveApi.moveItemsToTrash<DriveLookup.LookupState>({
+      DriveApiMethods.moveItemsToTrash<DriveLookup.LookupState>({
         items: items.map(a => a.item),
         trash,
       }),

@@ -3,9 +3,12 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
 import { DepFs } from '../../deps-types'
-import { authorizeState, DepAuthorizeSession } from '../../deps-types/dep-authorize-session'
-import { type AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authorization'
-import { AuthorizedState, BaseState } from '../../icloud-core/icloud-request'
+import {
+  AuthenticateSession as DepAuthenticateSession,
+  authenticateState,
+} from '../../deps-types/dep-authenticate-session'
+import { type AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authentication'
+import { AuthenticatedState, BaseState } from '../../icloud-core/icloud-request'
 import { readSessionFile, saveSession as _saveSession } from '../../icloud-core/session/session-file'
 import { C, DriveLookup } from '../../icloud-drive'
 import { debugTimeRTE } from '../../logging/debug-time'
@@ -17,7 +20,7 @@ import { ReadJsonFileError } from '../../util/files'
 type Deps =
   & { sessionFile: string }
   & { cacheFile: string; noCache: boolean }
-  & DepAuthorizeSession
+  & DepAuthenticateSession
   & DepFs<'writeFile'>
   & DepFs<'readFile'>
 
@@ -71,9 +74,9 @@ export const loadSession = pipe(
 const loadAccountData = (
   { session }: BaseState,
 ): RTE.ReaderTaskEither<
-  DepAuthorizeSession & { sessionFile: string } & DepFs<'readFile'>,
+  DepAuthenticateSession & { sessionFile: string } & DepFs<'readFile'>,
   Error,
-  AuthorizedState
+  AuthenticatedState
 > =>
   pipe(
     RTE.asksReaderTaskEitherW(
@@ -84,7 +87,7 @@ const loadAccountData = (
       pipe(
         loggerIO.error(`couldn't read account data from file. (${e}). Fetching from the icloud server`),
         RTE.fromIO,
-        RTE.chain(() => authorizeState({ session })),
+        RTE.chain(() => authenticateState({ session })),
       )
     ),
   )

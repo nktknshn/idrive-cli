@@ -8,7 +8,8 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DepAskConfirmation } from '../../../../deps-types/dep-ask-confirmation'
 import { DepFs } from '../../../../deps-types/dep-fs'
-import { DriveApi, DriveLookup } from '../../../../icloud-drive'
+import { DriveLookup } from '../../../../icloud-drive'
+import { DepApiMethod, DriveApiMethods } from '../../../../icloud-drive/drive-api'
 import * as T from '../../../../icloud-drive/drive-types'
 import { findInParentFilename, getDrivewsid } from '../../../../icloud-drive/util/drive-helpers'
 import * as V from '../../../../icloud-drive/util/get-by-path-types'
@@ -19,10 +20,10 @@ import { AskingFunc } from '../upload'
 
 export type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'renameItems'>
-  & DriveApi.Dep<'moveItemsToTrash'>
-  & DriveApi.Dep<'moveItems'>
-  & DriveApi.Dep<'upload'>
+  & DepApiMethod<'renameItems'>
+  & DepApiMethod<'moveItemsToTrash'>
+  & DepApiMethod<'moveItems'>
+  & DepApiMethod<'upload'>
   & DepFs<'fstat'>
   & DepAskConfirmation
 
@@ -118,7 +119,7 @@ const handleSingleFileUpload = (
 
     if (T.isFolderLike(dstitem)) {
       return pipe(
-        DriveApi.upload<DriveLookup.LookupState>({
+        DriveApiMethods.upload<DriveLookup.LookupState>({
           sourceFilePath: src,
           docwsid: dstitem.docwsid,
           fname,
@@ -173,7 +174,7 @@ const uploadFileToFolder = (
   }
 
   return pipe(
-    DriveApi.upload<DriveLookup.LookupState>({
+    DriveApiMethods.upload<DriveLookup.LookupState>({
       sourceFilePath: src,
       docwsid: dstDetails.docwsid,
       zone: dstDetails.zone,
@@ -193,18 +194,22 @@ const uploadOverwrighting = (
   // const dstitem = V.target(dst)
   // const parent = NA.last(dst.path.details)
   return pipe(
-    DriveApi.upload<DriveLookup.LookupState>({ sourceFilePath: src, docwsid: parent.docwsid, zone: dstitem.zone }),
+    DriveApiMethods.upload<DriveLookup.LookupState>({
+      sourceFilePath: src,
+      docwsid: parent.docwsid,
+      zone: dstitem.zone,
+    }),
     logging(loggerIO.debug(`uploading`)),
     SRTE.bindTo('uploadResult'),
     SRTE.bindW('removeResult', () =>
       pipe(
-        DriveApi.moveItemsToTrash<DriveLookup.LookupState>({ items: [dstitem], trash: !skipTrash }),
+        DriveApiMethods.moveItemsToTrash<DriveLookup.LookupState>({ items: [dstitem], trash: !skipTrash }),
         logging(loggerIO.debug(`moving previous file to trash`)),
       )),
     SRTE.chainW(({ uploadResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
       return pipe(
-        DriveApi.renameItems<DriveLookup.LookupState>({
+        DriveApiMethods.renameItems<DriveLookup.LookupState>({
           items: [{
             drivewsid,
             etag: uploadResult.etag,

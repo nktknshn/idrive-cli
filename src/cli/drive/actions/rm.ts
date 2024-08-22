@@ -4,14 +4,15 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepAskConfirmation } from '../../../deps-types/dep-ask-confirmation'
-import { DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveLookup } from '../../../icloud-drive'
+import { DepApiMethod, DriveApiMethods } from '../../../icloud-drive/drive-api'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../../../icloud-drive/drive-types'
 import { guardProp } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 
 type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'moveItemsToTrash'>
+  & DepApiMethod<'moveItemsToTrash'>
   & DepAskConfirmation
 
 export const rm = (
@@ -47,7 +48,7 @@ const _rm = (
 ) => {
   const effect = () =>
     pipe(
-      DriveApi.moveItemsToTrash<DriveLookup.LookupState>({
+      DriveApiMethods.moveItemsToTrash<DriveLookup.LookupState>({
         items: items.map(a => a.item),
         trash,
       }),

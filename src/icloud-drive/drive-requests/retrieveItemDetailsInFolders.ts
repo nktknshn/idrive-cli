@@ -4,7 +4,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
-import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
 import { HttpRequest } from '../../util/http/fetch-client'
 import * as iot from '../../util/io-nonEmptyArrays'
@@ -35,7 +35,7 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsW
 )
 
 // eslint-disable-next-line id-length
-export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedState>(
+export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthenticatedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ): AR.ApiRequest<HttpRequest, S, AR.RequestDeps> => {
   return pipe(
@@ -47,7 +47,7 @@ export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthorizedS
   )
 }
 
-export function retrieveItemDetailsInFolders<S extends AuthorizedState>(
+export function retrieveItemDetailsInFolders<S extends AuthenticatedState>(
   { drivewsids }: { drivewsids: string[] },
 ): AR.ApiRequest<NEA<(Details | InvalidId)>, S> {
   return pipe(

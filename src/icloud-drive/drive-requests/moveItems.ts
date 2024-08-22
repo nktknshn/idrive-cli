@@ -13,7 +13,7 @@ const moveItemResponse = t.type({
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
-export const moveItems = <S extends AR.AuthorizedState>({ items, destinationDrivewsId }: {
+export const moveItems = <S extends AR.AuthenticatedState>({ items, destinationDrivewsId }: {
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
 }): AR.ApiRequest<MoveItemsResponse, S, AR.RequestDeps> =>

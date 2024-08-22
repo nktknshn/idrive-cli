@@ -2,9 +2,10 @@ import micromatch from 'micromatch'
 import { DepAskConfirmation } from '../../../deps-types/dep-ask-confirmation'
 import { DepFetchClient } from '../../../deps-types/dep-fetchclient'
 import { DepFs } from '../../../deps-types/dep-fs'
-import { DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveLookup } from '../../../icloud-drive'
 import { downloadShallow } from '../../../icloud-drive/actions/download/downloadShallow'
 import { downloadRecursive } from '../../../icloud-drive/drive-action'
+import { DepApiMethod } from '../../../icloud-drive/drive-api'
 import { SRA } from '../../../util/types'
 
 type Argv = {
@@ -21,7 +22,7 @@ type Argv = {
 
 type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'downloadBatch'>
+  & DepApiMethod<'downloadBatch'>
   & DepFetchClient
   & DepAskConfirmation
   & DepFs<

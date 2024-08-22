@@ -8,8 +8,8 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import micromatch from 'micromatch'
-import { DriveApi, DriveLookup } from '../../../../icloud-drive'
-import { DepApi } from '../../../../icloud-drive/drive-api/deps'
+import { DriveLookup } from '../../../../icloud-drive'
+import { DepApiMethod, DriveApiMethods } from '../../../../icloud-drive/drive-api'
 import { parseDrivewsid } from '../../../../icloud-drive/util/drive-helpers'
 import { printerIO } from '../../../../logging/printerIO'
 import { err } from '../../../../util/errors'
@@ -89,14 +89,14 @@ export const uploadChunkPar = (
         local: { path: string; stats: FsStats },
       ]
     >,
-  ): SRA<DriveLookup.LookupState, DriveApi.Dep<'upload'>, NEA<UploadResult>> =>
+  ): SRA<DriveLookup.LookupState, DepApiMethod<'upload'>, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, local]) => {
           const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
           return pipe(
-            DriveApi.upload<DriveLookup.LookupState>({
+            DriveApiMethods.upload<DriveLookup.LookupState>({
               sourceFilePath: local.path,
               docwsid: d.docwsid,
               zone: d.zone,
@@ -126,7 +126,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): SRA<DriveLookup.LookupState, DriveApi.Dep<'createFolders'>, Record<string, string>> => {
+): SRA<DriveLookup.LookupState, DepApiMethod<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {
@@ -146,7 +146,7 @@ export const createRemoteDirStructure = (
               R.lookup(parent)(acc),
               SRTE.fromOption(() => err(`pathToDrivewsid missing ${parent}`)),
               SRTE.chain(destinationDrivewsId =>
-                DriveApi.createFoldersStrict<DriveLookup.LookupState>({
+                DriveApiMethods.createFoldersStrict<DriveLookup.LookupState>({
                   destinationDrivewsId,
                   names: subdirs,
                 })

@@ -18,7 +18,7 @@ const createFolderResponse = t.type({
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CreateFoldersResponse extends t.TypeOf<typeof createFolderResponse> {}
 
-export function createFolders<S extends AR.AuthorizedState>(
+export function createFolders<S extends AR.AuthenticatedState>(
   { names, destinationDrivewsId }: {
     destinationDrivewsId: string
     names: string[]

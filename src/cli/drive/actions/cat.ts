@@ -4,7 +4,9 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DepFetchClient } from '../../../deps-types/dep-fetchclient'
-import { DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveLookup } from '../../../icloud-drive'
+import { DepApiMethod } from '../../../icloud-drive/drive-api'
+import { getICloudItemUrl } from '../../../icloud-drive/drive-api/extra'
 import { isFile } from '../../../icloud-drive/drive-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
@@ -13,7 +15,7 @@ import { consumeStreamToString } from '../../../util/util'
 
 type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'download'>
+  & DepApiMethod<'download'>
   & DepFetchClient
 
 export const cat = (
@@ -29,7 +31,7 @@ export const cat = (
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.chainW(({ item }) => DriveApi.getICloudItemUrl(item)),
+    SRTE.chainW(({ item }) => getICloudItemUrl(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
     SRTE.chainW((url) =>
       SRTE.fromReaderTaskEither(

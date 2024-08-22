@@ -1,6 +1,6 @@
 import { constVoid } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import * as Auth from '../../icloud-authorization'
+import * as Auth from '../../icloud-authentication'
 import { BaseState } from '../../icloud-core/icloud-request'
 import { saveSession as _saveSession } from '../../icloud-core/session/session-file'
 import { C } from '..'

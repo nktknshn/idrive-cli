@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { AuthorizedState } from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { readWebauthToken } from '../../icloud-core/session/session-cookies'
 import { HttpRequest, uploadFileRequest } from '../../util/http/fetch-client'
@@ -81,7 +81,7 @@ const updateDocumentsRequest = t.type({
   }),
 })
 
-export const upload = <S extends AuthorizedState>(
+export const upload = <S extends AuthenticatedState>(
   { zone, contentType, filename, size, type }: {
     zone: string
     contentType: string
@@ -101,7 +101,7 @@ export const upload = <S extends AuthorizedState>(
     uploadResponse.decode,
   )
 
-export const singleFileUpload = <S extends AuthorizedState>(
+export const singleFileUpload = <S extends AuthenticatedState>(
   { buffer, url, filename }: { buffer: Buffer; url: string; filename: string },
 ): AR.ApiRequest<SingleFileResponse, S, AR.RequestDeps> => {
   // const filename = Path.parse(filePath).base
@@ -122,7 +122,7 @@ export const singleFileUpload = <S extends AuthorizedState>(
   )
 }
 
-export const updateDocuments = <S extends AuthorizedState>(
+export const updateDocuments = <S extends AuthenticatedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
 ): AR.ApiRequest<UpdateDocumentsResponse, S> =>
   AR.basicJsonRequest(

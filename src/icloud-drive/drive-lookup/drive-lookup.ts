@@ -1,8 +1,8 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { AuthorizedState } from '../../icloud-core/icloud-request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
-import { DriveApi } from '..'
+import { DepApiMethod } from '../drive-api'
 import * as C from './cache'
 export * from './methods/cache-methods'
 export { getFoldersTrees } from './methods/drive-get-folders-trees'
@@ -16,17 +16,17 @@ export { searchInPaths } from './methods/drive-search'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 
-export type Deps = DriveApi.Dep<'retrieveItemDetailsInFolders'>
+export type Deps = DepApiMethod<'retrieveItemDetailsInFolders'>
 
 export type TempLookupCacheState = {
   tempCache: O.Option<C.LookupCache>
 }
 
-/** Lookup state is lookup cache and authorized state */
+/** Lookup state is lookup cache and authenticated state */
 export type LookupState =
   & { cache: C.LookupCache }
   & TempLookupCacheState
-  & AuthorizedState
+  & AuthenticatedState
 
 export type Effect<A, R = Deps> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>
 export type Action<R, A> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>

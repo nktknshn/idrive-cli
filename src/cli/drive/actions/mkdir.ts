@@ -1,7 +1,9 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DriveApi, DriveLookup } from '../../../icloud-drive'
+import { DriveLookup } from '../../../icloud-drive'
+import { DepApiMethod } from '../../../icloud-drive/drive-api'
+import { createFoldersStrict } from '../../../icloud-drive/drive-api/extra'
 import { loggerIO } from '../../../logging/loggerIO'
 import { logger } from '../../../logging/logging'
 import { normalizePath } from '../../../util/normalize-path'
@@ -11,7 +13,7 @@ import { showDetailsInfo } from './ls/ls-printing'
 
 type Deps =
   & DriveLookup.Deps
-  & DriveApi.Dep<'createFoldersStrict'>
+  & DepApiMethod<'createFoldersStrict'>
 
 export const mkdir = (
   { path }: { path: string },
@@ -30,7 +32,7 @@ export const mkdir = (
     SRTE.bindW('result', ({ parent }) =>
       pipe(
         // try to create folder returning new folders shallow details
-        DriveApi.createFoldersStrict<DriveLookup.LookupState>({
+        createFoldersStrict<DriveLookup.LookupState>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),

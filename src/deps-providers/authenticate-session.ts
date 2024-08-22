@@ -1,6 +1,6 @@
 import { flow } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { authorizeSession as authorizeSession_ } from '../icloud-authorization'
+import { authenticateSession as authenticateSession_ } from '../icloud-authentication'
 import { BaseState } from '../icloud-core/icloud-request'
 import { CatchFetchDeps, catchFetchErrorsSRTE } from '../icloud-core/icloud-request/catch-fetch-error'
 import { SRTEWrapper, wrapSRTE } from '../util/srte-wrapper'
@@ -17,6 +17,6 @@ const catchFetchWrapper: SRTEWrapper<
     SRTE.local(() => deps),
   )
 
-export const wrappedAuthorizeSession = wrapSRTE(
+export const wrappedAuthenticateSession = wrapSRTE(
   catchFetchWrapper,
-)(authorizeSession_)
+)(authenticateSession_)
