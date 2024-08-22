@@ -1,43 +1,43 @@
 import { AuthorizeDeps } from '../icloud-authorization'
 import { RequestDeps } from '../icloud-core/icloud-request'
-import { CatchFetchEnv } from '../icloud-core/icloud-request/catch-fetch-error'
-import { CatchSessEnv } from '../icloud-core/icloud-request/catch-invalid-global-session'
+import { CatchFetchDeps } from '../icloud-core/icloud-request/catch-fetch-error'
+import { CatchSessDeps } from '../icloud-core/icloud-request/catch-invalid-global-session'
 import { createDriveApiEnv } from '../icloud-drive/drive-api-env'
-import { authorizeSession as authorizeSession_ } from './authorize-session'
+import { wrappedAuthorizeSession } from './authorize-session'
 import { fetchClient, FetchError } from './fetchclient'
 import { getCode } from './get-code'
 export { askConfirmation } from './ask-confirmation'
 export { fs } from './fs'
 export { fetchClient }
 
-const requestEnv: RequestDeps = { fetchClient }
+const requestDeps: RequestDeps = { fetchClient }
 
-const catchFetchEnv: CatchFetchEnv = {
+const catchFetchDeps: CatchFetchDeps = {
   catchFetchErrorsRetries: 3,
   catchFetchErrors: true,
   catchFetchErrorsRetryDelay: 200,
   isFetchError: FetchError.is,
 }
 
-const authorizeEnv: AuthorizeDeps = {
+const authorizeDeps: AuthorizeDeps = {
   getCode,
-  ...requestEnv,
+  ...requestDeps,
 }
 
-export const authorizeSession = authorizeSession_({
-  ...catchFetchEnv,
-  ...authorizeEnv,
+export const authorizeSession = wrappedAuthorizeSession({
+  ...catchFetchDeps,
+  ...authorizeDeps,
 })
 
-const catchSessEnv: CatchSessEnv = {
+const catchSessDeps: CatchSessDeps = {
   catchSessErrors: true,
   authorizeSession,
 }
 
-const apiEnv = {
-  ...requestEnv,
-  ...catchFetchEnv,
-  ...catchSessEnv,
+const apiDeps = {
+  ...requestDeps,
+  ...catchFetchDeps,
+  ...catchSessDeps,
 }
 
-export const api = createDriveApiEnv(apiEnv)
+export const api = createDriveApiEnv(apiDeps)

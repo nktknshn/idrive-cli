@@ -6,11 +6,11 @@ import { InvalidGlobalSessionError } from '../../util/errors'
 import { EmptyObject } from '../../util/types'
 import { AuthorizedState } from './lib/request'
 
-export type CatchSessEnv = { catchSessErrors: boolean } & DepAuthorizeSession
+export type CatchSessDeps = { catchSessErrors: boolean } & DepAuthorizeSession
 
 /** Catches `InvalidGlobalSessionError` and tries to reauthorize the session */
 export const catchSessErrorsSRTE = (
-  deps: CatchSessEnv,
+  deps: CatchSessDeps,
 ) =>
   <S extends AuthorizedState, R extends EmptyObject, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,

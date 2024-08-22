@@ -1,9 +1,9 @@
 import * as defaults from '../../defaults'
 import * as deps from '../../deps-providers'
 import { DepAskConfirmation } from '../../deps-types/dep-ask-confirmation'
-import { ActionsDeps } from '.'
+import { CommandsDeps } from '.'
 
-// Creates a new ActionsDeps object from the given arguments.
+/** Create dependencies for the actions from the CLI arguments */
 export const createCliActionsDeps = (argv: {
   sessionFile?: string
   cacheFile?: string
@@ -11,7 +11,7 @@ export const createCliActionsDeps = (argv: {
   tempdir?: string
   fileEditor?: string
   askConfirmation?: DepAskConfirmation['askConfirmation']
-}): ActionsDeps => ({
+}): CommandsDeps => ({
   api: deps.api,
   fs: deps.fs,
   authorizeSession: deps.authorizeSession,

@@ -1,8 +1,8 @@
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as w from 'yargs-command-wrapper'
+import { driveAction } from './action'
 import * as Action from './actions'
-import { Args, cmd } from './args'
-import { driveAction } from './cli-drive-action'
+import { CliCommands, cmd } from './args'
 
 const handler = w.createHandlerFor(cmd, {
   ls: driveAction(Action.listUnixPath),
@@ -20,10 +20,10 @@ const handler = w.createHandlerFor(cmd, {
   auth: Action.authSession,
 })
 
-export const runCliAction = (action: Args): RTE.ReaderTaskEither<ActionsDeps, Error, unknown> => {
-  return handler.handle(action)
+export const runCliCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, unknown> => {
+  return handler.handle(command)
 }
 
-/** Aggregate all dependencies of all actions into  */
-export type ActionsDeps = ReturnType<typeof handler.handle> extends RTE.ReaderTaskEither<infer R, infer A, infer B> ? R
+/** Aggregate all dependencies of all commands into a single record */
+export type CommandsDeps = ReturnType<typeof handler.handle> extends RTE.ReaderTaskEither<infer R, unknown, unknown> ? R
   : never

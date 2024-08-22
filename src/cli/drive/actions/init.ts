@@ -7,7 +7,7 @@ import { ICloudSession, session } from '../../../icloud-core/session/session-typ
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 import { prompts } from '../../../util/prompts'
-import { saveAccountData, saveSession } from '../cli-drive-action'
+import { saveAccountData, saveSession } from '../action'
 
 type Argv = { skipLogin: boolean }
 

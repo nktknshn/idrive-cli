@@ -3,9 +3,9 @@ import { flow } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as R from 'fp-ts/Reader'
 import { AuthorizedState, RequestDeps } from '../../icloud-core/icloud-request'
-import { CatchFetchEnv, catchFetchErrorsSRTE } from '../../icloud-core/icloud-request/catch-fetch-error'
-import { CatchSessEnv, catchSessErrorsSRTE } from '../../icloud-core/icloud-request/catch-invalid-global-session'
-import { ReqWrapper, wrapRequests } from '../../icloud-core/icloud-request/lib/request-wrapper'
+import { CatchFetchDeps, catchFetchErrorsSRTE } from '../../icloud-core/icloud-request/catch-fetch-error'
+import { CatchSessDeps, catchSessErrorsSRTE } from '../../icloud-core/icloud-request/catch-invalid-global-session'
+import { SRTEWrapper, wrapSRTERecord } from '../../icloud-core/icloud-request/lib/srte-wrapper'
 import { InvalidResponseStatusError } from '../../util/errors'
 import { EmptyObject } from '../../util/types'
 import { RQ } from '..'
@@ -13,8 +13,8 @@ import { DriveApiEnv } from './dep-drive-api-env'
 
 const seqs = sequenceS(R.Apply)
 
-const wrapAuthorizedReq: ReqWrapper<
-  CatchFetchEnv & CatchSessEnv,
+const wrapAuthorizedReq: SRTEWrapper<
+  CatchFetchDeps & CatchSessDeps,
   AuthorizedState,
   EmptyObject
 > = deps =>
@@ -26,8 +26,8 @@ const wrapAuthorizedReq: ReqWrapper<
     SRTE.local(() => deps),
   )
 
-const handle409: ReqWrapper<
-  CatchFetchEnv & CatchSessEnv,
+const handle409: SRTEWrapper<
+  CatchFetchDeps & CatchSessDeps,
   AuthorizedState,
   EmptyObject
 > = (deps) =>
@@ -44,11 +44,11 @@ const handle409: ReqWrapper<
   )
 
 export const createDriveApiEnv: R.Reader<
-  CatchFetchEnv & CatchSessEnv & RequestDeps,
+  CatchFetchDeps & CatchSessDeps & RequestDeps,
   DriveApiEnv
 > = seqs(
   {
-    ...wrapRequests(RQ)(wrapAuthorizedReq),
-    ...wrapRequests({ updateDocuments: RQ.updateDocuments })(handle409),
+    ...wrapSRTERecord(RQ)(wrapAuthorizedReq),
+    ...wrapSRTERecord({ updateDocuments: RQ.updateDocuments })(handle409),
   },
 )

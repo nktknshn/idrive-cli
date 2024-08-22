@@ -72,7 +72,7 @@ const upload = w.command(
         dry: { default: false, type: 'boolean' },
         // chunkSize: { default: 2, type: 'number', implies: ['recursive'] },
       })
-      .check((argv, options) => {
+      .check((argv) => {
         const uploadargs = argv.uploadargs
 
         if (Array.isArray(uploadargs) && uploadargs.length < 2) {
@@ -113,11 +113,7 @@ const uf = w.command(
 const init = w.command(
   'init',
   'init',
-  a =>
-    a.options({
-      skipLogin: { default: false, type: 'boolean' },
-      // auth: { default: false, type: 'boolean', description: 'auth existing' },
-    }),
+  a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
 )
 
 const auth = w.command(
@@ -165,4 +161,4 @@ export const cmd = w.composeCommands(
   recover,
 )
 
-export type Args = w.GetCommandArgs<typeof cmd>
+export type CliCommands = w.GetCommandArgs<typeof cmd>

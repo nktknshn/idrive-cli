@@ -1,17 +1,15 @@
 import { sequenceS } from 'fp-ts/lib/Apply'
 import * as E from 'fp-ts/lib/Either'
-import { constant, flow, pipe } from 'fp-ts/lib/function'
+import { constant, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
 import { type AccountData } from '../../../icloud-authorization/type-accountdata'
-import { apiLogger } from '../../../logging/logging'
 import {
   BadRequestError,
   err,
   InvalidGlobalSessionError,
-  InvalidJsonInResponse,
   InvalidResponseStatusError,
   MissingResponseBody,
 } from '../../../util/errors'
@@ -20,7 +18,7 @@ import { tryJsonFromResponse } from '../../../util/http/json'
 import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
 import { ICloudSession } from '../../session/session-type'
 
-/*
+/**
 Module for building and executing low level Api Request and decoding server response
 */
 

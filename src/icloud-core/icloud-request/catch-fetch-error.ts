@@ -1,11 +1,11 @@
-import { apply, constVoid, identity, pipe } from 'fp-ts/lib/function'
+import { constVoid, identity, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { loggerIO } from '../../logging/loggerIO'
 import { EmptyObject } from '../../util/types'
 
-export type CatchFetchEnv = {
+export type CatchFetchDeps = {
   catchFetchErrorsRetries: number
   catchFetchErrors: boolean
   catchFetchErrorsRetryDelay: number
@@ -14,7 +14,7 @@ export type CatchFetchEnv = {
 
 /** Catch fetch errors and retry */
 const catchFetchErrorsTE = (
-  { isFetchError, catchFetchErrorsRetries, catchFetchErrorsRetryDelay, catchFetchErrors }: CatchFetchEnv,
+  { isFetchError, catchFetchErrorsRetries, catchFetchErrorsRetryDelay, catchFetchErrors }: CatchFetchDeps,
 ) =>
   <A>(
     m: TE.TaskEither<Error, A>,
@@ -43,7 +43,7 @@ const catchFetchErrorsTE = (
   }
 
 export const catchFetchErrorsSRTE = (
-  env: CatchFetchEnv,
+  env: CatchFetchDeps,
 ) =>
   <S, R extends EmptyObject, A>(
     m: SRTE.StateReaderTaskEither<S, R, Error, A>,

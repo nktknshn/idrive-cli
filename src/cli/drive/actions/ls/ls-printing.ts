@@ -41,8 +41,6 @@ const formatDate = (date: Date | string) =>
 
 const showWithFullPath = (path: string) => flow(T.fileName, joinWithPath(path))
 
-const showRaw = (result: T.Details | T.DriveChildrenItem) => JSON.stringify(result)
-
 type Row = [string, string | number]
 
 type Element = Row | string | false | Element[]

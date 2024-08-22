@@ -1,9 +1,12 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { EmptyObject, XX, XXX } from '../../../util/types'
+import { EmptyObject, XXX } from '../../../util/types'
 
-/** Inject dependencies into a request */
-export const wrapRequest = <WR, WRS, RR>(wrapper: ReqWrapper<WR, WRS, RR>) =>
+/**
+ * * Wraps an SRTE with a wrapper, returning a function that takes a combination of their dependencies.
+ * The returned function takes those dependencies and returns an SRTE without dependencies (they are injected).
+ */
+export const wrapSRTE = <WR, WRS, RR>(wrapper: SRTEWrapper<WR, WRS, RR>) =>
   <Args extends unknown[], A, R extends EmptyObject>(
     req: <S extends WRS>(...args: Args) => SRTE.StateReaderTaskEither<S, R, Error, A>,
   ) =>
@@ -16,12 +19,12 @@ export const wrapRequest = <WR, WRS, RR>(wrapper: ReqWrapper<WR, WRS, RR>) =>
       }
 
 //
-export const wrapRequests = <
+export const wrapSRTERecord = <
   Rec extends Record<string, (...args: any[]) => SRTE.StateReaderTaskEither<any, any, any, any>>,
 >(
   reqs: Rec,
 ) =>
-  <WR, WRS, WRR>(wrapper: ReqWrapper<WR, WRS, WRR>): {
+  <WR, WRS, WRR>(wrapper: SRTEWrapper<WR, WRS, WRR>): {
     [K in keyof Rec]: Rec[K] extends
       (...args: infer Args) => SRTE.StateReaderTaskEither<infer _S, infer _R, infer E, infer A>
       ? (deps: _R & WR) => <S extends _S>(...args: Args) => XXX<S, WRR, A>
@@ -30,13 +33,14 @@ export const wrapRequests = <
     const r: any = {}
 
     for (const k of Object.keys(reqs)) {
-      r[k] = wrapRequest(wrapper)(reqs[k])
+      r[k] = wrapSRTE(wrapper)(reqs[k])
     }
 
     return r
   }
 
-export type ReqWrapper<WR, SS, RR = WR> = <R extends EmptyObject>(r: R & WR) => <A, S extends SS>(
+/** Wrapper is a function that wraps it's own deps `WR` */
+export type SRTEWrapper<WR, SS, RR = WR> = <R extends EmptyObject>(r: R & WR) => <A, S extends SS>(
   req: SRTE.StateReaderTaskEither<S, R, Error, A>,
 ) => SRTE.StateReaderTaskEither<
   S,
