@@ -6,11 +6,12 @@ import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { Readable } from 'stream'
+
 import { DepFetchClient, DepFs } from '../../../deps-types'
 import { DriveLookup } from '../../../icloud-drive'
+import { Types } from '../../../icloud-drive'
 import { DepApiMethod } from '../../../icloud-drive/drive-api'
 import { getICloudItemUrl } from '../../../icloud-drive/drive-api/extra'
-import { isFile } from '../../../icloud-drive/drive-types'
 import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
 import { normalizePath, Path } from '../../../util/path'
@@ -62,7 +63,7 @@ export const edit = (
   return pipe(
     DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPathsStrict(root, [npath])),
     SRTE.map(NA.head),
-    SRTE.filterOrElse(isFile, () => err(`You cannot edit a directory.`)),
+    SRTE.filterOrElse(Types.isFile, () => err(`You cannot edit a directory.`)),
     SRTE.chainW((item) => getICloudItemUrl(item)),
     SRTE.map(O.fromNullable),
     SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),

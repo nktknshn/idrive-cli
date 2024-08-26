@@ -1,11 +1,6 @@
 import micromatch from 'micromatch'
-import { DepAskConfirmation } from '../../../deps-types/dep-ask-confirmation'
-import { DepFetchClient } from '../../../deps-types/dep-fetch-client'
-import { DepFs } from '../../../deps-types/dep-fs'
 import { DriveLookup } from '../../../icloud-drive'
 import * as Actions from '../../../icloud-drive/drive-action'
-import { DepApiMethod } from '../../../icloud-drive/drive-api'
-import { SRA } from '../../../util/types'
 
 type Argv = {
   path: string
@@ -18,15 +13,6 @@ type Argv = {
   keepStructure: boolean
   chunkSize: number
 }
-
-type Deps =
-  & DriveLookup.Deps
-  & DepApiMethod<'downloadBatch'>
-  & DepFetchClient
-  & DepAskConfirmation
-  & DepFs<
-    'fstat' | 'opendir' | 'mkdir' | 'writeFile' | 'createWriteStream'
-  >
 
 /*
 Download a file or a folder content.
@@ -56,7 +42,7 @@ Use `dry` flag to only check what is going to be downloaded
 
 */
 
-export const download = (argv: Argv): SRA<DriveLookup.LookupState, Deps, string> => {
+export const download = (argv: Argv): DriveLookup.Lookup<string, Actions.DownloadRecursiveDeps> => {
   const scan = micromatch.scan(argv.path)
 
   if (scan.isGlob) {

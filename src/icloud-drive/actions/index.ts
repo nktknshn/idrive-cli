@@ -8,4 +8,5 @@ export { type Deps as DownloadDeps, downloadShallow } from './download/download-
 
 export { type Deps as DepsMkdir, mkdir } from './mkdir'
 export { type DepsMove, move } from './move'
+export { type Deps as DepsRecover, recover } from './recover'
 export { type DepsRm, rm } from './rm'
