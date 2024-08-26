@@ -7,7 +7,7 @@ import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
 import { sequenceArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
-import { chainState, get, map, Monad, of, TempLookupCacheState } from '../drive-lookup'
+import { chainState, get, Lookup, map, of, TempLookupCacheState } from '../drive-lookup'
 import { putCache, usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
@@ -38,7 +38,7 @@ const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
  * execute effect with empty temp cache
  * afterwise add resulting temp cache to the main cache
  */
-export const usingTempCache = <A>(ma: Monad<A>): Monad<A> =>
+export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
   chainState((prevstate) =>
     pipe(
       prevstate.tempCache,
@@ -78,13 +78,13 @@ export const usingTempCache = <A>(ma: Monad<A>): Monad<A> =>
  */
 export function retrieveItemDetailsInFoldersTempCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
-): Monad<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
+): Lookup<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
 export function retrieveItemDetailsInFoldersTempCached(
   drivewsids: NEA<string>,
-): Monad<NEA<O.Option<Types.Details>>>
+): Lookup<NEA<O.Option<Types.Details>>>
 export function retrieveItemDetailsInFoldersTempCached(
   drivewsids: NEA<string>,
-): Monad<NEA<O.Option<Types.Details>>> {
+): Lookup<NEA<O.Option<Types.Details>>> {
   return chainState(prevstate =>
     pipe(
       loggerIO.debug(
@@ -120,10 +120,10 @@ export function retrieveItemDetailsInFoldersTempCached(
 // eslint-disable-next-line id-length
 export function retrieveItemDetailsInFoldersTempCachedStrict(
   drivewsids: NEA<string>,
-): Monad<NEA<Types.NonRootDetails>>
+): Lookup<NEA<Types.NonRootDetails>>
 export function retrieveItemDetailsInFoldersTempCachedStrict(
   drivewsids: NEA<string>,
-): Monad<NEA<Types.Details>> {
+): Lookup<NEA<Types.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersTempCached(drivewsids),
     SRTE.chain(res =>

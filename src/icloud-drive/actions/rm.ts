@@ -10,7 +10,7 @@ import { DepApiMethod, DriveApiMethods } from '../drive-api'
 import { MoveItemToTrashResponse } from '../drive-requests'
 import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../drive-types'
 
-export type Deps =
+export type DepsRm =
   & DriveLookup.Deps
   & DepApiMethod<'moveItemsToTrash'>
   & DepAskConfirmation
@@ -24,7 +24,7 @@ export const rm = (
     recursive: boolean
     force: boolean
   },
-): DriveLookup.Monad<Result, Deps> => {
+): DriveLookup.Lookup<Result, DepsRm> => {
   return pipe(
     DriveLookup.searchGlobs(globs, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
@@ -45,7 +45,7 @@ const _rm = (
     force: boolean
     items: NEA<{ path: string; item: NonRootDetails | DriveChildrenItemFile }>
   },
-): DriveLookup.Monad<Result, Deps> => {
+): DriveLookup.Lookup<Result, DepsRm> => {
   const effect = () =>
     pipe(
       DriveApiMethods.moveItemsToTrash<DriveLookup.LookupState>({
@@ -64,7 +64,7 @@ const _rm = (
     )
 
   return pipe(
-    SRTE.ask<DriveLookup.LookupState, Deps>(),
+    SRTE.ask<DriveLookup.LookupState, DepsRm>(),
     SRTE.chainTaskEitherK(deps =>
       force
         ? TE.of(true)

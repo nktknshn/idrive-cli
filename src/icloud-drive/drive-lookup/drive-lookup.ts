@@ -28,7 +28,7 @@ export type LookupState =
   & TempLookupCacheState
   & AuthenticatedState
 
-export type Monad<A, R = Deps> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>
+export type Lookup<A, R = Deps> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>
 
 export const { map, chain: chain_, filterOrElse } = SRTE
 
@@ -44,6 +44,6 @@ export const chainState = <A>(
   f: (s: LookupState) => SRTE.StateReaderTaskEither<LookupState, Deps, Error, A>,
 ): SRTE.StateReaderTaskEither<LookupState, Deps, Error, A> => SRTE.chain(f)(get())
 
-export const errString = <A>(s: string): Monad<A> => SRTE.left(err(s))
+export const errString = <A>(s: string): Lookup<A> => SRTE.left(err(s))
 
-export const chain = chain_ as (<A, B>(f: (a: A) => Monad<B>) => (ma: Monad<A>) => Monad<B>)
+export const chain = chain_ as (<A, B>(f: (a: A) => Lookup<B>) => (ma: Lookup<A>) => Lookup<B>)

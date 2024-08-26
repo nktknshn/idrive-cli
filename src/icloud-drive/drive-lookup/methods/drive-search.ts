@@ -17,7 +17,7 @@ export const searchInPaths = (
   paths: NEA<NormalizedPath>,
   query: (item: FlattenTreeItemP<T.DetailsDocwsRoot>) => boolean,
   depth = Infinity,
-): DriveLookup.Monad<
+): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchInPathFoundItem<T.DetailsDocwsRoot>[]>
 > => {
   return pipe(

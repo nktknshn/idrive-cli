@@ -108,7 +108,7 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
     conflictsSolver,
     downloadFiles,
   }: DownloadFolderOpts<TSolverDeps, TDownloadDeps>,
-): DriveLookup.Monad<string, Deps & TSolverDeps & TDownloadDeps> => {
+): DriveLookup.Lookup<string, Deps & TSolverDeps & TDownloadDeps> => {
   const verbose = dry
 
   printerIO.print(

@@ -15,19 +15,19 @@ import { equalsDrivewsId } from '../../util/drive-helpers'
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
   depth: number,
-): DriveLookup.Monad<NEA<DriveFolderTree<T.NonRootDetails>>>
+): DriveLookup.Lookup<NEA<DriveFolderTree<T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DriveLookup.Monad<NEA<DriveFolderTree<R | T.NonRootDetails>>>
+): DriveLookup.Lookup<NEA<DriveFolderTree<R | T.NonRootDetails>>>
 export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   folders: NEA<R | T.NonRootDetails>,
   depth: number,
-): DriveLookup.Monad<NEA<DriveFolderTree<R>>> {
+): DriveLookup.Lookup<NEA<DriveFolderTree<R>>> {
   const go = <R extends T.Root | T.NonRootDetails>(
     folders: NEA<R | T.NonRootDetails>,
     depth: number,
-  ): DriveLookup.Monad<NEA<DriveFolderTree<R>>> => {
+  ): DriveLookup.Lookup<NEA<DriveFolderTree<R>>> => {
     const subfolders = getSubfolders(folders)
     const doGoDeeper = depth > 0 && subfolders.length > 0
     const depthExceed = subfolders.length > 0 && depth == 0

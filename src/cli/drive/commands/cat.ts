@@ -20,7 +20,7 @@ type Deps =
 
 export const cat = (
   { path }: { path: string },
-): DriveLookup.Monad<string, Deps> => {
+): DriveLookup.Lookup<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(

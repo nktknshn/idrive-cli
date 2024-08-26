@@ -21,7 +21,7 @@ export type RecursiveArgv = {
 /** recursively download files */
 export const downloadRecursive = (
   argv: RecursiveArgv,
-): DriveLookup.Monad<string, DownloadFolderDeps & DFuncDeps & DepAskConfirmation> => {
+): DriveLookup.Lookup<string, DownloadFolderDeps & DFuncDeps & DepAskConfirmation> => {
   const dirname = Path.dirname(micromatch.scan(argv.path).base)
 
   console.log(

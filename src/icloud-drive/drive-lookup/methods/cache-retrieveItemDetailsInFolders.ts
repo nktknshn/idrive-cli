@@ -11,13 +11,13 @@ import { sequenceArrayO } from '../../../util/util'
 import { Cache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
-import { LookupState, Monad } from '..'
+import { Lookup, LookupState } from '..'
 import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
 export const retrieveItemDetailsInFoldersCached = (
   drivewsids: NEA<string>,
-): Monad<NEA<O.Option<Types.Details>>> => {
+): Lookup<NEA<O.Option<Types.Details>>> => {
   const uniqids = pipe(drivewsids, NA.uniq(Eq))
 
   return pipe(
@@ -51,10 +51,10 @@ export const retrieveItemDetailsInFoldersCached = (
 
 export function retrieveItemDetailsInFoldersCachedStrict(
   drivewsids: NEA<string>,
-): Monad<NEA<Types.NonRootDetails>>
+): Lookup<NEA<Types.NonRootDetails>>
 export function retrieveItemDetailsInFoldersCachedStrict(
   drivewsids: NEA<string>,
-): Monad<NEA<Types.Details>> {
+): Lookup<NEA<Types.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersCached(drivewsids),
     SRTE.chain(res =>
@@ -82,22 +82,22 @@ export function retrieveItemDetailsInFoldersCachedStrict(
 /** retrieves actual drivewsids saving valid ones to cache and removing those that were not found */
 export function retrieveItemDetailsInFoldersSaving<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
-): Monad<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
+): Lookup<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof rootDrivewsid, ...string[]],
-): Monad<[O.Some<Types.DetailsDocwsRoot>, ...O.Option<Types.Details>[]]>
+): Lookup<[O.Some<Types.DetailsDocwsRoot>, ...O.Option<Types.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: [typeof trashDrivewsid, ...string[]],
-): Monad<[O.Some<Types.DetailsTrashRoot>, ...O.Option<Types.Details>[]]>
+): Lookup<[O.Some<Types.DetailsTrashRoot>, ...O.Option<Types.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...string[]],
-): Monad<[O.Some<R>, ...O.Option<Types.Details>[]]>
+): Lookup<[O.Some<R>, ...O.Option<Types.Details>[]]>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
-): Monad<NEA<O.Option<Types.Details>>>
+): Lookup<NEA<O.Option<Types.Details>>>
 export function retrieveItemDetailsInFoldersSaving(
   drivewsids: NEA<string>,
-): Monad<NEA<O.Option<Types.Details>>> {
+): Lookup<NEA<O.Option<Types.Details>>> {
   return pipe(
     loggerIO.debug(`retrieveItemDetailsInFoldersSaving`),
     SRTE.fromIO,
@@ -113,17 +113,17 @@ export function retrieveItemDetailsInFoldersSaving(
 /** fails if some of the ids were not found */
 export function retrieveItemDetailsInFoldersSavingStrict(
   drivewsids: NEA<string>,
-): Monad<NEA<Types.NonRootDetails>>
+): Lookup<NEA<Types.NonRootDetails>>
 export function retrieveItemDetailsInFoldersSavingStrict(
   drivewsids: NEA<string>,
-): Monad<NEA<Types.Details>> {
+): Lookup<NEA<Types.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersSaving(drivewsids),
     SRTE.chain(
       flow(
         O.sequenceArray,
         SRTE.fromOption(() => err(`some of the ids was not found`)),
-        v => v as Monad<NEA<Types.Details>>,
+        v => v as Lookup<NEA<Types.Details>>,
       ),
     ),
   )

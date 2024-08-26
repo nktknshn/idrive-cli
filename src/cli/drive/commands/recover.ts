@@ -12,7 +12,7 @@ type Deps = DriveLookup.Deps & DepApiMethod<'putBackItemsFromTrash'>
 
 export const recover = (
   { path }: { path: string },
-): DriveLookup.Monad<string, Deps> => {
+): DriveLookup.Lookup<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(

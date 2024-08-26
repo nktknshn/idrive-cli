@@ -23,7 +23,7 @@ import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../e
 export const getByPaths = <R extends Types.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): DriveLookup.Monad<NEA<V.GetByPathResult<R>>> =>
+): DriveLookup.Lookup<NEA<V.GetByPathResult<R>>> =>
   pipe(
     loggerIO.debug(`getByPaths(${paths})`),
     SRTE.fromIO,
@@ -34,7 +34,7 @@ export const getByPaths = <R extends Types.Root>(
 const getByPathsC = <R extends Types.Root>(
   paths: NEA<NormalizedPath>,
   cached: NEA<V.GetByPathResult<R>>,
-): DriveLookup.Monad<NEA<V.GetByPathResult<R>>> =>
+): DriveLookup.Lookup<NEA<V.GetByPathResult<R>>> =>
   pipe(
     DriveLookup.of(cached),
     SRTE.chainFirstIOK(() => loggerIO.debug(`getByPathsC(${paths})`)),
@@ -62,7 +62,7 @@ Given cached root and a cached hierarchy determine which part of the hierarchy i
  */
 const validateCachedHierarchies = <R extends Types.Root>(
   cachedHierarchies: NEA<V.Hierarchy<R>>,
-): DriveLookup.Monad<NEA<V.PathValidation<R>>> => {
+): DriveLookup.Lookup<NEA<V.PathValidation<R>>> => {
   const toActual = (
     cachedPath: Types.NonRootDetails[],
     actualsRecord: Record<string, O.Option<Types.NonRootDetails>>,
@@ -179,7 +179,7 @@ const concatCachedWithValidated = <R extends Types.Root>(
 
 const getActuals = <R extends Types.Root>(
   validationResults: NEA<[V.PathValidation<R>, NormalizedPath]>,
-): DriveLookup.Monad<NEA<V.PathValidation<R>>> => {
+): DriveLookup.Lookup<NEA<V.PathValidation<R>>> => {
   loggerIO.debug(
     `getActuals: ${validationResults.map(([p, path]) => `for ${path}. so far we have: ${V.showGetByPathResult(p)}`)}`,
   )()
@@ -207,12 +207,12 @@ type DeeperFolders<R extends Types.Root> =
 
 const handleInvalidPaths = <R extends Types.Root>(
   partialPaths: NEA<V.PathInvalid<R>>,
-): DriveLookup.Monad<NEA<V.PathValidation<R>>> => {
+): DriveLookup.Lookup<NEA<V.PathValidation<R>>> => {
   loggerIO.debug(`retrivePartials: ${partialPaths.map(V.showGetByPathResult)}`)()
 
   const handleSubfolders = <R extends Types.Root>(
     subfolders: NEA<DeeperFolders<R>>,
-  ): DriveLookup.Monad<NEA<V.GetByPathResult<R>>> => {
+  ): DriveLookup.Lookup<NEA<V.GetByPathResult<R>>> => {
     loggerIO.debug(`handleSubfolders: ${
       subfolders.map(([item, [rest, partial]]) => {
         return `item: ${Types.fileName(item.value)}. rest: [${rest}]`
@@ -292,7 +292,7 @@ const handleInvalidPaths = <R extends Types.Root>(
 
   const handleFoundItems = <R extends Types.Root>(
     found: NEA<[O.Some<Types.DriveChildrenItem>, [string[], V.PathInvalid<R>]]>,
-  ): DriveLookup.Monad<V.GetByPathResult<R>[]> => {
+  ): DriveLookup.Lookup<V.GetByPathResult<R>[]> => {
     loggerIO.debug(`handleFoundItems. ${
       found.map(([item, [rest, partial]]) => {
         return `item: ${Types.fileName(item.value)}.`

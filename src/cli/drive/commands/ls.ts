@@ -18,7 +18,7 @@ type Argv = {
 
 export const listUnixPath = (
   { paths, fullPath, recursive, depth, listInfo, trash, etag, cached, header, tree }: Argv,
-): DriveLookup.Monad<string> => {
+): DriveLookup.Lookup<string> => {
   if (!A.isNonEmpty(paths)) {
     return DriveLookup.errString('no paths')
   }

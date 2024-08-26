@@ -15,7 +15,7 @@ type Deps =
 
 /** read the state from files and executes the action in the context */
 export function driveAction<A, R, Args extends unknown[]>(
-  action: (...args: Args) => DriveLookup.Monad<A, R>,
+  action: (...args: Args) => DriveLookup.Lookup<A, R>,
 ): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {
   return (...args: Args) =>
     pipe(
