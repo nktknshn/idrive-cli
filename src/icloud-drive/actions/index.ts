@@ -1,5 +1,6 @@
 /** High-level actions for iCloud Drive. */
 
+export { cat, type Deps as DepsCat } from './cat'
 export { type Deps as DownloadFolderDeps, downloadFolder } from './download/download-folder'
 export { downloadRecursive } from './download/downloadRecursive'
 export { type DepsMove, move } from './move'
