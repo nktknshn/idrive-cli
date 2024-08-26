@@ -3,8 +3,7 @@ import { DepAskConfirmation } from '../../../deps-types/dep-ask-confirmation'
 import { DepFetchClient } from '../../../deps-types/dep-fetch-client'
 import { DepFs } from '../../../deps-types/dep-fs'
 import { DriveLookup } from '../../../icloud-drive'
-import { downloadShallow } from '../../../icloud-drive/actions/download/downloadShallow'
-import { downloadRecursive } from '../../../icloud-drive/drive-action'
+import * as Actions from '../../../icloud-drive/drive-action'
 import { DepApiMethod } from '../../../icloud-drive/drive-api'
 import { SRA } from '../../../util/types'
 
@@ -66,9 +65,9 @@ export const download = (argv: Argv): SRA<DriveLookup.LookupState, Deps, string>
   }
 
   if (argv.recursive) {
-    return downloadRecursive(argv)
+    return Actions.downloadRecursive(argv)
   }
   else {
-    return downloadShallow(argv)
+    return Actions.downloadShallow(argv)
   }
 }

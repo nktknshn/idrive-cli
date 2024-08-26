@@ -3,10 +3,12 @@ import { DepAskConfirmation } from '../../../deps-types'
 import { SRA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import { solvers } from './conflict-solvers'
-import { Deps, downloadFolder } from './download-folder'
+import { Deps as DownloadFolderDeps, downloadFolder } from './download-folder'
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from './downloadICloudFilesChunked'
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { shallowDirMapper } from './recursiveDirMapper'
+
+export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation
 
 type ShallowArgs = {
   path: string
@@ -20,7 +22,7 @@ type ShallowArgs = {
 /** download file of files from a directory */
 export const downloadShallow = (
   { path, dry, dstpath, chunkSize, include, exclude }: ShallowArgs,
-): SRA<DriveLookup.LookupState, Deps & DFuncDeps & DepAskConfirmation, string> => {
+): SRA<DriveLookup.LookupState, Deps, string> => {
   return pipe(
     downloadFolder(
       {

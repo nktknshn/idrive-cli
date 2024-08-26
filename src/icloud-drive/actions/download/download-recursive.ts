@@ -8,6 +8,8 @@ import { Deps as DFuncDeps, downloadICloudFilesChunked } from './downloadICloudF
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { recursiveDirMapper } from './recursiveDirMapper'
 
+export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation
+
 export type RecursiveArgv = {
   path: string
   dstpath: string
@@ -21,7 +23,7 @@ export type RecursiveArgv = {
 /** recursively download files */
 export const downloadRecursive = (
   argv: RecursiveArgv,
-): DriveLookup.Lookup<string, DownloadFolderDeps & DFuncDeps & DepAskConfirmation> => {
+): DriveLookup.Lookup<string, Deps> => {
   const dirname = Path.dirname(micromatch.scan(argv.path).base)
 
   console.log(
