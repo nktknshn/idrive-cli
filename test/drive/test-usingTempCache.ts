@@ -1,7 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../src/icloud-drive'
+import { Cache, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/drive-types'
 import { FlattenFolderTreeWPath } from '../../src/icloud-drive/util/drive-folder-tree'
 import { npath } from '../../src/util/normalize-path'
@@ -29,8 +29,8 @@ describe('usingTempCache', () => {
   const run = executeDrive({
     itemByDrivewsid: structure.itemByDrivewsid,
     cache: pipe(
-      C.cachef(),
-      C.putDetails(structure.r.d),
+      Cache.cachef(),
+      Cache.putDetails(structure.r.d),
     ),
   })
 
@@ -41,7 +41,7 @@ describe('usingTempCache', () => {
   ])
 
   const check = (
-    req: DriveLookup.Effect<
+    req: DriveLookup.Lookup<
       NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>
     >,
   ) => {
@@ -54,7 +54,7 @@ describe('usingTempCache', () => {
 
         expect(calls().total).toBe(4)
 
-        expect(C.getAllDetails(state.cache)).toEqual(
+        expect(Cache.getAllDetails(state.cache)).toEqual(
           [expect.anything(), expect.anything(), expect.anything(), expect.anything()],
         )
 
@@ -103,8 +103,8 @@ describe('usingTempCache with getByPath method', () => {
   const run = executeDrive({
     itemByDrivewsid: structure.itemByDrivewsid,
     cache: pipe(
-      C.cachef(),
-      C.putDetails(structure.r.d),
+      Cache.cachef(),
+      Cache.putDetails(structure.r.d),
     ),
   })
 

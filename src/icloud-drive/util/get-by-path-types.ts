@@ -8,18 +8,20 @@ import { NormalizedPath, normalizePath } from '../../util/normalize-path'
 import { NEA } from '../../util/types'
 import * as T from '../drive-types'
 
+/** Hierarchy of details, R is the root type */
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]
 
-export type PathValid<R> = {
+export type PathValid<R> = PathValidFile<R> | PathValidFolder<R>
+
+export type PathValidFile<R> = {
   valid: true
   details: Hierarchy<R>
-  file: O.Option<T.DriveChildrenItemFile>
+  file: T.DriveChildrenItemFile
 }
 
-export type PathValidWithFile<R> = {
+export type PathValidFolder<R> = {
   valid: true
   details: Hierarchy<R>
-  file: O.Some<T.DriveChildrenItemFile>
 }
 
 export type PathInvalid<R> = {
@@ -38,17 +40,34 @@ export type GetByPathResult<R extends T.Root> = PathValidation<R>
 export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
 export const root = <R>([root]: Hierarchy<R>): R => root
 
-export const pathTarget = <R extends T.Root>(
+export function pathTarget<R extends T.Root>(
+  res: PathValidFile<R>,
+): T.DriveChildrenItemFile
+export function pathTarget<R extends T.Root>(
+  res: PathValidFolder<R>,
+): R | T.DetailsFolder | T.DetailsAppLibrary
+export function pathTarget<R extends T.Root>(
   res: PathValid<R>,
-): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile => {
-  return pipe(
-    res.file,
-    O.foldW(() => NA.last(res.details), identity),
-  )
+): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile
+export function pathTarget<R extends T.Root>(
+  res: PathValid<R>,
+): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile {
+  if (isValidFile(res)) {
+    return res.file
+  }
+  else {
+    return NA.last(res.details)
+  }
 }
 
-export const isValidWithFile = <H>(res: PathValidation<H>): res is PathValidWithFile<H> => {
-  return res.valid === true && O.isSome(res.file)
+export function isValidFile<H>(res: PathValid<H>): res is PathValidFile<H>
+export function isValidFile<H>(res: PathValidation<H>): res is PathValidFile<H>
+export function isValidFile<H>(res: PathValidation<H>): res is PathValidFile<H> {
+  return res.valid === true && 'file' in res
+}
+
+export const isValidFolder = <H>(res: PathValidation<H>): res is PathValidFolder<H> => {
+  return !isValidFile(res)
 }
 
 export const isValidPath = <R>(res: PathValidation<R>): res is PathValid<R> => {
@@ -58,16 +77,28 @@ export const isInvalidPath = <R>(res: PathValidation<R>): res is PathInvalid<R> 
   return res.valid === false
 }
 
-export const validPath = <R extends T.Root>(
+export const validPath = <R>(
   path: Hierarchy<R>,
   file: O.Option<T.DriveChildrenItemFile> = O.none,
-): PathValid<R> => ({
+): PathValid<R> => O.isSome(file) ? validFile(path, file.value) : validFolder(path)
+
+export const validFile = <R>(
+  path: Hierarchy<R>,
+  file: T.DriveChildrenItemFile,
+): PathValidFile<R> => ({
   valid: true,
   details: path,
   file,
 })
 
-export const invalidPath = <R extends T.Root>(
+export const validFolder = <R>(
+  path: Hierarchy<R>,
+): PathValidFolder<R> => ({
+  valid: true,
+  details: path,
+})
+
+export const invalidPath = <R>(
   details: Hierarchy<R>,
   rest: NEA<string>,
   error: Error,
@@ -78,9 +109,13 @@ export const invalidPath = <R extends T.Root>(
   error,
 })
 
+export function getFile<R>(res: PathValid<R>): O.Option<T.DriveChildrenItemFile> {
+  return isValidFile(res) ? O.some(res.file) : O.none
+}
+
 export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): string => {
   if (p.valid === true) {
-    return `valid: ${p.details.map(T.fileName)} file: ${pipe(p.file, O.fold(() => `none`, T.fileName))}`
+    return `valid: ${p.details.map(T.fileName)} file: ${pipe(getFile(p), O.fold(() => `none`, T.fileName))}`
   }
   // ${p.error.message}
   return `invalid (). valid part ${p.details.map(T.fileName)}, rest: ${p.rest}`
@@ -92,7 +127,7 @@ export const validAsString = <R extends T.Root>(
   return normalizePath(
     [
       ...result.details.map(T.fileName),
-      ...pipe(result.file, O.fold(() => [], flow(T.fileName, A.of))),
+      ...pipe(getFile(result), O.fold(() => [], flow(T.fileName, A.of))),
     ].join('/'),
   )
 }

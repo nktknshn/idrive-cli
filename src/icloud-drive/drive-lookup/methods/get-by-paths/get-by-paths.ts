@@ -124,12 +124,13 @@ const concatCachedWithValidated = <R extends Types.Root>(
     if (V.isValidPath(validated)) {
       // if original path was targeting a file
       // try to find it in the actual details
-      if (O.isSome(cached.file)) {
-        const fname = Types.fileName(cached.file.value)
+      const file = V.getFile(cached)
+      if (O.isSome(file)) {
+        const fname = Types.fileName(file.value)
         const parent = NA.last(validated.details)
 
         return pipe(
-          findInParentFilename(parent, Types.fileName(cached.file.value)),
+          findInParentFilename(parent, Types.fileName(file.value)),
           O.fold(
             () => E.left(NotFoundError.createTemplate(fname, parent.drivewsid)),
             (actualFileItem) =>
@@ -254,11 +255,7 @@ const handleInvalidPaths = <R extends Types.Root>(
             )
           },
           ([details, [item, [rest, partial]]]): V.PathValid<R> => {
-            return {
-              valid: true,
-              details: V.concat(partial.details, [details]),
-              file: O.none,
-            }
+            return V.validFolder(V.concat(partial.details, [details]))
           },
         )
       }),
@@ -275,11 +272,7 @@ const handleInvalidPaths = <R extends Types.Root>(
       return pipe(
         rest,
         A.match(
-          (): V.PathValid<R> => ({
-            valid: true,
-            file: item,
-            details: partial.details,
-          }),
+          (): V.PathValid<R> => V.validPath(partial.details, item),
           (rest): V.PathValidation<R> => ({
             valid: false,
             error: ItemIsNotFolderError.create(`item is not folder`),

@@ -4,7 +4,7 @@ import * as J from 'fp-ts/lib/Json'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { DepFs } from '../../deps-types/dep-fs'
-import { BufferDecodingError, err, FileReadingError, JsonParsingError, TypeDecodingError } from '../../util/errors'
+import { BufferDecodingError, FileReadingError, JsonParsingError, TypeDecodingError } from '../../util/errors'
 import { tryReadJsonFile } from '../../util/files'
 import { ICloudSession, sessionScheme } from './session-type'
 

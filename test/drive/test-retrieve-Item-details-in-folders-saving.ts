@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/Option'
 import * as R from 'fp-ts/Record'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../src/icloud-drive'
+import { Cache, DriveLookup } from '../../src/icloud-drive'
 import './debug'
 import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
@@ -31,8 +31,8 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           ),
         ),
         cache: pipe(
-          C.cachef(),
-          C.putDetailss([
+          Cache.cachef(),
+          Cache.putDetailss([
             structure0.r.d,
             structure0.r.c.folder1.d,
             structure0.r.c.folder1.c.folder2.d,

@@ -9,4 +9,5 @@ export const mockedFs = (): FsType => ({
   opendir: (path: string) => hole(),
   readFile: (path: PathLike) => hole(),
   writeFile: (path: string) => hole(),
+  rm: (path: PathLike) => hole(),
 })

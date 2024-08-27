@@ -15,7 +15,7 @@ import { SRA } from '../../../util/types'
 import { DriveLookup, Types } from '../..'
 import { DepApiMethod, DriveApiMethods } from '../../drive-api'
 import { findInParentFilename, getDrivewsid } from '../../util/drive-helpers'
-import * as V from '../../util/get-by-path-types'
+import * as GetByPath from '../../util/get-by-path-types'
 import { AskingFunc } from '../upload'
 
 export type Deps =
@@ -87,7 +87,7 @@ export const uploadSingleFile = (
 
 const handleSingleFileUpload = (
   { src, dst, overwright, skipTrash }: {
-    dst: V.GetByPathResult<Types.DetailsDocwsRoot>
+    dst: GetByPath.GetByPathResult<Types.DetailsDocwsRoot>
     src: string
     overwright: boolean
     skipTrash: boolean
@@ -95,19 +95,19 @@ const handleSingleFileUpload = (
 ): SRA<DriveLookup.State, Deps, void> => {
   // if the target path already exists in icloud drive
   if (dst.valid) {
-    const dstitem = V.pathTarget(dst)
+    const dstitem = GetByPath.pathTarget(dst)
 
     // if it's a folder
     if (Types.isFolderLike(dstitem)) {
       return uploadFileToFolder({ src, dstDetails: dstitem, overwright, skipTrash })
     }
     // if it's a file and the overwright flag set
-    else if (overwright && V.isValidWithFile(dst)) {
-      return uploadOverwrighting({ src, dstitem: dst.file.value, parent: NA.last(dst.details), skipTrash })
+    else if (overwright && GetByPath.isValidFile(dst)) {
+      return uploadOverwrighting({ src, dstitem: dst.file, parent: NA.last(dst.details), skipTrash })
     }
     // otherwise we cancel uploading
     else {
-      return DriveLookup.errString(`invalid destination path: ${V.validAsString(dst)} It's a file`)
+      return DriveLookup.errString(`invalid destination path: ${GetByPath.validAsString(dst)} It's a file`)
     }
   }
 
@@ -130,7 +130,7 @@ const handleSingleFileUpload = (
     }
   }
 
-  return DriveLookup.errString(`invalid destination path: ${V.showGetByPathResult(dst)}`)
+  return DriveLookup.errString(`invalid destination path: ${GetByPath.showGetByPathResult(dst)}`)
 }
 
 const uploadFileToFolder = (

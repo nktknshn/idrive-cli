@@ -27,10 +27,10 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
     assert(res1._tag === 'Right')
 
     assert(res1.right[0].valid)
-    assert(res1.right[0].file._tag === 'Some')
+    assert('file' in res1.right[0])
 
     assert.deepEqual(
-      res1.right[0].file.value,
+      res1.right[0].file,
       complexStructure0.r.children[1].children[0].d,
     )
   })

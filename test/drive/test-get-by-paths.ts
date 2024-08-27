@@ -1,7 +1,7 @@
 import assert from 'assert'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../src/icloud-drive'
+import { Cache, DriveLookup } from '../../src/icloud-drive'
 import { NotFoundError } from '../../src/icloud-drive/drive-lookup/errors'
 import { rootDrivewsid } from '../../src/icloud-drive/drive-types/types-io'
 import { invalidPath, pathTarget } from '../../src/icloud-drive/util/get-by-path-types'
@@ -56,8 +56,8 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid: structure.itemByDrivewsid,
         cache: pipe(
-          C.cachef(),
-          C.putDetailss(
+          Cache.cachef(),
+          Cache.putDetailss(
             structure.allFolders,
             // [
             //   structure.root.details,
@@ -95,8 +95,8 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid: structure.itemByDrivewsid,
         cache: pipe(
-          C.cachef(),
-          C.putDetailss(
+          Cache.cachef(),
+          Cache.putDetailss(
             structure.allFolders,
             // [
             //   structure.root.details,
@@ -142,8 +142,8 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid,
         cache: pipe(
-          C.cachef(),
-          C.putDetailss(structure.allFolders),
+          Cache.cachef(),
+          Cache.putDetailss(structure.allFolders),
         ),
       }),
       TE.map(({ calls, res, state }) => {

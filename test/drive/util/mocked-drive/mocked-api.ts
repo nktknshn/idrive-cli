@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 import * as O from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
-import { DriveLookup, T } from '../../../../src/icloud-drive'
+import { DriveLookup, Types } from '../../../../src/icloud-drive'
 import { DepApiMethod } from '../../../../src/icloud-drive/drive-api'
 import { DriveApiWrapped } from '../../../../src/icloud-drive/drive-api-wrapped'
 import * as C from '../../../../src/icloud-drive/drive-lookup/cache'
@@ -21,7 +21,7 @@ export const createState = ({
 }: {
   cache?: C.LookupCache
   tempCache?: O.Option<never>
-}): DriveLookup.LookupState => ({ ...authenticatedState, cache, tempCache })
+}): DriveLookup.State => ({ ...authenticatedState, cache, tempCache })
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
@@ -30,21 +30,21 @@ type Calls = {
 }
 
 const retrieveItemDetailsInFolders = (
-  detailsRec: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
+  detailsRec: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
 ): DriveApiWrapped['retrieveItemDetailsInFolders'] =>
   ({ drivewsids }) => {
     return SRTE.of(pipe(
       drivewsids,
       NA.map(did => R.lookup(did)(detailsRec)),
       NA.map(O.foldW(
-        () => T.invalidId,
-        d => d.type === 'FILE' ? T.invalidId : d,
+        () => Types.invalidId,
+        d => d.type === 'FILE' ? Types.invalidId : d,
       )),
     ))
   }
 
 export const createEnv = (
-  details: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>,
+  details: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
 ): Calls & DepApiMethod<'retrieveItemDetailsInFolders'> => {
   const calls = {
     retrieveItemDetailsInFolders: 0,
@@ -71,9 +71,9 @@ export const executeDrive = ({
   itemByDrivewsid: details,
   cache = C.cachef(),
 }: {
-  itemByDrivewsid: Record<string, T.DetailsOrFile<T.DetailsDocwsRoot>>
+  itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>
   cache?: C.LookupCache
-}): <A>(m: DriveLookup.Effect<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.LookupState } & Calls> => {
+}): <A>(m: DriveLookup.Lookup<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
   return m =>
     pipe(
       TE.of(cache),

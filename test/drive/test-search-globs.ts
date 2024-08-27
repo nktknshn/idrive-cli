@@ -1,6 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-import { C, DriveLookup } from '../../src/icloud-drive'
+import { Cache, DriveLookup } from '../../src/icloud-drive'
 import './debug'
 import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
@@ -29,8 +29,8 @@ describe('searchGlobs', () => {
   const run = executeDrive({
     itemByDrivewsid: structure.itemByDrivewsid,
     cache: pipe(
-      C.cachef(),
-      C.putDetails(structure.r.d),
+      Cache.cachef(),
+      Cache.putDetails(structure.r.d),
     ),
   })
 

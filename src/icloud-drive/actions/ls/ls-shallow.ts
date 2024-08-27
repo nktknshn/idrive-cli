@@ -5,10 +5,85 @@ import micromatch from 'micromatch'
 
 import { logger } from '../../../logging'
 import { normalizePath } from '../../../util/normalize-path'
-import { DriveLookup, Types as T } from '../../'
+import { DriveLookup, Types } from '../../'
 import { findInParentGlob } from '../../util/drive-helpers'
-import { isValidPath, PathInvalid, pathTarget, PathValid, showGetByPathResult } from '../../util/get-by-path-types'
+
+import * as GetByPath from '../../util/get-by-path-types'
+
+import { err } from '../../../util/errors'
 import { showDetailsInfo, showFileInfo } from './ls-printing'
+
+type ListPathsResult = ListPathsFolder | ListPathsFile | ListPathsInvalid
+
+type ListPathsFolder = {
+  valid: true
+  path: string
+  item: Types.Root | Types.DetailsFolder | Types.DetailsAppLibrary
+  items: (Types.DriveChildrenItem | Types.DriveChildrenTrashItem)[]
+}
+
+type ListPathsFile = {
+  valid: true
+  path: string
+  item: Types.DriveChildrenItemFile
+}
+
+type ListPathsInvalid = {
+  valid: false
+  path: string
+}
+
+const result = (
+  path: string,
+  scan: micromatch.ScanInfo,
+  res: GetByPath.GetByPathResult<Types.Root>,
+): ListPathsResult => {
+  if (GetByPath.isInvalidPath(res)) {
+    return { valid: false, path }
+  }
+  else {
+    if (GetByPath.isValidFile(res)) {
+      return { valid: true, path, item: res.file }
+    }
+    else {
+      const folder = GetByPath.pathTarget(res)
+      return {
+        valid: true,
+        path,
+        item: folder,
+        items: findInParentGlob(folder, scan.glob),
+      }
+    }
+  }
+}
+
+export const listPaths = (
+  { paths, trash, cached }: { paths: NA.NonEmptyArray<string>; trash: boolean; cached: boolean },
+): DriveLookup.Lookup<ListPathsResult[], DriveLookup.Deps> => {
+  const scanned = pipe(paths, NA.map(micromatch.scan))
+  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+
+  for (const p of paths) {
+    if (p.indexOf('**') > -1) {
+      return SRTE.left(err('globstar is not supported for non recursive ls'))
+    }
+  }
+
+  return pipe(
+    // Drive.searchGlobs(paths as NEA<string>),
+    DriveLookup.getCachedRoot(trash),
+    SRTE.chain(root =>
+      cached
+        ? DriveLookup.getByPathsFromCache(root, basepaths)
+        : DriveLookup.getByPaths(root, basepaths)
+    ),
+    SRTE.map(NA.zip(scanned)),
+    SRTE.map(NA.zip(paths)),
+    SRTE.map(
+      NA.map(([[res, scan], path]) => result(path, scan, res)),
+    ),
+  )
+}
 
 export const lsShallow = (
   paths: NA.NonEmptyArray<string>,
@@ -23,7 +98,6 @@ export const lsShallow = (
   }): DriveLookup.Lookup<string, DriveLookup.Deps> => {
     const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
 
-    // const npaths = NA.map(normalizePath)(paths)
     const scanned = pipe(paths, NA.map(micromatch.scan))
     const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
@@ -37,15 +111,9 @@ export const lsShallow = (
       ),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(NA.map(([path, scan]) =>
-        isValidPath(path)
+        GetByPath.isValidPath(path)
           ? showValidPath(path, scan)({ ...args, ...opts })
-          : // ({
-          //   ...opts,
-          //   path: scan.input,
-          //   printFolderInfo: true,
-          //   fullPath,
-          // })
-            showInvalid(path)
+          : showInvalid(path)
       )),
       SRTE.map(NA.zip(scanned)),
       SRTE.map(res =>
@@ -57,10 +125,10 @@ export const lsShallow = (
     )
   }
 
-const showValidPath = (path: PathValid<T.Root>, scan: micromatch.ScanInfo) => {
-  const t = pathTarget(path)
+const showValidPath = (path: GetByPath.PathValid<Types.Root>, scan: micromatch.ScanInfo) => {
+  const t = GetByPath.pathTarget(path)
 
-  if (T.isFile(t)) {
+  if (Types.isFile(t)) {
     return showFileInfo(t)
   }
 
@@ -75,6 +143,6 @@ const showValidPath = (path: PathValid<T.Root>, scan: micromatch.ScanInfo) => {
   return showDetailsInfo({ ...t, items }, scan.input)
 }
 
-const showInvalid = (path: PathInvalid<T.Root>) => {
-  return showGetByPathResult(path)
+const showInvalid = (path: GetByPath.PathInvalid<Types.Root>) => {
+  return GetByPath.showGetByPathResult(path)
 }

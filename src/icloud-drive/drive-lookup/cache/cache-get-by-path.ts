@@ -5,7 +5,7 @@ import * as O from 'fp-ts/lib/Option'
 import { cacheLogger, logger } from '../../../logging/logging'
 import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../../drive-types'
 import { findInParentFilename } from '../../util/drive-helpers'
-import * as V from '../../util/get-by-path-types'
+import * as GetByPath from '../../util/get-by-path-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as C from './cache'
 import { CacheF } from './cache-types'
@@ -21,17 +21,17 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>
-  (cache: CacheF): V.PathValidation<R> => {
+  (cache: CacheF): GetByPath.PathValidation<R> => {
     cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {
-      return { valid: true, details: [parentEntity], file: O.none }
+      return GetByPath.validFolder<R>([parentEntity])
     }
 
     const [subItemName, ...rest] = path
     const subitem = findInParentFilename(parentEntity, subItemName)
 
-    const result: V.Hierarchy<R> = [parentEntity]
+    const result: GetByPath.Hierarchy<R> = [parentEntity]
 
     // logger.debug(`subitem: ${O.getShow({ show: fileName }).show(subitem)}`)
 
@@ -58,11 +58,10 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         }
       }
       else {
-        return {
-          valid: true,
-          details: [parentEntity],
-          file: O.some(subitem.value),
-        }
+        return GetByPath.validFile<R>(
+          result,
+          subitem.value,
+        )
       }
     }
     else if (A.isNonEmpty(rest)) {
@@ -72,29 +71,26 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
         // BUG
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (e): V.PathValidation<R> => ({
+          (e): GetByPath.PathValidation<R> => ({
             valid: false,
             details: result,
             rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content, created }): V.PathValidation<R> =>
+          ({ content, created }): GetByPath.PathValidation<R> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
-              (result): V.PathValidation<R> =>
+              (result): GetByPath.PathValidation<R> =>
                 result.valid
-                  ? ({
-                    valid: true,
-                    details: V.concat([parentEntity], result.details),
-                    file: result.file,
-                  })
-                  : ({
-                    valid: false,
-                    details: V.concat([parentEntity], result.details),
-                    rest: result.rest,
-
-                    error: result.error,
-                  }),
+                  ? GetByPath.validPath<R>(
+                    GetByPath.concat([parentEntity], result.details),
+                    GetByPath.getFile(result),
+                  )
+                  : GetByPath.invalidPath<R>(
+                    GetByPath.concat([parentEntity], result.details),
+                    result.rest,
+                    result.error,
+                  ),
             ),
         ),
       )
@@ -105,17 +101,14 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
       return pipe(
         C.getFolderDetailsByIdE(subitem.value.drivewsid)(cache),
         E.fold(
-          (e): V.PathValidation<R> => ({
+          (e): GetByPath.PathValidation<R> => ({
             valid: false,
             details: result,
             rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content }): V.PathValidation<R> => ({
-            valid: true,
-            details: V.concat([parentEntity], [content]),
-            file: O.none,
-          }),
+          ({ content }): GetByPath.PathValidation<R> =>
+            GetByPath.validFolder<R>(GetByPath.concat([parentEntity], [content])),
         ),
       )
     }
