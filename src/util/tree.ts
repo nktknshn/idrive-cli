@@ -4,6 +4,7 @@ import * as O from 'fp-ts/lib/Option'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import * as TR from 'fp-ts/lib/Tree'
 
+/** `Some` if either the value or any of the forest items match the predicate */
 export const filterTree = <T>(predicate: Predicate<T>) =>
   (tree: TR.Tree<T>): O.Option<TR.Tree<T>> => {
     const forestopts = pipe(

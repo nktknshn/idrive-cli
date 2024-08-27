@@ -1,4 +1,3 @@
-import * as STE from 'fp-ts-contrib/StateTaskEither'
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
 import { NEA, SA } from '../../util/types'
 import { CreateFoldersResponse, MoveItemToTrashResponse, RenameResponse } from '../drive-requests'

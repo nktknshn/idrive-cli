@@ -6,6 +6,7 @@ import { NEA } from '../../../util/types'
 import { DriveLookup, Types } from '../..'
 import { DriveFolderTree, flattenFolderTreeWithBasepath, FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
 
+/** Returns a list of folder trees for the given paths */
 export const getFoldersTreesByPathsDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,

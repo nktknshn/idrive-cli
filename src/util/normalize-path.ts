@@ -22,8 +22,9 @@ export type Branded<A, B> = A & Brand<B>
 
 export type NormalizedPath = Branded<string, NormalizedPathBrand>
 
-export const stripTrailingSlash = (s: string) => s == '/' ? s : s.replace(/\/$/, '')
-export const addLeadingSlash = (s: string) => s.startsWith('/') ? s : `/${s}`
+export const stripTrailingSlash = (s: string): string => s == '/' ? s : s.replace(/\/$/, '')
+export const addLeadingSlash = (s: string): string => s.startsWith('/') ? s : `/${s}`
+export const addTrailingSlash = (s: string): string => s.endsWith('/') ? s : `${s}/`
 
 /**
  * NormalizedPath has Path.normalize applied and no trailing slash

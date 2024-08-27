@@ -2,6 +2,7 @@ import { sequenceS } from 'fp-ts/lib/Apply'
 import { flow } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as R from 'fp-ts/Reader'
+
 import { AuthenticatedState, RequestDeps } from '../../icloud-core/icloud-request'
 import { CatchFetchDeps, catchFetchErrorsSRTE } from '../../icloud-core/icloud-request/catch-fetch-error'
 import { CatchSessDeps, catchSessErrorsSRTE } from '../../icloud-core/icloud-request/catch-invalid-global-session'
@@ -23,6 +24,7 @@ const wrapAuthenticatedReq: SRTEWrapper<
   flow(
     catchFetchErrorsSRTE(deps),
     catchSessErrorsSRTE(deps),
+    // inject dependencies
     SRTE.local(() => deps),
   )
 
@@ -40,6 +42,7 @@ const wrapHandle409: SRTEWrapper<
       catchFetchErrorsRetryDelay: 400,
       isFetchError: e => InvalidResponseStatusError.is(e) && e.httpResponse.status == 409,
     }),
+    // inject dependencies
     SRTE.local(() => deps),
   )
 

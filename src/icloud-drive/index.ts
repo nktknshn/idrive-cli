@@ -1,5 +1,6 @@
-export * as DriveAction from './drive-action'
+export * as DriveActions from './actions'
 export * as DriveLookup from './drive-lookup'
 export * as Cache from './drive-lookup/cache'
 export * as DriveCache from './drive-lookup/methods/cache-methods'
 export * as Types from './drive-types'
+export * as GetByPath from './util/get-by-path-types'

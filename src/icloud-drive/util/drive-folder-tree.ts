@@ -5,23 +5,26 @@ import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
 import { Types } from '..'
 
+/** Has forest */
 export type FolderDeep<R extends Types.Details> = {
-  readonly details: Types.DetailsOfRoot<R>
+  readonly details: Types.DetailsOrRoot<R>
   readonly deep: true
 }
 
+/** Has no forest */
 export type FolderShallow<R extends Types.Details> = {
-  readonly details: Types.DetailsOfRoot<R>
+  readonly details: Types.DetailsOrRoot<R>
   readonly deep: false
 }
 
-export type DriveFolderTree<R extends Types.Details> = TR.Tree<FolderTreeValue<R>>
-
 export type FolderTreeValue<R extends Types.Details> = FolderDeep<R> | FolderShallow<R>
+
+/** Drive folder tree. Value is a list of folders and files */
+export type DriveFolderTree<R extends Types.Details> = TR.Tree<FolderTreeValue<R>>
 
 type RemoteFolder<R extends Types.Details> = {
   remotepath: string
-  remotefile: Types.DetailsOfRoot<R>
+  remotefile: Types.DetailsOrRoot<R>
 }
 
 export type FlattenTreeItemP<R extends Types.Details> = RemoteFile | RemoteFolder<R>
@@ -33,7 +36,7 @@ export type RemoteFile = {
 
 export type FlattenFolderTreeWPath<R extends Types.Details> = FlattenTreeItemP<R>[]
 
-export const shallowFolder = <R extends Types.Details>(details: Types.DetailsOfRoot<R>): DriveFolderTree<R> =>
+export const shallowFolder = <R extends Types.Details>(details: Types.DetailsOrRoot<R>): DriveFolderTree<R> =>
   TR.make({ details, deep: false })
 
 export const deepFolder = <R extends Types.Details>(
@@ -41,10 +44,11 @@ export const deepFolder = <R extends Types.Details>(
   children: TR.Forest<FolderTreeValue<R>>,
 ): DriveFolderTree<R> => TR.make({ details, deep: true }, children)
 
+/** Extract files from folder details into a tree */
 export const treeWithFiles = <R extends Types.Details>(
   tree: DriveFolderTree<R>,
-): TR.Tree<Types.DetailsOfRoot<R> | Types.DriveChildrenItemFile> => {
-  const files: (Types.DetailsOfRoot<R> | Types.DriveChildrenItemFile)[] = pipe(
+): TR.Tree<Types.DetailsOrRoot<R> | Types.DriveChildrenItemFile> => {
+  const files: (Types.DetailsOrRoot<R> | Types.DriveChildrenItemFile)[] = pipe(
     tree.value.details.items,
     A.filter(Types.isFile),
   )
@@ -60,6 +64,7 @@ export const treeWithFiles = <R extends Types.Details>(
   )
 }
 
+/** Add full path to folder tree value */
 export const addPathToFolderTree = <T>(
   parentPath: string,
   f: (value: T) => Types.HasName,

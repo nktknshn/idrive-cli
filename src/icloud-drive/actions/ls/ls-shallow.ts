@@ -3,33 +3,36 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
 
-import { logger } from '../../../logging'
+import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
+import { NEA } from '../../../util/types'
 import { DriveLookup, Types } from '../../'
 import { findInParentGlob } from '../../util/drive-helpers'
-
 import * as GetByPath from '../../util/get-by-path-types'
 
-import { err } from '../../../util/errors'
-import { showDetailsInfo, showFileInfo } from './ls-printing'
+export type ListPathsResult = ListPathsFolder | ListPathsFile | ListPathsInvalid
 
-type ListPathsResult = ListPathsFolder | ListPathsFile | ListPathsInvalid
-
-type ListPathsFolder = {
+export type ListPathsFolder = {
+  isFile: false
   valid: true
   path: string
   item: Types.Root | Types.DetailsFolder | Types.DetailsAppLibrary
+  /** Filtered items */
   items: (Types.DriveChildrenItem | Types.DriveChildrenTrashItem)[]
+  validation: GetByPath.PathValidFolder<Types.Root>
 }
 
-type ListPathsFile = {
+export type ListPathsFile = {
+  isFile: true
   valid: true
   path: string
   item: Types.DriveChildrenItemFile
+  validation: GetByPath.PathValidFile<Types.Root>
 }
 
-type ListPathsInvalid = {
+export type ListPathsInvalid = {
   valid: false
+  validation: GetByPath.PathInvalid<Types.Root>
   path: string
 }
 
@@ -39,11 +42,11 @@ const result = (
   res: GetByPath.GetByPathResult<Types.Root>,
 ): ListPathsResult => {
   if (GetByPath.isInvalidPath(res)) {
-    return { valid: false, path }
+    return { valid: false, path, validation: res }
   }
   else {
     if (GetByPath.isValidFile(res)) {
-      return { valid: true, path, item: res.file }
+      return { valid: true, path, item: res.file, validation: res, isFile: true }
     }
     else {
       const folder = GetByPath.pathTarget(res)
@@ -52,6 +55,8 @@ const result = (
         path,
         item: folder,
         items: findInParentGlob(folder, scan.glob),
+        validation: res,
+        isFile: false,
       }
     }
   }
@@ -59,7 +64,7 @@ const result = (
 
 export const listPaths = (
   { paths, trash, cached }: { paths: NA.NonEmptyArray<string>; trash: boolean; cached: boolean },
-): DriveLookup.Lookup<ListPathsResult[], DriveLookup.Deps> => {
+): DriveLookup.Lookup<NEA<ListPathsResult>, DriveLookup.Deps> => {
   const scanned = pipe(paths, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
@@ -70,7 +75,6 @@ export const listPaths = (
   }
 
   return pipe(
-    // Drive.searchGlobs(paths as NEA<string>),
     DriveLookup.getCachedRoot(trash),
     SRTE.chain(root =>
       cached
@@ -85,64 +89,63 @@ export const listPaths = (
   )
 }
 
-export const lsShallow = (
-  paths: NA.NonEmptyArray<string>,
-) =>
-  (args: {
-    fullPath: boolean
-    listInfo: boolean
-    trash: boolean
-    cached: boolean
-    etag: boolean
-    header: boolean
-  }): DriveLookup.Lookup<string, DriveLookup.Deps> => {
-    const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
+// export const lsShallow = (
+//   paths: NA.NonEmptyArray<string>,
+// ) =>
+//   (args: {
+//     fullPath: boolean
+//     listInfo: boolean
+//     trash: boolean
+//     cached: boolean
+//     etag: boolean
+//     header: boolean
+//   }): DriveLookup.Lookup<string, DriveLookup.Deps> => {
+//     const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
 
-    const scanned = pipe(paths, NA.map(micromatch.scan))
-    const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+//     const scanned = pipe(paths, NA.map(micromatch.scan))
+//     const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
-    return pipe(
-      // Drive.searchGlobs(paths as NEA<string>),
-      DriveLookup.getCachedRoot(args.trash),
-      SRTE.chain(root =>
-        args.cached
-          ? DriveLookup.getByPathsFromCache(root, basepaths)
-          : DriveLookup.getByPaths(root, basepaths)
-      ),
-      SRTE.map(NA.zip(scanned)),
-      SRTE.map(NA.map(([path, scan]) =>
-        GetByPath.isValidPath(path)
-          ? showValidPath(path, scan)({ ...args, ...opts })
-          : showInvalid(path)
-      )),
-      SRTE.map(NA.zip(scanned)),
-      SRTE.map(res =>
-        res.length == 1
-          ? [NA.head(res[0])]
-          : pipe(res, NA.map(([output, { input }]) => `${input}:\n${output}`))
-      ),
-      SRTE.map(_ => _.join('\n\n')),
-    )
-  }
+//     return pipe(
+//       DriveLookup.getCachedRoot(args.trash),
+//       SRTE.chain(root =>
+//         args.cached
+//           ? DriveLookup.getByPathsFromCache(root, basepaths)
+//           : DriveLookup.getByPaths(root, basepaths)
+//       ),
+//       SRTE.map(NA.zip(scanned)),
+//       SRTE.map(NA.map(([path, scan]) =>
+//         GetByPath.isValidPath(path)
+//           ? showValidPath(path, scan)({ ...args, ...opts })
+//           : showInvalid(path)
+//       )),
+//       SRTE.map(NA.zip(scanned)),
+//       SRTE.map(res =>
+//         res.length == 1
+//           ? [NA.head(res[0])]
+//           : pipe(res, NA.map(([output, { input }]) => `${input}:\n${output}`))
+//       ),
+//       SRTE.map(_ => _.join('\n\n')),
+//     )
+//   }
 
-const showValidPath = (path: GetByPath.PathValid<Types.Root>, scan: micromatch.ScanInfo) => {
-  const t = GetByPath.pathTarget(path)
+// const showValidPath = (path: GetByPath.PathValid<Types.Root>, scan: micromatch.ScanInfo) => {
+//   const t = GetByPath.pathTarget(path)
 
-  if (Types.isFile(t)) {
-    return showFileInfo(t)
-  }
+//   if (Types.isFile(t)) {
+//     return showFileInfo(t)
+//   }
 
-  const items = findInParentGlob(t, scan.glob)
+//   const items = findInParentGlob(t, scan.glob)
 
-  if (scan.glob.indexOf('**') > -1) {
-    logger.error(
-      `${scan.input} globstar is not supported for non recursive ls. use ls -R instead`,
-    )
-  }
+//   if (scan.glob.indexOf('**') > -1) {
+//     logger.error(
+//       `${scan.input} globstar is not supported for non recursive ls. use ls -R instead`,
+//     )
+//   }
 
-  return showDetailsInfo({ ...t, items }, scan.input)
-}
+//   return showDetailsInfo({ ...t, items }, scan.input)
+// }
 
-const showInvalid = (path: GetByPath.PathInvalid<Types.Root>) => {
-  return GetByPath.showGetByPathResult(path)
-}
+// const showInvalid = (path: GetByPath.PathInvalid<Types.Root>) => {
+//   return GetByPath.showGetByPathResult(path)
+// }

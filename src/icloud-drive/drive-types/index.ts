@@ -29,10 +29,11 @@ export type Details =
   | Root
   | NonRootDetails
 
-export type DetailsOfRoot<R extends Details> =
+export type DetailsOrRoot<R extends Details> =
   | R
   | NonRootDetails
 
+/** Details of a folder that is not a root */
 export type NonRootDetails =
   | DetailsFolder
   | DetailsAppLibrary
@@ -136,7 +137,7 @@ export type FolderLike =
   | DriveChildrenItemAppLibrary
 
 export const isFolderLike = <R extends Root>(
-  entity: DetailsOfRoot<R> | DriveChildrenItem,
+  entity: DetailsOrRoot<R> | DriveChildrenItem,
 ): entity is DetailsFolder | DetailsAppLibrary | R => !(hasOwnProperty(entity, 'type') && entity.type === 'FILE')
 
 export const isDetails = (

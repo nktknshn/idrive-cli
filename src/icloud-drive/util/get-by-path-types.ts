@@ -40,16 +40,16 @@ export type GetByPathResult<R extends T.Root> = PathValidation<R>
 export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
 export const root = <R>([root]: Hierarchy<R>): R => root
 
-export function pathTarget<R extends T.Root>(
+export function pathTarget<R>(
   res: PathValidFile<R>,
 ): T.DriveChildrenItemFile
-export function pathTarget<R extends T.Root>(
+export function pathTarget<R>(
   res: PathValidFolder<R>,
 ): R | T.DetailsFolder | T.DetailsAppLibrary
-export function pathTarget<R extends T.Root>(
+export function pathTarget<R>(
   res: PathValid<R>,
 ): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile
-export function pathTarget<R extends T.Root>(
+export function pathTarget<R>(
   res: PathValid<R>,
 ): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile {
   if (isValidFile(res)) {
@@ -112,6 +112,8 @@ export const invalidPath = <R>(
 export function getFile<R>(res: PathValid<R>): O.Option<T.DriveChildrenItemFile> {
   return isValidFile(res) ? O.some(res.file) : O.none
 }
+
+export const getFolder = <R>(res: PathValidFolder<R>): T.DetailsFolder | T.DetailsAppLibrary | R => pathTarget(res)
 
 export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): string => {
   if (p.valid === true) {
