@@ -1,7 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import { DriveLookup } from '../../../icloud-drive'
-import { recursivels } from './ls/ls-recursive'
-import { shallowList } from './ls/ls-shallow'
+import * as Actions from '../../../icloud-drive/actions'
 
 type Argv = {
   paths: string[]
@@ -24,10 +23,10 @@ export const listUnixPath = (
   }
 
   if (recursive) {
-    return recursivels({ paths, depth, tree })
+    return Actions.lsRecursive({ paths, depth, tree })
   }
 
-  return shallowList(paths)({
+  return Actions.lsShallow(paths)({
     fullPath,
     listInfo,
     trash,

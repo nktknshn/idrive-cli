@@ -6,6 +6,9 @@ export { type Deps as DownloadFolderDeps, downloadFolder } from './download/down
 export { type Deps as DownloadRecursiveDeps, downloadRecursive } from './download/download-recursive'
 export { type Deps as DownloadDeps, downloadShallow } from './download/download-shallow'
 
+export { lsRecursive } from './ls/ls-recursive'
+export { lsShallow } from './ls/ls-shallow'
+
 export { type Deps as DepsMkdir, mkdir } from './mkdir'
 export { type DepsMove, move } from './move'
 export { type Deps as DepsRecover, recover } from './recover'

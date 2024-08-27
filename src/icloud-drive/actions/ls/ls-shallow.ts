@@ -2,21 +2,15 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import micromatch from 'micromatch'
-import { DriveLookup } from '../../../../icloud-drive'
-import * as T from '../../../../icloud-drive/drive-types'
-import { findInParentGlob } from '../../../../icloud-drive/util/drive-helpers'
-import {
-  isValidPath,
-  PathInvalid,
-  pathTarget,
-  PathValid,
-  showGetByPathResult,
-} from '../../../../icloud-drive/util/get-by-path-types'
-import { logger } from '../../../../logging/logging'
-import { normalizePath } from '../../../../util/normalize-path'
+
+import { logger } from '../../../logging'
+import { normalizePath } from '../../../util/normalize-path'
+import { DriveLookup, Types as T } from '../../'
+import { findInParentGlob } from '../../util/drive-helpers'
+import { isValidPath, PathInvalid, pathTarget, PathValid, showGetByPathResult } from '../../util/get-by-path-types'
 import { showDetailsInfo, showFileInfo } from './ls-printing'
 
-export const shallowList = (
+export const lsShallow = (
   paths: NA.NonEmptyArray<string>,
 ) =>
   (args: {
@@ -26,7 +20,7 @@ export const shallowList = (
     cached: boolean
     etag: boolean
     header: boolean
-  }): SRTE.StateReaderTaskEither<DriveLookup.LookupState, DriveLookup.Deps, Error, string> => {
+  }): DriveLookup.Lookup<string, DriveLookup.Deps> => {
     const opts = { showDocwsid: false, showDrivewsid: args.listInfo, showEtag: args.etag, showHeader: args.header }
 
     // const npaths = NA.map(normalizePath)(paths)

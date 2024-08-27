@@ -76,7 +76,7 @@ const upload = w.command(
         const uploadargs = argv.uploadargs
 
         if (Array.isArray(uploadargs) && uploadargs.length < 2) {
-          throw new Error(`e ti che`)
+          throw new Error('Missing destination path')
         }
 
         return true
@@ -93,20 +93,6 @@ const autocomplete = w.command(
         dir: { default: false, type: 'boolean' },
         trash: { default: false, type: 'boolean' },
         cached: { default: false, type: 'boolean' },
-      }),
-)
-
-const uf = w.command(
-  'uf <localpath> <remotepath>',
-  'uf',
-  (_) =>
-    _.positional('localpath', { type: 'string', demandOption: true })
-      .positional('remotepath', { type: 'string', demandOption: true })
-      .options({
-        include: { default: [], type: 'string', array: false },
-        exclude: { default: [], type: 'string', array: false },
-        dry: { default: false, type: 'boolean' },
-        chunkSize: { default: 2, type: 'number' },
       }),
 )
 

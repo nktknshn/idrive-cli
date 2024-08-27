@@ -6,12 +6,12 @@ import * as Ord from 'fp-ts/lib/Ord'
 import { not } from 'fp-ts/lib/Refinement'
 import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
-import * as T from '../../../../icloud-drive/drive-types'
+import { Types } from '../../'
 
-export const drawFileTree = (tree: TR.Tree<T.HasName | T.DetailsTrashRoot>): string => {
+export const drawFileTree = (tree: TR.Tree<Types.HasName | Types.DetailsTrashRoot>): string => {
   return pipe(
     tree,
-    TR.map(T.fileNameAddSlash),
+    TR.map(Types.fileNameAddSlash),
     TR.drawTree,
   )
 }
@@ -39,28 +39,28 @@ const formatDate = (date: Date | string) =>
         ].join(' '),
   )
 
-const showWithFullPath = (path: string) => flow(T.fileName, joinWithPath(path))
+const showWithFullPath = (path: string) => flow(Types.fileName, joinWithPath(path))
 
 type Row = [string, string | number]
 
 type Element = Row | string | false | Element[]
 
-const Trash = ({ details }: { details: T.DetailsTrashRoot }): Element[] => {
+const Trash = ({ details }: { details: Types.DetailsTrashRoot }): Element[] => {
   return [
-    ['name', T.fileName(details)],
+    ['name', Types.fileName(details)],
     ['numberOfItems', details.numberOfItems],
   ]
 }
-const Folder = ({ details }: { details: T.DetailsDocwsRoot | T.NonRootDetails }): Element[] => {
+const Folder = ({ details }: { details: Types.DetailsDocwsRoot | Types.NonRootDetails }): Element[] => {
   return [
-    ['name', T.fileName(details)],
+    ['name', Types.fileName(details)],
     ['dateCreated', formatDate(details.dateCreated)],
     ['drivewsid', details.drivewsid],
     ['docwsid', details.docwsid],
     ['etag', details.etag],
     !!details.restorePath && ['restorePath', details.restorePath],
     !!details.extension && ['extension', details.extension],
-    !T.isCloudDocsRootDetails(details) && ['parentId', details.parentId],
+    !Types.isCloudDocsRootDetails(details) && ['parentId', details.parentId],
   ]
 }
 const isRow = (input: Row | Element[]): input is Row => {
@@ -78,17 +78,17 @@ const showElements = (elements: Element[]): string => {
 }
 
 export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
-  (details: T.Details): string =>
+  (details: Types.Details): string =>
     pipe(
       [
-        T.isTrashDetailsG(details)
+        Types.isTrashDetailsG(details)
           ? Trash({ details })
           : Folder({ details }),
       ],
       showElements,
     )
 
-export const showFileInfo = (result: T.DriveChildrenItemFile) =>
+export const showFileInfo = (result: Types.DriveChildrenItemFile) =>
   ({ showDrivewsid = false, showDocwsid = false } = {}): string =>
     pipe(
       [
@@ -113,8 +113,8 @@ const showItemRow = ({
   showDocwsid = false,
   showEtag = false,
 } = {}) =>
-  (item: T.DriveChildrenItem) => {
-    const row = []
+  (item: Types.DriveChildrenItem) => {
+    const row: string[] = []
 
     if (item.type === 'FILE') {
       if (!short) {
@@ -127,9 +127,9 @@ const showItemRow = ({
         showDrivewsid && row.push(item.drivewsid)
         showDocwsid && row.push(item.docwsid)
 
-        row.push(item.size)
+        row.push(item.size.toString())
       }
-      row.push(T.fileName(item))
+      row.push(Types.fileName(item))
     }
     else {
       if (!short) {
@@ -144,16 +144,16 @@ const showItemRow = ({
 
         row.push(item.type)
       }
-      row.push(T.fileName(item) + '/')
+      row.push(Types.fileName(item) + '/')
     }
 
     return row.join('\t')
   }
-const ordByType = Ord.contramap((d: T.DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
-const ordByName = Ord.contramap((d: T.DriveChildrenItem) => d.name)(string.Ord)
+const ordByType = Ord.contramap((d: Types.DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
+const ordByName = Ord.contramap((d: Types.DriveChildrenItem) => d.name)(string.Ord)
 
 export const showDetailsInfo = (
-  details: T.Details,
+  details: Types.Details,
   path: string,
 ) =>
   (
@@ -200,12 +200,12 @@ const nSymbols = (n: number, s: string) => {
 
 export type RecursiveFolder =
   | {
-    readonly details: T.Details
+    readonly details: Types.Details
     readonly deep: true
     readonly children: RecursiveFolder[]
   }
   | {
-    readonly details: T.Details
+    readonly details: Types.Details
     readonly deep: false
   }
 
@@ -213,12 +213,12 @@ const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
 
 const showRecursive = ({ ident = 0 }) =>
   (folder: RecursiveFolder): string => {
-    const folderName = T.fileName(folder.details)
+    const folderName = Types.fileName(folder.details)
 
     const fileNames = pipe(
       folder.details.items,
-      A.filter(T.isFileItem),
-      A.map(T.fileName),
+      A.filter(Types.isFileItem),
+      A.map(Types.fileName),
     )
 
     const identStr = nSymbols(ident, '  ')

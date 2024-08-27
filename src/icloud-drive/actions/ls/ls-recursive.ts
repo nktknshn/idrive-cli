@@ -4,13 +4,13 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
-import { DriveLookup } from '../../../../icloud-drive'
-import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../../../icloud-drive/util/drive-folder-tree'
-import { addLeadingSlash, normalizePath } from '../../../../util/normalize-path'
-import { Path } from '../../../../util/path'
-import { filterTree } from '../../../../util/tree'
+import { addLeadingSlash, normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/path'
+import { filterTree } from '../../../util/tree'
+import { DriveLookup } from '../..'
+import { addPathToFolderTree, showTreeWithFiles, treeWithFiles } from '../../util/drive-folder-tree'
 
-export const recursivels = ({ paths, depth, tree }: {
+export const lsRecursive = ({ paths, depth, tree }: {
   paths: NA.NonEmptyArray<string>
   depth: number
   tree: boolean

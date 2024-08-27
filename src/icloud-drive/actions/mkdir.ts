@@ -1,7 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { showDetailsInfo } from '../../cli/drive/commands/ls/ls-printing'
 import { logger } from '../../logging'
 import { loggerIO } from '../../logging/loggerIO'
 import { normalizePath, Path } from '../../util/path'
@@ -9,6 +8,7 @@ import { SRA } from '../../util/types'
 import { DriveLookup } from '..'
 import { DepApiMethod } from '../drive-api'
 import { createFoldersStrict } from '../drive-api/extra'
+import { showDetailsInfo } from './ls/ls-printing'
 
 export type Deps =
   & DriveLookup.Deps
