@@ -1,6 +1,6 @@
 import { ClientInfo } from './icloud-core/session/types'
 
-export const fileEditor = 'vim'
+export const fileEditor = 'vi'
 export const tempDir = '/tmp/'
 export const sessionFile = 'data/last-session.json'
 export const cacheFile = 'data/cli-drive-cache.json'

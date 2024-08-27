@@ -21,5 +21,4 @@ export const createCliActionsDeps = (argv: {
   cacheFile: argv.cacheFile ?? defaults.cacheFile,
   noCache: argv.noCache ?? false,
   tempdir: argv.tempdir ?? defaults.tempDir,
-  fileEditor: argv.fileEditor ?? defaults.fileEditor,
 })

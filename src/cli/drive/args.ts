@@ -114,8 +114,7 @@ const edit = w.command(
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .options({
-        output: { default: './', type: 'string' },
-        structured: { default: true, type: 'boolean' },
+        editor: { type: 'string', default: defaults.fileEditor },
       }),
 )
 

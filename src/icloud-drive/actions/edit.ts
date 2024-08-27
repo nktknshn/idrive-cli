@@ -19,13 +19,12 @@ import { DepApiMethod } from '../drive-api'
 import { getICloudItemUrl } from '../drive-api/extra'
 import * as Actions from './'
 
-type Deps =
+export type Deps =
   & DriveLookup.Deps
   & DepApiMethod<'download'>
   & Actions.DepsUpload
   & DepFs<'fstat' | 'createWriteStream' | 'rm'>
   & DepFetchClient
-  & { fileEditor: string }
   & { tempdir: string }
 
 const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: string }) =>
@@ -34,7 +33,6 @@ const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: stri
       (resolve, reject) => {
         child_process
           .spawn(fileEditor, [tempFile], {
-            // shell: true,
             stdio: 'inherit',
           })
           .on('close', (code, signal) => {
@@ -48,7 +46,7 @@ const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: stri
   }
 
 export const edit = (
-  { path }: { path: string },
+  { path, fileEditor }: { path: string; fileEditor: string },
 ): DriveLookup.Lookup<void, Deps> => {
   const npath = pipe(path, normalizePath)
 
@@ -70,14 +68,13 @@ export const edit = (
       pipe(
         SRTE.of<DriveLookup.State, Deps, Error, { readable: Readable }>({ readable }),
         SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
-        SRTE.bind('fileEditor', () => SRTE.asks(s => s.fileEditor)),
         SRTE.bind('rm', () => SRTE.asks(s => s.fs.rm)),
         SRTE.bindW('writeResult', ({ readable, tempFile }) =>
           SRTE.fromReaderTaskEither(
             writeFileFromReadable(tempFile)(readable),
           )),
-        SRTE.bind('signal', s => SRTE.fromTask(spawnVim(s))),
-        SRTE.chainFirstW(({ signal, tempFile }) => {
+        SRTE.bind('signal', s => SRTE.fromTask(spawnVim({ fileEditor, tempFile: s.tempFile }))),
+        SRTE.chainFirstW(({ tempFile }) => {
           return Actions.uploadSingleFile({
             overwright: true,
             srcpath: tempFile,
@@ -85,7 +82,7 @@ export const edit = (
             skipTrash: false,
           })
         }),
-        SRTE.chainW(a => SRTE.fromTaskEither(a.rm(a.tempFile))),
+        SRTE.chainW(({ rm, tempFile }) => SRTE.fromTaskEither(rm(tempFile))),
       )
     ),
   )
