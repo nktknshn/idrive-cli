@@ -1,11 +1,6 @@
-import { pipe } from 'fp-ts/lib/function'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as t from 'io-ts'
-import { Readable } from 'stream'
 import * as AR from '../../icloud-core/icloud-request'
 import { debugTimeSRTE } from '../../logging/debug-time'
-import { err } from '../../util/errors'
-import { expectResponse, FetchClientEither } from '../../util/http/fetch-client'
 
 export interface DownloadResponseBody {
   document_id: string
@@ -71,17 +66,3 @@ export function downloadBatch<S extends AR.AuthenticatedState>(
     ),
   )
 }
-
-export const getUrlStream = ({ fetchClient }: { fetchClient: FetchClientEither }) =>
-  (
-    { url }: { url: string },
-  ): TE.TaskEither<Error, Readable> => {
-    return pipe(
-      fetchClient({ method: 'GET', url, headers: {}, data: undefined, responseType: 'stream' }),
-      expectResponse(
-        _ => _.status == 200,
-        _ => err(`responded ${_.status}`),
-      ),
-      TE.map(_ => _.data as Readable),
-    )
-  }

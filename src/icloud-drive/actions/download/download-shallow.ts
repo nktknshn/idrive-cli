@@ -22,7 +22,7 @@ type ShallowArgs = {
 /** download file of files from a directory */
 export const downloadShallow = (
   { path, dry, dstpath, chunkSize, include, exclude }: ShallowArgs,
-): SRA<DriveLookup.LookupState, Deps, string> => {
+): SRA<DriveLookup.State, Deps, string> => {
   return pipe(
     downloadFolder(
       {

@@ -18,7 +18,7 @@ export type Deps =
 
 export const mkdir = (
   { path }: { path: string },
-): SRA<DriveLookup.LookupState, Deps, string> => {
+): SRA<DriveLookup.State, Deps, string> => {
   const parentPath = Path.dirname(path)
   const name = Path.basename(path)
 
@@ -33,7 +33,7 @@ export const mkdir = (
     SRTE.bindW('result', ({ parent }) =>
       pipe(
         // try to create folder returning new folders shallow details
-        createFoldersStrict<DriveLookup.LookupState>({
+        createFoldersStrict<DriveLookup.State>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],
         }),

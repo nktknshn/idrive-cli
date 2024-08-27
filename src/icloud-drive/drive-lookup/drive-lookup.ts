@@ -23,26 +23,24 @@ export type TempLookupCacheState = {
 }
 
 /** Lookup state is lookup cache and authenticated state */
-export type LookupState =
+export type State =
   & { cache: C.LookupCache }
   & TempLookupCacheState
   & AuthenticatedState
 
-export type Lookup<A, R = Deps> = SRTE.StateReaderTaskEither<LookupState, R, Error, A>
+export type Lookup<A, R = Deps> = SRTE.StateReaderTaskEither<State, R, Error, A>
 
 export const { map, chain: chain_, filterOrElse } = SRTE
 
-export const of: <S extends LookupState, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> =
-  SRTE.of
+export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
 
-export const get = (): SRTE.StateReaderTaskEither<LookupState, Deps, never, LookupState> =>
-  SRTE.get<LookupState, Deps>()
-export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<LookupState, R, E, LookupState> =>
-  SRTE.left<LookupState, Deps, E>(e)
+export const get = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
+export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<State, R, E, State> =>
+  SRTE.left<State, Deps, E>(e)
 
 export const chainState = <A>(
-  f: (s: LookupState) => SRTE.StateReaderTaskEither<LookupState, Deps, Error, A>,
-): SRTE.StateReaderTaskEither<LookupState, Deps, Error, A> => SRTE.chain(f)(get())
+  f: (s: State) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
+): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(get())
 
 export const errString = <A>(s: string): Lookup<A> => SRTE.left(err(s))
 

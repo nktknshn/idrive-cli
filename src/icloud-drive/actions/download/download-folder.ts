@@ -80,7 +80,7 @@ type DownloadFolderInfo = {
 
 const prepareLocalFs = (task: DownloadTaskMapped) =>
   pipe(
-    SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.LookupState>(
+    SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.State>(
       pipe(
         createLocalDirStruct(task.localdirstruct),
         RTE.chainW(() => createEmpties(task)),

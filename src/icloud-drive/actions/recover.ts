@@ -23,7 +23,7 @@ export const recover = (
     SRTE.filterOrElse(not(isTrashDetailsG), () => err(`you cannot recover trash root`)),
     SRTE.chainW((item) =>
       pipe(
-        DriveApiMethods.putBackItemsFromTrash<DriveLookup.LookupState>([item]),
+        DriveApiMethods.putBackItemsFromTrash<DriveLookup.State>([item]),
         SRTE.map(() => `Success.`),
       )
     ),

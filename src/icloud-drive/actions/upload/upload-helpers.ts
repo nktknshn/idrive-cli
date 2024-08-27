@@ -89,14 +89,14 @@ export const uploadChunkPar = (
         local: { path: string; stats: FsStats },
       ]
     >,
-  ): SRA<DriveLookup.LookupState, DepApiMethod<'upload'>, NEA<UploadResult>> =>
+  ): SRA<DriveLookup.State, DepApiMethod<'upload'>, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, local]) => {
           const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
           return pipe(
-            DriveApiMethods.upload<DriveLookup.LookupState>({
+            DriveApiMethods.upload<DriveLookup.State>({
               sourceFilePath: local.path,
               docwsid: d.docwsid,
               zone: d.zone,
@@ -126,7 +126,7 @@ export const getDirStructTask = (
 export const createRemoteDirStructure = (
   dstitemDrivewsid: string,
   dirstruct: string[],
-): SRA<DriveLookup.LookupState, DepApiMethod<'createFolders'>, Record<string, string>> => {
+): SRA<DriveLookup.State, DepApiMethod<'createFolders'>, Record<string, string>> => {
   const task = getDirStructTask(dirstruct)
 
   const pathToDrivewsid: Record<string, string> = {
@@ -146,7 +146,7 @@ export const createRemoteDirStructure = (
               R.lookup(parent)(acc),
               SRTE.fromOption(() => err(`pathToDrivewsid missing ${parent}`)),
               SRTE.chain(destinationDrivewsId =>
-                DriveApiMethods.createFoldersStrict<DriveLookup.LookupState>({
+                DriveApiMethods.createFoldersStrict<DriveLookup.State>({
                   destinationDrivewsId,
                   names: subdirs,
                 })

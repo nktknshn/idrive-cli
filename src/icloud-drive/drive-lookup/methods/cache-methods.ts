@@ -2,14 +2,14 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import * as T from '../../drive-types'
-import { chain, get, Lookup, LookupState, map } from '..'
+import { chain, get, Lookup, map, State } from '..'
 import * as C from '../cache'
 
 export const putCache = (cache: C.LookupCache): Lookup<void> =>
   pipe(
     get(),
     SRTE.chain(
-      (state: LookupState) => SRTE.put({ ...state, cache }),
+      (state: State) => SRTE.put({ ...state, cache }),
     ),
   )
 

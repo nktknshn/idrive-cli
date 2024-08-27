@@ -11,7 +11,7 @@ import { sequenceArrayO } from '../../../util/util'
 import { Cache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
-import { Lookup, LookupState } from '..'
+import { Lookup, State } from '..'
 import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
@@ -38,7 +38,7 @@ export const retrieveItemDetailsInFoldersCached = (
         missed,
         A.matchW(
           () => DriveLookup.of({ missed: [], found: [] }),
-          (missed) => DriveApiMethods.retrieveItemDetailsInFoldersSeparated<LookupState>(missed),
+          (missed) => DriveApiMethods.retrieveItemDetailsInFoldersSeparated<State>(missed),
         ),
       )
     ),

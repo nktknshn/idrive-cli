@@ -14,7 +14,7 @@ export const lsRecursive = ({ paths, depth, tree }: {
   paths: NA.NonEmptyArray<string>
   depth: number
   tree: boolean
-}): SRTE.StateReaderTaskEither<DriveLookup.LookupState, DriveLookup.Deps, Error, string> => {
+}): SRTE.StateReaderTaskEither<DriveLookup.State, DriveLookup.Deps, Error, string> => {
   const scanned = pipe(
     paths,
     NA.map(addLeadingSlash),
