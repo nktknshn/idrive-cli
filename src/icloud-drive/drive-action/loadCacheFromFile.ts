@@ -4,11 +4,12 @@ import { DepFs } from '../../deps-types'
 import { ReadJsonFileError } from '../../util/files'
 import { Cache } from '..'
 
+export type Deps =
+  & { noCache: boolean; cacheFile: string }
+  & DepFs<'readFile'>
+
 export const loadCacheFromFile: RTE.ReaderTaskEither<
-  {
-    noCache: boolean
-    cacheFile: string
-  } & DepFs<'readFile'>,
+  Deps,
   Error | ReadJsonFileError,
   Cache.LookupCache
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
@@ -17,7 +18,7 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
       ? RTE.of(Cache.cachef())
       : Cache.tryReadFromFile(deps.cacheFile),
     RTE.orElse(
-      (e) => RTE.of(Cache.cachef()),
+      () => RTE.of(Cache.cachef()),
     ),
   )
 )

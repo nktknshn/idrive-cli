@@ -1,5 +1,4 @@
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DriveApiWrapped } from '../drive-api-wrapped'
 
 import * as basic from './basic'
 import * as extra from './extra'

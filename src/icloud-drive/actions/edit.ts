@@ -29,12 +29,12 @@ export type Deps =
 // TODO add Editor interface
 // TODO calc hash to check if the file was changed
 
-const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: string }) =>
+const spawnVim = ({ tempFile, editor }: { tempFile: string; editor: string }) =>
   (): Promise<NodeJS.Signals | null> => {
     return new Promise(
       (resolve, reject) => {
         child_process
-          .spawn(fileEditor, [tempFile], {
+          .spawn(editor, [tempFile], {
             stdio: 'inherit',
           })
           .on('close', (code, signal) => {
@@ -75,7 +75,7 @@ export const edit = (
           SRTE.fromReaderTaskEither(
             writeFileFromReadable(tempFile)(readable),
           )),
-        SRTE.bind('signal', s => SRTE.fromTask(spawnVim({ fileEditor: editor, tempFile: s.tempFile }))),
+        SRTE.bind('signal', s => SRTE.fromTask(spawnVim({ editor, tempFile: s.tempFile }))),
         SRTE.chainFirstW(({ tempFile }) => {
           return Actions.uploadSingleFile({
             overwright: true,

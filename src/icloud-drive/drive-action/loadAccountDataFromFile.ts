@@ -6,10 +6,15 @@ import { authenticateState } from '../../icloud-authentication/methods'
 import { AuthenticatedState, BaseState } from '../../icloud-core/icloud-request'
 import { loggerIO } from '../../logging/loggerIO'
 
+export type Deps =
+  & DepAuthenticateSession
+  & { sessionFile: string }
+  & DepFs<'readFile'>
+
 export const loadAccountDataFromFile = (
   { session }: BaseState,
 ): RTE.ReaderTaskEither<
-  DepAuthenticateSession & { sessionFile: string } & DepFs<'readFile'>,
+  Deps,
   Error,
   AuthenticatedState
 > =>

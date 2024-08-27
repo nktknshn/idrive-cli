@@ -10,5 +10,4 @@ export const loadDriveStateFromFiles = pipe(
   RTE.chain(loadAccountDataFromFile),
   RTE.bindW('cache', () => loadCacheFromFile),
   RTE.bindW('tempCache', () => RTE.of(O.none)),
-  // RTE.bindW('tempCacheActive', () => RTE.of(false)),
 )

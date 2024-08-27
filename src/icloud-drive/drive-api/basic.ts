@@ -1,6 +1,6 @@
 import { apiMethod, DepWrappedApi } from './method'
 
-/** Basic icloud api requests as standalone depended functions*/
+/** Basic icloud api requests as standalone dependent functions*/
 
 export const renameItems = apiMethod((_: DepWrappedApi<'renameItems'>) => _.api.renameItems)
 
