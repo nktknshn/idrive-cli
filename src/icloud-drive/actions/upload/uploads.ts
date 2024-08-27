@@ -6,16 +6,16 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { DepAskConfirmation } from '../../../../deps-types/dep-ask-confirmation'
-import { DepFs } from '../../../../deps-types/dep-fs'
-import { DriveLookup } from '../../../../icloud-drive'
-import { DepApiMethod, DriveApiMethods } from '../../../../icloud-drive/drive-api'
-import * as T from '../../../../icloud-drive/drive-types'
-import { findInParentFilename, getDrivewsid } from '../../../../icloud-drive/util/drive-helpers'
-import * as V from '../../../../icloud-drive/util/get-by-path-types'
-import { loggerIO } from '../../../../logging/loggerIO'
-import { normalizePath, Path } from '../../../../util/path'
-import { SRA } from '../../../../util/types'
+
+import { DepAskConfirmation, DepFs } from '../../../deps-types'
+import { loggerIO } from '../../../logging/loggerIO'
+import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/path'
+import { SRA } from '../../../util/types'
+import { DriveLookup, Types } from '../..'
+import { DepApiMethod, DriveApiMethods } from '../../drive-api'
+import { findInParentFilename, getDrivewsid } from '../../util/drive-helpers'
+import * as V from '../../util/get-by-path-types'
 import { AskingFunc } from '../upload'
 
 export type Deps =
@@ -87,7 +87,7 @@ export const uploadSingleFile = (
 
 const handleSingleFileUpload = (
   { src, dst, overwright, skipTrash }: {
-    dst: V.GetByPathResult<T.DetailsDocwsRoot>
+    dst: V.GetByPathResult<Types.DetailsDocwsRoot>
     src: string
     overwright: boolean
     skipTrash: boolean
@@ -98,7 +98,7 @@ const handleSingleFileUpload = (
     const dstitem = V.pathTarget(dst)
 
     // if it's a folder
-    if (T.isFolderLike(dstitem)) {
+    if (Types.isFolderLike(dstitem)) {
       return uploadFileToFolder({ src, dstDetails: dstitem, overwright, skipTrash })
     }
     // if it's a file and the overwright flag set
@@ -117,7 +117,7 @@ const handleSingleFileUpload = (
     const dstitem = NA.last(dst.details)
     const fname = NA.head(dst.rest)
 
-    if (T.isFolderLike(dstitem)) {
+    if (Types.isFolderLike(dstitem)) {
       return pipe(
         DriveApiMethods.upload<DriveLookup.LookupState>({
           sourceFilePath: src,
@@ -138,7 +138,7 @@ const uploadFileToFolder = (
     overwright:
       | boolean
       | AskingFunc
-    dstDetails: T.DetailsDocwsRoot | T.NonRootDetails
+    dstDetails: Types.DetailsDocwsRoot | Types.NonRootDetails
     src: string
     skipTrash: boolean
   },
@@ -147,7 +147,7 @@ const uploadFileToFolder = (
 
   const actualFile = pipe(
     findInParentFilename(dstDetails, fname),
-    O.filter(T.isFile),
+    O.filter(Types.isFile),
   )
 
   if (isSome(actualFile)) {
@@ -185,8 +185,8 @@ const uploadFileToFolder = (
 
 const uploadOverwrighting = (
   { src, parent, dstitem, skipTrash }: {
-    parent: T.DetailsDocwsRoot | T.NonRootDetails
-    dstitem: T.DriveChildrenItemFile
+    parent: Types.DetailsDocwsRoot | Types.NonRootDetails
+    dstitem: Types.DriveChildrenItemFile
     src: string
     skipTrash: boolean
   },

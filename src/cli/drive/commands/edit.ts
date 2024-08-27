@@ -16,13 +16,14 @@ import { err } from '../../../util/errors'
 import { getUrlStream } from '../../../util/http/getUrlStream'
 import { normalizePath, Path } from '../../../util/path'
 import { writeFileFromReadable } from '../../../util/writeFileFromReadable'
-import { Deps as UploadDeps, uploadSingleFile } from './upload/uploads'
+
+import * as Actions from '../../../icloud-drive/actions'
 
 type Deps =
   // lookup deps
   & DriveLookup.Deps
   & DepApiMethod<'download'>
-  & UploadDeps
+  & Actions.DepsUpload
   & DepFs<'fstat' | 'createWriteStream'>
   & DepFetchClient
   & { fileEditor: string }
@@ -86,7 +87,7 @@ export const edit = (
           (s) => SRTE.fromTask(spawnVim(s)),
         ),
         SRTE.chainW(({ signal, tempFile }) => {
-          return uploadSingleFile({
+          return Actions.uploadSingleFile({
             overwright: true,
             srcpath: tempFile,
             dstpath: npath,

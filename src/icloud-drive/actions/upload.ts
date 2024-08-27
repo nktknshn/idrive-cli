@@ -1,9 +1,10 @@
+import assert from 'assert'
 import * as A from 'fp-ts/Array'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { DriveLookup } from '../../../icloud-drive'
 
-import * as Actions from '../../../icloud-drive/actions'
-import { err } from '../../../util/errors'
+import { DriveLookup } from '..'
+import { Deps as UploadFolderDeps, uploadFolder } from './upload-folder'
+import { Deps as UploadDeps, uploads, uploadSingleFile } from './upload/uploads'
 
 export type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
@@ -31,17 +32,12 @@ export const upload = (
     overwright: boolean
     skipTrash: boolean
   },
-): DriveLookup.Lookup<unknown, Actions.DepsUpload & Actions.DepsUploadFolder> => {
-  if (!A.isNonEmpty(argv.uploadargs)) {
-    return DriveLookup.left(err('No files to upload'))
-  }
-
-  if (argv.uploadargs.length < 2) {
-    return DriveLookup.left(err('Missing destination path'))
-  }
+): DriveLookup.Lookup<unknown, UploadDeps & UploadFolderDeps> => {
+  assert(A.isNonEmpty(argv.uploadargs))
+  assert(argv.uploadargs.length > 1)
 
   if (argv.recursive) {
-    return Actions.uploadFolder({
+    return uploadFolder({
       ...argv,
       localpath: argv.uploadargs[0],
       remotepath: argv.uploadargs[1],
@@ -50,7 +46,7 @@ export const upload = (
   }
 
   if (argv.uploadargs.length == 2) {
-    return Actions.uploadSingleFile({
+    return uploadSingleFile({
       overwright: argv.overwright,
       skipTrash: argv.skipTrash,
       srcpath: argv.uploadargs[0],
@@ -58,7 +54,7 @@ export const upload = (
     })
   }
   else {
-    return Actions.uploads({
+    return uploads({
       uploadargs: argv.uploadargs,
       overwright: argv.overwright,
       skipTrash: argv.skipTrash,

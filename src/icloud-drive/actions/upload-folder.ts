@@ -5,18 +5,19 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
-import { DepFs } from '../../../deps-types'
-import { DriveLookup, Types } from '../../../icloud-drive'
 
-import { DepApiMethod, DriveApiMethods } from '../../../icloud-drive/drive-api'
-import { findInParentFilename } from '../../../icloud-drive/util/drive-helpers'
-import * as V from '../../../icloud-drive/util/get-by-path-types'
-import { loggerIO } from '../../../logging/loggerIO'
-import { printerIO } from '../../../logging/printerIO'
-import { err } from '../../../util/errors'
-import { normalizePath, Path } from '../../../util/path'
-import { SRA } from '../../../util/types'
-import { walkDirRel } from '../../../util/walkdir'
+import { DepFs } from '../../deps-types'
+import { loggerIO } from '../../logging/loggerIO'
+import { printerIO } from '../../logging/printerIO'
+import { err } from '../../util/errors'
+import { normalizePath } from '../../util/normalize-path'
+import { Path } from '../../util/path'
+import { SRA } from '../../util/types'
+import { walkDirRel } from '../../util/walkdir'
+import { DriveLookup, Types } from '..'
+import { DepApiMethod, DriveApiMethods } from '../drive-api'
+import { findInParentFilename } from '../util/drive-helpers'
+import * as V from '../util/get-by-path-types'
 import {
   createRemoteDirStructure,
   getUploadTask,
@@ -119,7 +120,7 @@ const uploadToNewFolder = (
   },
 ): (
   task: UploadTask,
-) => SRA<DriveLookup.LookupState, Deps, UploadResult[]> =>
+) => DriveLookup.Lookup<UploadResult[], Deps> =>
   (task: UploadTask) =>
     pipe(
       printerIO.print(`creating folder ${remotepath}`),
