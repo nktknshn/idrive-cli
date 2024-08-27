@@ -6,7 +6,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepFetchClient, DepFs } from '../../deps-types'
 import { loggerIO } from '../../logging/loggerIO'
 import { printerIO } from '../../logging/printerIO'
-import { writeFileFromReadable } from '../writeFileFromReadable'
+import { writeFileFromReadable } from '../fs/write-file'
 import { getUrlStream } from './getUrlStream'
 
 export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'createWriteStream'>> = (

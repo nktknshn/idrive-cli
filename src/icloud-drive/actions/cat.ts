@@ -11,7 +11,7 @@ import { getUrlStream } from '../../util/http/getUrlStream'
 import { normalizePath } from '../../util/normalize-path'
 import { consumeStreamToString } from '../../util/util'
 import { DepApiMethod } from '../drive-api'
-import { getICloudItemUrl } from '../drive-api/extra'
+import { getDriveItemUrl } from '../drive-api/extra'
 import { isFile } from '../drive-types'
 
 export type Deps =
@@ -32,7 +32,7 @@ export const cat = (
         SRTE.map(NA.head),
         SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
       )),
-    SRTE.chainW(({ item }) => getICloudItemUrl(item)),
+    SRTE.chainW(({ item }) => getDriveItemUrl(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
     SRTE.chainW((url) =>
       SRTE.fromReaderTaskEither(

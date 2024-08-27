@@ -37,7 +37,7 @@ export const retrieveItemDetailsInFolder = (
     SRTE.map(NA.head),
   )
 
-export const getICloudItemUrl = flow(
+export const getDriveItemUrl = flow(
   download,
   SRTE.map(
     _ => _.data_token?.url ?? _.package_token?.url,

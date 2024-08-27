@@ -14,7 +14,7 @@ import { ItemIsNotFolderError } from '../../errors'
 import { chainCachedDocwsRoot, getCachedDocwsRoot } from '../get-roots'
 import { getByPaths } from './get-by-paths'
 
-/** fails if some of the paths are not valid */
+/** Fails if some of the paths are not valid */
 export const getByPathsStrict = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,

@@ -5,19 +5,18 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
 import { Readable } from 'stream'
 
 import { DepFetchClient, DepFs } from '../../deps-types'
 import { err } from '../../util/errors'
+import { writeFileFromReadable } from '../../util/fs/write-file'
 import { getUrlStream } from '../../util/http/getUrlStream'
 import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
-import { writeFileFromReadable } from '../../util/writeFileFromReadable'
 import { DriveLookup, Types } from '..'
 import { DepApiMethod } from '../drive-api'
-import { getICloudItemUrl } from '../drive-api/extra'
-import * as Actions from './'
+import { getDriveItemUrl } from '../drive-api/extra'
+import * as Actions from '.'
 
 export type Deps =
   & DriveLookup.Deps
@@ -26,6 +25,9 @@ export type Deps =
   & DepFs<'fstat' | 'createWriteStream' | 'rm'>
   & DepFetchClient
   & { tempdir: string }
+
+// TODO add Editor interface
+// TODO calc hash to check if the file was changed
 
 const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: string }) =>
   (): Promise<NodeJS.Signals | null> => {
@@ -46,7 +48,7 @@ const spawnVim = ({ tempFile, fileEditor }: { tempFile: string; fileEditor: stri
   }
 
 export const edit = (
-  { path, fileEditor }: { path: string; fileEditor: string },
+  { path, editor }: { path: string; editor: string },
 ): DriveLookup.Lookup<void, Deps> => {
   const npath = pipe(path, normalizePath)
 
@@ -60,7 +62,7 @@ export const edit = (
     DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPathsStrict(root, [npath])),
     SRTE.map(NA.head),
     SRTE.filterOrElse(Types.isFile, () => err(`You cannot edit a directory.`)),
-    SRTE.chainW((item) => getICloudItemUrl(item)),
+    SRTE.chainW((item) => getDriveItemUrl(item)),
     SRTE.map(O.fromNullable),
     SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
     SRTE.chainW(url => SRTE.fromReaderTaskEitherK((url: string) => getUrlStream({ url }))(url)),
@@ -73,7 +75,7 @@ export const edit = (
           SRTE.fromReaderTaskEither(
             writeFileFromReadable(tempFile)(readable),
           )),
-        SRTE.bind('signal', s => SRTE.fromTask(spawnVim({ fileEditor, tempFile: s.tempFile }))),
+        SRTE.bind('signal', s => SRTE.fromTask(spawnVim({ fileEditor: editor, tempFile: s.tempFile }))),
         SRTE.chainFirstW(({ tempFile }) => {
           return Actions.uploadSingleFile({
             overwright: true,

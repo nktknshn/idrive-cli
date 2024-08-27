@@ -3,10 +3,10 @@ import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TR from 'fp-ts/lib/Tree'
-import { DepFs } from '../deps-types/dep-fs'
-import { LocalTreeElement } from './localtreeelement'
-import { stripTrailingSlash } from './normalize-path'
-import { Path } from './path'
+import { DepFs } from '../../deps-types/dep-fs'
+import { LocalTreeElement } from './../localtreeelement'
+import { stripTrailingSlash } from './../normalize-path'
+import { Path } from './../path'
 
 export const walkDir = (path: string): RTE.ReaderTaskEither<
   DepFs<'fstat' | 'opendir'>,

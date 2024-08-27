@@ -4,7 +4,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { DepFs } from '../../../deps-types'
 import { loggerIO } from '../../../logging/loggerIO'
-import { isEexistError } from '../../../util/fs/isEnoentError'
+import { isEexistError } from '../../../util/fs/is-enoent-error'
 import { DownloadTaskMapped } from './types'
 
 export const createLocalDirStruct = (
