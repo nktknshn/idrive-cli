@@ -4,6 +4,7 @@ import * as t from 'io-ts'
 import { TypeOf } from 'io-ts'
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../util/util'
 import * as types from './types-io'
+export * as TypesIo from './types-io'
 
 export type DetailsOrFile<R extends Details> = (R | NonRootDetails | DriveChildrenItemFile)
 

@@ -14,7 +14,7 @@ import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import { Lookup, State } from '..'
 import { chainCache, getCache, getsCache, putMissedFound, usingCache } from './cache-methods'
 
-/** returns details from cache if they are there otherwise fetches them from icloid api.   */
+/** Returns details from cache if they are there otherwise fetches them from icloid api.   */
 export const retrieveItemDetailsInFoldersCached = (
   drivewsids: NEA<string>,
 ): Lookup<NEA<O.Option<Types.Details>>> => {
@@ -65,16 +65,7 @@ export function retrieveItemDetailsInFoldersCachedStrict(
   )
 }
 
-// const retrieveItemDetailsInFoldersSaving=  flow(
-//   retrieveItemDetailsInFoldersCached,
-//   usingCache(C.cachef()),
-// )
-
-// type D = {
-//   retrieveItemDetailsInFoldersTempCache<S>(
-//     drivewsids: NEA<string>,
-//   ): XXX<S, DriveApi.Dep<'retrieveItemDetailsInFolders'>, NEA<T.NonRootDetails>>
-// }
+// WTF those comments below
 // when no special context enabled it behaves just like retrieveItemDetailsInFoldersSaving
 // but when inside the context it works like retrieveItemDetailsInFoldersCached
 // but using the context cache
@@ -104,7 +95,8 @@ export function retrieveItemDetailsInFoldersSaving(
     SRTE.chain(() =>
       pipe(
         retrieveItemDetailsInFoldersCached(drivewsids),
-        usingCache(Cache.cachef()),
+        // WHY?
+        // usingCache(Cache.cachef()),
       )
     ),
   )

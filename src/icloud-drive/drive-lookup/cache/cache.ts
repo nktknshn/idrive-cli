@@ -18,6 +18,7 @@ import { getFromCacheByPath } from './cache-get-by-path'
 import { assertFolderWithDetailsEntity, cacheEntityFromDetails, hierarchyToPath, parsePath } from './cache-helpers'
 import * as CT from './cache-types'
 export * from './cache-file'
+export * from './cache-tree'
 
 export type LookupCache = CT.CacheF
 

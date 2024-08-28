@@ -1,6 +1,6 @@
 import * as CT from '../../drive-types'
 
-/** Cache is just a key-val storage for files info */
+/** Cache is just a key-val storage for folders details */
 export interface CacheF {
   readonly byDrivewsid: { readonly [drivewsid: string]: CacheEntity }
 }
@@ -21,7 +21,6 @@ export type CacheEntityAppLibrary = // | CacheEntityAppLibraryItem
   CacheEntityAppLibraryDetails
 
 export type CacheEntity = CacheEntityFolderLike
-// | CacheEntityFile
 
 export type CacheEntityWithParentId = Exclude<CacheEntity, CacheEntityFolderTrashDetails | CacheEntityFolderRootDetails>
 

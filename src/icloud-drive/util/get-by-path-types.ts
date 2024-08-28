@@ -1,14 +1,14 @@
 import * as E from 'fp-ts/Either'
 import * as A from 'fp-ts/lib/Array'
 import { Eq } from 'fp-ts/lib/Eq'
-import { flow, identity, pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath, normalizePath } from '../../util/normalize-path'
 import { NEA } from '../../util/types'
 import * as T from '../drive-types'
 
-/** Hierarchy of details, R is the root type */
+/** Chain of details, R is the root type */
 export type Hierarchy<R> = [R, ...T.NonRootDetails[]]
 
 export type PathValid<R> = PathValidFile<R> | PathValidFolder<R>
