@@ -12,7 +12,7 @@ import { Cache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import { Lookup, State } from '..'
-import { chainCache, getCache, getsCache, putMissedFound, usingCache } from './cache-methods'
+import { chainCache, getCache, getsCache, putMissedFound } from './cache-methods'
 
 /** Returns details from cache if they are there otherwise fetches them from icloid api.   */
 export const retrieveItemDetailsInFoldersCached = (
