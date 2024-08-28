@@ -110,7 +110,7 @@ export const cacheLogger = winston.createLogger({
       colorize: true,
       depth: 4,
     }),
-    plain('cache', chalk.grey),
+    plain('cache', chalk.greenBright),
   ),
 })
 

@@ -12,7 +12,7 @@ import { Cache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import { Lookup, State } from '..'
-import { askCache, asksCache, chainCache, putMissedFound, usingCache } from './cache-methods'
+import { chainCache, getCache, getsCache, putMissedFound, usingCache } from './cache-methods'
 
 /** returns details from cache if they are there otherwise fetches them from icloid api.   */
 export const retrieveItemDetailsInFoldersCached = (
@@ -21,7 +21,7 @@ export const retrieveItemDetailsInFoldersCached = (
   const uniqids = pipe(drivewsids, NA.uniq(Eq))
 
   return pipe(
-    askCache(),
+    getCache(),
     SRTE.chain(
       c =>
         SRTE.fromIO(
@@ -43,7 +43,7 @@ export const retrieveItemDetailsInFoldersCached = (
       )
     ),
     SRTE.chain(putMissedFound),
-    SRTE.chainW(() => asksCache(Cache.getFoldersDetailsByIds(drivewsids))),
+    SRTE.chainW(() => getsCache(Cache.getFoldersDetailsByIds(drivewsids))),
     SRTE.chainW(e => SRTE.fromEither(e)),
     SRTE.map(NA.map(Types.invalidIdToOption)),
   )
@@ -79,7 +79,7 @@ export function retrieveItemDetailsInFoldersCachedStrict(
 // but when inside the context it works like retrieveItemDetailsInFoldersCached
 // but using the context cache
 
-/** retrieves actual drivewsids saving valid ones to cache and removing those that were not found */
+/** Retrieves actual drivewsids saving valid ones to cache and removing those that were not found */
 export function retrieveItemDetailsInFoldersSaving<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
 ): Lookup<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
@@ -110,7 +110,7 @@ export function retrieveItemDetailsInFoldersSaving(
   )
 }
 
-/** fails if some of the ids were not found */
+/** Fails if some of the ids were not found */
 export function retrieveItemDetailsInFoldersSavingStrict(
   drivewsids: NEA<string>,
 ): Lookup<NEA<Types.NonRootDetails>>
@@ -122,7 +122,7 @@ export function retrieveItemDetailsInFoldersSavingStrict(
     SRTE.chain(
       flow(
         O.sequenceArray,
-        SRTE.fromOption(() => err(`some of the ids was not found`)),
+        SRTE.fromOption(() => err(`retrieveItemDetailsInFoldersSavingStrict: some of the ids was not found`)),
         v => v as Lookup<NEA<Types.Details>>,
       ),
     ),

@@ -28,7 +28,7 @@ export function download<S extends AR.AuthenticatedState>(
     zone: string
   },
 ): AR.ApiRequest<DownloadResponseBody, S> {
-  return debugTimeSRTE('createFolders')(
+  return debugTimeSRTE('download')(
     AR.basicJsonRequest(
       ({ state: { accountData } }) => ({
         method: 'GET',

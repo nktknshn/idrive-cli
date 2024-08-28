@@ -87,7 +87,7 @@ export const uploadSingleFile = (
 
 const handleSingleFileUpload = (
   { src, dst, overwright, skipTrash }: {
-    dst: GetByPath.GetByPathResult<Types.DetailsDocwsRoot>
+    dst: GetByPath.Result<Types.DetailsDocwsRoot>
     src: string
     overwright: boolean
     skipTrash: boolean

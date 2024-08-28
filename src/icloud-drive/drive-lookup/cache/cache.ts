@@ -12,7 +12,7 @@ import { NEA } from '../../../util/types'
 import { sequenceArrayE } from '../../../util/util'
 import * as T from '../../drive-types'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
-import { GetByPathResult } from '../../util/get-by-path-types'
+import * as GetByPath from '../../util/get-by-path-types'
 import { ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
 import { getFromCacheByPath } from './cache-get-by-path'
 import { assertFolderWithDetailsEntity, cacheEntityFromDetails, hierarchyToPath, parsePath } from './cache-helpers'
@@ -81,7 +81,7 @@ export const getByPath = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
 ) =>
-  (cache: CT.CacheF): GetByPathResult<R> => {
+  (cache: CT.CacheF): GetByPath.Result<R> => {
     const parts = parsePath(path)
     const rest = NA.tail(parts)
 
@@ -92,7 +92,7 @@ export const getByPaths = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
 ) =>
-  (cache: CT.CacheF): NEA<GetByPathResult<R>> => {
+  (cache: CT.CacheF): NEA<GetByPath.Result<R>> => {
     return pipe(
       paths,
       NA.map(path => getByPath<R>(root, path)(cache)),

@@ -60,7 +60,7 @@ export const uploadFolder = (
 const handleUploadFolder = (
   { src, dst, args }: {
     src: string
-    dst: V.GetByPathResult<Types.DetailsDocwsRoot>
+    dst: V.Result<Types.DetailsDocwsRoot>
     args: Argv
   },
 ): SRA<DriveLookup.State, Deps, UploadResult[]> => {

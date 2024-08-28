@@ -2,7 +2,7 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
-import { Types } from '../../../../src/icloud-drive'
+import { Cache, Types } from '../../../../src/icloud-drive'
 import { rootDrivewsid } from '../../../../src/icloud-drive/drive-types/types-io'
 import * as V from '../../../../src/icloud-drive/util/get-by-path-types'
 import { guardFstRO, isDefined } from '../../../../src/util/guards'
@@ -127,7 +127,7 @@ export const docwsroot = <T extends (Folder<any[], any> | AppLibray<any[], any> 
   }
 }
 
-const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
+export const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
   (f: Folder<any[], any>): Folder<any[], any> & {
     d: Types.DetailsFolder
     children: RootResult<any>
@@ -300,6 +300,8 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     c: RootDict<T>
   }
   itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>
+  /** cache containing all details */
+  cache: Cache.LookupCache
   allFolders: (Types.DetailsDocwsRoot | Types.NonRootDetails)[]
   byTag: Record<string, Item>
   tree: DocwsRoot<T>
@@ -311,9 +313,6 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
         zone: 'com.apple.CloudDocs',
       }),
     ),
-    // A.map(
-    //   c => addValidPath(c, V.validPath([details])),
-    // ),
   )
 
   const c = pipe(
@@ -348,27 +347,41 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     recordFromTuples,
   )
 
+  const allFolders = pipe(
+    Object.values(itemByDrivewsid),
+    A.filter(Types.isDetailsG),
+  )
+
+  const byTag = pipe(
+    A.flatten(children.map(getItems)),
+    A.map(_ => [_.tag, _] as const),
+    A.filter(guardFstRO(isDefined)),
+    recordFromTuples,
+  )
+
+  // cache contains all details
+  const cache = pipe(
+    Cache.cachef(),
+    Cache.putDetailss([d, ...allFolders]),
+  )
+
   return {
+    // root
     r: {
+      // root details
       d,
+      // root children
       children: children as RootResult<T>,
       childrenWithPath: children.map(
         c => addValidPath(c, V.validPath([d])),
       ) as RootResult<T>,
       c: c as RootDict<T>,
     },
-    itemByDrivewsid: itemByDrivewsid,
-    byTag: pipe(
-      A.flatten(children.map(getItems)),
-      A.map(_ => [_.tag, _] as const),
-      A.filter(guardFstRO(isDefined)),
-      recordFromTuples,
-    ),
+    itemByDrivewsid,
+    allFolders,
+    cache,
+    byTag,
     tree,
-    allFolders: pipe(
-      Object.values(itemByDrivewsid),
-      A.filter(Types.isDetailsG),
-    ),
   }
 }
 
@@ -396,13 +409,7 @@ export const removeByDrivewsid = (drivewsid: string) =>
       go(drivewsid)(itemByDrivewsid),
       R.map(d =>
         Types.isFolderLike(d)
-          ? ({
-            ...d,
-            items: pipe(
-              d.items,
-              A.filter(_ => _.drivewsid !== drivewsid),
-            ),
-          })
+          ? ({ ...d, items: pipe(d.items, A.filter(_ => _.drivewsid !== drivewsid)) })
           : d
       ),
     )

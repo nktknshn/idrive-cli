@@ -38,7 +38,7 @@ export const removeByIdsFromCache = (
 export const modifyCache = (f: (cache: C.LookupCache) => C.LookupCache): Lookup<void> =>
   chainCache(flow(f, putCache, map(constVoid)))
 
-export const askCache = (): Lookup<C.LookupCache> =>
+export const getCache = (): Lookup<C.LookupCache> =>
   pipe(
     get(),
     map(({ cache, tempCache }) =>
@@ -48,7 +48,7 @@ export const askCache = (): Lookup<C.LookupCache> =>
     ),
   )
 
-export const asksCache = <A>(f: (cache: C.LookupCache) => A): Lookup<A> => pipe(askCache(), map(f))
+export const getsCache = <A>(f: (cache: C.LookupCache) => A): Lookup<A> => pipe(getCache(), map(f))
 
 export const chainCache = <A>(f: (cache: C.LookupCache) => Lookup<A>): Lookup<A> =>
   pipe(get(), chain(({ cache }) => f(cache)))

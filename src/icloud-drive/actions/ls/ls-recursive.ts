@@ -24,18 +24,16 @@ const getScanned = (paths: NA.NonEmptyArray<string>) =>
     ),
   )
 
-export type ListRecursiveTreeResult = NEA<
-  O.Option<
-    TR.Tree<{
-      item: Types.DriveChildrenItemFile | Types.DetailsOrRoot<Types.DetailsDocwsRoot>
-      path: string
-    }>
-  >
+export type ListRecursiveTreeResult = O.Option<
+  TR.Tree<{
+    item: Types.DriveChildrenItemFile | Types.DetailsOrRoot<Types.DetailsDocwsRoot>
+    path: string
+  }>
 >
 
 export const listRecursiveTree = (
   { paths, depth }: { paths: NA.NonEmptyArray<string>; depth: number },
-): DriveLookup.Lookup<ListRecursiveTreeResult, DriveLookup.Deps> => {
+): DriveLookup.Lookup<NEA<ListRecursiveTreeResult>, DriveLookup.Deps> => {
   const scanned = getScanned(paths)
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
@@ -61,49 +59,3 @@ export const listRecursive = ({ paths, depth }: {
     DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
   )
 }
-
-// export const lsRecursive = ({ paths, depth, tree }: {
-//   paths: NA.NonEmptyArray<string>
-//   depth: number
-//   tree: boolean
-// }): SRTE.StateReaderTaskEither<DriveLookup.State, DriveLookup.Deps, Error, string> => {
-//   const scanned = pipe(
-//     paths,
-//     NA.map(addLeadingSlash),
-//     NA.map(micromatch.scan),
-//     NA.map(scan =>
-//       scan.isGlob
-//         ? scan
-//         : micromatch.scan(Path.join(scan.base, '**/*'))
-//     ),
-//   )
-
-//   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
-
-//   if (tree) {
-//     return pipe(
-//       DriveLookup.getFoldersTreesByPathsDocwsroot(basepaths, depth),
-//       SRTE.map(NA.zip(scanned)),
-//       SRTE.map(NA.map(([tree, scan]) =>
-//         pipe(
-//           DriveTree.treeWithFiles(tree),
-//           DriveTree.addPathToFolderTree(Path.dirname(scan.base), identity),
-//           Tree.filterTree(_ => micromatch.isMatch(_.path, scan.input)),
-//           O.fold(
-//             () => Path.dirname(scan.base) + '/',
-//             DriveTree.showTreeWithFiles,
-//           ),
-//         )
-//       )),
-//       SRTE.map(_ => _.join('\n\n')),
-//     )
-//   }
-
-//   return pipe(
-//     DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
-//     // DriveLookup.usingTempCache,
-//     SRTE.map(NA.map(A.map(_ => _.path))),
-//     SRTE.map(NA.map(_ => _.join('\n'))),
-//     SRTE.map(_ => _.join('\n\n')),
-//   )
-// }

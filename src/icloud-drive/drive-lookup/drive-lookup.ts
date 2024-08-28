@@ -1,3 +1,4 @@
+import { IO } from 'fp-ts/lib/IO'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
@@ -45,3 +46,5 @@ export const chainState = <A>(
 export const errString = <A>(s: string): Lookup<A> => SRTE.left(err(s))
 
 export const chain = chain_ as (<A, B>(f: (a: A) => Lookup<B>) => (ma: Lookup<A>) => Lookup<B>)
+
+export const fromIO = <A>(io: IO<A>): Lookup<A> => SRTE.fromIO(io)

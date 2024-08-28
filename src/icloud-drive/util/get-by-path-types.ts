@@ -35,7 +35,7 @@ export type PathValidation<R> =
   | PathValid<R>
   | PathInvalid<R>
 
-export type GetByPathResult<R extends T.Root> = PathValidation<R>
+export type Result<R extends T.Root> = PathValidation<R>
 
 export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
 export const root = <R>([root]: Hierarchy<R>): R => root
@@ -170,8 +170,8 @@ export const isSameDetails = (a: T.Details, b: T.Details): boolean => {
 export const asEither = <R extends T.Root, E>(
   onLeft: (path: PathInvalid<R>) => E,
 ): (
-  path: GetByPathResult<R>,
+  path: Result<R>,
 ) => E.Either<E, R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile> =>
-  (path: GetByPathResult<R>) => {
+  (path: Result<R>) => {
     return path.valid === true ? E.of(pathTarget(path)) : E.left(onLeft(path))
   }

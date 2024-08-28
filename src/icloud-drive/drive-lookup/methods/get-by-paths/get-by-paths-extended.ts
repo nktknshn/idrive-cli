@@ -49,7 +49,7 @@ export const getByPathFolderStrict = <R extends T.Root>(
     map(NA.head),
     filterOrElse(
       T.isDetailsG,
-      () => ItemIsNotFolderError.create(`${path} is not a folder`),
+      () => ItemIsNotFolderError.create(`${path} is not a folder.`),
     ),
   )
 
@@ -82,21 +82,21 @@ export const getByPathsFoldersStrictDocwsroot = (
     ),
   )
 
-export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Lookup<V.GetByPathResult<R>> => {
+export const getByPath = <R extends T.Root>(root: R, path: NormalizedPath): Lookup<V.Result<R>> => {
   return pipe(
     getByPaths(root, [path]),
     map(NA.head),
   )
 }
 
-export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>): Lookup<NEA<V.GetByPathResult<T.DetailsDocwsRoot>>> => {
+export const getByPathsDocwsroot = (paths: NEA<NormalizedPath>): Lookup<NEA<V.Result<T.DetailsDocwsRoot>>> => {
   logger.debug('getByPathsDocwsroot')
   return pipe(
     chainCachedDocwsRoot(root => getByPaths(root, paths)),
   )
 }
 
-export const getByPathDocwsroot = (path: NormalizedPath): Lookup<V.GetByPathResult<T.DetailsDocwsRoot>> => {
+export const getByPathDocwsroot = (path: NormalizedPath): Lookup<V.Result<T.DetailsDocwsRoot>> => {
   return pipe(
     getByPathsDocwsroot([path]),
     map(NA.head),

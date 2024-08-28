@@ -24,6 +24,7 @@ export const chainCachedDocwsRoot = <A>(
   )
 }
 
+/** Retrieve docws root from cache or from api if it's missing from cache and chain a computation */
 export const getCachedDocwsRoot = (): Lookup<T.DetailsDocwsRoot, Deps> => chainCachedDocwsRoot(of)
 
 export const getCachedRoot = (trash: boolean): Lookup<T.Root> => {

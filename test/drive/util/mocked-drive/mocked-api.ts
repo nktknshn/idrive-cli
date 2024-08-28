@@ -9,9 +9,10 @@ import { DriveLookup, Types } from '../../../../src/icloud-drive'
 import { DepApiMethod } from '../../../../src/icloud-drive/drive-api'
 import { DriveApiWrapped } from '../../../../src/icloud-drive/drive-api-wrapped'
 import * as C from '../../../../src/icloud-drive/drive-lookup/cache'
+import { CreateFoldersResponse } from '../../../../src/icloud-drive/drive-requests'
 import * as L from '../../../../src/logging'
 import { authenticatedState } from '../../fixtures/session'
-import { createRootDetails, docwsroot } from './mocked-drive'
+import { createRootDetails, docwsroot, folder, makeFolder } from './mocked-drive'
 
 export const fakeicloud = flow(docwsroot, createRootDetails)
 
@@ -25,6 +26,7 @@ export const createState = ({
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
+    createFolders: number
     total: number
   }
 }
@@ -43,11 +45,19 @@ const retrieveItemDetailsInFolders = (
     ))
   }
 
+export type Deps =
+  & DriveLookup.Deps
+  & DepApiMethod<'createFolders'>
+
 export const createEnv = (
   details: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
-): Calls & DepApiMethod<'retrieveItemDetailsInFolders'> => {
+):
+  & Calls
+  & Deps =>
+{
   const calls = {
     retrieveItemDetailsInFolders: 0,
+    createFolders: 0,
     total: 0,
   }
   return {
@@ -63,6 +73,31 @@ export const createEnv = (
           retrieveItemDetailsInFolders(details)(args),
         )
       },
+      createFolders: ({ destinationDrivewsId, names }) => {
+        calls.createFolders += 1
+        calls.total += 1
+        L.apiLogger.debug(`createFolders(${JSON.stringify({ destinationDrivewsId, names })})`)
+
+        const ds = details[destinationDrivewsId]
+
+        if (ds.type == 'FOLDER' || ds.type == 'APP_LIBRARY') {
+          const f = folder({ name: names[0] })()
+          const ff = makeFolder({ parentId: ds.drivewsid, zone: ds.zone })(f)
+
+          ds.items.push(ff.d)
+
+          details[ff.d.drivewsid] = ff.d
+
+          const resp: CreateFoldersResponse = {
+            destinationDrivewsId: destinationDrivewsId,
+            folders: [ff.d],
+          }
+
+          return SRTE.of(resp)
+        }
+
+        return SRTE.left(new Error('Invalid destinationDrivewsId'))
+      },
     },
   }
 }
@@ -73,24 +108,19 @@ export const executeDrive = ({
 }: {
   itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>
   cache?: C.LookupCache
-}): <A>(m: DriveLookup.Lookup<A>) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
+}): <A>(
+  m: DriveLookup.Lookup<A, Deps>,
+) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
   return m =>
     pipe(
       TE.of(cache),
       TE.chain(cache => {
-        const state = createState({
-          cache,
-          tempCache: O.none,
-        })
+        const state = createState({ cache, tempCache: O.none })
         const env = createEnv(details)
 
         return pipe(
           m(state)(env),
-          TE.map(([res, state]) => ({
-            res,
-            state,
-            calls: env.calls,
-          })),
+          TE.map(([res, state]) => ({ res, state, calls: env.calls })),
         )
       }),
     )

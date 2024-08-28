@@ -2,22 +2,23 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { cacheLogger, logger } from '../../../logging/logging'
-import { Details, fileName, isTrashDetails, NonRootDetails, Root } from '../../drive-types'
+
+import { cacheLogger } from '../../../logging/logging'
+import * as Types from '../../drive-types'
 import { findInParentFilename } from '../../util/drive-helpers'
 import * as GetByPath from '../../util/get-by-path-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as C from './cache'
 import { CacheF } from './cache-types'
 
-const showDetails = (d: Details): string => {
-  return isTrashDetails(d) ? 'TRASH' : `${d.type}: ${fileName(d)}`
+const showDetails = (d: Types.Details): string => {
+  return Types.isTrashDetails(d) ? 'TRASH' : `${d.type}: ${Types.fileName(d)}`
 }
 
 /**
  * Tries to get starting from `parentEntity`
  */
-export const getFromCacheByPath = <R extends Root | NonRootDetails>(
+export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>
@@ -32,8 +33,6 @@ export const getFromCacheByPath = <R extends Root | NonRootDetails>(
     const subitem = findInParentFilename(parentEntity, subItemName)
 
     const result: GetByPath.Hierarchy<R> = [parentEntity]
-
-    // logger.debug(`subitem: ${O.getShow({ show: fileName }).show(subitem)}`)
 
     // item was not found
     if (O.isNone(subitem)) {
