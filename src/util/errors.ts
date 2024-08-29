@@ -90,7 +90,7 @@ export class SomeError extends Error {
     super(message)
   }
 
-  public toString() {
+  public toString(): string {
     return `SomeError(${this.message})`
   }
 }
@@ -172,6 +172,36 @@ export class BufferDecodingError extends Error {
 
   static create(errors: unknown, message?: string): BufferDecodingError {
     return new BufferDecodingError(errors, message)
+  }
+}
+
+export class FileNotFoundError extends Error {
+  readonly tag = 'FileNotFoundError'
+  constructor(public readonly path: string) {
+    super(`File not found: ${path}`)
+  }
+
+  static is(a: Error): a is FileNotFoundError {
+    return a instanceof FileNotFoundError
+  }
+
+  static create(path: string): FileNotFoundError {
+    return new FileNotFoundError(path)
+  }
+}
+
+export class FileInvalidError extends Error {
+  readonly tag = 'FileInvalidError'
+  constructor(public readonly path: string) {
+    super(`File invalid: ${path}`)
+  }
+
+  static is(a: Error): a is FileInvalidError {
+    return a instanceof FileInvalidError
+  }
+
+  static create(path: string): FileInvalidError {
+    return new FileInvalidError(path)
   }
 }
 

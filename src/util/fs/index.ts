@@ -58,3 +58,4 @@ export const rm = (path: string): TE.TaskEither<Error, void> =>
   )
 
 export { createWriteStream }
+export { assertFileSize } from './check'

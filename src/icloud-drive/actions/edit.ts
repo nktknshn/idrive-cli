@@ -1,22 +1,24 @@
 import child_process from 'child_process'
 import { randomUUID } from 'crypto'
-import { pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { Readable } from 'stream'
 
 import { DepFetchClient, DepFs } from '../../deps-types'
-import { err } from '../../util/errors'
-import { writeFileFromReadable } from '../../util/fs/write-file'
-import { getUrlStream } from '../../util/http/getUrlStream'
+import { err, FileNotFoundError } from '../../util/errors'
 import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
-import { DriveLookup, Types } from '..'
-import { DepApiMethod } from '../drive-api'
-import { getDriveItemUrl } from '../drive-api/extra'
+import * as SrteUtils from '../../util/srte-utils'
+import { DriveLookup, GetByPath, Types } from '..'
+import { DepApiMethod, DriveApiMethods } from '../drive-api'
+
+import { loggerIO } from '../../logging/loggerIO'
+import { assertFileSize } from '../../util/fs'
+import { downloadUrlToFile } from '../../util/http/downloadUrlToFile'
 import * as Actions from '.'
+
+type DepTempDir = { tempdir: string }
 
 export type Deps =
   & DriveLookup.Deps
@@ -24,28 +26,10 @@ export type Deps =
   & Actions.DepsUpload
   & DepFs<'fstat' | 'createWriteStream' | 'rm'>
   & DepFetchClient
-  & { tempdir: string }
+  & DepTempDir
 
 // TODO add Editor interface
 // TODO calc hash to check if the file was changed
-
-const spawnVim = ({ tempFile, editor }: { tempFile: string; editor: string }) =>
-  (): Promise<NodeJS.Signals | null> => {
-    return new Promise(
-      (resolve, reject) => {
-        child_process
-          .spawn(editor, [tempFile], {
-            stdio: 'inherit',
-          })
-          .on('close', (code, signal) => {
-            if (code === 0) {
-              return resolve(signal)
-            }
-            return reject(code)
-          })
-      },
-    )
-  }
 
 export const edit = (
   { path, editor }: { path: string; editor: string },
@@ -59,33 +43,96 @@ export const edit = (
     )
 
   return pipe(
-    DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPathsStrict(root, [npath])),
-    SRTE.map(NA.head),
-    SRTE.filterOrElse(Types.isFile, () => err(`You cannot edit a directory.`)),
-    SRTE.chainW((item) => getDriveItemUrl(item)),
-    SRTE.map(O.fromNullable),
-    SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
-    SRTE.chainW(url => SRTE.fromReaderTaskEitherK((url: string) => getUrlStream({ url }))(url)),
-    SRTE.chainW(readable =>
+    DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPath(root, npath)),
+    SRTE.bindTo('gbp'),
+    SRTE.bind('tempfile', () => SRTE.fromReader(R.asks(tempFile))),
+    SRTE.bind('handleResult', handle),
+    SRTE.bind('rm', () => SRTE.asks(({ fs }) => fs.rm)),
+    SRTE.bind('signal', ({ tempfile }) => SRTE.fromTask(spawnVim({ editor, tempfile }))),
+    SRTE.chainW(({ tempfile, rm }) =>
       pipe(
-        SRTE.of<DriveLookup.State, Deps, Error, { readable: Readable }>({ readable }),
-        SRTE.bind('tempFile', () => SRTE.fromReader(R.asks(tempFile))),
-        SRTE.bind('rm', () => SRTE.asks(s => s.fs.rm)),
-        SRTE.bindW('writeResult', ({ readable, tempFile }) =>
-          SRTE.fromReaderTaskEither(
-            writeFileFromReadable(tempFile)(readable),
-          )),
-        SRTE.bind('signal', s => SRTE.fromTask(spawnVim({ editor, tempFile: s.tempFile }))),
-        SRTE.chainFirstW(({ tempFile }) => {
-          return Actions.uploadSingleFile({
+        SRTE.fromReaderTaskEither<Deps, Error, void, DriveLookup.State>(
+          assertFileSize({ path: tempfile, minimumSize: 1 }),
+        ),
+        SRTE.chainW(() =>
+          Actions.uploadSingleFile({
             overwright: true,
-            srcpath: tempFile,
+            srcpath: tempfile,
             dstpath: npath,
             skipTrash: false,
           })
+        ),
+        SrteUtils.orElseW((e): DriveLookup.Lookup<void, Deps> =>
+          FileNotFoundError.is(e)
+            ? SRTE.left(err('canceled'))
+            : SRTE.of(constVoid())
+        ),
+        SRTE.chain(() => {
+          loggerIO.debug(`removing temp file ${tempfile}`)()
+          return SRTE.fromTaskEither(rm(tempfile))
         }),
-        SRTE.chainW(({ rm, tempFile }) => SRTE.fromTaskEither(rm(tempFile))),
       )
     ),
   )
 }
+
+/** Download a file to a temp file */
+const handleExistingFile = (tempfile: string, item: Types.DriveChildrenItemFile): DriveLookup.Lookup<void, Deps> => {
+  return pipe(
+    DriveApiMethods.getDriveItemUrl<DriveLookup.State>(item),
+    SRTE.map(O.fromNullable),
+    SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
+    SRTE.chainW(url => SRTE.fromReaderTaskEither(downloadUrlToFile(url, tempfile))),
+    SRTE.map(constVoid),
+  )
+}
+
+const handleMeowFile = (tempfile: string): DriveLookup.Lookup<void, Deps> => {
+  return pipe(
+    SRTE.of(constVoid()),
+  )
+}
+
+// if successful dstpath is the file to upload
+// two valid cases:
+// 1. file exists
+// 2. we have an invalid path with a single missing item
+const handle = (
+  { tempfile, gbp }: { tempfile: string; gbp: GetByPath.ResultRoot },
+): DriveLookup.Lookup<void, Deps> => {
+  if (GetByPath.isInvalidPath(gbp)) {
+    if (gbp.rest.length > 1) {
+      return DriveLookup.errString(`Invalid path: ${GetByPath.pathString(gbp)}.`)
+    }
+
+    return handleMeowFile(tempfile)
+  }
+
+  if (GetByPath.isValidFolder(gbp)) {
+    return DriveLookup.errString(`You cannot edit a directory.`)
+  }
+
+  if (GetByPath.isValidFile(gbp)) {
+    return handleExistingFile(tempfile, gbp.file)
+  }
+
+  return gbp
+}
+
+const spawnVim = ({ tempfile, editor }: { tempfile: string; editor: string }) =>
+  (): Promise<NodeJS.Signals | null> => {
+    return new Promise(
+      (resolve, reject) => {
+        child_process
+          .spawn(editor, [tempfile], {
+            stdio: 'inherit',
+          })
+          .on('close', (code, signal) => {
+            if (code === 0) {
+              return resolve(signal)
+            }
+            return reject(code)
+          })
+      },
+    )
+  }

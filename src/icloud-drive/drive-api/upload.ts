@@ -1,6 +1,7 @@
 import * as A from 'fp-ts/lib/Array'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as TE from 'fp-ts/TaskEither'
 import mime from 'mime-types'
 import { DepFs } from '../../deps-types/dep-fs'
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
@@ -32,20 +33,20 @@ export const upload = flow(
         if (extension === '') {
           return ''
         }
-
         const t = mime.contentType(extension)
-
         if (t === false) {
           return ''
         }
-
         return t
       }
 
       // const retrying = executeRequest2(env)
       return pipe(
         SRTE.fromTaskEither<Error, FsStats, S, unknown>(
-          deps.fs.fstat(sourceFilePath),
+          pipe(
+            deps.fs.fstat(sourceFilePath),
+            TE.mapError(e => err(`fstat error: ${e}`)),
+          ),
         ),
         // () =>
         // SRTE.bindTo('fstats'),

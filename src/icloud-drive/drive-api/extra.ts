@@ -44,9 +44,7 @@ export const retrieveItemDetailsInFolder = (
 
 export const getDriveItemUrl = flow(
   download,
-  SRTE.map(
-    _ => _.data_token?.url ?? _.package_token?.url,
-  ),
+  SRTE.map(_ => _.data_token?.url ?? _.package_token?.url),
 )
 
 export const createFoldersNEA = <S extends AuthenticatedState>(args: {

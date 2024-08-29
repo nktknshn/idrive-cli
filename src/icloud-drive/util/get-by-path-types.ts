@@ -15,12 +15,14 @@ export type PathValid<R> = PathValidFile<R> | PathValidFolder<R>
 
 export type PathValidFile<R> = {
   valid: true
+  folder: false
   details: Hierarchy<R>
   file: T.DriveChildrenItemFile
 }
 
 export type PathValidFolder<R> = {
   valid: true
+  folder: true
   details: Hierarchy<R>
 }
 
@@ -32,13 +34,25 @@ export type PathInvalid<R> = {
 }
 
 export type PathValidation<R> =
-  | PathValid<R>
+  | PathValidFolder<R>
+  | PathValidFile<R>
   | PathInvalid<R>
 
 export type Result<R extends T.Root> = PathValidation<R>
+export type ResultRoot = PathValidation<T.DetailsDocwsRoot>
 
 export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
 export const root = <R>([root]: Hierarchy<R>): R => root
+
+export function pathString<R>(res: PathValidation<R>): string {
+  const elements = [...tail(res.details).map(T.fileName)]
+
+  if (res.valid === false) {
+    elements.push(...res.rest)
+  }
+
+  return elements.join('/')
+}
 
 export function pathTarget<R>(
   res: PathValidFile<R>,
@@ -60,19 +74,22 @@ export function pathTarget<R>(
   }
 }
 
-export function isValidFile<H>(res: PathValid<H>): res is PathValidFile<H>
-export function isValidFile<H>(res: PathValidation<H>): res is PathValidFile<H>
-export function isValidFile<H>(res: PathValidation<H>): res is PathValidFile<H> {
-  return res.valid === true && 'file' in res
+export function isValidFile<R>(res: PathValid<R>): res is PathValidFile<R>
+export function isValidFile<R>(res: PathValidation<R>): res is PathValidFile<R>
+export function isValidFile<R>(res: PathValidation<R>): res is PathValidFile<R> {
+  return res.valid === true && res.folder === false
 }
 
-export const isValidFolder = <H>(res: PathValidation<H>): res is PathValidFolder<H> => {
-  return !isValidFile(res)
+export function isValidFolder<R>(res: PathValid<R>): res is PathValidFolder<R>
+export function isValidFolder<R>(res: PathValidation<R>): res is PathValidFolder<R>
+export function isValidFolder<R>(res: PathValidation<R>): res is PathValidFolder<R> {
+  return res.valid === true && res.folder === true
 }
 
 export const isValidPath = <R>(res: PathValidation<R>): res is PathValid<R> => {
   return res.valid === true
 }
+
 export const isInvalidPath = <R>(res: PathValidation<R>): res is PathInvalid<R> => {
   return res.valid === false
 }
@@ -88,6 +105,7 @@ export const validFile = <R>(
 ): PathValidFile<R> => ({
   valid: true,
   details: path,
+  folder: false,
   file,
 })
 
@@ -95,6 +113,7 @@ export const validFolder = <R>(
   path: Hierarchy<R>,
 ): PathValidFolder<R> => ({
   valid: true,
+  folder: true,
   details: path,
 })
 

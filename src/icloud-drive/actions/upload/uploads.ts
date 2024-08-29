@@ -1,7 +1,6 @@
 import assert from 'assert'
 import * as A from 'fp-ts/Array'
 import { constVoid, pipe } from 'fp-ts/lib/function'
-import { IO } from 'fp-ts/lib/IO'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { isSome } from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
@@ -9,8 +8,10 @@ import * as O from 'fp-ts/Option'
 
 import { DepAskConfirmation, DepFs } from '../../../deps-types'
 import { loggerIO } from '../../../logging/loggerIO'
+import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
+import { runLogging } from '../../../util/srte-utils'
 import { SRA } from '../../../util/types'
 import { DriveLookup, Types } from '../..'
 import { DepApiMethod, DriveApiMethods } from '../../drive-api'
@@ -74,7 +75,9 @@ export const uploadSingleFile = (
   },
 ): SRA<DriveLookup.State, Deps, string> => {
   return pipe(
-    DriveLookup.getCachedDocwsRoot(),
+    loggerIO.debug(`uploadSingleFile ${srcpath} ${dstpath}`),
+    SRTE.fromIO,
+    SRTE.chain(DriveLookup.getCachedDocwsRoot),
     SRTE.bindTo('root'),
     SRTE.bind('dst', ({ root }) => DriveLookup.getByPath(root, normalizePath(dstpath))),
     SRTE.bind('src', () => SRTE.of(srcpath)),
@@ -191,20 +194,17 @@ const uploadOverwrighting = (
     skipTrash: boolean
   },
 ): SRA<DriveLookup.State, Deps, void> => {
-  // const dstitem = V.target(dst)
-  // const parent = NA.last(dst.path.details)
   return pipe(
     DriveApiMethods.upload<DriveLookup.State>({
       sourceFilePath: src,
       docwsid: parent.docwsid,
       zone: dstitem.zone,
     }),
-    logging(loggerIO.debug(`uploading`)),
     SRTE.bindTo('uploadResult'),
     SRTE.bindW('removeResult', () =>
       pipe(
         DriveApiMethods.moveItemsToTrash<DriveLookup.State>({ items: [dstitem], trash: !skipTrash }),
-        logging(loggerIO.debug(`moving previous file to trash`)),
+        runLogging(loggerIO.debug(`moving previous file to trash`)),
       )),
     SRTE.chainW(({ uploadResult }) => {
       const drivewsid = getDrivewsid(uploadResult)
@@ -217,21 +217,10 @@ const uploadOverwrighting = (
             extension: dstitem.extension,
           }],
         }),
-        logging(loggerIO.debug(`renaming new file`)),
+        runLogging(loggerIO.debug(`renaming new file`)),
         SRTE.map(constVoid),
       )
     }),
+    SRTE.mapLeft(e => err(`upload ${src} error: ${e}`)),
   )
 }
-
-const logging = (
-  logfunc: IO<void>,
-) =>
-  <S, R, E, A>(effect: SRTE.StateReaderTaskEither<S, R, E, A>) =>
-    pipe(
-      logfunc,
-      SRTE.fromIO,
-      SRTE.chain(
-        () => effect,
-      ),
-    )

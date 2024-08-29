@@ -1,3 +1,4 @@
+import { pipe } from 'fp-ts/lib/function'
 import * as IO from 'fp-ts/lib/IO'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as winston from 'winston'

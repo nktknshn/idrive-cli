@@ -26,7 +26,7 @@ export function driveAction<A, R, Args extends unknown[]>(
           () =>
             cacheLogger.debug(
               `saving cache: ${Object.keys(cache.byDrivewsid).length} items`
-                + `\n${Object.keys(cache.byDrivewsid).length - Object.keys(oldCache.byDrivewsid).length} new items`,
+                + `, ${Object.keys(cache.byDrivewsid).length - Object.keys(oldCache.byDrivewsid).length} new items`,
             ),
         )
       ),

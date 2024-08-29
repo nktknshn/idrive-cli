@@ -3,11 +3,17 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as RT from 'fp-ts/lib/ReaderTask'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+
 import { DepFetchClient, DepFs } from '../../deps-types'
 import { loggerIO } from '../../logging/loggerIO'
 import { printerIO } from '../../logging/printerIO'
 import { writeFileFromReadable } from '../fs/write-file'
 import { getUrlStream } from './getUrlStream'
+
+export type DownloadUrlToFile<R> = (
+  url: string,
+  destpath: string,
+) => RTE.ReaderTaskEither<R, Error, void>
 
 export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'createWriteStream'>> = (
   url: string,
@@ -45,8 +51,3 @@ export const downloadUrlsPar = (
     RT.map(A.zip(urlDest)),
   )
 }
-
-export type DownloadUrlToFile<R> = (
-  url: string,
-  destpath: string,
-) => RTE.ReaderTaskEither<R, Error, void>
