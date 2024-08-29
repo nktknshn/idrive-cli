@@ -16,36 +16,21 @@ describe('mkdir', () => {
     )
 
     const req = pipe(
-      DriveLookup.getCache(),
-      SRTE.chainW(cache => {
-        logger.debug(Cache.drawTree(cache))
-        return DriveActions.mkdir({ path: '1/2' })
-      }),
+      DriveActions.mkdir({ path: '1/2' }),
       SRTE.bindTo('result'),
       SRTE.bindW('cache', DriveLookup.getCache),
-      SRTE.map(({ cache, result }) => {
-        logger.debug(Cache.drawTree(cache))
-        // check that the cache contains the new folder
-        // assert.equal(Cache.getByIdO(result[0].drivewsid)(cache)._tag, 'Some')
-      }),
       SRTE.chainW(() => DriveActions.mkdir({ path: '1/2/3' })),
       SRTE.bindTo('result'),
       SRTE.bindW('cache', DriveLookup.getCache),
       SRTE.map(({ cache, result }) => {
         // check that the cache contains the new folder
-        logger.debug(Cache.drawTree(cache))
         // assert.equal(Cache.getByIdO(result[0].drivewsid)(cache)._tag, 'Some')
       }),
       SRTE.chainW(() => DriveActions.mkdir({ path: '1/2/3/4' })),
-      SRTE.chainW(() =>
-        pipe(
-          DriveLookup.getCache(),
-          SRTE.map((cache) => logger.debug(Cache.drawTree(cache))),
-        )
-      ),
       Mock.executeDrive(drive),
       TE.map(({ res, calls }) => {
         assert.equal(calls().createFolders, 3)
+        assert.equal(calls().retrieveItemDetailsInFolders, 6)
       }),
     )
 

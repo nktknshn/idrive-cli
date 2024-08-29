@@ -24,7 +24,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   const targetDir = lookupDir ? npath : nparentPath
 
   return pipe(
-    DriveLookup.getCachedRoot(trash),
+    DriveLookup.getCachedRootOrTrash(trash),
     SRTE.chain(root =>
       pipe(
         cached

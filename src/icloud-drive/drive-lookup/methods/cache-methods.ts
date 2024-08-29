@@ -22,19 +22,6 @@ export const putDetailss = (detailss: T.Details[]): Lookup<void> =>
     ),
   )
 
-export const putMissedFound = ({ found, missed }: {
-  found: T.Details[]
-  missed: string[]
-}): Lookup<void> =>
-  pipe(
-    putDetailss(found),
-    chain(() => removeByIdsFromCache(missed)),
-  )
-
-export const removeByIdsFromCache = (
-  drivewsids: string[],
-): Lookup<void> => modifyCache(C.removeByIds(drivewsids))
-
 export const modifyCache = (f: (cache: C.LookupCache) => C.LookupCache): Lookup<void> =>
   chainCache(flow(f, putCache, map(constVoid)))
 
@@ -59,3 +46,16 @@ export const usingCache = (cache: C.LookupCache) =>
       putCache(cache),
       SRTE.chain(() => pipe(ma)),
     )
+
+export const putMissedFound = ({ found, missed }: {
+  found: T.Details[]
+  missed: string[]
+}): Lookup<void> =>
+  pipe(
+    putDetailss(found),
+    chain(() => removeByIdsFromCache(missed)),
+  )
+
+export const removeByIdsFromCache = (
+  drivewsids: string[],
+): Lookup<void> => modifyCache(C.removeByIds(drivewsids))

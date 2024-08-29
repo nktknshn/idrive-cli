@@ -2,6 +2,7 @@ import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as T from '../../drive-types'
+
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import { chain, Deps, Lookup, map, of } from '..'
 import * as C from '../cache'
@@ -9,12 +10,12 @@ import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from '../
 import { chainCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
-/** retrieve root from cache or from api if it's missing from cache and chain a computation*/
+/** Retrieve root from cache or from api if it's missing from cache and chain a computation `f`*/
 export const chainCachedDocwsRoot = <A>(
   f: (root: T.DetailsDocwsRoot) => Lookup<A>,
 ): Lookup<A> => {
   return pipe(
-    retrieveItemDetailsInFoldersCached([rootDrivewsid]),
+    getDocwsRoot(),
     chain(() => chainCache(cache => SRTE.fromEither(C.getDocwsRoot(cache)))),
     map(_ => _.content),
     chain(f),
@@ -24,7 +25,8 @@ export const chainCachedDocwsRoot = <A>(
 /** Retrieve docws root from cache or from api if it's missing from cache and chain a computation */
 export const getCachedDocwsRoot = (): Lookup<T.DetailsDocwsRoot, Deps> => chainCachedDocwsRoot(of)
 
-export const getCachedRoot = (trash: boolean): Lookup<T.Root> => {
+/** Retrieve root or trash from cache or from api if it's missing from cache */
+export const getCachedRootOrTrash = (trash: boolean): Lookup<T.Root> => {
   return pipe(
     retrieveItemDetailsInFoldersCached([rootDrivewsid, trashDrivewsid]),
     chain(() =>
@@ -38,24 +40,26 @@ export const getCachedRoot = (trash: boolean): Lookup<T.Root> => {
   )
 }
 
+/** Retrieve trash from cache or from api if it's missing from cache and chain a computation `f`*/
 export const chainCachedTrash = <A>(
   f: (root: T.DetailsTrashRoot) => Lookup<A>,
 ): Lookup<A> => {
   return pipe(
-    retrieveItemDetailsInFoldersCached([trashDrivewsid]),
+    getTrash(),
     chain(() => chainCache(SRTE.fromEitherK(C.getTrash))),
     map(_ => _.content),
     chain(f),
   )
 }
 
-// FIXME
+/** Retrieve root from cache or from api if it's missing from cache */
 export const getDocwsRoot = (): Lookup<T.DetailsDocwsRoot, Deps> =>
   pipe(
     retrieveItemDetailsInFoldersCached<T.DetailsDocwsRoot>([rootDrivewsid]),
     SRTE.map(_ => _[0].value),
   )
 
+/** Retrieve trash from cache or from api if it's missing from cache */
 export const getTrash = (): Lookup<T.DetailsTrashRoot, Deps> =>
   pipe(
     retrieveItemDetailsInFoldersCached<T.DetailsTrashRoot>([trashDrivewsid]),

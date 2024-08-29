@@ -11,13 +11,18 @@ import { makeMissedFound } from '../util/drive-helpers'
 import { createFolders, download, retrieveItemDetailsInFolders } from './basic'
 import { DepWrappedApi } from './method'
 
+type Separated = {
+  missed: string[]
+  found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[]
+}
+
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthenticatedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<
   S,
   DepWrappedApi<'retrieveItemDetailsInFolders', 'api'>,
   Error,
-  { missed: string[]; found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[] }
+  Separated
 > =>
   pipe(
     retrieveItemDetailsInFolders<S>({ drivewsids }),

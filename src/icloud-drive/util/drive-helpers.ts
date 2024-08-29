@@ -4,7 +4,6 @@ import { fromEquals } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import micromatch from 'micromatch'
-import Path from 'path'
 import * as T from '../drive-types'
 
 export const makeMissedFound = <T>(

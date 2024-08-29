@@ -15,9 +15,9 @@ export const getByPathFolderFromCache = <R extends T.Root>(path: NormalizedPath)
     chainCache(cache =>
       SRTE.fromEither(pipe(
         C.getByPath(root, path)(cache),
-        _ =>
-          _.valid
-            ? E.of(GetByPath.pathTarget(_))
+        r =>
+          r.valid
+            ? E.of(GetByPath.pathTarget(r))
             : E.left(NotFoundError.create(`not found ${path}`)),
         E.filterOrElse(T.isDetails, () => ItemIsNotFolderError.create()),
       ))
@@ -26,10 +26,7 @@ export const getByPathFolderFromCache = <R extends T.Root>(path: NormalizedPath)
 export const getByPathsFromCache = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-): Lookup<NEA<GetByPath.Result<R>>> =>
-  getsCache(
-    C.getByPaths(root, paths),
-  )
+): Lookup<NEA<GetByPath.Result<R>>> => getsCache(C.getByPaths(root, paths))
 
 export const getByPathsFromCacheTemp = <R extends T.Root>(
   root: R,

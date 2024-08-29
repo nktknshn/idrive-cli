@@ -21,6 +21,7 @@ import { modifySubset } from '../../../util/drive-modify-subset'
 import * as GetByPath from '../../../util/get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
 
+/** Given a root and a list of paths, retrieves the actual items if they exist */
 export const getByPaths = <R extends Types.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
@@ -28,7 +29,9 @@ export const getByPaths = <R extends Types.Root>(
   pipe(
     loggerIO.debug(`getByPaths(${paths})`),
     SRTE.fromIO,
+    // get what we have cached
     SRTE.chain(() => DriveLookup.getByPathsFromCache(root, paths)),
+    // validate the cached paths
     SRTE.chain(cached => getByPathsC(paths, cached)),
   )
 
@@ -44,6 +47,7 @@ const getByPathsC = <R extends Types.Root>(
     ),
     SRTE.chain((cached) =>
       pipe(
+        // validate
         validateCachedHierarchies(
           pipe(cached, NA.map(_ => _.details)),
         ),

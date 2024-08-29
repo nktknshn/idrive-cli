@@ -75,7 +75,7 @@ export const listPaths = (
   }
 
   return pipe(
-    DriveLookup.getCachedRoot(trash),
+    DriveLookup.getCachedRootOrTrash(trash),
     SRTE.chain(root =>
       cached
         ? DriveLookup.getByPathsFromCache(root, basepaths)
