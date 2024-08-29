@@ -14,7 +14,6 @@ import { FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
 import { applySoultions, ConflictsSolver, Solution } from './conflict-solution'
 import { Conflict, lookForLocalConflicts } from './download-conflict'
 import { createEmpties, createLocalDirStruct } from './download-local'
-import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from './filterFlattenFolderTree'
 import { DownloadFileResult, DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from './types'
 
 /*

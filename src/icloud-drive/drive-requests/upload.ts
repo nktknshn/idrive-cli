@@ -104,17 +104,7 @@ export const upload = <S extends AuthenticatedState>(
 export const singleFileUpload = <S extends AuthenticatedState>(
   { buffer, url, filename }: { buffer: Buffer; url: string; filename: string },
 ): AR.ApiRequest<SingleFileResponse, S, AR.RequestDeps> => {
-  // const filename = Path.parse(filePath).base
   return pipe(
-    // SRTE.asksStateReaderTaskEither<AR.RequestEnv & DepFs<'readFile'>, S, Error, HttpRequest>((
-    //   { readFile },
-    // ) =>
-    //   SRTE.fromTaskEither(pipe(
-    //     readFile(filePath),
-    //     logf(`singleFileUpload.`, apiLogger.debug),
-    //     TE.map((buffer) => uploadFileRequest(url, filename, buffer)),
-    //   ))
-    // ),
     AR.of<S, AR.RequestDeps, Error, HttpRequest>(uploadFileRequest(url, filename, buffer)),
     AR.handleResponse<SingleFileResponse, S, AR.RequestDeps>(
       AR.basicJsonResponse(singleFileResponse.decode),
