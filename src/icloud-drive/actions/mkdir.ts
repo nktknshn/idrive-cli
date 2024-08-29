@@ -39,7 +39,7 @@ export const mkdir = (
         SRTE.chainFirstIOK((resp) => loggerIO.debug(`created: ${resp.map((_) => _.drivewsid)}`)),
       )),
     SRTE.chainFirstW(({ result, parent }) =>
-      // fetch full details for parent and for the new folder
+      // fetch full details for parent and for the new folder to save in cache
       DriveLookup.retrieveItemDetailsInFoldersCached([
         parent.drivewsid,
         NA.head(result).drivewsid,

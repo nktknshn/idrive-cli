@@ -153,6 +153,15 @@ Creates a folder
 
 ### edit
 
+`idrive edit /Obsidian/my1/notes/note1.md` 
+
+Opens the file in the editor. If the file is not found, it will be created.
+
+`idrive edit --editor gedit /Obsidian/my1/notes/note1.md`
+
+Opens the file in a different editor (defaults to `vi`)
+
+
 ### upload 
 
 `idrive upload ~/Documents/note1.md /Obsidian/my1/notes/`

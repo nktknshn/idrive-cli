@@ -11,10 +11,6 @@ export interface NormalizedPathBrand {
   readonly NormalizedPath: unique symbol
 }
 
-export interface NonRootDrivewsidBrand {
-  readonly NonRootDrivewsid: unique symbol
-}
-
 export type Branded<A, B> = A & Brand<B>
 /**
  * NormalizedPath has Path.normalize applied and no trailing slash

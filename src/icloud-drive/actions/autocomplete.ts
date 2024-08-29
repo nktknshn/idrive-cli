@@ -1,6 +1,5 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { logger } from '../../logging'
 import { normalizePath, Path } from '../../util/path'
 import { DriveLookup } from '..'
 import { fileName, fileNameAddSlash } from '../drive-types'
@@ -16,10 +15,7 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
   const nparentPath = normalizePath(Path.dirname(path))
 
   const childName = Path.basename(path)
-
   const lookupDir = path.endsWith('/')
-
-  logger.debug(`looking for ${childName}* in ${nparentPath} (${lookupDir})`)
 
   const targetDir = lookupDir ? npath : nparentPath
 
@@ -37,9 +33,6 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
               f => fileName(f).startsWith(childName),
             )
         ),
-        // Drive.logS(
-        //   result => `suggestions: ${result.map(fileName)}`,
-        // ),
         SRTE.map((result) =>
           result
             .filter(item => file ? item.type === 'FILE' : true)

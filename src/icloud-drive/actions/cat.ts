@@ -5,7 +5,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 
 import { DepFetchClient } from '../../deps-types'
-import { DriveLookup } from '../../icloud-drive'
+import { Cache, DriveCache, DriveLookup } from '../../icloud-drive'
 import { err } from '../../util/errors'
 import { getUrlStream } from '../../util/http/getUrlStream'
 import { normalizePath } from '../../util/normalize-path'
@@ -20,18 +20,28 @@ export type Deps =
   & DepFetchClient
 
 export const cat = (
-  { path }: { path: string },
+  { path, skipValidation }: { path: string; skipValidation: boolean },
 ): DriveLookup.Lookup<string, Deps> => {
   const npath = pipe(path, normalizePath)
+
+  const fromCache = pipe(
+    DriveCache.getCache(),
+    SRTE.bindTo('cache'),
+    SRTE.bindW('root', ({ cache }) => SRTE.fromEither(Cache.getDocwsRoot(cache))),
+    SRTE.chainEitherK(({ root, cache }) => Cache.getByPathStrict(root.content, npath)(cache)),
+    SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
+  )
 
   return pipe(
     DriveLookup.getCachedDocwsRoot(),
     SRTE.bindW('item', (root) =>
-      pipe(
-        DriveLookup.getByPathsStrict(root, [npath]),
-        SRTE.map(NA.head),
-        SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
-      )),
+      skipValidation
+        ? fromCache
+        : pipe(
+          DriveLookup.getByPathsStrict(root, [npath]),
+          SRTE.map(NA.head),
+          SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
+        )),
     SRTE.chainW(({ item }) => getDriveItemUrl(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
     SRTE.chainW((url) =>

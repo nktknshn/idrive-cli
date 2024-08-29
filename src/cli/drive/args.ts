@@ -1,3 +1,4 @@
+import { skipValidation } from 'yargs'
 import * as w from 'yargs-command-wrapper'
 import * as defaults from '../../defaults'
 
@@ -47,7 +48,15 @@ const rm = w.command(
       }),
 )
 
-const cat = w.command('cat <path>', 'cat', (_) => _.positional('path', { type: 'string', demandOption: true }))
+const cat = w.command(
+  'cat <path>',
+  'cat',
+  (_) =>
+    _.positional('path', { type: 'string', demandOption: true })
+      .options({
+        skipValidation: { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
+      }),
+)
 
 const mv = w.command(
   'mv <srcpath> <dstpath>',
@@ -129,7 +138,7 @@ export const cmd = w.composeCommands(
     _.options({
       sessionFile: { alias: ['s', 'session'], default: defaults.sessionFile },
       cacheFile: { alias: ['c', 'cache'], default: defaults.cacheFile },
-      noCache: { alias: 'n', default: false, type: 'boolean' },
+      noCache: { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
       debug: { alias: 'd', default: false, type: 'boolean' },
     }),
   init,

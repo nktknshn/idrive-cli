@@ -1,12 +1,10 @@
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as TE from 'fp-ts/TaskEither'
 import mime from 'mime-types'
 import { DepFs } from '../../deps-types/dep-fs'
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
 import { err } from '../../util/errors'
-import { FsStats } from '../../util/fs'
 import { Path } from '../../util/path'
 import { apiMethod, DepWrappedApi } from './method'
 
@@ -16,9 +14,7 @@ type UploadBufferMethodDeps =
   & DepWrappedApi<'updateDocuments'>
 
 type UploadMethodDeps =
-  & DepWrappedApi<'upload'>
-  & DepWrappedApi<'singleFileUpload'>
-  & DepWrappedApi<'updateDocuments'>
+  & UploadBufferMethodDeps
   & DepFs<'fstat'>
   & DepFs<'readFile'>
 

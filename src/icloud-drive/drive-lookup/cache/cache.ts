@@ -78,6 +78,16 @@ export const getFolderDetailsByIdE = (drivewsid: string) =>
     )
   }
 
+export const getByPathStrict = <R extends T.Root>(
+  root: R,
+  path: NormalizedPath,
+) =>
+  (cache: CT.CacheF): E.Either<Error, T.DetailsFolder | T.DetailsAppLibrary | R | T.DriveChildrenItemFile> =>
+    pipe(
+      getByPath(root, path)(cache),
+      GetByPath.asEither((res) => err(GetByPath.showGetByPathResult(res))),
+    )
+
 export const getByPath = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
