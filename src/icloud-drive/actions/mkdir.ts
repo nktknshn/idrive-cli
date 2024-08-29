@@ -40,7 +40,7 @@ export const mkdir = (
       )),
     SRTE.chainFirstW(({ result, parent }) =>
       // fetch full details for parent and for the new folder
-      DriveLookup.retrieveItemDetailsInFoldersSavingStrict([
+      DriveLookup.retrieveItemDetailsInFoldersCached([
         parent.drivewsid,
         NA.head(result).drivewsid,
       ])

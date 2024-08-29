@@ -4,12 +4,9 @@ import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import { Pointed1 } from 'fp-ts/lib/Pointed'
-import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/lib/TaskEither'
-import { last } from 'fp-ts/Semigroup'
 import { Readable } from 'stream'
-import { NEA, UnknownObject } from './types'
+import { NEA } from './types'
 
 export type ObjectType = {}
 
@@ -76,7 +73,7 @@ export const recordFromTuples = <T, K extends string>(ts: (readonly [K, T])[]): 
   return obj
 }
 
-export const arrayFromOption = <T>(opt: O.Option<T>) => pipe(opt, O.fold(() => [], (v) => [v]))
+export const arrayFromOption = <T>(opt: O.Option<T>): T[] => pipe(opt, O.fold(() => [], (v) => [v]))
 
 export function splitPair(
   sep: string,

@@ -7,10 +7,7 @@ import { chain, Deps, Lookup, map, of } from '..'
 import * as C from '../cache'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from '../cache/cache-types'
 import { chainCache } from './cache-methods'
-import {
-  retrieveItemDetailsInFoldersCached,
-  retrieveItemDetailsInFoldersSaving,
-} from './cache-retrieveItemDetailsInFolders'
+import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
 /** retrieve root from cache or from api if it's missing from cache and chain a computation*/
 export const chainCachedDocwsRoot = <A>(
@@ -55,12 +52,12 @@ export const chainCachedTrash = <A>(
 // FIXME
 export const getDocwsRoot = (): Lookup<T.DetailsDocwsRoot, Deps> =>
   pipe(
-    retrieveItemDetailsInFoldersSaving<T.DetailsDocwsRoot>([rootDrivewsid]),
+    retrieveItemDetailsInFoldersCached<T.DetailsDocwsRoot>([rootDrivewsid]),
     SRTE.map(_ => _[0].value),
   )
 
 export const getTrash = (): Lookup<T.DetailsTrashRoot, Deps> =>
   pipe(
-    retrieveItemDetailsInFoldersSaving<T.DetailsTrashRoot>([trashDrivewsid]),
+    retrieveItemDetailsInFoldersCached<T.DetailsTrashRoot>([trashDrivewsid]),
     SRTE.map(_ => _[0].value),
   )
