@@ -1,9 +1,10 @@
 import child_process from 'child_process'
 import { randomUUID } from 'crypto'
 import { constVoid, pipe } from 'fp-ts/lib/function'
+import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Reader'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as O from 'fp-ts/Option'
+import * as S from 'fp-ts/lib/string'
 
 import { DepFetchClient, DepFs } from '../../deps-types'
 import { err, FileNotFoundError } from '../../util/errors'
@@ -15,6 +16,7 @@ import { DepApiMethod, DriveApiMethods } from '../drive-api'
 
 import { loggerIO } from '../../logging/loggerIO'
 import { assertFileSize } from '../../util/fs'
+import { calculateFileHashO } from '../../util/fs/file-hash'
 import { downloadUrlToFile } from '../../util/http/downloadUrlToFile'
 import * as Actions from '.'
 
@@ -24,7 +26,7 @@ export type Deps =
   & DriveLookup.Deps
   & DepApiMethod<'download'>
   & Actions.DepsUpload
-  & DepFs<'fstat' | 'createWriteStream' | 'rm'>
+  & DepFs<'fstat' | 'createWriteStream' | 'createReadStream' | 'rm'>
   & DepFetchClient
   & DepTempDir
 
@@ -48,20 +50,27 @@ export const edit = (
     SRTE.bind('tempfile', () => SRTE.fromReader(R.asks(tempFile))),
     SRTE.bind('handleResult', handle),
     SRTE.bind('rm', () => SRTE.asks(({ fs }) => fs.rm)),
+    SRTE.bindW('hash1', ({ tempfile }) => SRTE.fromReaderTaskEither(calculateFileHashO(tempfile))),
     SRTE.bind('signal', ({ tempfile }) => SRTE.fromTask(spawnVim({ editor, tempfile }))),
+    SRTE.chainFirstW(({ tempfile }) =>
+      SRTE.fromReaderTaskEither<Deps, Error, void, DriveLookup.State>(
+        assertFileSize({ path: tempfile, minimumSize: 1 }),
+      )
+    ),
+    SRTE.bindW('hash2', ({ tempfile }) => SRTE.fromReaderTaskEither(calculateFileHashO(tempfile))),
+    SRTE.chainFirst(({ hash1, hash2 }) =>
+      O.getEq(S.Eq).equals(hash1, hash2)
+        ? SRTE.left(err(`file not changed`))
+        : SRTE.of(constVoid())
+    ),
     SRTE.chainW(({ tempfile, rm }) =>
       pipe(
-        SRTE.fromReaderTaskEither<Deps, Error, void, DriveLookup.State>(
-          assertFileSize({ path: tempfile, minimumSize: 1 }),
-        ),
-        SRTE.chainW(() =>
-          Actions.uploadSingleFile({
-            overwright: true,
-            srcpath: tempfile,
-            dstpath: npath,
-            skipTrash: false,
-          })
-        ),
+        Actions.uploadSingleFile({
+          overwright: true,
+          srcpath: tempfile,
+          dstpath: npath,
+          skipTrash: false,
+        }),
         SrteUtils.orElseW((e): DriveLookup.Lookup<void, Deps> =>
           FileNotFoundError.is(e)
             ? SRTE.left(err('canceled'))
@@ -73,23 +82,6 @@ export const edit = (
         }),
       )
     ),
-  )
-}
-
-/** Download a file to a temp file */
-const handleExistingFile = (tempfile: string, item: Types.DriveChildrenItemFile): DriveLookup.Lookup<void, Deps> => {
-  return pipe(
-    DriveApiMethods.getDriveItemUrl<DriveLookup.State>(item),
-    SRTE.map(O.fromNullable),
-    SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
-    SRTE.chainW(url => SRTE.fromReaderTaskEither(downloadUrlToFile(url, tempfile))),
-    SRTE.map(constVoid),
-  )
-}
-
-const handleMeowFile = (_tempfile: string): DriveLookup.Lookup<void, Deps> => {
-  return pipe(
-    SRTE.of(constVoid()),
   )
 }
 
@@ -117,6 +109,23 @@ const handle = (
   }
 
   return gbp
+}
+
+/** Download a file to a temp file */
+const handleExistingFile = (tempfile: string, item: Types.DriveChildrenItemFile): DriveLookup.Lookup<void, Deps> => {
+  return pipe(
+    DriveApiMethods.getDriveItemUrl<DriveLookup.State>(item),
+    SRTE.map(O.fromNullable),
+    SRTE.chain(a => SRTE.fromOption(() => err(`Empty file url was returned.`))(a)),
+    SRTE.chainW(url => SRTE.fromReaderTaskEither(downloadUrlToFile(url, tempfile))),
+    SRTE.map(constVoid),
+  )
+}
+
+const handleMeowFile = (_tempfile: string): DriveLookup.Lookup<void, Deps> => {
+  return pipe(
+    SRTE.of(constVoid()),
+  )
 }
 
 const spawnVim = ({ tempfile, editor }: { tempfile: string; editor: string }) =>
