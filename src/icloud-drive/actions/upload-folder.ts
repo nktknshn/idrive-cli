@@ -41,7 +41,7 @@ export type Deps =
   & DepApiMethod<'renameItems'>
   & DepApiMethod<'createFolders'>
   & DepApiMethod<'downloadBatch'>
-  & DepApiMethod<'upload'>
+  & DepApiMethod<'uploadFile'>
   & DepFs<'fstat' | 'opendir'>
 
 export const uploadFolder = (

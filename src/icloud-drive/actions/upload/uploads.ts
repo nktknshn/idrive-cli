@@ -24,7 +24,7 @@ export type Deps =
   & DepApiMethod<'renameItems'>
   & DepApiMethod<'moveItemsToTrash'>
   & DepApiMethod<'moveItems'>
-  & DepApiMethod<'upload'>
+  & DepApiMethod<'uploadFile'>
   & DepFs<'fstat'>
   & DepAskConfirmation
 
@@ -122,7 +122,7 @@ const handleSingleFileUpload = (
 
     if (Types.isFolderLike(dstitem)) {
       return pipe(
-        DriveApiMethods.upload<DriveLookup.State>({
+        DriveApiMethods.uploadFile<DriveLookup.State>({
           sourceFilePath: src,
           docwsid: dstitem.docwsid,
           fname,
@@ -177,7 +177,7 @@ const uploadFileToFolder = (
   }
 
   return pipe(
-    DriveApiMethods.upload<DriveLookup.State>({
+    DriveApiMethods.uploadFile<DriveLookup.State>({
       sourceFilePath: src,
       docwsid: dstDetails.docwsid,
       zone: dstDetails.zone,
@@ -195,7 +195,7 @@ const uploadOverwrighting = (
   },
 ): SRA<DriveLookup.State, Deps, void> => {
   return pipe(
-    DriveApiMethods.upload<DriveLookup.State>({
+    DriveApiMethods.uploadFile<DriveLookup.State>({
       sourceFilePath: src,
       docwsid: parent.docwsid,
       zone: dstitem.zone,

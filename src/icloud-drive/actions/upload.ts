@@ -8,19 +8,6 @@ import { Deps as UploadDeps, uploads, uploadSingleFile } from './upload/uploads'
 
 export type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
-/*
-
-`upload ~/Documents/note1.md /Obsidian/my1/notes/`
-
-`upload ~/Documents/note1.md /Obsidian/my1/notes/note.md`
-
-`upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /Obsidian/my1/notes/`
-
-`upload -R ~/Documents/ /Obsidian/my1/notes/`
-
-`upload -R '~/Documents/** /*.md' /Obsidian/my1/notes/`
-
-*/
 export const upload = (
   argv: {
     uploadargs: string[]

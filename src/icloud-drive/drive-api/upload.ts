@@ -95,7 +95,7 @@ export const uploadBuffer = apiMethod((deps: UploadBufferMethodDeps) =>
   }
 )
 
-export const upload = apiMethod((deps: UploadMethodDeps) =>
+export const uploadFile = apiMethod((deps: UploadMethodDeps) =>
   <S extends AuthenticatedState>(
     { sourceFilePath, docwsid, fname, zone }: {
       zone: string

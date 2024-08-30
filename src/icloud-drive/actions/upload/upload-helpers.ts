@@ -8,6 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TR from 'fp-ts/lib/Tree'
 import * as NA from 'fp-ts/NonEmptyArray'
 import micromatch from 'micromatch'
+
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 import { FsStats } from '../../../util/fs'
@@ -71,12 +72,7 @@ export const getUploadTask = (
       getDirectoryStructure,
     )
 
-    return {
-      dirstruct,
-      uploadable,
-      empties,
-      excluded,
-    }
+    return { dirstruct, uploadable, empties, excluded }
   }
 
 export const uploadChunkPar = (
@@ -89,14 +85,14 @@ export const uploadChunkPar = (
         local: { path: string; stats: FsStats },
       ]
     >,
-  ): SRA<DriveLookup.State, DepApiMethod<'upload'>, NEA<UploadResult>> =>
+  ): SRA<DriveLookup.State, DepApiMethod<'uploadFile'>, NEA<UploadResult>> =>
     state =>
       pipe(
         chunk,
         NA.map(([remotepath, local]) => {
           const d = parseDrivewsid(pathToDrivewsid[Path.dirname(remotepath)])
           return pipe(
-            DriveApiMethods.upload<DriveLookup.State>({
+            DriveApiMethods.uploadFile<DriveLookup.State>({
               sourceFilePath: local.path,
               docwsid: d.docwsid,
               zone: d.zone,
