@@ -1,9 +1,9 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { loadAccountDataFromFile } from './loadAccountDataFromFile'
-import { loadCacheFromFile } from './loadCacheFromFile'
-import { loadSessionFromFile } from './loadSessionFromFile'
+import { loadAccountDataFromFile } from './account-data'
+import { loadCacheFromFile } from './cache'
+import { loadSessionFromFile } from './session'
 
 export const loadDriveStateFromFiles = pipe(
   loadSessionFromFile,

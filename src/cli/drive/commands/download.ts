@@ -1,6 +1,6 @@
 import micromatch from 'micromatch'
 import { DriveLookup } from '../../../icloud-drive'
-import * as Actions from '../../../icloud-drive/drive-action'
+import { DriveActions } from '../../../icloud-drive'
 
 type Argv = {
   path: string
@@ -42,7 +42,7 @@ Use `dry` flag to only check what is going to be downloaded
 
 */
 
-export const download = (argv: Argv): DriveLookup.Lookup<string, Actions.DownloadRecursiveDeps> => {
+export const download = (argv: Argv): DriveLookup.Lookup<string, DriveActions.DownloadRecursiveDeps> => {
   const scan = micromatch.scan(argv.path)
 
   if (scan.isGlob) {
@@ -51,9 +51,9 @@ export const download = (argv: Argv): DriveLookup.Lookup<string, Actions.Downloa
   }
 
   if (argv.recursive) {
-    return Actions.downloadRecursive(argv)
+    return DriveActions.downloadRecursive(argv)
   }
   else {
-    return Actions.downloadShallow(argv)
+    return DriveActions.downloadShallow(argv)
   }
 }

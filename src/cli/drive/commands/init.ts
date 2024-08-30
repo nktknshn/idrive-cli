@@ -1,14 +1,16 @@
 import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
+
 import { DepFs } from '../../../deps-types'
 import { DepAuthenticateSession } from '../../../deps-types/dep-authenticate-session'
 import { authenticateState } from '../../../icloud-authentication/methods'
 import { ICloudSession, session } from '../../../icloud-core/session/session-type'
+import { saveAccountDataToFile } from '../../../icloud-drive/drive-persistence/account-data'
+import { saveSessionToFile } from '../../../icloud-drive/drive-persistence/session'
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 import { prompts } from '../../../util/prompts'
-import { saveAccountData, saveSession } from '../command'
 
 type Argv = { skipLogin: boolean }
 
@@ -32,17 +34,17 @@ export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessi
           )),
       )
     ),
-    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`initializing session in ${sessionFile}`))),
+    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Snitializing session in ${sessionFile}`))),
     RTE.chainTaskEitherK(() => sessionQuest),
     !skipLogin
       ? flow(
         RTE.chainW(authenticateState),
-        RTE.chainFirstW(saveAccountData),
+        RTE.chainFirstW(saveAccountDataToFile),
       )
       : RTE.map(identity),
-    RTE.chainFirstW(saveSession),
+    RTE.chainFirstW(saveSessionToFile),
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
-    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`session initiated in ${sessionFile}`))),
+    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Session initiated in ${sessionFile}`))),
     RTE.map(constVoid),
   )
 }

@@ -3,8 +3,10 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthenticateSession, DepFs } from '../../deps-types'
 import { cacheLogger } from '../../logging/logging'
 import { DriveLookup } from '..'
-import { loadDriveStateFromFiles } from './loadDriveStateFromFiles'
-import { saveAccountData, saveCache, saveSession } from './saveSession'
+import { saveAccountDataToFile } from './account-data'
+import { saveCacheToFile } from './cache'
+import { saveSessionToFile } from './session'
+import { loadDriveStateFromFiles } from './state'
 
 type Deps =
   & { sessionFile: string }
@@ -14,7 +16,7 @@ type Deps =
   & DepFs<'readFile'>
 
 /** Read the state from files and executes the action in the context. Unused currently */
-export function driveAction<A, R, Args extends unknown[]>(
+export function persistentDriveState<A, R, Args extends unknown[]>(
   action: (...args: Args) => DriveLookup.Lookup<A, R>,
 ): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {
   return (...args: Args) =>
@@ -26,16 +28,16 @@ export function driveAction<A, R, Args extends unknown[]>(
           () =>
             cacheLogger.debug(
               `saving cache: ${Object.keys(cache.byDrivewsid).length} items`
-                + `, ${Object.keys(cache.byDrivewsid).length - Object.keys(oldCache.byDrivewsid).length} new items`,
+                + `\n${Object.keys(cache.byDrivewsid).length - Object.keys(oldCache.byDrivewsid).length} new items`,
             ),
         )
       ),
       RTE.chainFirstW(({ result: [, state] }) =>
         pipe(
           RTE.of(state),
-          RTE.chainFirstW(saveSession),
-          RTE.chainFirstW(saveAccountData),
-          RTE.chainFirstW(saveCache),
+          RTE.chainFirstW(saveSessionToFile),
+          RTE.chainFirstW(saveAccountDataToFile),
+          RTE.chainFirstW(saveCacheToFile),
         )
       ),
       RTE.map(_ => _.result[0]),

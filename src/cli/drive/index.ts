@@ -1,21 +1,21 @@
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as w from 'yargs-command-wrapper'
+import { persistentDriveState } from '../../icloud-drive/drive-persistence/load-save-drive-state'
 import { CliCommands, cmd } from './args'
-import { driveCommand } from './command'
 import * as Commands from './commands'
 
 const handler = w.createHandlerFor(cmd, {
-  ls: driveCommand(Commands.listUnixPath),
-  mkdir: driveCommand(Commands.mkdir),
-  rm: driveCommand(Commands.rm),
-  upload: cmd => driveCommand(Commands.upload)(cmd),
-  mv: driveCommand(Commands.move),
-  autocomplete: driveCommand(Commands.autocomplete),
-  ac: driveCommand(Commands.autocomplete),
-  cat: driveCommand(Commands.cat),
-  recover: driveCommand(Commands.recover),
-  download: driveCommand(Commands.download),
-  edit: driveCommand(Commands.edit),
+  ls: persistentDriveState(Commands.listUnixPath),
+  mkdir: persistentDriveState(Commands.mkdir),
+  rm: persistentDriveState(Commands.rm),
+  upload: cmd => persistentDriveState(Commands.upload)(cmd),
+  mv: persistentDriveState(Commands.move),
+  autocomplete: persistentDriveState(Commands.autocomplete),
+  ac: persistentDriveState(Commands.autocomplete),
+  cat: persistentDriveState(Commands.cat),
+  recover: persistentDriveState(Commands.recover),
+  download: persistentDriveState(Commands.download),
+  edit: persistentDriveState(Commands.edit),
   init: Commands.initSession,
   auth: Commands.authSession,
 })

@@ -2,7 +2,8 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthenticateSession, DepFs } from '../../../deps-types'
 import { authenticateState } from '../../../icloud-authentication/methods'
-import { loadSession, saveAccountData, saveSession } from '../command'
+import { saveAccountDataToFile } from '../../../icloud-drive/drive-persistence/account-data'
+import { loadSessionFromFile, saveSessionToFile } from '../../../icloud-drive/drive-persistence/session'
 
 export type DepsAuthSession =
   & { sessionFile: string }
@@ -14,10 +15,10 @@ export type DepsAuthSession =
 export const authSession = (): RTE.ReaderTaskEither<DepsAuthSession, Error, void> => {
   return pipe(
     RTE.ask<DepsAuthSession>(),
-    RTE.chainTaskEitherK(loadSession),
+    RTE.chainTaskEitherK(loadSessionFromFile),
     RTE.chainW(authenticateState),
-    RTE.chainFirstW(saveAccountData),
-    RTE.chainFirstW(saveSession),
+    RTE.chainFirstW(saveAccountDataToFile),
+    RTE.chainFirstW(saveSessionToFile),
     RTE.map(constVoid),
   )
 }

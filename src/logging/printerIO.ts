@@ -1,22 +1,25 @@
+/** Prints to the console */
 export const printerIO = {
   print: <T>(value: T) =>
-    () => {
-      console.log(value)
+    (): void => {
+      printer.print(value)
     },
   error: () =>
     (value: Error | string) =>
-      () => {
-        console.error(value)
+      (): void => {
+        printer.error(value)
       },
   printTask: <T>(value: T): () => Promise<void> =>
     async () => {
-      console.log(value)
+      printer.print(value)
     },
   errorTask: (value: Error): () => Promise<void> =>
     async () => {
-      console.error(value.message)
+      printer.error(value.message)
     },
 }
+
+/** Prints to the console */
 export const printer = {
   print: <T>(value: T): void => {
     console.log(value)

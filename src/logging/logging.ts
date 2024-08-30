@@ -1,6 +1,4 @@
 import chalk from 'chalk'
-import { pipe } from 'fp-ts/function'
-import * as TE from 'fp-ts/lib/TaskEither'
 import * as winston from 'winston'
 import { isObjectWithOwnProperty } from '../util/util'
 import { fromWinston } from './loggerIO'

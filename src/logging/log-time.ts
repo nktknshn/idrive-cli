@@ -15,7 +15,7 @@ export const logTimeIO = (logger: Logger) =>
     <A>(f: IO.IO<A>): IO.IO<A> =>
       pipe(
         timeIO(f),
-        IO.chainFirst(([_, ms]) => logger(`Running ${name} took ${ms} ms`)),
+        IO.chainFirst(([, ms]) => logger(`Running ${name} took ${ms} ms`)),
         IO.map(([res]) => res),
       )
 
@@ -24,7 +24,7 @@ export const logTimeTE = (logger: Logger) =>
     <E, A>(te: TE.TaskEither<E, A>): TE.TaskEither<E, A> => {
       return pipe(
         timeTE(te),
-        TE.chainFirstIOK(([_, ms]) => logger(`Running ${name} took ${ms} ms`)),
+        TE.chainFirstIOK(([, ms]) => logger(`Running ${name} took ${ms} ms`)),
         TE.map(([res]) => res),
       )
     }
