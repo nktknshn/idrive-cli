@@ -2,21 +2,12 @@ import { pipe } from 'fp-ts/lib/function'
 import * as Task from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/TaskEither'
 
-import * as L from '../../../src/logging'
-
 import * as DC from '../../../src/icloud-drive/actions/download/download-conflict'
 import { FsStats } from '../../../src/util/fs'
+import { enableDebug } from '../debug'
 import { complexStructure0 } from '../fixtures/drive'
 
-L.initLoggers(
-  { debug: true },
-  [
-    L.logger,
-    L.cacheLogger,
-    L.stderrLogger,
-    L.apiLogger,
-  ],
-)
+enableDebug(false)
 
 class Enoent extends Error {
   code = 'ENOENT'

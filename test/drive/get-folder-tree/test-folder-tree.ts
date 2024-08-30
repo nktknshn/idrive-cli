@@ -6,8 +6,11 @@ import { DriveLookup } from '../../../src/icloud-drive'
 import * as C from '../../../src/icloud-drive/drive-lookup/cache'
 import { npath } from '../../../src/util/normalize-path'
 import '../debug'
+import { enableDebug } from '../debug'
 import { executeDrive, fakeicloud } from '../util/mocked-drive'
 import { file, folder } from '../util/mocked-drive'
+
+enableDebug(false)
 
 const struct0 = fakeicloud(
   file({ name: 'file1.txt' }),

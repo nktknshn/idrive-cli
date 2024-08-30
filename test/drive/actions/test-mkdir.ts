@@ -6,7 +6,7 @@ import { DriveActions, DriveLookup } from '../../../src/icloud-drive'
 import { enableDebug } from '../debug'
 import * as Mock from '../util/mocked-drive'
 
-enableDebug(true)
+enableDebug(false)
 
 describe('mkdir', () => {
   it('works', async () => {

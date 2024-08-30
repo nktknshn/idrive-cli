@@ -7,7 +7,10 @@ import { rootDrivewsid } from '../../src/icloud-drive/drive-types/types-io'
 import { invalidPath, pathTarget } from '../../src/icloud-drive/util/get-by-path-types'
 import { npath } from '../../src/util/normalize-path'
 import './debug'
+import { enableDebug } from './debug'
 import { appLibrary, executeDrive, fakeicloud, file, folder, removeByDrivewsid } from './util/mocked-drive'
+
+enableDebug(false)
 
 describe('getByPaths', () => {
   const structure = fakeicloud(

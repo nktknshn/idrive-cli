@@ -4,7 +4,10 @@ import * as R from 'fp-ts/Record'
 import * as TE from 'fp-ts/TaskEither'
 import { Cache, DriveLookup } from '../../src/icloud-drive'
 import './debug'
+import { enableDebug } from './debug'
 import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
+
+enableDebug(false)
 
 describe('retrieveItemDetailsInFoldersSaving', () => {
   it('works', async () => {

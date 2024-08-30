@@ -5,7 +5,10 @@ import * as TE from 'fp-ts/TaskEither'
 import * as DC from '../../../src/icloud-drive/actions/download/download-conflict'
 import { FsStats } from '../../../src/util/fs'
 import { isDefined } from '../../../src/util/guards'
+import { enableDebug } from '../debug'
 import { fakeicloud, file, folder } from '../util/mocked-drive'
+
+enableDebug(false)
 
 class Enoent extends Error {
   code = 'ENOENT'

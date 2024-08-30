@@ -9,8 +9,11 @@ import { showFolderTree } from '../../src/icloud-drive/util/drive-folder-tree'
 import { invalidPath, validPath } from '../../src/icloud-drive/util/get-by-path-types'
 import { normalizePath, npath } from '../../src/util/normalize-path'
 import './debug'
+import { enableDebug } from './debug'
 import { complexStructure0 } from './fixtures/drive'
 import { createEnv, createState, executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
+
+enableDebug(false)
 
 describe('retrieveItemDetailsInFoldersSaving', () => {
   it('works', async () => {
