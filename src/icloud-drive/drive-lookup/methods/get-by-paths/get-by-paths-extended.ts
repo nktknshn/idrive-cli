@@ -14,6 +14,16 @@ import { ItemIsNotFolderError } from '../../errors'
 import { chainCachedDocwsRoot, getCachedDocwsRoot } from '../get-roots'
 import { getByPaths } from './get-by-paths'
 
+export const getByPathStrict = <R extends T.Root>(
+  root: R,
+  path: NormalizedPath,
+): Lookup<T.DetailsOrFile<R>> => {
+  return pipe(
+    getByPathsStrict(root, [path]),
+    map(NA.head),
+  )
+}
+
 /** Fails if some of the paths are not valid */
 export const getByPathsStrict = <R extends T.Root>(
   root: R,

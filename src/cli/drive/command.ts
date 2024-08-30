@@ -2,6 +2,7 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/Option'
+
 import { DepFs } from '../../deps-types'
 import { DepAuthenticateSession } from '../../deps-types/dep-authenticate-session'
 import { type AccountData, readAccountData, saveAccountData as _saveAccountData } from '../../icloud-authentication'
@@ -13,6 +14,7 @@ import { debugTimeRTE } from '../../logging/debug-time'
 import { loggerIO } from '../../logging/loggerIO'
 import { cacheLogger } from '../../logging/logging'
 import { err } from '../../util/errors'
+import { appendFilename } from '../../util/filename'
 import { ReadJsonFileError } from '../../util/files'
 
 type Deps =
@@ -69,6 +71,8 @@ export const loadSession = pipe(
   RTE.map(session => ({ session })),
 )
 
+const accountDataFile = (sessionFile: string) => appendFilename(sessionFile, '.accountdata')
+
 const loadAccountData = (
   { session }: BaseState,
 ): RTE.ReaderTaskEither<
@@ -78,7 +82,7 @@ const loadAccountData = (
 > =>
   pipe(
     RTE.asksReaderTaskEitherW(
-      (deps: { sessionFile: string }) => readAccountData(`${deps.sessionFile}-accountData`),
+      (deps: { sessionFile: string }) => readAccountData(accountDataFile(deps.sessionFile)),
     ),
     RTE.map(accountData => ({ session, accountData })),
     RTE.orElseW(e =>
@@ -132,7 +136,7 @@ export const saveAccountData = <S extends { accountData: AccountData }>(
 ): RTE.ReaderTaskEither<{ sessionFile: string } & DepFs<'writeFile'>, Error, void> =>
   pipe(
     RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
-      _saveAccountData(state.accountData, `${deps.sessionFile}-accountData`)
+      _saveAccountData(state.accountData, accountDataFile(deps.sessionFile))
     ),
     debugTimeRTE('saveAccountData'),
   )

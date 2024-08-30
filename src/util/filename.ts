@@ -12,3 +12,8 @@ export const parseFilename = (fileName: string): { name: string; extension?: str
     extension: extension ? extension.slice(1) : undefined,
   }
 }
+
+export const appendFilename = (fileName: string, suffix: string): string => {
+  const { name, extension } = parseFilename(fileName)
+  return `${name}${suffix}${extension ? `.${extension}` : ''}`
+}

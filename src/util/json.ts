@@ -1,13 +1,10 @@
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as J from 'fp-ts/lib/Json'
-import * as O from 'fp-ts/lib/Option'
-import * as TE from 'fp-ts/lib/TaskEither'
-// import * as fs from 'fs/promises'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
+import * as TE from 'fp-ts/lib/TaskEither'
 import { DepFs } from '../deps-types/dep-fs'
-import { err, JsonParsingError, MissingResponseBody } from './errors'
-import { HttpResponse } from './http/fetch-client'
+import { JsonParsingError } from './errors'
 
 export function tryParseJson(
   input: string,

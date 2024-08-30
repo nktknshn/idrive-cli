@@ -1,8 +1,7 @@
-import { skipValidation } from 'yargs'
 import * as w from 'yargs-command-wrapper'
 import * as defaults from '../../defaults'
 
-const ls = w.command('ls [paths..]', 'list files in a folder', _ =>
+const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
   _
     .positional('paths', { type: 'string', array: true, default: ['/'] })
     .options({
@@ -19,7 +18,7 @@ const ls = w.command('ls [paths..]', 'list files in a folder', _ =>
 
 const download = w.command(
   'download <path> <dstpath>',
-  'download',
+  'Download a file or a folder content',
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .positional('dstpath', { type: 'string', demandOption: true })
@@ -34,11 +33,15 @@ const download = w.command(
       }),
 )
 
-const mkdir = w.command('mkdir <path>', 'mkdir', (_) => _.positional('path', { type: 'string', demandOption: true }))
+const mkdir = w.command(
+  'mkdir <path>',
+  'Create a folder',
+  (_) => _.positional('path', { type: 'string', demandOption: true }),
+)
 
 const rm = w.command(
   'rm [paths..]',
-  'check updates',
+  'Remove files and folders',
   (_) =>
     _.positional('paths', { type: 'string', array: true, demandOption: true })
       .options({
@@ -50,7 +53,7 @@ const rm = w.command(
 
 const cat = w.command(
   'cat <path>',
-  'cat',
+  'View the content of a text file',
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .options({
@@ -60,7 +63,7 @@ const cat = w.command(
 
 const mv = w.command(
   'mv <srcpath> <dstpath>',
-  'move',
+  'Move or rename a file or a folder',
   (_) =>
     _.positional('srcpath', { type: 'string', demandOption: true })
       .positional('dstpath', { type: 'string', demandOption: true }),
@@ -68,7 +71,7 @@ const mv = w.command(
 
 const upload = w.command(
   'upload <uploadargs..>',
-  'upload',
+  'Upload files and folders',
   (_) =>
     _.positional('uploadargs', { type: 'string', array: true, demandOption: true })
       .options({
@@ -94,7 +97,7 @@ const upload = w.command(
 
 const autocomplete = w.command(
   'autocomplete <path>',
-  'autocomplete',
+  'Autocomplete path',
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .options({
@@ -107,19 +110,19 @@ const autocomplete = w.command(
 
 const init = w.command(
   'init',
-  'init',
+  'Init new session',
   a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
 )
 
 const auth = w.command(
   'auth',
-  'auth session',
+  'Authenticate a session',
   a => a.options({}),
 )
 
 const edit = w.command(
   'edit <path>',
-  'edit',
+  'Edit a text file',
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .options({
@@ -129,18 +132,19 @@ const edit = w.command(
 
 const recover = w.command(
   'recover <path>',
-  'recover',
+  'Recover a file from the trash',
   (_) => _.positional('path', { type: 'string', demandOption: true }),
 )
 
 export const cmd = w.composeCommands(
   _ =>
-    _.options({
-      sessionFile: { alias: ['s', 'session'], default: defaults.sessionFile },
-      cacheFile: { alias: ['c', 'cache'], default: defaults.cacheFile },
-      noCache: { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
-      debug: { alias: 'd', default: false, type: 'boolean' },
-    }),
+    _.version(defaults.cliVersion)
+      .options({
+        sessionFile: { alias: ['s', 'session'], default: undefined, optional: true },
+        cacheFile: { alias: ['c', 'cache'], default: undefined, optional: true },
+        noCache: { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
+        debug: { alias: 'd', default: false, type: 'boolean' },
+      }),
   init,
   auth,
   ls,

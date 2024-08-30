@@ -1,4 +1,4 @@
-import { logTimeIO, logTimeRTE, logTimeSRTE, logTimeTE } from '../util/log-time'
+import { logTimeIO, logTimeRTE, logTimeSRTE, logTimeTE } from './log-time'
 import { timeLoggerIO } from './logging'
 
 // export const debugTimeIO = logTimeIO(timeLoggerIO.debug)

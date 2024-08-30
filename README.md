@@ -7,11 +7,17 @@ This is a client for iCloud Drive built on top of a non-public API. It aims to m
 
 ## Disclaimer
 
-This is an unofficial client. Use it at your own risk. The author is not responsible for any data loss or any other issues that may arise from using this software. Always have a backup of your data. Work in progress.
+This is an unofficial client. Use it at your own risk. The author is not responsible for any data loss or any other issues that may arise from using this software. Always have a backup of your data.
 
 ## Usage
 
-`alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
+- Install [bun](https://bun.sh/). 
+
+- Clone the repo.
+
+- Fish shell completions are available in `completions/idrive.fish`.
+
+- `alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
 
 ```Commands:
   idrive init                       init session
@@ -39,213 +45,166 @@ Options:
 
 ### init
 
+Initializes new session. 
+
 `idrive init`
 
 `idrive init -s myicloud.json`
 
-Initializes new session. 
+Do not login, just create the session file.
 
 `idrive init --skipLogin`
 
-Do not login, just create the session file.
+Authenticate the session file
 
 `idrive auth`
 
 `idrive auth -s myicloud.json`
 
-Authenticate the session file
+Use `ICLOUD_SESSION_FILE` environment variable to specify the session file
+
+`export ICLOUD_SESSION_FILE=~/.config/icloud-session.json`
 
 ### ls
 
-`idrive ls`
-
-`idrive ls '/Obsidian/my1/'`
-
-`idrive ls '/Obsidian/my1/*.md'`
-
 List files in folders. Supports globs
 
-`idrive ls -R '/Obsidian/my1/**/*.md'`
+`idrive ls`
+
+`idrive ls '/MyNotes/my1/'`
+
+`idrive ls '/MyNotes/my1/*.md'`
 
 Use recursive flag for the globstar pattern (may take some time to process deep trees)
 
-`idrive ls -R --depth 2 '/Obsidian/my1/**/*.md'`
+`idrive ls -R '/MyNotes/my1/**/*.md'`
 
 Limit the depth of recursion
 
-`idrive ls /Obsidian/ '/Camera/*.jpg' /Pages/Стильный\ отчет.pages`
+`idrive ls -R --depth 2 '/MyNotes/my1/**/*.md'`
 
 Multiple paths
 
-`idrive ls -R --depth 2 --tree '/Obsidian/my1/'`
+`idrive ls /MyNotes/ '/Camera/*.jpg' /Pages/Стильный\ отчет.pages`
 
 Output result as a tree
 
-
-`idrive ls -t`
+`idrive ls -R --depth 2 --tree '/MyNotes/my1/'`
 
 list trash
 
-
-<!-- ???
-
-`idrive ls -t -R` -->
+`idrive ls -t`
 
 ### rm [paths..]
 
-`idrive rm '/Obsidian/my1/note.md'`
-
 Removes files and folders. Supports globs. By default moves files to the trash
 
-`idrive rm '/Obsidian/my1/*.md' /Camera/IMG_0198.jpg`
+`idrive rm '/MyNotes/my1/note.md'`
 
 Multiple paths
 
-`idrive rm -R '/Obsidian/my1/**/*.md'`
+`idrive rm '/MyNotes/my1/*.md' /Camera/IMG_0198.jpg`
 
 Use recursion flag for the globstar pattern
 
-`idrive rm -R '/Obsidian/my1/**/*.md' --dry`
+`idrive rm -R '/MyNotes/my1/**/*.md'`
 
 Use `--dry` flag to check what is going to be removed
 
-<!-- `idrive ls -R --depth 2 '/Obsidian/my1/**/*.md'`
-
-??? -->
-
-`idrive rm --skipTrash /Camera/IMG_0198.jpg`
+`idrive rm -R '/MyNotes/my1/**/*.md' --dry`
 
 Delete file skipping trash
 
-`idrive rm --force /Camera/IMG_0198.jpg`
+`idrive rm --skipTrash /Camera/IMG_0198.jpg`
 
 Do not ask for the confirmation
+
+`idrive rm --force /Camera/IMG_0198.jpg`
 
 
 ### cat <path>
 
 View the content of a text file
 
-`idrive cat '/Obsidian/my1/note.md'`
+`idrive cat '/MyNotes/my1/note.md'`
 
 ### mv <srcpath> <dstpath>
 
 Move or rename a file or a folder. You cannot move between different zones (e.g. between APP_LIBRARIES and Docws)
 
-`idrive mv /Obsidian/my1/note1.md /Obsidian/my1/note2.md`
+`idrive mv /MyNotes/my1/note1.md /MyNotes/my1/note2.md`
 
 Remote file will be renamed
 
-`idrive mv /Obsidian/my1/note1.md /Obsidian/old/note2.md`
+`idrive mv /MyNotes/my1/note1.md /MyNotes/old/note2.md`
 
 Remote file will be moved and renamed
 
-<!-- `idrive mv --force /Obsidian/my1/note1.md /Obsidian/my1/note2.md`
+<!-- `idrive mv --force /MyNotes/my1/note1.md /MyNotes/my1/note2.md`
 
 ??? -->
 
 
 ### mkdir <path>
 
-`idrive mkdir /Obsidian/my1/notes/`
-
 Creates a folder
+
+`idrive mkdir /MyNotes/my1/notes/`
 
 ### edit
 
-`idrive edit /Obsidian/my1/notes/note1.md` 
-
 Opens the file in the editor. If the file is not found, it will be created.
 
-`idrive edit --editor gedit /Obsidian/my1/notes/note1.md`
+`idrive edit /MyNotes/my1/notes/note1.md` 
 
 Opens the file in a different editor (defaults to `vi`)
+
+`idrive edit --editor gedit /MyNotes/my1/notes/note1.md`
 
 
 ### upload 
 
-`idrive upload ~/Documents/note1.md /Obsidian/my1/notes/`
-
-`idrive upload ~/Documents/note1.md /Obsidian/my1/notes/different_name.md`
-
 Upload a single file
 
-`idrive upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /Obsidian/my1/notes/`
+`idrive upload ~/Documents/note1.md /MyNotes/my1/notes/`
+
+`idrive upload ~/Documents/note1.md /MyNotes/my1/notes/different_name.md`
 
 Upload multiple files
 
-`idrive upload -R ~/Documents/ /Obsidian/my1/notes/`
+`idrive upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /MyNotes/my1/notes/`
 
 Upload a folder
 
-`idrive upload -R '~/Documents/**/*.md' /Obsidian/my1/notes/`
+`idrive upload -R ~/Documents/ /MyNotes/my1/notes/`
 
 Upload a folder 
 
-<!-- 
-### uploads [files..] <dstpath>
+`idrive upload -R '~/Documents/**/*.md' /MyNotes/my1/notes/`
 
-Upload multiple files to a folder
-
-`idrive uploads note1.md note2.md /Obsidian/`
-`idrive uploads *.md /Obsidian/`
-
-`idrive uploads --overwright *.md /Obsidian/`
-
-Upload overwrighting files without asking for confirmation. Overwritten files are moved to the trash
-
-`idrive uploads --skipTrash *.md /Obsidian/`
-
-Delete overwritten files skipping trash
-
-### upload <srcfile> <dstpath>
-
-Upload single file
-
-`idrive note1.md /Obsidian/`
-
-Keeping the filename
-
-`idrive note1.md /Obsidian/newnote1.md`
-
-Use a different filename
-
-### uf <localpath> <remotepath>
-
-Upload a folder. This action doesn't support uploading folder over another folder overwrigting files. It always uploads folder as a new one.
-
-`idrive uf ./node-icloud-drive-client /Documents/projects/`
-
-`idrive uf --include '/**/*.ts' --exclude '/**/cli-drive/**/*' ./node-icloud-drive-client  /Documents/projects/`
-
-Upload a folder node-icloud-drive-client excluding files in cli-drive folder
-
-`idrive uf --include '/**/*.ts' --exclude '/**/cli-drive/**/*' ./node-icloud-drive-client /Documents/projects/ --dry`
-
-
-Use `dry` flag to only check what is going to be uploaded -->
+Use `dry` flag to only check what is going to be uploaded.
 
 ### download <remotepath> <localpath>
 
 Download a file or a folder content.
 
-`idrive download '/Obsidian/my1/note1.md' ./outputdir`
+`idrive download '/MyNotes/my1/note1.md' ./outputdir`
 
 A single file
 
-`idrive download '/Obsidian/my1/*.md' ./outputdir`
+`idrive download '/MyNotes/my1/*.md' ./outputdir`
 
 Recursively download folders shallow content into `./outputdir/my1/`
 
-`idrive download -R '/Obsidian/my1/' ./outputdir`
+`idrive download -R '/MyNotes/my1/' ./outputdir`
 
 Recursively download all `md` files into `./outputdir/diary/` 
 
-`idrive download -R '/Obsidian/my1/diary/**/*.md' ./outputdir`
+`idrive download -R '/MyNotes/my1/diary/**/*.md' ./outputdir`
 
-`idrive download -RS '/Obsidian/my1/diary/**/*.md' ./outputdir`
+`idrive download -RS '/MyNotes/my1/diary/**/*.md' ./outputdir`
 
-Download download all into `./outputdir/Obsidian/my1/diary/`
+Download download all into `./outputdir/MyNotes/my1/diary/`
 
 Use `dry` flag to only check what is going to be downloaded
 
@@ -253,9 +212,9 @@ Use `dry` flag to only check what is going to be downloaded
 
 ### recover
 
-`idrive recover '/note1.md'`
-
 Recover a file from the trash
+
+`idrive recover '/note1.md'`
 
 ### autocomplete <path>
 

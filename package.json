@@ -1,6 +1,6 @@
 {
-  "name": "icloud1",
-  "version": "1.0.0",
+  "name": "node-icloud-drive-client",
+  "version": "0.0.1",
   "description": "",
   "scripts": {
     "test": "./node_modules/.bin/vitest"
@@ -9,30 +9,24 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.4",
-    "form-data": "^3.0.1",
+    "form-data": "3.0.1",
     "fp-ts": "^2.16.9",
     "fp-ts-contrib": "^0.1.29",
     "io-ts": "^2.2.21",
-    "mime-types": "^2.1.35",
-    "prompts": "^2.4.2",
+    "mime-types": "2.1.35",
     "winston": "^3.14.2",
     "yargs": "^16.2.0",
     "yargs-command-wrapper": "^1.0.6"
   },
   "devDependencies": {
-    "@types/jest": "^27.5.2",
     "@types/micromatch": "^4.0.9",
-    "@types/mime-types": "^2.1.4",
+    "@types/mime-types": "2.1.4",
     "@types/node": "^16.18.105",
-    "@types/prompt": "^1.1.8",
-    "@types/prompts": "^2.4.9",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
     "dprint": "^0.18.2",
     "eslint": "^7.32.0",
-    "ts-jest": "^29.2.4",
     "ts-loader": "^9.5.1",
-    "yarn": "^1.22.22",
     "vitest": "^2.0.5",
     "@vitest/coverage-istanbul": "^2.0.5",
     "typescript": "^5.5.4"
