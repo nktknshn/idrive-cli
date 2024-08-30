@@ -41,7 +41,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
           ]),
         ),
       })(
-        DriveLookup.retrieveItemDetailsInFoldersSaving([
+        DriveLookup.retrieveItemDetailsInFoldersCached([
           structure0.r.c.folder1.c.folder2.d.drivewsid,
           structure0.r.c.folder1.c.folder3.d.drivewsid,
         ]),

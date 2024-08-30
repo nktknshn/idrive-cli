@@ -42,9 +42,9 @@ export const signInCredentials = t.type({
 })
 
 /** Authenticated session */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ICloudSession extends t.TypeOf<typeof sessionScheme> {}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ICloudSignInCredentials extends t.TypeOf<typeof signInCredentials> {}
 
 export const session = (

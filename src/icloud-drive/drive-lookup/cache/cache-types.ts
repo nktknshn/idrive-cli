@@ -26,12 +26,6 @@ export type CacheEntityWithParentId = Exclude<CacheEntity, CacheEntityFolderTras
 
 export type ICloudDriveCacheEntityType = CacheEntity['type']
 
-export interface CacheEntityFolderRootDetails {
-  readonly type: 'ROOT'
-  readonly hasDetails: true
-  readonly content: CT.DetailsDocwsRoot
-}
-
 export class CacheEntityFolderRootDetails {
   readonly type = 'ROOT'
   readonly hasDetails = true

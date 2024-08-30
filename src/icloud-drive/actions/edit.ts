@@ -87,7 +87,7 @@ const handleExistingFile = (tempfile: string, item: Types.DriveChildrenItemFile)
   )
 }
 
-const handleMeowFile = (tempfile: string): DriveLookup.Lookup<void, Deps> => {
+const handleMeowFile = (_tempfile: string): DriveLookup.Lookup<void, Deps> => {
   return pipe(
     SRTE.of(constVoid()),
   )

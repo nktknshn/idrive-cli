@@ -6,7 +6,7 @@ import { logger } from '../../../../logging/logging'
 import { err } from '../../../../util/errors'
 import { NormalizedPath } from '../../../../util/normalize-path'
 import { NEA } from '../../../../util/types'
-import { sequenceArrayE } from '../../../../util/util'
+import { sequenceNArrayE } from '../../../../util/util'
 import * as T from '../../../drive-types'
 import * as V from '../../../util/get-by-path-types'
 import { filterOrElse, Lookup, map } from '../..'
@@ -34,7 +34,7 @@ export const getByPathsStrict = <R extends T.Root>(
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
-    SRTE.chainEitherK(sequenceArrayE),
+    SRTE.chainEitherK(sequenceNArrayE),
   )
 }
 
@@ -46,7 +46,7 @@ export const getByPathsStrictDocwsroot = (
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
-    SRTE.chainEitherK(sequenceArrayE),
+    SRTE.chainEitherK(sequenceNArrayE),
   )
 }
 

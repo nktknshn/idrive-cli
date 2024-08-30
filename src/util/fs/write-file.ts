@@ -10,7 +10,7 @@ export const writeFileFromReadable = (destpath: string) =>
       TE.tryCatch(
         () => {
           return new Promise(
-            (resolve, reject) => {
+            (resolve, _reject) => {
               const stream = fs.createWriteStream(destpath)
               readble.pipe(stream).on('close', resolve)
             },

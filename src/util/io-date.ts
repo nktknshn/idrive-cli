@@ -8,6 +8,7 @@ import * as t from 'io-ts'
 /**
  * @since 0.5.0
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DateFromISOStringC extends t.Type<Date, string, unknown> {}
 
 /**

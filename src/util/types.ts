@@ -1,9 +1,9 @@
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as _SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import { ObjectType } from './util'
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type EmptyObject = {}
+export type EmptyObject = ObjectType
 // Record<string, never>
 export type UnknownObject = Record<string, unknown>
 

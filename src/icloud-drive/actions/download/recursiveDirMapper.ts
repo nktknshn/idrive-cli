@@ -1,6 +1,6 @@
 import { identity } from 'fp-ts/lib/function'
 import { Path, prependPath } from '../../../util/path'
-import { DownloadTask, DownloadTaskMapped, DownloadTaskMapper } from './types'
+import { DownloadTask, DownloadTaskMapped } from './types'
 
 export const recursiveDirMapper = (
   dstpath: string,

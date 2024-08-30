@@ -135,7 +135,7 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
         mappedTask,
         RTE.fromReaderTaskK(lookForLocalConflicts),
       ))),
-    SRTE.bindW('solutions', ({ conflicts, mappedTask }) =>
+    SRTE.bindW('solutions', ({ conflicts }) =>
       SRTE.fromReaderTaskEither(pipe(
         conflicts,
         A.matchW(() => RTE.of([]), conflictsSolver),
@@ -169,11 +169,6 @@ const showVerbose = ({ verbose = false }) =>
   ({
     mappedTask,
     result,
-    downloadTask,
-    folderTree,
-    conflicts,
-    solutions,
-    args,
   }: DownloadFolderInfo) => {
     return showTask({ verbose })({
       ...result,
@@ -204,7 +199,7 @@ const resultsJson = (results: DownloadFileResult[]) => {
     fails: pipe(
       results,
       A.filter(guardFst(E.isLeft)),
-      A.map(([err, [url, path]]) => `${path}: ${err.left}`),
+      A.map(([err, [_url, path]]) => `${path}: ${err.left}`),
     ),
   }
 }

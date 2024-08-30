@@ -50,7 +50,7 @@ export const searchGlobs = (
           modifySubset(
             dirs,
             // separate globs and plain paths
-            ([scan, dir]) => scan.isGlob,
+            ([scan, _dir]) => scan.isGlob,
             // recursively get content of the parents of globs
             globParents =>
               pipe(
@@ -58,9 +58,9 @@ export const searchGlobs = (
                 SRTE.map(NA.map(E.of)),
               ),
             //
-            ([scan, dir]) => E.of(shallowFolder(dir)),
+            ([_scan, dir]) => E.of(shallowFolder(dir)),
           ),
-        ([scan, file]) => E.left(file),
+        ([_scan, file]) => E.left(file),
       )
     ),
     // execute `getByPathsStrictDocwsroot` and `getFoldersTrees` with temp cache

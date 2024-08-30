@@ -15,7 +15,7 @@ const createFolderResponse = t.type({
   ])),
 })
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface CreateFoldersResponse extends t.TypeOf<typeof createFolderResponse> {}
 
 export function createFolders<S extends AR.AuthenticatedState>(

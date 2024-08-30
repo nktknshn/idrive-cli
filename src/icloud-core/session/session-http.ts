@@ -59,7 +59,7 @@ export function buildRequest(
   })
 }
 
-export function apiHttpRequest(
+export function apHttpRequest(
   method: Method,
   url: string,
   { data = undefined, headers = [_headers.default], clientInfo = _clientInfo, addClientInfo }: {

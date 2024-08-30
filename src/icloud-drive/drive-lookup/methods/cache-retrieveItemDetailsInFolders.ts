@@ -8,7 +8,7 @@ import * as O from 'fp-ts/Option'
 import { loggerIO } from '../../../logging/loggerIO'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
-import { sequenceArrayO } from '../../../util/util'
+import { sequenceNArrayO } from '../../../util/util'
 import { Cache, DriveCache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { TypesIo } from '../../drive-types'
@@ -69,7 +69,7 @@ export function retrieveItemDetailsInFoldersCachedStrict(
     retrieveItemDetailsInFoldersCached(drivewsids),
     SRTE.chain(res =>
       SRTE.fromOption(() => err(`some of the ids was not found`))(
-        sequenceArrayO(res),
+        sequenceNArrayO(res),
       )
     ),
   )

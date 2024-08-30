@@ -1,9 +1,7 @@
-import * as E from 'fp-ts/Either'
 import { sequenceS, sequenceT } from 'fp-ts/lib/Apply'
 import { flow, pipe } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
 
 export const orElse = <S, R, E1, A, E2>(onLeft: (e: E1) => SRTE.StateReaderTaskEither<S, R, E2, A>) =>

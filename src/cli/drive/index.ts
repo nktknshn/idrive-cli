@@ -1,6 +1,6 @@
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as w from 'yargs-command-wrapper'
-import { persistentDriveState } from '../../icloud-drive/drive-persistence/load-save-drive-state'
+import { persistentDriveState } from '../../icloud-drive/drive-persistence'
 import { CliCommands, cmd } from './args'
 import * as Commands from './commands'
 

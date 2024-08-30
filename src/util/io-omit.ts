@@ -5,11 +5,12 @@ import * as t from 'io-ts'
 export function omit<C extends t.HasProps, K extends keyof t.OutputOf<C>>(key: K, codec: C): OmitC<C, K> {
   const props: t.Props = getProps(codec)
   const keys = Object.getOwnPropertyNames(props)
-  const types = keys.map((key) => props[key])
+  // const types = keys.map((key) => props[key])
   const len = keys.length
 
   return new OmitType(
     'StrictType',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (u): u is any => {
       if (!t.UnknownRecord.is(u)) {
         console.log('false')
@@ -66,7 +67,7 @@ export function omit<C extends t.HasProps, K extends keyof t.OutputOf<C>>(key: K
           // }
         }
       }
-      return errors.length > 0 ? t.failures(errors) : t.success(a as any)
+      return errors.length > 0 ? t.failures(errors) : t.success(a as unknown)
     },
     (a) => codec.encode(R.deleteAt(key as string)(a)),
     codec,
@@ -77,11 +78,11 @@ export function omit<C extends t.HasProps, K extends keyof t.OutputOf<C>>(key: K
 export class OmitType<
   C extends t.HasProps,
   K extends keyof t.OutputOf<C>,
-  A = any,
+  A = unknown,
   O = A,
   I = unknown,
 > extends t.Type<A, O, I> {
-  readonly _tag: 'StrictType' = 'StrictType'
+  readonly _tag = 'StrictType' as const
   props: t.Props
 
   constructor(
@@ -97,7 +98,7 @@ export class OmitType<
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface OmitC<
   C extends t.HasProps,
   K extends keyof t.OutputOf<C>,
@@ -122,8 +123,6 @@ function getProps(codec: t.HasProps): t.Props {
       return codec.props
     case 'IntersectionType':
       return codec.types.reduce<t.Props>((props, type) => Object.assign(props, getProps(type)), {})
-      // case 'OmitType':
-      //   return R.deleteAt(codec.key as string)(getProps(codec.codec))
   }
 }
 

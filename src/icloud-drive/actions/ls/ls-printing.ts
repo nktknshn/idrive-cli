@@ -77,7 +77,7 @@ const showElements = (elements: Element[]): string => {
   )
 }
 
-export const showFolderInfo = ({ showDrivewsid = false, showDocwsid = false } = {}) =>
+export const showFolderInfo = () =>
   (details: Types.Details): string =>
     pipe(
       [
@@ -124,8 +124,13 @@ const showItemRow = ({
 
         row.push(formatDate(item.dateModified))
 
-        showDrivewsid && row.push(item.drivewsid)
-        showDocwsid && row.push(item.docwsid)
+        if (showDrivewsid) {
+          row.push(item.drivewsid)
+        }
+
+        if (showDocwsid) {
+          row.push(item.docwsid)
+        }
 
         row.push(item.size.toString())
       }
@@ -139,8 +144,13 @@ const showItemRow = ({
 
         row.push(formatDate(item.dateCreated))
 
-        showDrivewsid && row.push(item.drivewsid)
-        showDocwsid && row.push(item.docwsid)
+        if (showDrivewsid) {
+          row.push(item.drivewsid)
+        }
+
+        if (showDocwsid) {
+          row.push(item.docwsid)
+        }
 
         row.push(item.type)
       }
@@ -178,7 +188,7 @@ export const showDetailsInfo = (
         ? pipe(
           details,
           O.fromPredicate(() => printFolderInfo),
-          O.map(showFolderInfo({ showDrivewsid, showDocwsid })),
+          O.map(showFolderInfo()),
           O.fold(constant(string.empty), identity),
         ) + '\n' + (details.items.length > 0 ? '\n' : '')
         : '',
@@ -193,44 +203,3 @@ export const showDetailsInfo = (
         _ => _.join('\n'),
       ),
     )
-
-const nSymbols = (n: number, s: string) => {
-  return Array(n).fill(s).join('')
-}
-
-export type RecursiveFolder =
-  | {
-    readonly details: Types.Details
-    readonly deep: true
-    readonly children: RecursiveFolder[]
-  }
-  | {
-    readonly details: Types.Details
-    readonly deep: false
-  }
-
-const prependStrings = (s: string) => (a: string[]) => a.map(_ => s + _)
-
-const showRecursive = ({ ident = 0 }) =>
-  (folder: RecursiveFolder): string => {
-    const folderName = Types.fileName(folder.details)
-
-    const fileNames = pipe(
-      folder.details.items,
-      A.filter(Types.isFileItem),
-      A.map(Types.fileName),
-    )
-
-    const identStr = nSymbols(ident, '  ')
-
-    const rows = folder.deep
-      ? pipe(
-        folder.children,
-        A.map(showRecursive({ ident: ident + 1 })),
-        a => [...a, ...prependStrings(identStr + '  ')(fileNames)],
-        A.prepend(identStr + folderName),
-      )
-      : [identStr + folderName + ' ...']
-
-    return rows.join('\n')
-  }

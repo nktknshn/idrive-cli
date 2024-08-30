@@ -15,7 +15,7 @@ import {
 } from '../../../util/errors'
 import { FetchClientEither, HttpRequest, HttpResponse } from '../../../util/http/fetch-client'
 import { tryJsonFromResponse } from '../../../util/http/json'
-import { apiHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
+import { apHttpRequest, applyCookiesToSession, HttpRequestConfig } from '../../session/session-http'
 import { ICloudSession } from '../../session/session-type'
 
 /**
@@ -84,7 +84,7 @@ export const buildRequest = <S extends BaseState, R extends RequestDeps = Reques
     map(env =>
       pipe(
         f(env),
-        config => apiHttpRequest(config.method, config.url, config.options)(env.state),
+        config => apHttpRequest(config.method, config.url, config.options)(env.state),
       )
     ),
   )
@@ -252,7 +252,6 @@ export const applyToSession = <T extends { httpResponse: HttpResponse }>(
       ),
     )
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const applyCookies = <T extends { httpResponse: HttpResponse }>() =>
   applyToSession<T>(({ httpResponse }) => applyCookiesToSession(httpResponse))
 
@@ -298,7 +297,7 @@ export const orElse = <R, S extends BaseState>(
       )
   }
 
-export const reporter = (validation: t.Validation<any>): string => {
+export const reporter = (validation: t.Validation<unknown>): string => {
   return pipe(
     validation,
     E.fold((errors) => errors.map(errorMessage).join('\n'), () => 'ok'),

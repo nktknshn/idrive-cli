@@ -11,6 +11,7 @@ import * as t from 'io-ts'
 /**
  * @since 0.5.0
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface NonEmptyArrayC<C extends t.Mixed>
   extends t.Type<NonEmptyArray<t.TypeOf<C>>, NonEmptyArray<t.OutputOf<C>>, unknown>
 {}

@@ -5,8 +5,8 @@ import * as R from 'fp-ts/Record'
 import { Cache, Types } from '../../../../src/icloud-drive'
 import { rootDrivewsid } from '../../../../src/icloud-drive/drive-types/types-io'
 import * as V from '../../../../src/icloud-drive/util/get-by-path-types'
+import { parseFilename } from '../../../../src/util/filename'
 import { guardFstRO, isDefined } from '../../../../src/util/guards'
-import { parseFilename } from '../../../../src/util/parse-filename'
 import { randomUUIDCap, recordFromTuples } from '../../../../src/util/util'
 
 type File<N extends string> = {

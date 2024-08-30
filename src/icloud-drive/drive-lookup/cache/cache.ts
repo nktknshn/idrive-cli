@@ -9,7 +9,7 @@ import { cacheLogger } from '../../../logging/logging'
 import { err } from '../../../util/errors'
 import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
-import { sequenceArrayE } from '../../../util/util'
+import { sequenceNArrayE } from '../../../util/util'
 import * as T from '../../drive-types'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import * as GetByPath from '../../util/get-by-path-types'
@@ -172,7 +172,7 @@ export const getFoldersDetailsByIds = (
       drivewsids,
       NA.map(id => getFolderDetailsByIdO(id)(cache)),
       NA.map(O.fold(() => E.right<Error, T.MaybeInvalidId<T.Details>>(T.invalidId), E.map(v => v.content))),
-      sequenceArrayE,
+      sequenceNArrayE,
     )
   }
 

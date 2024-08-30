@@ -1,7 +1,6 @@
-import * as E from 'fp-ts/lib/Either'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { AuthenticatedState } from '../../../icloud-core/icloud-request'
-import { DriveLookup, Types } from '../..'
+import { Types } from '../..'
 
 import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
 import { SRA } from '../../../util/types'

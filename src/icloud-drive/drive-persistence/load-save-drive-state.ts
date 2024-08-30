@@ -15,7 +15,7 @@ type Deps =
   & DepFs<'writeFile'>
   & DepFs<'readFile'>
 
-/** Read the state from files and executes the action in the context. Unused currently */
+/** Read the state from files and executes the action in the context. */
 export function persistentDriveState<A, R, Args extends unknown[]>(
   action: (...args: Args) => DriveLookup.Lookup<A, R>,
 ): (...args: Args) => RTE.ReaderTaskEither<R & Deps, Error, A> {

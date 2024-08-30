@@ -30,7 +30,7 @@ export const guardThird = <A, B, C, F extends C>(refinement: Refinement<C, F>) =
 
 export const isDefined = <A>(a: A | undefined): a is A => !!a
 
-export function guardProp<A, B extends R[K], R, K extends keyof R>(
+export function guardProp<B extends R[K], R, K extends keyof R>(
   key: K,
   refinement: Refinement<R[K], B>,
 ) {

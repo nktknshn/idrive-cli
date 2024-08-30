@@ -1,13 +1,12 @@
-/* eslint-disable id-length */
-import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { loggerIO } from '../../../logging/loggerIO'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
-import { sequenceArrayO } from '../../../util/util'
+import { sequenceNArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
-import { chainState, get, Lookup, map, of, TempLookupCacheState } from '../drive-lookup'
+import { chainState, get, Lookup, map, TempLookupCacheState } from '../drive-lookup'
 import { putCache, usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
 
@@ -21,19 +20,6 @@ const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
   tempCache: O.none,
 })
 
-// export const usingTempCache2 = <A>(ma: Effect<A>): Effect<A> =>
-//   pipe(
-//     get(),
-//     SRTE.bindTo('prevstate'),
-//     SRTE.chain(({ prevstate }) =>
-//       pipe(
-//         SRTE.fromOption(prevstate.tempCache),
-//       )
-//     ),
-//     SRTE.bindW('newstate', get),
-//     SRTE.chain(({ prevstate, newstate }) => pipe()),
-//     // SRTE.bind('tempCache' , ()),
-//   )
 /**
  * execute effect with empty temp cache
  * afterwise add resulting temp cache to the main cache
@@ -117,7 +103,6 @@ export function retrieveItemDetailsInFoldersTempCached(
   )
 }
 
-// eslint-disable-next-line id-length
 export function retrieveItemDetailsInFoldersTempCachedStrict(
   drivewsids: NEA<string>,
 ): Lookup<NEA<Types.NonRootDetails>>
@@ -130,7 +115,7 @@ export function retrieveItemDetailsInFoldersTempCachedStrict(
       pipe(
         SRTE.fromOption(
           () => err(`some of the ids was not found`),
-        )(sequenceArrayO(res)),
+        )(sequenceNArrayO(res)),
       )
     ),
   )

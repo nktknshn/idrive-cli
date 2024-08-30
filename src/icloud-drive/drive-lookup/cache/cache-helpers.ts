@@ -4,7 +4,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/NonEmptyArray'
 import { NormalizedPath, normalizePath, Path } from '../../../util/path'
 import * as T from '../../drive-types'
-import { FolderLikeMissingDetailsError, ItemIsNotFolderError, MissinRootError, NotFoundError } from '../errors'
+import { FolderLikeMissingDetailsError, ItemIsNotFolderError } from '../errors'
 import * as CT from './cache-types'
 
 export const cacheEntityFromDetails = (

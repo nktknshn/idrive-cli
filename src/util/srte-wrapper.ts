@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { EmptyObject, SRA } from './types'
@@ -26,7 +27,7 @@ export const wrapSRTERecord = <
 ) =>
   <WR, WRS, WRR>(wrapper: SRTEWrapper<WR, WRS, WRR>): {
     [K in keyof Rec]: Rec[K] extends
-      (...args: infer Args) => SRTE.StateReaderTaskEither<infer _S, infer _R, infer E, infer A>
+      (...args: infer Args) => SRTE.StateReaderTaskEither<infer _S, infer _R, unknown, infer A>
       ? (deps: _R & WR) => <S extends _S>(...args: Args) => SRA<S, WRR, A>
       : never
   } => {

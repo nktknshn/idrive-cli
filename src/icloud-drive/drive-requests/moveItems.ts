@@ -10,7 +10,7 @@ const moveItemResponse = t.type({
   ])),
 })
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MoveItemsResponse extends t.TypeOf<typeof moveItemResponse> {}
 
 export const moveItems = <S extends AR.AuthenticatedState>({ items, destinationDrivewsId }: {

@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, Method, ResponseType } from 'axios'
 import FormData from 'form-data'
 import { random } from 'fp-ts'
 import { flow, pipe } from 'fp-ts/lib/function'
@@ -6,7 +6,7 @@ import { Predicate } from 'fp-ts/lib/Predicate'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { httpfilelogger } from '../../logging/logging'
 
-export interface HttpRequest extends AxiosRequestConfig {
+export interface IHttpRequest extends AxiosRequestConfig {
   data: unknown
   headers: HttpHeaders
 }
@@ -30,7 +30,12 @@ export type FetchClientEither = (
   config: HttpRequest,
 ) => TE.TaskEither<FetchError, HttpResponse>
 
-export class HttpRequest implements HttpRequest {
+export class HttpRequest implements IHttpRequest {
+  data: unknown
+  headers: HttpHeaders
+  method: Method
+  responseType?: ResponseType
+
   constructor(
     public readonly url: string,
     props: {

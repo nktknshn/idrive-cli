@@ -2,7 +2,6 @@ import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import * as O from 'fp-ts/Option'
 import * as RA from 'fp-ts/ReadonlyArray'
 import { DepAskConfirmation } from '../../../deps-types'
 import { err } from '../../../util/errors'
@@ -10,20 +9,7 @@ import { Types } from '../..'
 import { ConflictsSolver, SolutionAction } from './conflict-solution'
 import { ConflictExists } from './download-conflict'
 
-const failOnStatsError: ConflictsSolver = (conflicts) =>
-  () =>
-    pipe(
-      conflicts,
-      A.filter(
-        _ => _.tag === 'statserror',
-      ),
-      A.match(
-        () => TE.right([]),
-        (errors) => TE.left(err(`conflicts`)),
-      ),
-    )
-
-const failOnConflicts: ConflictsSolver = (conflicts) =>
+const failOnConflicts: ConflictsSolver = () =>
   () =>
     pipe(
       TE.left(err(`conflicts`)),
@@ -65,9 +51,8 @@ const resolveConflictsRename: ConflictsSolver = (conflicts) =>
       TE.of,
     )
 
-// eslint-disable-next-line id-length
 const resolveConflictsOverwrightIfSizeDifferent = (
-  skipRemotes = (f: Types.DriveChildrenItemFile) => false,
+  skipRemotes = (_f: Types.DriveChildrenItemFile) => false,
 ): ConflictsSolver =>
   (conflicts) =>
     () =>
@@ -138,7 +123,6 @@ export const solvers = {
   resolveConflictsSkipAll,
   resolveConflictsOverwrightAll,
   resolveConflictsRename,
-  // eslint-disable-next-line id-length
   resolveConflictsOverwrightIfSizeDifferent,
   resolveConflictsAskAll,
   resolveConflictsAskEvery,

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import { randomUUID } from 'crypto'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
@@ -8,7 +7,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import { Readable } from 'stream'
 import { NEA } from './types'
 
-export type ObjectType = {}
+export type ObjectType = object
 
 export function isObject(a: unknown): a is ObjectType {
   return typeof a === 'object' && a !== null
@@ -22,8 +21,8 @@ export function hasOwnProperty<X extends ObjectType, Y extends PropertyKey>(
 }
 
 type WithKeys<Y extends PropertyKey[]> = Y extends [infer X, ...infer R]
-  ? X extends PropertyKey ? R extends PropertyKey[] ? Record<X, unknown> & WithKeys<R> : {} : {}
-  : {}
+  ? X extends PropertyKey ? R extends PropertyKey[] ? Record<X, unknown> & WithKeys<R> : ObjectType : ObjectType
+  : ObjectType
 
 export function hasOwnProperties<X extends ObjectType, Y extends PropertyKey[]>(
   obj: X,
@@ -61,10 +60,8 @@ export const separateEithers = flow(
   ({ left, right }) => [left, right] as const,
 )
 
-// export const buildRecord = R.fromFoldable(last<string>(), A.Foldable)
-
 export const recordFromTuples = <T, K extends string>(ts: (readonly [K, T])[]): Record<string, T> => {
-  const obj: any = {}
+  const obj: Record<string, T> = {}
 
   for (const [k, v] of ts) {
     obj[k] = v
@@ -95,9 +92,11 @@ export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, 
   })
 }
 
-export const sequenceArrayE: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const sequenceNArrayE: <E, A>(as: NEA<E.Either<E, A>>) => E.Either<E, NEA<A>> = E.sequenceArray as any
 
-export const sequenceArrayO: <A>(as: NEA<O.Option<A>>) => O.Option<NEA<A>> = O.sequenceArray as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const sequenceNArrayO: <A>(as: NEA<O.Option<A>>) => O.Option<NEA<A>> = O.sequenceArray as any
 
 export const randomUUIDCap = (): string => randomUUID().toUpperCase()
 

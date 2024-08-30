@@ -83,7 +83,6 @@ const lsRecursive = (
     DriveActions.listRecursive({ paths: args.paths, depth: args.depth }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([res, path]) => `${path}:\n${res.map(_ => _.path).join('\n')}`)),
-    // SRTE.map(NA.map(_ => _.join('\n'))),
     SRTE.map(_ => _.join('\n\n')),
   )
 }

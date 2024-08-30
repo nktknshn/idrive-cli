@@ -1,4 +1,4 @@
-import { constant, flow } from 'fp-ts/lib/function'
+import { constant } from 'fp-ts/lib/function'
 import { ICloudSession } from './session-type'
 
 export type Header = [string, string]

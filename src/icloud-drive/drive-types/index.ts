@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-empty-interface */
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import * as O from 'fp-ts/lib/Option'
 import * as t from 'io-ts'
 import { TypeOf } from 'io-ts'

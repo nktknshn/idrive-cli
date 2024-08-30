@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import * as winston from 'winston'
 import { isObjectWithOwnProperty } from '../util/util'
 import { fromWinston } from './loggerIO'
-const { combine, timestamp, label, prettyPrint, json } = winston.format
+const { combine, prettyPrint, json } = winston.format
 
 export const loggingLevels = {
   info: new winston.transports.Console({
@@ -20,7 +20,8 @@ export const loggingLevels = {
 }
 
 const plain = (type: string, f: (s: string) => string = a => a) =>
-  winston.format.printf(({ level, message, label, timestamp }) => {
+  winston.format.printf(({ level, message }) => {
+    // can also add label, timestamp
     return f(`> ${level}: ${type}: ${message}`)
   })
 

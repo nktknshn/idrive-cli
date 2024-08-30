@@ -34,7 +34,6 @@ export const decodeWithHierarchy: t.Decode<unknown, MaybeInvalidId<DriveDetailsW
   )),
 )
 
-// eslint-disable-next-line id-length
 export const getRetrieveItemDetailsInFoldersHttpRequest = <S extends AuthenticatedState>(
   data: { drivewsid: string; partialData: boolean; includeHierarchy: boolean }[],
 ): AR.ApiRequest<HttpRequest, S, AR.RequestDeps> => {

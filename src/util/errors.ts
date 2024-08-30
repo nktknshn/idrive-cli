@@ -205,5 +205,6 @@ export class FileInvalidError extends Error {
   }
 }
 
+/** Returns `Error` with the given message */
 export const err = (message: string): Error => new Error(message)
 export const ensureError = (e: unknown): Error => e instanceof Error ? e : err(`${e}`)

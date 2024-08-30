@@ -8,4 +8,4 @@ export const DriveApiMethods = { ...basic, ...extra, ...upload }
 
 /** Pick dependings for a method */
 export type DepApiMethod<K extends keyof typeof DriveApiMethods> = typeof DriveApiMethods[K] extends
-  (...args: any) => SRTE.StateReaderTaskEither<any, infer R, any, any> ? R : never
+  (...args: never) => SRTE.StateReaderTaskEither<infer _S, infer R, infer _E, infer _A> ? R : never

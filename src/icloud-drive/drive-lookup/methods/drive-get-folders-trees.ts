@@ -1,4 +1,3 @@
-import { eq } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import { apply, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'

@@ -13,11 +13,11 @@ This is an unofficial client. Use it at your own risk. The author is not respons
 
 - Install [bun](https://bun.sh/). 
 
-- Clone the repo.
+- Clone the repo `git clone https://github.com/nktknshn/node-icloud-drive-client /opt/node-icloud-drive-client/`
 
-- Fish shell completions are available in `completions/idrive.fish`.
+- Add alias for convenience `alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
 
-- `alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
+- Fish shell completions for `idrive` are available in `/opt/node-icloud-drive-client/completions/idrive.fish`
 
 ```Commands:
   idrive init                       init session
@@ -138,12 +138,6 @@ Remote file will be renamed
 
 `idrive mv /MyNotes/my1/note1.md /MyNotes/old/note2.md`
 
-Remote file will be moved and renamed
-
-<!-- `idrive mv --force /MyNotes/my1/note1.md /MyNotes/my1/note2.md`
-
-??? -->
-
 
 ### mkdir <path>
 
@@ -161,6 +155,9 @@ Opens the file in a different editor (defaults to `vi`)
 
 `idrive edit --editor gedit /MyNotes/my1/notes/note1.md`
 
+Skip path validation if you are sure that cache is up to date
+
+`idrive edit -K /MyNotes/my1/notes/note1.md`
 
 ### upload 
 

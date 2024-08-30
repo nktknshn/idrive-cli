@@ -54,7 +54,7 @@ export const getUploadTask = (
     const { left: excluded, right: valid } = pipe(
       files,
       A.partition(
-        ([path, item]) =>
+        ([path, _item]) =>
           (include.length == 0 || micromatch.any(path, include, { dot: true }))
           && (exclude.length == 0 || !micromatch.any(path, exclude, { dot: true })),
       ),

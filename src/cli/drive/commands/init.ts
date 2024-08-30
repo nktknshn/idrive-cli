@@ -6,8 +6,8 @@ import { DepFs } from '../../../deps-types'
 import { DepAuthenticateSession } from '../../../deps-types/dep-authenticate-session'
 import { authenticateState } from '../../../icloud-authentication/methods'
 import { ICloudSession, session } from '../../../icloud-core/session/session-type'
-import { saveAccountDataToFile } from '../../../icloud-drive/drive-persistence/account-data'
-import { saveSessionToFile } from '../../../icloud-drive/drive-persistence/session'
+import { saveSessionToFile } from '../../../icloud-drive/drive-persistence'
+import { saveAccountDataToFile } from '../../../icloud-drive/drive-persistence'
 import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 import { prompts } from '../../../util/prompts'
@@ -26,7 +26,7 @@ export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessi
     RTE.chainFirstW(({ sessionFile, fs }) =>
       pipe(
         RTE.fromTaskEither(fs.fstat(sessionFile)),
-        RTE.fold((e) => RTE.of(constVoid()), () =>
+        RTE.fold(() => RTE.of(constVoid()), () =>
           RTE.left(
             err(
               `${sessionFile} already exists. To initiate session in a different file use option '-s':\nidrive init -s another-session.json`,
@@ -34,7 +34,7 @@ export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessi
           )),
       )
     ),
-    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Snitializing session in ${sessionFile}`))),
+    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Initializing session in ${sessionFile}`))),
     RTE.chainTaskEitherK(() => sessionQuest),
     !skipLogin
       ? flow(
@@ -44,7 +44,7 @@ export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessi
       : RTE.map(identity),
     RTE.chainFirstW(saveSessionToFile),
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
-    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Session initiated in ${sessionFile}`))),
+    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Session initialized in ${sessionFile}`))),
     RTE.map(constVoid),
   )
 }

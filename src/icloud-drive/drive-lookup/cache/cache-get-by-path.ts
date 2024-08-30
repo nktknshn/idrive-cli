@@ -76,7 +76,7 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
             rest: path,
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
-          ({ content, created }): GetByPath.PathValidation<R> =>
+          ({ content }): GetByPath.PathValidation<R> =>
             pipe(
               getFromCacheByPath(rest, content)(cache),
               (result): GetByPath.PathValidation<R> =>

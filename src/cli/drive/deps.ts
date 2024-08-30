@@ -16,10 +16,9 @@ export const createCliActionsDeps = (argv: {
   fileEditor?: string
   askConfirmation?: DepAskConfirmation['askConfirmation']
 }): CommandsDeps => {
-  const sessionFileEnv = getEnv(defaults.envSessionFileKey)
   const sessionFile = pipe(
     O.fromNullable(argv.sessionFile),
-    O.orElse(() => sessionFileEnv),
+    O.orElse(() => getEnv(defaults.envSessionFileKey)),
     O.getOrElse(() => defaults.sessionFile),
   )
 

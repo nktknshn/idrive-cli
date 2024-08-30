@@ -53,7 +53,7 @@ export const uploadFolder = (
     SRTE.bind('src', () => SRTE.of(argv.localpath)),
     SRTE.bind('args', () => SRTE.of(argv)),
     SRTE.chain(handleUploadFolder),
-    SRTE.map((res) => `Success.`),
+    SRTE.map(() => `Success.`),
   )
 }
 
