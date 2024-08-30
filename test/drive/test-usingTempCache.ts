@@ -1,5 +1,4 @@
 import { pipe } from 'fp-ts/lib/function'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { Cache, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/drive-types'

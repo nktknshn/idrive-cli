@@ -1,1 +1,20 @@
-export { apiLogger, authLogger, cacheLogger, httpfilelogger, initLoggers, logger, stderrLogger } from './logging'
+import { apiLogger, cacheLogger, logger, stderrLogger, timeLogger } from './logging'
+
+export {
+  apiLogger,
+  authLogger,
+  cacheLogger,
+  httpfilelogger,
+  initLoggers as initLogging,
+  logger,
+  stderrLogger,
+  timeLogger,
+} from './logging'
+
+export const defaultLoggers = [
+  logger,
+  cacheLogger,
+  stderrLogger,
+  apiLogger,
+  timeLogger,
+]

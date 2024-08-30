@@ -1,7 +1,7 @@
 import * as L from '../../src/logging'
 
 export const enableDebug = (enable: boolean): void => {
-  L.initLoggers(
+  L.initLogging(
     { debug: enable },
     [
       L.logger,

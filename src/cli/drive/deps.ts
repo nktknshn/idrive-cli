@@ -8,7 +8,7 @@ import { appendFilename } from '../../util/filename'
 import { CommandsDeps } from '.'
 
 /** Create dependencies for the commands */
-export const createCliActionsDeps = (argv: {
+export const createCliCommandsDeps = (argv: {
   sessionFile?: string
   cacheFile?: string
   noCache?: boolean

@@ -20,6 +20,8 @@ const handler = w.createHandlerFor(cmd, {
   auth: Commands.authSession,
 })
 
+export { createCliCommandsDeps } from './deps'
+
 export const runCliCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, unknown> => {
   return handler.handle(command)
 }

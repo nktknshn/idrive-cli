@@ -3,17 +3,14 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
 
 import * as w from 'yargs-command-wrapper'
-import { runCliCommand as runCliCommand } from './cli/drive'
+import * as CliDrive from './cli/drive'
 import { cmd } from './cli/drive/args'
-import { createCliActionsDeps as createCliCommandsDeps } from './cli/drive/deps'
+import * as Log from './logging'
 import { debugTimeTE } from './logging/debug-time'
-import { apiLogger, cacheLogger, initLoggers, logger, stderrLogger, timeLogger } from './logging/logging'
 import { printer } from './logging/printerIO'
 
 async function main() {
-  const { result, yargs } = pipe(
-    () => w.buildAndParse(cmd),
-  )()
+  const { result, yargs } = w.buildAndParse(cmd)
 
   if (E.isLeft(result)) {
     console.log(result.left.message)
@@ -23,16 +20,19 @@ async function main() {
 
   const command = result.right
 
-  initLoggers(
-    { debug: command.argv.debug },
-    [logger, cacheLogger, stderrLogger, apiLogger, timeLogger],
-  )
+  Log.initLogging(command.argv, Log.defaultLoggers)
 
   await pipe(
-    createCliCommandsDeps(command.argv),
-    runCliCommand(command),
+    CliDrive.createCliCommandsDeps(command.argv),
+    CliDrive.runCliCommand(command),
     debugTimeTE('runCliCommand'),
-    TE.fold(printer.errorTask, printer.printTask),
+    TE.fold(printer.errorTask, (output) =>
+      async () => {
+        if (output === undefined) {
+          return
+        }
+        printer.print(output)
+      }),
   )()
 }
 
