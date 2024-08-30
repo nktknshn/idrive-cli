@@ -7,7 +7,7 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DF from '../drive-lookup'
 
-/** modify subset of input which is true when `refinement` applied */
+/** Modify a subset of input array. Subset is defined by a predicate. */
 export function modifySubset<A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
@@ -37,11 +37,11 @@ export function modifySubset<A, C>(
     pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.State, DF.Deps, Error, C[]>([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
-    SRTE.map(res => projectIndexes(input, res, fac)),
+    SRTE.map(res => mapIndexes(input, res, fac)),
   )
 }
 
-const projectIndexes = <A, B>(
+const mapIndexes = <A, B>(
   as: NA.NonEmptyArray<A>,
   values: { index: number; a: B }[],
   f: (a: A) => B,

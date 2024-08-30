@@ -41,6 +41,8 @@ export type PathValidation<R> =
 export type Result<R extends T.Root> = PathValidation<R>
 export type ResultRoot = PathValidation<T.DetailsDocwsRoot>
 
+export const containsInvalidPath = <R>(res: Array<PathValidation<R>>): boolean => pipe(res, A.some(isInvalidPath))
+
 export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
 export const root = <R>([root]: Hierarchy<R>): R => root
 

@@ -21,8 +21,7 @@ const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
 })
 
 /**
- * execute effect with empty temp cache
- * afterwise add resulting temp cache to the main cache
+ * Execute effect with empty temp cache. Afterwards add resulting temp cache to the main cache
  */
 export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
   chainState((prevstate) =>
@@ -39,12 +38,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
               pipe(
                 O.isSome(newstate.tempCache)
                   ? pipe(
-                    putCache(
-                      Cache.concat(
-                        prevstate.cache,
-                        newstate.tempCache.value,
-                      ),
-                    ),
+                    putCache(Cache.concat(prevstate.cache, newstate.tempCache.value)),
                     SRTE.chain(() => SRTE.modify(setInactive)),
                   )
                   : SRTE.of(constVoid()),
@@ -58,9 +52,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
   )
 
 /**
- * if temp cache is set
- * it sources retrieveItemDetailsInFolders requests
- * missed items will be saved there
+ * If temp cache is set it sources retrieveItemDetailsInFolders requests. Missed items will be saved there
  */
 export function retrieveItemDetailsInFoldersTempCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],

@@ -18,3 +18,5 @@ export const defaultLoggers = [
   apiLogger,
   timeLogger,
 ]
+
+export { loggerIO } from './loggerIO'

@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 
-import { loggerIO } from '../../../../logging/loggerIO'
+import { loggerIO } from '../../../../logging'
 import { err } from '../../../../util/errors'
 import { guardFst } from '../../../../util/guards'
 import { NormalizedPath } from '../../../../util/normalize-path'
@@ -21,18 +20,44 @@ import { modifySubset } from '../../../util/drive-modify-subset'
 import * as GetByPath from '../../../util/get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
 
-/** Given a root and a list of paths, retrieves the actual items if they exist */
+export type GetByPathsParams = {
+  apiUsage:
+    /** Default behaviour. Always validates cached paths by retrieving from API. */
+    | 'always'
+    /** Retrieves from cache only. */
+    | 'onlycache'
+    /** Retrieves from API if the path is not fully cached. */
+    | 'fallback'
+}
+
+export const defaultParams: GetByPathsParams = {
+  apiUsage: 'always',
+}
+
+/** Given a root and a list of paths, retrieves the actual items if they exist. */
 export const getByPaths = <R extends Types.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
+  { apiUsage } = defaultParams,
 ): DriveLookup.Lookup<NEA<GetByPath.Result<R>>> =>
   pipe(
     loggerIO.debug(`getByPaths(${paths})`),
     SRTE.fromIO,
     // get what we have cached
     SRTE.chain(() => DriveLookup.getByPathsFromCache(root, paths)),
-    // validate the cached paths
-    SRTE.chain(cached => getByPathsC(paths, cached)),
+    SRTE.chain((cached) => {
+      switch (apiUsage) {
+        case 'onlycache':
+          return SRTE.of(cached)
+        case 'always':
+          // validate the cached paths
+          return getByPathsC(paths, cached)
+        case 'fallback':
+          return GetByPath.containsInvalidPath(cached)
+            ? getByPathsC(paths, cached)
+            : SRTE.of(cached)
+      }
+    }),
   )
 
 const getByPathsC = <R extends Types.Root>(
@@ -55,9 +80,6 @@ const getByPathsC = <R extends Types.Root>(
         SRTE.map(NA.map(([validated, cached]) => concatCachedWithValidated(cached, validated))),
       )
     ),
-    // SRTE.chainFirstIOK(
-    //   paths => loggerIO.debug(`result: [${paths.map(V.showGetByPathResult).join(', ')}]`),
-    // ),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
   )
@@ -92,10 +114,6 @@ const validateCachedHierarchies = <R extends Types.Root>(
     loggerIO.debug(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
     SRTE.fromIO,
     SRTE.chain(() =>
-      // DriveLookup.retrieveItemDetailsInFoldersSaving<R>([
-      //   cachedRoot.drivewsid,
-      //   ...drivewsids,
-      // ])
       DriveLookup.retrieveItemDetailsInFoldersTempCached<R>([
         cachedRoot.drivewsid,
         ...drivewsids,
@@ -144,12 +162,7 @@ const concatCachedWithValidated = <R extends Types.Root>(
                 : E.left(ItemIsNotFileError.createTemplate(actualFileItem)),
           ),
           E.foldW(
-            (e) =>
-              GetByPath.invalidPath(
-                validated.details,
-                [fname],
-                e,
-              ),
+            (e) => GetByPath.invalidPath(validated.details, [fname], e),
             file => GetByPath.validPath(validated.details, O.some(file)),
           ),
         )
@@ -167,16 +180,12 @@ const concatCachedWithValidated = <R extends Types.Root>(
   }
   else {
     if (GetByPath.isValidPath(validated)) {
-      return GetByPath.invalidPath(
-        validated.details,
-        cached.rest,
-        cached.error,
-      )
+      return GetByPath.invalidPath(validated.details, cached.rest, cached.error)
     }
     else {
       return GetByPath.invalidPath(
         validated.details,
-        NA.concat(validated.rest, cached.rest),
+        NA.concat(cached.rest)(validated.rest),
         err(`the path changed`),
       )
     }
