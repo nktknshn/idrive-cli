@@ -14,6 +14,7 @@ import { ItemIsNotFolderError } from '../../errors'
 import { chainCachedDocwsRoot, getCachedDocwsRoot } from '../get-roots'
 import { defaultParams, getByPaths } from './get-by-paths'
 
+/** Fails if the path is not valid */
 export const getByPathStrict = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
@@ -40,6 +41,17 @@ export const getByPathsStrict = <R extends T.Root>(
   )
 }
 
+export const getByPathStrictDocwsroot = (
+  path: NormalizedPath,
+  params = defaultParams,
+): Lookup<T.DetailsOrFile<T.DetailsDocwsRoot>> => {
+  return pipe(
+    getByPathsStrictDocwsroot([path], params),
+    map(NA.head),
+  )
+}
+
+/** Fails if some of the paths are not valid */
 export const getByPathsStrictDocwsroot = (
   paths: NEA<NormalizedPath>,
   params = defaultParams,
