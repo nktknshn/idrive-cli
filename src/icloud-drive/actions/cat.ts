@@ -9,8 +9,7 @@ import { err } from '../../util/errors'
 import { getUrlStream } from '../../util/http/getUrlStream'
 import { normalizePath } from '../../util/normalize-path'
 import { consumeStreamToString } from '../../util/util'
-import { DepApiMethod } from '../drive-api'
-import { getDriveItemUrl } from '../drive-api/extra'
+import { DepApiMethod, DriveApiMethods } from '../drive-api'
 import { isFile } from '../drive-types'
 
 export type Deps =
@@ -24,13 +23,9 @@ export const cat = (
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    DriveLookup.getCachedDocwsRoot(),
-    SRTE.bindW('item', (root) =>
-      pipe(
-        DriveLookup.getByPathStrict(root, npath, { apiUsage: skipValidation ? 'onlycache' : 'always' }),
-        SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
-      )),
-    SRTE.chainW(({ item }) => getDriveItemUrl(item)),
+    DriveLookup.getByPathStrictDocwsroot(npath, { apiUsage: skipValidation ? 'onlycache' : 'always' }),
+    SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
+    SRTE.chainW((item) => DriveApiMethods.getDriveItemUrl(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),
     SRTE.chainW((url) =>
       SRTE.fromReaderTaskEither(
