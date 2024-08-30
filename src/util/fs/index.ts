@@ -3,6 +3,34 @@ import { Dir, MakeDirectoryOptions, Mode, PathLike } from 'fs'
 import { createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
 import { err } from '../errors'
+import { isErrorWithCode } from './is-enoent-error'
+
+export class FsError extends Error {
+  readonly type = 'FsError'
+  constructor(message: string, public readonly code?: string) {
+    super(message)
+  }
+
+  static create(message: string, code?: string): FsError {
+    return new FsError(message, code)
+  }
+
+  static fromError(e: Error, message?: string): FsError {
+    let msg = e.message
+
+    if (message !== undefined) {
+      msg += ': ' + message
+    }
+
+    if (isErrorWithCode(e)) {
+      return FsError.create(msg, e.code)
+    }
+
+    return FsError.create(msg)
+  }
+
+  static is = (e: unknown): e is FsError => e instanceof FsError
+}
 
 export type FsStats = {
   isFile(): boolean
@@ -32,7 +60,7 @@ export const opendir = (path: string): TE.TaskEither<Error, Dir> =>
 export const fstat = (path: string): TE.TaskEither<Error, import('fs').Stats> =>
   TE.tryCatch(
     () => fs.stat(path),
-    (e) => e instanceof Error ? e : err(`error getting stats: ${e}`),
+    (e) => isErrorWithCode(e) ? FsError.fromError(e, 'fs.fstat') : err(`fs.fstat: ${e}`),
   )
 
 export const mkdir = TE.tryCatchK(
@@ -48,7 +76,7 @@ export const writeFile = TE.tryCatchK(
 export const readFile = (path: PathLike): TE.TaskEither<Error, Buffer> =>
   TE.tryCatch(
     () => fs.readFile(path),
-    (e) => e instanceof Error ? e : err(`error fs.readFile: ${e}`),
+    (e) => isErrorWithCode(e) ? FsError.fromError(e, 'fs.readFile') : err(`fs.readFile: ${e}`),
   )
 
 export const rm = (path: string): TE.TaskEither<Error, void> =>
