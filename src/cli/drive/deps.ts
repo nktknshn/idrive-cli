@@ -8,7 +8,7 @@ import { appendFilename } from '../../util/filename'
 import { CommandsDeps } from '.'
 
 /** Create dependencies for the commands */
-export const createCliCommandsDeps = (argv: {
+export const createCliCommandsDeps = (args: {
   sessionFile?: string
   cacheFile?: string
   noCache?: boolean
@@ -17,7 +17,7 @@ export const createCliCommandsDeps = (argv: {
   askConfirmation?: DepAskConfirmation['askConfirmation']
 }): CommandsDeps => {
   const sessionFile = pipe(
-    O.fromNullable(argv.sessionFile),
+    O.fromNullable(args.sessionFile),
     O.orElse(() => getEnv(defaults.envSessionFileKey)),
     O.getOrElse(() => defaults.sessionFile),
   )
@@ -29,10 +29,10 @@ export const createCliCommandsDeps = (argv: {
     fs: deps.fs,
     authenticateSession: deps.authenticateSession,
     fetchClient: deps.fetchClient,
-    askConfirmation: argv.askConfirmation ?? deps.askConfirmation,
+    askConfirmation: args.askConfirmation ?? deps.askConfirmation,
     sessionFile,
-    cacheFile: argv.cacheFile ?? cacheFile,
-    noCache: argv.noCache ?? false,
-    tempdir: argv.tempdir ?? defaults.tempDir,
+    cacheFile: args.cacheFile ?? cacheFile,
+    noCache: args.noCache ?? false,
+    tempdir: args.tempdir ?? defaults.tempDir,
   })
 }

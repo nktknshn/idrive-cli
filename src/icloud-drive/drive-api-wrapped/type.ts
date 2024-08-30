@@ -11,7 +11,7 @@ import {
 } from '../drive-requests/upload'
 import * as T from '../drive-types'
 
-/** Basic ICloud api methods wrapped with error handlers and injected with dependencies. */
+/** Basic ICloud api methods wrapped with error handlers and injected with dependencies. See `drive-requests` for the raw api http requests. */
 export type DriveApiWrapped = {
   retrieveItemDetailsInFolders: <S extends AuthenticatedState>(
     { drivewsids }: { drivewsids: NEA<string> },

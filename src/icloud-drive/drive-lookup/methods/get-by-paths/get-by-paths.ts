@@ -34,6 +34,10 @@ export const defaultParams: GetByPathsParams = {
   apiUsage: 'always',
 }
 
+export const skipValidation = (skip: boolean): GetByPathsParams => ({
+  apiUsage: skip ? 'onlycache' : 'always',
+})
+
 /** Given a root and a list of paths, retrieves the actual items if they exist. */
 export const getByPaths = <R extends Types.Root>(
   root: R,

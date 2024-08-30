@@ -12,7 +12,7 @@ import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 import { prompts } from '../../../util/prompts'
 
-type Argv = { skipLogin: boolean }
+type Args = { skipLogin: boolean }
 
 export type InitSessionDeps =
   & { sessionFile: string }
@@ -20,7 +20,7 @@ export type InitSessionDeps =
   & DepFs<'fstat'>
   & DepFs<'writeFile'>
 
-export const initSession = ({ skipLogin }: Argv): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
+export const initSession = ({ skipLogin }: Args): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
   return pipe(
     RTE.ask<InitSessionDeps>(),
     RTE.chainFirstW(({ sessionFile, fs }) =>

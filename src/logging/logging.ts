@@ -131,12 +131,12 @@ const httpfilelogger = winston.createLogger({
 })
 
 export const initLoggers = (
-  argv: { debug: boolean },
+  args: { debug: boolean },
   loggers: winston.Logger[],
 ): void => {
   for (const logger of loggers) {
     logger.add(
-      argv.debug
+      args.debug
         ? loggingLevels.debug
         : loggingLevels.info,
     )

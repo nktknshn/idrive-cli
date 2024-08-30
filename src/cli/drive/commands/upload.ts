@@ -21,7 +21,7 @@ export type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Er
 
 */
 export const upload = (
-  argv: {
+  args: {
     uploadargs: string[]
     recursive: boolean
     dry: boolean
@@ -32,36 +32,36 @@ export const upload = (
     skipTrash: boolean
   },
 ): DriveLookup.Lookup<unknown, Actions.DepsUpload & Actions.DepsUploadFolder> => {
-  if (!A.isNonEmpty(argv.uploadargs)) {
+  if (!A.isNonEmpty(args.uploadargs)) {
     return DriveLookup.left(err('No files to upload'))
   }
 
-  if (argv.uploadargs.length < 2) {
+  if (args.uploadargs.length < 2) {
     return DriveLookup.left(err('Missing destination path'))
   }
 
-  if (argv.recursive) {
+  if (args.recursive) {
     return Actions.uploadFolder({
-      ...argv,
-      localpath: argv.uploadargs[0],
-      remotepath: argv.uploadargs[1],
+      ...args,
+      localpath: args.uploadargs[0],
+      remotepath: args.uploadargs[1],
       chunkSize: 2,
     })
   }
 
-  if (argv.uploadargs.length == 2) {
+  if (args.uploadargs.length == 2) {
     return Actions.uploadSingleFile({
-      overwright: argv.overwright,
-      skipTrash: argv.skipTrash,
-      srcpath: argv.uploadargs[0],
-      dstpath: argv.uploadargs[1],
+      overwright: args.overwright,
+      skipTrash: args.skipTrash,
+      srcpath: args.uploadargs[0],
+      dstpath: args.uploadargs[1],
     })
   }
   else {
     return Actions.uploads({
-      uploadargs: argv.uploadargs,
-      overwright: argv.overwright,
-      skipTrash: argv.skipTrash,
+      uploadargs: args.uploadargs,
+      overwright: args.overwright,
+      skipTrash: args.skipTrash,
     })
   }
 }

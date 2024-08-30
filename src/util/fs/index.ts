@@ -1,6 +1,6 @@
 import * as TE from 'fp-ts/TaskEither'
 import { Dir, MakeDirectoryOptions, Mode, PathLike } from 'fs'
-import { createWriteStream } from 'fs'
+import { createReadStream, createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
 import { err } from '../errors'
 import { isErrorWithCode } from './is-enoent-error'
@@ -48,6 +48,7 @@ export type FsType = {
   ) => TE.TaskEither<Error, string | undefined>
   readFile: (path: PathLike) => TE.TaskEither<Error, Buffer>
   createWriteStream: typeof createWriteStream
+  createReadStream: typeof createReadStream
   rm: (path: string) => TE.TaskEither<Error, void>
 }
 
@@ -86,4 +87,5 @@ export const rm = (path: string): TE.TaskEither<Error, void> =>
   )
 
 export { createWriteStream }
+export { createReadStream }
 export { assertFileSize } from './check'

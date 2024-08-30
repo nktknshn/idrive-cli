@@ -2,7 +2,7 @@ import micromatch from 'micromatch'
 import { DriveLookup } from '../../../icloud-drive'
 import { DriveActions } from '../../../icloud-drive'
 
-type Argv = {
+type Args = {
   path: string
   dstpath: string
   dry: boolean
@@ -14,18 +14,18 @@ type Argv = {
   chunkSize: number
 }
 
-export const download = (argv: Argv): DriveLookup.Lookup<string, DriveActions.DownloadRecursiveDeps> => {
-  const scan = micromatch.scan(argv.path)
+export const download = (args: Args): DriveLookup.Lookup<string, DriveActions.DownloadRecursiveDeps> => {
+  const scan = micromatch.scan(args.path)
 
   if (scan.isGlob) {
-    argv.include = [scan.input, ...argv.include]
-    argv.path = scan.base
+    args.include = [scan.input, ...args.include]
+    args.path = scan.base
   }
 
-  if (argv.recursive) {
-    return DriveActions.downloadRecursive(argv)
+  if (args.recursive) {
+    return DriveActions.downloadRecursive(args)
   }
   else {
-    return DriveActions.downloadShallow(argv)
+    return DriveActions.downloadShallow(args)
   }
 }

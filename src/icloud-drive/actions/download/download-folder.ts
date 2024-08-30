@@ -46,7 +46,7 @@ export type Deps =
     | 'writeFile'
   >
 
-type Argv = {
+type Args = {
   path: string
   dry: boolean
   // include: string[]
@@ -54,7 +54,7 @@ type Argv = {
   depth: number
 }
 
-type DownloadFolderOpts<SolverDeps, DownloadDeps> = Argv & {
+type DownloadFolderOpts<SolverDeps, DownloadDeps> = Args & {
   toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped
   conflictsSolver: ConflictsSolver<SolverDeps>
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
@@ -74,7 +74,7 @@ type DownloadFolderInfo = {
   conflicts: Conflict[]
   solutions: Solution[]
   result: DownloadTaskMapped
-  args: Argv
+  args: Args
 }
 
 const prepareLocalFs = (task: DownloadTaskMapped) =>

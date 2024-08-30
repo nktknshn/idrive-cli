@@ -2,7 +2,7 @@
 # .
 
 function __fish_autocomplete_path
-  argparse 't/trash' 'f/file' 'd/dir' 'c/cached' -- $argv
+  argparse 't/trash' 'f/file' 'd/dir' 'c/cached' -- $args
   set -l ac_args
 
   if not test -z "$_flag_trash"

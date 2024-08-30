@@ -10,7 +10,7 @@ import { recursiveDirMapper } from './recursiveDirMapper'
 
 export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation
 
-export type RecursiveArgv = {
+export type RecursiveArgs = {
   path: string
   dstpath: string
   dry: boolean
@@ -22,9 +22,9 @@ export type RecursiveArgv = {
 
 /** recursively download files */
 export const downloadRecursive = (
-  argv: RecursiveArgv,
+  args: RecursiveArgs,
 ): DriveLookup.Lookup<string, Deps> => {
-  const dirname = Path.dirname(micromatch.scan(argv.path).base)
+  const dirname = Path.dirname(micromatch.scan(args.path).base)
 
   console.log(
     dirname,
@@ -32,22 +32,22 @@ export const downloadRecursive = (
 
   return downloadFolder(
     {
-      ...argv,
+      ...args,
       depth: Infinity,
       treefilter: makeDownloadTaskFromTree({
-        filterFiles: filterByIncludeExcludeGlobs(argv),
+        filterFiles: filterByIncludeExcludeGlobs(args),
       }),
-      toLocalFileSystemMapper: argv.keepStructure
-        ? recursiveDirMapper(argv.dstpath)
+      toLocalFileSystemMapper: args.keepStructure
+        ? recursiveDirMapper(args.dstpath)
         : recursiveDirMapper(
-          argv.dstpath,
+          args.dstpath,
           p => p.substring(dirname.length),
         ),
       conflictsSolver: cfs =>
         cfs.length > 10
           ? solvers.resolveConflictsAskAll(cfs)
           : solvers.resolveConflictsAskEvery(cfs),
-      downloadFiles: downloadICloudFilesChunked({ chunkSize: argv.chunkSize }),
+      downloadFiles: downloadICloudFilesChunked({ chunkSize: args.chunkSize }),
     },
   )
 }

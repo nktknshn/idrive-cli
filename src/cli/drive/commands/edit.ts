@@ -1,8 +1,7 @@
-import { DriveLookup } from '../../../icloud-drive'
-import * as Actions from '../../../icloud-drive/actions'
+import { DriveActions, DriveLookup } from '../../../icloud-drive'
 
 export const edit = (
   args: { path: string; editor: string },
-): DriveLookup.Lookup<void, Actions.DepsEdit> => {
-  return Actions.edit(args)
+): DriveLookup.Lookup<void, DriveActions.DepsEdit> => {
+  return DriveActions.edit(args)
 }

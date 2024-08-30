@@ -4,7 +4,12 @@ export type ErrorWithCode = Error & {
   code: string
 }
 
-export const isEnoentError = (e: Error): boolean => hasOwnProperty(e, 'code') && e.code === 'ENOENT'
+export type ErrorWithPath = Error & {
+  path: string
+}
+
+export const isEnoentError = (e: Error): e is ErrorWithPath & ErrorWithCode =>
+  hasOwnProperty(e, 'code') && e.code === 'ENOENT'
 
 export const isEexistError = (e: Error): boolean => hasOwnProperty(e, 'code') && e.code === 'EEXIST'
 

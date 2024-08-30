@@ -8,10 +8,11 @@ import * as O from 'fp-ts/Option'
 
 import { DepAskConfirmation, DepFs } from '../../../deps-types'
 import { loggerIO } from '../../../logging/loggerIO'
-import { err } from '../../../util/errors'
+import { SrteUtils } from '../../../util'
+import { assertFileSize } from '../../../util/fs'
 import { normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
-import { runLogging } from '../../../util/srte-utils'
+import { runLogging, wrapError } from '../../../util/srte-utils'
 import { SRA } from '../../../util/types'
 import { DriveLookup, Types } from '../..'
 import { DepApiMethod, DriveApiMethods } from '../../drive-api'
@@ -28,7 +29,8 @@ export type Deps =
   & DepFs<'fstat'>
   & DepAskConfirmation
 
-export const uploads = (
+/** Upload multiple files to the same folder */
+export const uploadMany = (
   { uploadargs, overwright, skipTrash }: {
     uploadargs: string[]
     overwright:
@@ -36,7 +38,7 @@ export const uploads = (
       | AskingFunc
     skipTrash: boolean
   },
-): SRA<DriveLookup.State, Deps, string> => {
+): SRA<DriveLookup.State, Deps, void> => {
   assert(A.isNonEmpty(uploadargs))
   assert(uploadargs.length > 1)
 
@@ -52,17 +54,12 @@ export const uploads = (
       pipe(
         srcpaths,
         A.map(src =>
-          uploadFileToFolder({
-            src,
-            dstDetails,
-            overwright: overwright ? true : deps.askConfirmation,
-            skipTrash,
-          })
+          uploadFileToFolder({ src, dstDetails, overwright: overwright ? true : deps.askConfirmation, skipTrash })
         ),
         SRTE.sequenceArray,
       )
     ),
-    SRTE.map(() => `Success. ${srcpaths}`),
+    SRTE.map(constVoid),
   )
 }
 
@@ -73,18 +70,18 @@ export const uploadSingleFile = (
     overwright: boolean
     skipTrash: boolean
   },
-): SRA<DriveLookup.State, Deps, string> => {
+): SRA<DriveLookup.State, Deps, void> => {
   return pipe(
     loggerIO.debug(`uploadSingleFile ${srcpath} ${dstpath}`),
     SRTE.fromIO,
-    SRTE.chain(DriveLookup.getCachedDocwsRoot),
-    SRTE.bindTo('root'),
-    SRTE.bind('dst', ({ root }) => DriveLookup.getByPath(root, normalizePath(dstpath))),
-    SRTE.bind('src', () => SRTE.of(srcpath)),
-    SRTE.bind('overwright', () => SRTE.of(overwright)),
+    SRTE.bind('src', () => DriveLookup.of(srcpath)),
     SRTE.bind('skipTrash', () => SRTE.of(skipTrash)),
+    SRTE.bind('overwright', () => SRTE.of(overwright)),
+    SrteUtils.chainReaderTaskEitherFirstW(({ src }) => assertFileSize({ minimumSize: 1, path: src })),
+    SRTE.bindW('dst', () => DriveLookup.getByPathDocwsroot(normalizePath(dstpath))),
     SRTE.chain(handleSingleFileUpload),
-    SRTE.map(() => `Success. ${Path.basename(srcpath)}`),
+    // SRTE.map(() => `Success. ${Path.basename(srcpath)}`),
+    wrapError('uploadSingleFile'),
   )
 }
 
@@ -221,6 +218,7 @@ const uploadOverwrighting = (
         SRTE.map(constVoid),
       )
     }),
-    SRTE.mapLeft(e => err(`upload ${src} error: ${e}`)),
+    wrapError(`upload ${src}`),
+    // SRTE.mapLeft(e => err(`upload ${src} error: ${e}`)),
   )
 }

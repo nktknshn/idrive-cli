@@ -1,6 +1,18 @@
 import * as w from 'yargs-command-wrapper'
 import * as defaults from '../../defaults'
 
+const init = w.command(
+  'init',
+  'Init new session',
+  a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
+)
+
+const auth = w.command(
+  'auth',
+  'Authenticate a session',
+  a => a.options({}),
+)
+
 const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
   _
     .positional('paths', { type: 'string', array: true, default: ['/'] })
@@ -61,6 +73,18 @@ const cat = w.command(
       }),
 )
 
+const edit = w.command(
+  'edit <path>',
+  'Edit a text file',
+  (_) =>
+    _.positional('path', { type: 'string', demandOption: true })
+      .options({
+        editor: { type: 'string', default: defaults.fileEditor },
+        // unapplieable since the cache is not updated after file upload, so without validation the old file id is returned from cache
+        // skipValidation: { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
+      }),
+)
+
 const mv = w.command(
   'mv <srcpath> <dstpath>',
   'Move or rename a file or a folder',
@@ -84,8 +108,8 @@ const upload = w.command(
         dry: { default: false, type: 'boolean' },
         // chunkSize: { default: 2, type: 'number', implies: ['recursive'] },
       })
-      .check((argv) => {
-        const uploadargs = argv.uploadargs
+      .check((args) => {
+        const uploadargs = args.uploadargs
 
         if (Array.isArray(uploadargs) && uploadargs.length < 2) {
           throw new Error('Missing destination path')
@@ -105,28 +129,6 @@ const autocomplete = w.command(
         dir: { default: false, type: 'boolean' },
         trash: { default: false, type: 'boolean' },
         cached: { default: false, type: 'boolean' },
-      }),
-)
-
-const init = w.command(
-  'init',
-  'Init new session',
-  a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
-)
-
-const auth = w.command(
-  'auth',
-  'Authenticate a session',
-  a => a.options({}),
-)
-
-const edit = w.command(
-  'edit <path>',
-  'Edit a text file',
-  (_) =>
-    _.positional('path', { type: 'string', demandOption: true })
-      .options({
-        editor: { type: 'string', default: defaults.fileEditor },
       }),
 )
 

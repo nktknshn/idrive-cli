@@ -6,18 +6,18 @@ import { mapSnd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as NA from 'fp-ts/NonEmptyArray'
 
-import { DepFs } from '../../deps-types'
-import { loggerIO } from '../../logging/loggerIO'
-import { printerIO } from '../../logging/printerIO'
-import { err } from '../../util/errors'
-import { walkDirRel } from '../../util/fs/walkdir'
-import { normalizePath } from '../../util/normalize-path'
-import { Path } from '../../util/path'
-import { SRA } from '../../util/types'
-import { DriveLookup, Types } from '..'
-import { DepApiMethod, DriveApiMethods } from '../drive-api'
-import { findInParentFilename } from '../util/drive-helpers'
-import * as V from '../util/get-by-path-types'
+import { DepFs } from '../../../deps-types'
+import { loggerIO } from '../../../logging/loggerIO'
+import { printerIO } from '../../../logging/printerIO'
+import { err } from '../../../util/errors'
+import { walkDirRel } from '../../../util/fs/walkdir'
+import { normalizePath } from '../../../util/normalize-path'
+import { Path } from '../../../util/path'
+import { SRA } from '../../../util/types'
+import { DriveLookup, Types } from '../..'
+import { DepApiMethod, DriveApiMethods } from '../../drive-api'
+import { findInParentFilename } from '../../util/drive-helpers'
+import * as V from '../../util/get-by-path-types'
 import {
   createRemoteDirStructure,
   getUploadTask,
@@ -25,9 +25,9 @@ import {
   uploadChunkPar,
   UploadResult,
   UploadTask,
-} from './upload/upload-helpers'
+} from './upload-helpers'
 
-type Argv = {
+type Args = {
   localpath: string
   remotepath: string
   dry: boolean
@@ -45,13 +45,13 @@ export type Deps =
   & DepFs<'fstat' | 'opendir'>
 
 export const uploadFolder = (
-  argv: Argv,
+  args: Args,
 ): SRA<DriveLookup.State, Deps, unknown> => {
   return pipe(
-    DriveLookup.getByPathDocwsroot(normalizePath(argv.remotepath)),
+    DriveLookup.getByPathDocwsroot(normalizePath(args.remotepath)),
     SRTE.bindTo('dst'),
-    SRTE.bind('src', () => SRTE.of(argv.localpath)),
-    SRTE.bind('args', () => SRTE.of(argv)),
+    SRTE.bind('src', () => SRTE.of(args.localpath)),
+    SRTE.bind('args', () => SRTE.of(args)),
     SRTE.chain(handleUploadFolder),
     SRTE.map(() => `Success.`),
   )
@@ -61,7 +61,7 @@ const handleUploadFolder = (
   { src, dst, args }: {
     src: string
     dst: V.Result<Types.DetailsDocwsRoot>
-    args: Argv
+    args: Args
   },
 ): SRA<DriveLookup.State, Deps, UploadResult[]> => {
   const dirname = Path.parse(src).base

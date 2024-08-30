@@ -3,6 +3,8 @@ import * as t from 'io-ts'
 import { HttpResponse } from './http/fetch-client'
 import { isObjectWithOwnProperty } from './util'
 
+export const wrapError = (message: string) => (e: Error): Error => new Error(`${message}: ${e.message}`)
+
 export class InvalidGlobalSessionError extends Error {
   readonly tag = 'InvalidGlobalSessionResponse'
   constructor(public readonly httpResponse: HttpResponse) {
@@ -193,7 +195,7 @@ export class FileNotFoundError extends Error {
 export class FileInvalidError extends Error {
   readonly tag = 'FileInvalidError'
   constructor(public readonly path: string) {
-    super(`File invalid: ${path}`)
+    super(`Invalid file: ${path}`)
   }
 
   static is(a: Error): a is FileInvalidError {
@@ -207,4 +209,6 @@ export class FileInvalidError extends Error {
 
 /** Returns `Error` with the given message */
 export const err = (message: string): Error => new Error(message)
+
+/** Returns `Error` with the given message if `e` is not an `Error` */
 export const ensureError = (e: unknown): Error => e instanceof Error ? e : err(`${e}`)
