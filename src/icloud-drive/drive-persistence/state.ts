@@ -11,6 +11,7 @@ export const loadDriveStateFromFiles = pipe(
   RTE.chain(loadAccountDataFromFile),
   RTE.bindW('cache', () => loadCacheFromFile),
   RTE.bindW('tempCache', () => RTE.of(O.none)),
+  RTE.bindW('tempCacheMissingDetails', () => RTE.of([])),
 )
 
 export const saveDriveStateToFiles = (state: DriveLookup.State) =>

@@ -1,9 +1,12 @@
+import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 
 import { loggerIO } from '../../../logging/loggerIO'
 import { err } from '../../../util/errors'
+import { guardSnd } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 import { sequenceNArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
@@ -14,11 +17,13 @@ import { retrieveItemDetailsInFoldersCached } from './cache-retrieve-details'
 const setActive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
   tempCache: O.some(Cache.cachef()),
+  tempCacheMissingDetails: [],
 })
 
 const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
   tempCache: O.none,
+  tempCacheMissingDetails: [],
 })
 
 /**
@@ -45,6 +50,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
                 O.getOrElse(() => Cache.cachef()),
                 // merge the temporary cache into the main cache
                 Cache.concat(prevstate.cache),
+                Cache.removeByIds(prevstate.tempCacheMissingDetails),
                 putCache,
                 // deactivate the temporary cache
                 SRTE.chain(() => SRTE.modify(setInactive)),
@@ -56,6 +62,16 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
         () => ma,
       ),
     )
+  )
+
+const getMissingDetails = (
+  drivewsids: NEA<string>,
+  result: NEA<O.Option<Types.Details>>,
+): string[] =>
+  pipe(
+    NA.zip(drivewsids, result),
+    A.filter(guardSnd(O.isNone)),
+    A.map(_ => _[0]),
   )
 
 /**
@@ -95,14 +111,22 @@ export function retrieveItemDetailsInFoldersTempCached(
             () =>
               SRTE.put({
                 ...newstate,
-                cache: Cache.concat(prevstate.cache, newstate.cache),
+                cache: pipe(
+                  Cache.concat(prevstate.cache, newstate.cache),
+                  Cache.removeByIds(getMissingDetails(drivewsids, res)),
+                ),
               }),
-            (tc) =>
+            (prevTempCache) =>
               // if tempcache is set to be active, update the temporary cache
               SRTE.put({
                 ...newstate,
+                // keep the old main cache
                 cache: prevstate.cache,
-                tempCache: O.some(Cache.concat(tc, newstate.cache)),
+                tempCache: O.some(Cache.concat(prevTempCache, newstate.cache)),
+                tempCacheMissingDetails: [
+                  ...prevstate.tempCacheMissingDetails,
+                  ...getMissingDetails(drivewsids, res),
+                ],
               }),
           ),
           map(() => res),

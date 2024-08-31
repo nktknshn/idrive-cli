@@ -19,10 +19,13 @@ export const fakeicloud = flow(docwsroot, createRootDetails)
 export const createState = ({
   cache = C.cachef(),
   tempCache = O.none,
+  tempCacheMissingDetails = [],
 }: {
   cache?: C.LookupCache
   tempCache?: O.Option<never>
-}): DriveLookup.State => ({ ...authenticatedState, cache, tempCache })
+  tempCacheMissingDetails?: string[]
+}): DriveLookup.State => ({ ...authenticatedState, cache, tempCache, tempCacheMissingDetails })
+
 type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number

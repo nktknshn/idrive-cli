@@ -28,6 +28,8 @@ export type Deps =
 export type TempLookupCacheState = {
   /** A second cache is used for temporary caching. The details in this cache are considered fresh and do not need to be verified. `retrieveItemDetailsInFoldersTempCached` utilizes this cache to avod repeated api calls. */
   tempCache: O.Option<C.LookupCache>
+  /** Details to remove from the main cache later */
+  tempCacheMissingDetails: string[]
 }
 
 /** Lookup state is lookup cache and authenticated state */
