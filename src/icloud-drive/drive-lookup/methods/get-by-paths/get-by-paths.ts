@@ -118,6 +118,7 @@ const validateCachedHierarchies = <R extends Types.Root>(
     loggerIO.debug(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
     SRTE.fromIO,
     SRTE.chain(() =>
+      // retrieve details from api or from temp cache
       DriveLookup.retrieveItemDetailsInFoldersTempCached<R>([
         cachedRoot.drivewsid,
         ...drivewsids,
@@ -208,14 +209,11 @@ const getActuals = <R extends Types.Root>(
     modifySubset(
       validationResults,
       guardFst(GetByPath.isInvalidPath),
-      // (res): res is [V.PathInvalid<R>, NormalizedPath] => !res[0].valid,
       (subset) => pipe(subset, NA.map(fst), handleInvalidPaths),
       ([h, p]): GetByPath.Result<R> => h,
-      // : [V.PathValid<H.Hierarchy<R>>, NormalizedPath]
     ),
   )
 }
-// : NEA<[V.PathInvalid<R>, NormalizedPath]>
 
 type DeeperFolders<R extends Types.Root> =
   // folders items with empty rest (valid, requires details)
@@ -243,11 +241,9 @@ const handleInvalidPaths = <R extends Types.Root>(
     const foldersToRetrieve = pipe(
       subfolders,
       NA.map(([item, [rest, validPart]]) => item.value.drivewsid),
-      // NA.uniq(Eq),
     )
 
     return pipe(
-      // DriveLookup.retrieveItemDetailsInFoldersSavingStrict(foldersToRetrieve),
       DriveLookup.retrieveItemDetailsInFoldersTempCachedStrict(foldersToRetrieve),
       SRTE.map(NA.zip(subfolders)),
       SRTE.chain((details) => {

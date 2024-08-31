@@ -9,7 +9,7 @@ import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
 enableDebug(false)
 
-describe('retrieveItemDetailsInFoldersSaving', () => {
+describe('retrieveItemDetailsInFoldersCached', () => {
   it('works', async () => {
     const structure0 = fakeicloud(
       folder({ name: 'folder1' })(

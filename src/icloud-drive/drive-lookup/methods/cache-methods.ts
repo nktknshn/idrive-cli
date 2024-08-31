@@ -2,23 +2,21 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import * as T from '../../drive-types'
-import { chain, Deps, get, Lookup, map, State } from '..'
+import { chain, Deps, getState, Lookup, map, State } from '..'
 import * as C from '../cache'
 
-export const putCache = (cache: C.LookupCache): Lookup<void> =>
+export const putCacheWithHook = (cache: C.LookupCache): Lookup<void> =>
   pipe(
-    putCacheNoHook(cache),
+    putCache(cache),
     SRTE.chain(() => SRTE.asks((d: Deps) => d.hookPutCache)),
     SRTE.chain(h => h ?? SRTE.of(constVoid())),
     SRTE.map(constVoid),
   )
 
-export const putCacheNoHook = (cache: C.LookupCache): Lookup<void> =>
+export const putCache = (cache: C.LookupCache): Lookup<void> =>
   pipe(
-    get(),
-    SRTE.chain(
-      (state: State) => SRTE.put({ ...state, cache }),
-    ),
+    getState(),
+    SRTE.chain((state: State) => SRTE.put({ ...state, cache })),
   )
 
 export const putDetailss = (detailss: T.Details[]): Lookup<void> =>
@@ -35,7 +33,7 @@ export const modifyCache = (f: (cache: C.LookupCache) => C.LookupCache): Lookup<
 
 export const getCache = (): Lookup<C.LookupCache> =>
   pipe(
-    get(),
+    getState(),
     map(({ cache, tempCache }) =>
       pipe(
         C.concat(cache, pipe(tempCache, O.getOrElse(() => C.cachef()))),
@@ -46,8 +44,9 @@ export const getCache = (): Lookup<C.LookupCache> =>
 export const getsCache = <A>(f: (cache: C.LookupCache) => A): Lookup<A> => pipe(getCache(), map(f))
 
 export const chainCache = <A>(f: (cache: C.LookupCache) => Lookup<A>): Lookup<A> =>
-  pipe(get(), chain(({ cache }) => f(cache)))
+  pipe(getState(), chain(({ cache }) => f(cache)))
 
+/** Execute the effect with the given cache */
 export const usingCache = (cache: C.LookupCache) =>
   <A>(ma: Lookup<A>): Lookup<A> =>
     pipe(
@@ -55,6 +54,7 @@ export const usingCache = (cache: C.LookupCache) =>
       SRTE.chain(() => pipe(ma)),
     )
 
+/** Save existing folders details and remove the ones that were not found */
 export const putMissedFound = ({ found, missed }: {
   found: T.Details[]
   missed: string[]

@@ -10,7 +10,7 @@ import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 import { chain } from '../../src/icloud-drive/drive-lookup'
 import { enableDebug } from './debug'
 
-enableDebug(false)
+enableDebug(true)
 
 const structure = fakeicloud(
   file({ name: 'fileinroot.txt' }),
@@ -107,7 +107,7 @@ describe('usingTempCache with getByPath method', () => {
     ),
   })
 
-  it('works1', async () => {
+  it('saves a call', async () => {
     return pipe(
       DriveLookup.usingTempCache(req),
       run,
@@ -120,7 +120,7 @@ describe('usingTempCache with getByPath method', () => {
     )()
   })
 
-  it('works2', async () => {
+  it('works', async () => {
     return pipe(
       run(req),
       TE.map(({ calls }) => {

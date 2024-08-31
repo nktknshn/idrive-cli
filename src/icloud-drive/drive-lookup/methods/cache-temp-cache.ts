@@ -1,4 +1,4 @@
-import { constVoid, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { loggerIO } from '../../../logging/loggerIO'
@@ -6,9 +6,9 @@ import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
 import { sequenceNArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
-import { chainState, get, Lookup, map, TempLookupCacheState } from '../drive-lookup'
+import { chainState, getState, Lookup, map, TempLookupCacheState } from '../drive-lookup'
 import { putCache, usingCache } from './cache-methods'
-import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
+import { retrieveItemDetailsInFoldersCached } from './cache-retrieve-details'
 
 const setActive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
@@ -21,38 +21,44 @@ const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
 })
 
 /**
- * Execute effect with empty temp cache. Afterwards add resulting temp cache to the main cache
+ * Execute effect enabling temporary cache.
  */
 export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
   chainState((prevstate) =>
     pipe(
       prevstate.tempCache,
       O.match(
+        // if the temp cache is not active
         () =>
           pipe(
+            // activate it
             SRTE.modify(setActive),
+            // execute the effect
             SRTE.chain(() => ma),
             SRTE.bindTo('res'),
-            SRTE.bindW('newstate', get),
+            SRTE.bindW('newstate', getState),
             SRTE.chain(({ res, newstate }) =>
+              // after execution
               pipe(
-                O.isSome(newstate.tempCache)
-                  ? pipe(
-                    putCache(Cache.concat(prevstate.cache, newstate.tempCache.value)),
-                    SRTE.chain(() => SRTE.modify(setInactive)),
-                  )
-                  : SRTE.of(constVoid()),
+                newstate.tempCache,
+                O.getOrElse(() => Cache.cachef()),
+                // merge the temporary cache into the main cache
+                Cache.concat(prevstate.cache),
+                putCache,
+                // deactivate the temporary cache
+                SRTE.chain(() => SRTE.modify(setInactive)),
                 SRTE.map(() => res),
               )
             ),
           ),
+        // otherwise do nothing
         () => ma,
       ),
     )
   )
 
 /**
- * If temp cache is set it sources retrieveItemDetailsInFolders requests. Missed items will be saved there
+ * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty, the method will retrieve all the details from the api.
  */
 export function retrieveItemDetailsInFoldersTempCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
@@ -66,22 +72,32 @@ export function retrieveItemDetailsInFoldersTempCached(
   return chainState(prevstate =>
     pipe(
       loggerIO.debug(
-        `retrieveItemDetailsInFoldersTempCached: ${Cache.getAllDetails(prevstate.cache).map(_ => _.drivewsid)}`,
+        `retrieveItemDetailsInFoldersTempCached. Main cache: ${Cache.keysString(prevstate.cache)}, temp cache: ${
+          prevstate.tempCache._tag === 'None' ? 'empty' : Cache.keysString(prevstate.tempCache.value)
+        }`,
       ),
       SRTE.fromIO,
       SRTE.chain(() => retrieveItemDetailsInFoldersCached(drivewsids)),
       usingCache(pipe(
+        // use existing temp cache if present
         prevstate.tempCache,
+        // or run with empty cache
         O.getOrElse(Cache.cachef),
       )),
       SRTE.bindTo('res'),
-      SRTE.bindW('newstate', get),
-      SRTE.chain(({ newstate, res }) =>
+      SRTE.bindW('newstate', getState),
+      SRTE.chainW(({ newstate, res }) =>
         pipe(
           prevstate.tempCache,
           O.fold(
-            () => putCache(Cache.concat(prevstate.cache, newstate.cache)),
+            // if tempcache is set to be inactive, update the main cache
+            () =>
+              SRTE.put({
+                ...newstate,
+                cache: Cache.concat(prevstate.cache, newstate.cache),
+              }),
             (tc) =>
+              // if tempcache is set to be active, update the temporary cache
               SRTE.put({
                 ...newstate,
                 cache: prevstate.cache,
@@ -95,6 +111,7 @@ export function retrieveItemDetailsInFoldersTempCached(
   )
 }
 
+/** Fails if some of the ids were not found */
 export function retrieveItemDetailsInFoldersTempCachedStrict(
   drivewsids: NEA<string>,
 ): Lookup<NEA<Types.NonRootDetails>>

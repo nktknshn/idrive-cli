@@ -275,4 +275,11 @@ export const removeByIds = (drivewsids: string[]) =>
     )
 
 /** Concatenate two lookup caches */
-export const concat = (c1: LookupCache, c2: LookupCache): CT.CacheF => pipe(c1, putDetailss(getAllDetails(c2)))
+export function concat(c1: LookupCache): (c2: LookupCache) => CT.CacheF
+export function concat(c1: LookupCache, c2: LookupCache): CT.CacheF
+export function concat(c1: LookupCache, c2?: LookupCache): CT.CacheF | ((c2: LookupCache) => CT.CacheF) {
+  return c2 ? pipe(c1, putDetailss(getAllDetails(c2))) : c2 => concat(c1, c2)
+}
+
+export const keysCount = (cache: CT.CacheF): number => Object.keys(cache.byDrivewsid).length
+export const keysString = (cache: CT.CacheF): string => Object.keys(cache.byDrivewsid).join(', ')

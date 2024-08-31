@@ -8,7 +8,7 @@ import { chain, Deps, Lookup, map, of } from '..'
 import * as C from '../cache'
 import { CacheEntityFolderRootDetails, CacheEntityFolderTrashDetails } from '../cache/cache-types'
 import { chainCache } from './cache-methods'
-import { retrieveItemDetailsInFoldersCached } from './cache-retrieveItemDetailsInFolders'
+import { retrieveItemDetailsInFoldersCached } from './cache-retrieve-details'
 
 /** Retrieve root from cache or from api if it's missing from cache and chain a computation `f`*/
 export const chainCachedDocwsRoot = <A>(

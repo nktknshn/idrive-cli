@@ -16,6 +16,7 @@ type Separated = {
   found: (T.DetailsDocwsRoot | T.DetailsTrashRoot | T.DetailsFolder | T.DetailsAppLibrary)[]
 }
 
+/** Retrieves details of the given drivewsids. The result is separated into missed and found items. */
 export const retrieveItemDetailsInFoldersSeparated = <S extends AuthenticatedState>(
   drivewsids: NEA<string>,
 ): SRTE.StateReaderTaskEither<

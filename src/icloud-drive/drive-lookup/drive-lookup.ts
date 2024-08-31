@@ -26,6 +26,7 @@ export type Deps =
   & DepHooks
 
 export type TempLookupCacheState = {
+  /** A second cache is used for temporary caching. The details in this cache are considered fresh and do not need to be verified. `retrieveItemDetailsInFoldersTempCached` utilizes this cache to avod repeated api calls. */
   tempCache: O.Option<C.LookupCache>
 }
 
@@ -41,13 +42,13 @@ export const { map, chain: chain_, filterOrElse } = SRTE
 
 export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
 
-export const get = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
+export const getState = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
 export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<State, R, E, State> =>
   SRTE.left<State, Deps, E>(e)
 
 export const chainState = <A>(
   f: (s: State) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
-): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(get())
+): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(getState())
 
 export const errString = <A>(s: string): Lookup<A> => SRTE.left(err(s))
 

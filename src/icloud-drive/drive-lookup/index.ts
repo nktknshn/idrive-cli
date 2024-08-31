@@ -1,6 +1,6 @@
 export * from './methods/cache-get-by-paths'
 export * from './methods/cache-methods'
-export * from './methods/cache-retrieveItemDetailsInFolders'
+export * from './methods/cache-retrieve-details'
 export * from './methods/cache-temp-cache'
 export { getFoldersTrees } from './methods/drive-get-folders-trees'
 export * from './methods/drive-search-globs'

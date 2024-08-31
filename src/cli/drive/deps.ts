@@ -1,8 +1,12 @@
-import { pipe } from 'fp-ts/lib/function'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/Option'
+import * as SRTE from 'fp-ts/StateReaderTaskEither'
 import * as defaults from '../../defaults'
 import * as deps from '../../deps-providers'
 import { DepAskConfirmation } from '../../deps-types/dep-ask-confirmation'
+import { Cache, DriveLookup } from '../../icloud-drive'
+import { saveDriveStateToFiles } from '../../icloud-drive/drive-persistence/state'
+import { loggerIO } from '../../logging'
 import { getEnv } from '../../util/env'
 import { appendFilename } from '../../util/filename'
 import { CommandsDeps } from '.'
@@ -34,13 +38,23 @@ export const createCliCommandsDeps = (args: {
     cacheFile,
     noCache: args.noCache ?? false,
     tempdir: args.tempdir ?? defaults.tempDir,
-    // by using this hook we can save cache every time putCache is called
+    // by using this hook we can save state every time putCache is called
     // and avoid wasting retrieved data when SRTE throws an error
     // not tested yet
-    // hookPutCache: pipe(
-    //   DriveLookup.get(),
-    //   SRTE.chainFirstIOK(() => loggerIO.debug(`saving cache`)),
-    //   SRTE.map(constVoid),
-    // ),
+    hookPutCache: pipe(
+      DriveLookup.getState(),
+      SRTE.chainFirstIOK(
+        ({ cache }) => loggerIO.debug(`saving cache. ${Cache.keysCount(cache)} keys`),
+      ),
+      SRTE.chainTaskEitherK(cache =>
+        saveDriveStateToFiles(cache)({
+          sessionFile,
+          cacheFile,
+          noCache: args.noCache ?? false,
+          fs: deps.fs,
+        })
+      ),
+      SRTE.map(constVoid),
+    ),
   })
 }
