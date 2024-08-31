@@ -50,7 +50,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
                 O.getOrElse(() => Cache.cachef()),
                 // merge the temporary cache into the main cache
                 Cache.concat(prevstate.cache),
-                Cache.removeByIds(prevstate.tempCacheMissingDetails),
+                Cache.removeByIds(newstate.tempCacheMissingDetails),
                 putCache,
                 // deactivate the temporary cache
                 SRTE.chain(() => SRTE.modify(setInactive)),
@@ -67,12 +67,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
 const getMissingDetails = (
   drivewsids: NEA<string>,
   result: NEA<O.Option<Types.Details>>,
-): string[] =>
-  pipe(
-    NA.zip(drivewsids, result),
-    A.filter(guardSnd(O.isNone)),
-    A.map(_ => _[0]),
-  )
+): string[] => pipe(NA.zip(drivewsids, result), A.filter(guardSnd(O.isNone)), A.map(_ => _[0]))
 
 /**
  * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty or inactive, the method will retrieve all the requested details from the api.
@@ -123,6 +118,7 @@ export function retrieveItemDetailsInFoldersTempCached(
                 // keep the old main cache
                 cache: prevstate.cache,
                 tempCache: O.some(Cache.concat(prevTempCache, newstate.cache)),
+                // collect the missing drivewsids
                 tempCacheMissingDetails: [
                   ...prevstate.tempCacheMissingDetails,
                   ...getMissingDetails(drivewsids, res),

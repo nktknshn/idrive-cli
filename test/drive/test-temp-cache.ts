@@ -33,9 +33,7 @@ const run = executeDrive({
 })
 
 const check = (
-  req: DriveLookup.Lookup<
-    NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>
-  >,
+  req: DriveLookup.Lookup<NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>>,
 ) => {
   return pipe(
     run(req),
@@ -130,32 +128,42 @@ describe('usingTempCache with getByPath method', () => {
 })
 
 describe('missing details are removed from the main cache', () => {
-  it('removes details from the main cache', async () => {
-    const req = pipe(
-      DriveLookup.retrieveItemDetailsInFoldersTempCached([structure.r.c.test1.d.drivewsid]),
-      executeDrive({
-        itemByDrivewsid: pipe(
-          structure.itemByDrivewsid,
-          R.deleteAt(
-            structure.r.c.test1.d.drivewsid,
-          ),
-        ),
-        // run fully cached
-        cache: structure.cache,
-      }),
+  const req = DriveLookup.retrieveItemDetailsInFoldersTempCached([structure.r.c.test1.d.drivewsid])
+  const run = executeDrive({
+    itemByDrivewsid: pipe(
+      structure.itemByDrivewsid,
+      R.deleteAt(structure.r.c.test1.d.drivewsid),
+    ),
+    // run fully cached
+    cache: structure.cache,
+  })
+
+  const check = (req: DriveLookup.Lookup<any>) =>
+    pipe(
+      run(req),
       TE.map(({ calls, res, state }) => {
         expect(res).toEqual([expect.any(Object)])
         expect(calls().total).toBe(1)
-        expect(Cache.getAllDetails(state.cache).length).toBe(3)
-        // expect(Cache.getAllDetails(state.cache)).toEqual(
-        //   [expect.anything(), expect.anything(), expect.anything()],
-        // )
+        // verify that the cache does not contain the removed details
+        expect(Cache.getAllDetails(state.cache)).toEqual(
+          [expect.anything(), expect.anything(), expect.anything()],
+        )
+
+        // verify that the temp cache is cleared
         expect(state.tempCache._tag).toEqual('None')
+        expect(state.tempCacheMissingDetails.length).toEqual(0)
       }),
     )
 
+  it('works when temp cache is not active', async () => {
+    return pipe(req, check)()
+  })
+
+  it('works when temp cache is active', async () => {
     return pipe(
       req,
+      DriveLookup.usingTempCache,
+      check,
     )()
   })
 })
