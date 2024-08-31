@@ -58,7 +58,8 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
               )
             ),
           ),
-        // otherwise do nothing
+        // otherwise do nothing, the state will be merged and temp cache
+        // deactivated by the initial `usingTempCache` call
         () => ma,
       ),
     )

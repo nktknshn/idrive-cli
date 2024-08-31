@@ -31,7 +31,6 @@ export type Deps =
   & DepTempDir
 
 // TODO add Editor interface
-// TODO calc hash to check if the file was changed
 
 export const edit = (
   { path, editor }: { path: string; editor: string },

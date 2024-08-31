@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as R from 'fp-ts/lib/Record'
+import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { Cache, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/drive-types'
@@ -165,5 +166,54 @@ describe('missing details are removed from the main cache', () => {
       DriveLookup.usingTempCache,
       check,
     )()
+  })
+})
+
+describe('nesting does not break behavior', () => {
+  const req = pipe(
+    DriveLookup.usingTempCache(
+      pipe(
+        DriveLookup.retrieveItemDetailsInFoldersTempCached([structure.r.c.test1.d.drivewsid]),
+        SRTE.chain(() =>
+          DriveLookup.usingTempCache(
+            DriveLookup.retrieveItemDetailsInFoldersTempCached([
+              structure.r.c.test1.c.test2.d.drivewsid,
+              structure.r.c.test1.c.test2.c.test3.d.drivewsid,
+            ]),
+          )
+        ),
+      ),
+    ),
+  )
+
+  const run = executeDrive({
+    itemByDrivewsid: pipe(
+      structure.itemByDrivewsid,
+      R.deleteAt(structure.r.c.test1.c.test2.c.test3.d.drivewsid),
+    ),
+    cache: pipe(
+      Cache.cachef(),
+      Cache.putDetails(structure.r.c.test1.c.test2.c.test3.d),
+    ),
+  })
+
+  const check = (req: DriveLookup.Lookup<any>) =>
+    pipe(
+      run(req),
+      TE.map(({ calls, res, state }) => {
+        expect(res).toEqual([
+          expect.objectContaining({ _tag: 'Some' }),
+          expect.objectContaining({ _tag: 'None' }),
+        ])
+        expect(calls().total).toBe(2)
+        // verify that the cache does not contain the removed details
+        expect(Cache.keys(state.cache)).toEqual(
+          [structure.r.c.test1.d.drivewsid, structure.r.c.test1.c.test2.d.drivewsid],
+        )
+      }),
+    )
+
+  it('does not break behavior', async () => {
+    return pipe(req, check)()
   })
 })

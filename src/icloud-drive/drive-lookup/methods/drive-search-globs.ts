@@ -6,6 +6,7 @@ import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
+
 import { guardSnd } from '../../../util/guards'
 import { normalizePath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
@@ -28,6 +29,7 @@ export const searchGlobsShallow = (
   return searchGlobs(globs, 0)
 }
 
+/** Searches for files and folders matching the glob patterns */
 export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
@@ -63,7 +65,7 @@ export const searchGlobs = (
         ([_scan, file]) => E.left(file),
       )
     ),
-    // execute `getByPathsStrictDocwsroot` and `getFoldersTrees` with temp cache
+    // execute `getByPathsStrictDocwsroot` and `getFoldersTrees` with temp cache to save api calls
     DriveLookup.usingTempCache,
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned), NA.zip(basepaths))),
     SRTE.map(flow(NA.map(([[[fileOrTree, globpattern], scan], basepath]) =>
@@ -71,7 +73,6 @@ export const searchGlobs = (
         fileOrTree,
         E.fold(
           // handle basepaths that turned out to be files
-          // FIXME
           file =>
             !scan.isGlob && micromatch.isMatch(basepath, scan.input, options)
               ? [{ path: basepath, item: file }]

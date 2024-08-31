@@ -232,4 +232,5 @@ export function concat(c1: LookupCache, c2?: LookupCache): CT.CacheF | ((c2: Loo
 }
 
 export const keysCount = (cache: CT.CacheF): number => Object.keys(cache.byDrivewsid).length
+export const keys = (cache: CT.CacheF): string[] => Object.keys(cache.byDrivewsid)
 export const keysString = (cache: CT.CacheF): string => Object.keys(cache.byDrivewsid).join(', ')

@@ -5,27 +5,27 @@ import * as O from 'fp-ts/lib/Option'
 import { Predicate } from 'fp-ts/lib/Predicate'
 import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as DF from '../drive-lookup'
+import * as DL from '../drive-lookup'
 
 /** Modify a subset of input array. Subset is defined by a predicate. */
 export function modifySubset<A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,
-  f: ((v: NA.NonEmptyArray<B>) => DF.Lookup<C[]>),
+  f: ((v: NA.NonEmptyArray<B>) => DL.Lookup<C[]>),
   fac: (a: D) => C,
-): DF.Lookup<NA.NonEmptyArray<C>>
+): DL.Lookup<NA.NonEmptyArray<C>>
 export function modifySubset<A, C>(
   input: NA.NonEmptyArray<A>,
   predicate: Predicate<A>,
-  f: ((v: NA.NonEmptyArray<A>) => DF.Lookup<C[]>),
+  f: ((v: NA.NonEmptyArray<A>) => DL.Lookup<C[]>),
   fac: (a: A) => C,
-): DF.Lookup<NA.NonEmptyArray<C>>
+): DL.Lookup<NA.NonEmptyArray<C>>
 export function modifySubset<A, C>(
   input: NA.NonEmptyArray<A>,
   refinement: Predicate<A>,
-  f: ((v: NA.NonEmptyArray<A>) => DF.Lookup<C[]>),
+  f: ((v: NA.NonEmptyArray<A>) => DL.Lookup<C[]>),
   fac: (a: A) => C,
-): DF.Lookup<NA.NonEmptyArray<C>> {
+): DL.Lookup<NA.NonEmptyArray<C>> {
   const subset = pipe(
     input,
     A.filterMapWithIndex(
@@ -34,7 +34,7 @@ export function modifySubset<A, C>(
   )
 
   return pipe(
-    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DF.State, DF.Deps, Error, C[]>([]), f)),
+    pipe(subset.map(_ => _.a), A.match(() => SRTE.of<DL.State, DL.Deps, Error, C[]>([]), f)),
     SRTE.map(A.zip(subset)),
     SRTE.map(A.map(([a, { index }]) => ({ a, index }))),
     SRTE.map(res => mapIndexes(input, res, fac)),

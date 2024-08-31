@@ -93,7 +93,7 @@ Given cached root and a cached hierarchy determine which part of the hierarchy i
  */
 const validateCachedHierarchies = <R extends Types.Root>(
   cachedHierarchies: NEA<GetByPath.Hierarchy<R>>,
-): DriveLookup.Lookup<NEA<GetByPath.PathValidation<R>>> => {
+): DriveLookup.Lookup<NEA<GetByPath.Result<R>>> => {
   const toActual = (
     cachedPath: Types.NonRootDetails[],
     actualsRecord: Record<string, O.Option<Types.NonRootDetails>>,
@@ -148,11 +148,12 @@ const concatCachedWithValidated = <R extends Types.Root>(
 ): GetByPath.PathValidation<R> => {
   // if cached is valid
   if (cached.valid) {
-    // and its validation
+    // and its validation is valid
     if (GetByPath.isValidPath(validated)) {
       // if original path was targeting a file
       // try to find it in the actual details
       const file = GetByPath.getFile(cached)
+
       if (O.isSome(file)) {
         const fname = Types.fileName(file.value)
         const parent = NA.last(validated.details)
@@ -162,6 +163,7 @@ const concatCachedWithValidated = <R extends Types.Root>(
           O.fold(
             () => E.left(NotFoundError.createTemplate(fname, parent.drivewsid)),
             (actualFileItem) =>
+              // if a folder with the same name as the file was found
               Types.isFileItem(actualFileItem)
                 ? E.of(actualFileItem)
                 : E.left(ItemIsNotFileError.createTemplate(actualFileItem)),
@@ -173,17 +175,18 @@ const concatCachedWithValidated = <R extends Types.Root>(
         )
       }
       else {
-        // if not file was targeted then the cached path is still valid
+        // if not a file was targeted then the cached path is still valid
         loggerIO.debug(`V.validResult: ${showDetails(NA.last(validated.details))}`)()
         return GetByPath.validPath(validated.details)
       }
     }
     else {
-      //
+      // return what is actually valid currently
       return validated
     }
   }
   else {
+    // cached path is invalid
     if (GetByPath.isValidPath(validated)) {
       return GetByPath.invalidPath(validated.details, cached.rest, cached.error)
     }
