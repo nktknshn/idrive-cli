@@ -37,11 +37,7 @@ export function retrieveItemDetailsInFoldersCached(
   return pipe(
     () => loggerIO.debug(`retrieveItemDetailsInFoldersCached: ${uniqids}`),
     SRTE.fromIO,
-    SRTE.chain(() =>
-      DriveCache.chainCache(
-        SRTE.fromEitherK(Cache.getFoldersDetailsByIdsSeparated(uniqids)),
-      )
-    ),
+    SRTE.chain(() => DriveCache.getsCache(Cache.getFoldersDetailsByIdsSeparated(uniqids))),
     SRTE.chainW(({ missed }) =>
       pipe(
         missed,
@@ -53,7 +49,6 @@ export function retrieveItemDetailsInFoldersCached(
     ),
     SRTE.chain(DriveCache.putMissedFound),
     SRTE.chainW(() => DriveCache.getsCache(Cache.getFoldersDetailsByIds(drivewsids))),
-    SRTE.chainW(e => SRTE.fromEither(e)),
     SRTE.map(NA.map(Types.invalidIdToOption)),
   )
 }

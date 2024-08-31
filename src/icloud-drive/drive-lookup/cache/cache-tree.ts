@@ -1,5 +1,4 @@
 import * as A from 'fp-ts/Array'
-import * as E from 'fp-ts/Either'
 import * as O from 'fp-ts/lib/Option'
 import * as TR from 'fp-ts/lib/Tree'
 
@@ -14,13 +13,13 @@ type CacheTreeValue = {
 }
 
 export const asTree = (cache: Cache.LookupCache, drivewsid: string): O.Option<TR.Tree<CacheTreeValue>> => {
-  const itemOE = Cache.getFolderDetailsByIdO(drivewsid)(cache)
+  const itemO = Cache.getByIdO(drivewsid)(cache)
 
-  if (O.isNone(itemOE) || E.isLeft(itemOE.value)) {
+  if (O.isNone(itemO)) {
     return O.none
   }
 
-  const entity = itemOE.value.right
+  const entity = itemO.value
   const name = Types.fileName(entity.content)
 
   const forest = entity.content.items.map(item =>
