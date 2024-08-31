@@ -1,3 +1,5 @@
+import * as RT from 'fp-ts/lib/ReaderTask'
+
 import { sequenceS, sequenceT } from 'fp-ts/lib/Apply'
 import { flow, pipe } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
@@ -57,3 +59,9 @@ export const chainReaderTaskEitherFirstW = <S, R1, R2, E, A, B>(
 ) =>
   (ma: SRTE.StateReaderTaskEither<S, R1, E, A>): SRTE.StateReaderTaskEither<S, R1 & R2, E, A> =>
     s => pipe(ma(s), RTE.chainW(([a, s]) => pipe(f(a), RTE.map(() => [a, s] as const))))
+
+export const fromReaderTask = <S, R, A>(ma: RT.ReaderTask<R, A>): SRTE.StateReaderTaskEither<S, R, never, A> =>
+  pipe(
+    SRTE.ask<S, R>(),
+    SRTE.chain(d => SRTE.fromTask(ma(d))),
+  )
