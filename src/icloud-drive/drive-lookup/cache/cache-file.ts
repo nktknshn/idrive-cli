@@ -2,6 +2,7 @@ import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as R from 'fp-ts/lib/Record'
+import * as t from 'io-ts'
 import { DepFs } from '../../../deps-types/dep-fs'
 import { cacheLogger } from '../../../logging/logging'
 import { TypeDecodingError } from '../../../util/errors'
@@ -29,7 +30,13 @@ export const tryReadFromFile = (
     tryReadJsonFile(accountDataFilePath),
     RTE.chainEitherKW(flow(
       cachIo.cache.decode,
-      E.mapLeft(es => TypeDecodingError.create(es, 'wrong ICloudDriveCache json')),
+      E.mapLeft(es => TypeDecodingError.create(es, `wrong ICloudDriveCache json: ${(es.map(errorMessage))}`)),
     )),
   )
+}
+
+const errorMessage = (err: t.ValidationError) => {
+  const path = err.context.map((e) => `${e.key}`).join('/')
+
+  return `invalid value ${err.value} in ${path}`
 }

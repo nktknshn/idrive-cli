@@ -27,6 +27,7 @@ export const createCliCommandsDeps = (args: {
   )
 
   const cacheFile = args.cacheFile ?? appendFilename(sessionFile, '.cache')
+  const noCache = args.noCache ?? false
 
   return ({
     api: deps.api,
@@ -36,7 +37,7 @@ export const createCliCommandsDeps = (args: {
     askConfirmation: args.askConfirmation ?? deps.askConfirmation,
     sessionFile,
     cacheFile,
-    noCache: args.noCache ?? false,
+    noCache,
     tempdir: args.tempdir ?? defaults.tempDir,
 
     // save state by chaining DriveLookup.persistState
@@ -50,7 +51,7 @@ export const createCliCommandsDeps = (args: {
         saveDriveStateToFiles(cache)({
           sessionFile,
           cacheFile,
-          noCache: args.noCache ?? false,
+          noCache,
           fs: deps.fs,
         })
       ),

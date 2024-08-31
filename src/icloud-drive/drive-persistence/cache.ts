@@ -1,6 +1,7 @@
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepFs } from '../../deps-types'
+import { loggerIO } from '../../logging'
 import { debugTimeRTE } from '../../logging/debug-time'
 import { ReadJsonFileError } from '../../util/files'
 import { Cache } from '..'
@@ -21,10 +22,19 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
   pipe(
     deps.noCache
       ? RTE.of(Cache.cachef())
-      : Cache.tryReadFromFile(deps.cacheFile),
-    RTE.orElse(
-      () => RTE.of(Cache.cachef()),
+      : pipe(
+        RTE.fromIO(() => loggerIO.debug(`loading cache from file: ${deps.cacheFile}`)),
+        RTE.chain(() => Cache.tryReadFromFile(deps.cacheFile)),
+      ),
+    RTE.orElseW(
+      (e) =>
+        pipe(
+          loggerIO.error(`couldn't read cache from file. (${e}). Creating new cache`),
+          RTE.fromIO,
+          RTE.map(() => Cache.cachef()),
+        ),
     ),
+    RTE.chainFirstIOK((c) => loggerIO.debug(`loaded cache: ${Cache.keysCount(c)} items`)),
   )
 )
 
