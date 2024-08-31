@@ -5,7 +5,7 @@ import * as defaults from '../../defaults'
 import * as deps from '../../deps-providers'
 import { DepAskConfirmation } from '../../deps-types/dep-ask-confirmation'
 import { Cache, DriveLookup } from '../../icloud-drive'
-import { saveDriveStateToFiles } from '../../icloud-drive/drive-persistence/state'
+import { saveDriveStateToFiles } from '../../icloud-drive/drive-persistence'
 import { loggerIO } from '../../logging'
 import { getEnv } from '../../util/env'
 import { appendFilename } from '../../util/filename'
@@ -38,10 +38,10 @@ export const createCliCommandsDeps = (args: {
     cacheFile,
     noCache: args.noCache ?? false,
     tempdir: args.tempdir ?? defaults.tempDir,
-    // by using this hook we can save state every time putCache is called
-    // and avoid wasting retrieved data when SRTE throws an error
-    // not tested yet
-    hookPutCache: pipe(
+
+    // save state by chaining DriveLookup.persistState
+    // unused for now
+    hookPesistState: pipe(
       DriveLookup.getState(),
       SRTE.chainFirstIOK(
         ({ cache }) => loggerIO.debug(`saving cache. ${Cache.keysCount(cache)} keys`),

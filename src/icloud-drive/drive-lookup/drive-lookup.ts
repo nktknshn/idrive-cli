@@ -19,6 +19,7 @@ export * from './methods/get-by-paths'
 
 export type DepHooks = {
   hookPutCache?: Lookup<void>
+  hookPesistState?: Lookup<void>
 }
 
 export type Deps =
@@ -45,6 +46,7 @@ export const { map, chain: chain_, filterOrElse } = SRTE
 export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of
 
 export const getState = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
+
 export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<State, R, E, State> =>
   SRTE.left<State, Deps, E>(e)
 
