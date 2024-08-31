@@ -3,10 +3,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthenticateSession, DepFs } from '../../deps-types'
 import { cacheLogger } from '../../logging/logging'
 import { DriveLookup } from '..'
-import { saveAccountDataToFile } from './account-data'
-import { saveCacheToFile } from './cache'
-import { saveSessionToFile } from './session'
-import { loadDriveStateFromFiles } from './state'
+import { loadDriveStateFromFiles, saveDriveStateToFiles } from './state'
 
 type Deps =
   & { sessionFile: string }
@@ -32,14 +29,7 @@ export function persistentDriveState<A, R, Args extends unknown[]>(
             ),
         )
       ),
-      RTE.chainFirstW(({ result: [, state] }) =>
-        pipe(
-          RTE.of(state),
-          RTE.chainFirstW(saveSessionToFile),
-          RTE.chainFirstW(saveAccountDataToFile),
-          RTE.chainFirstW(saveCacheToFile),
-        )
-      ),
+      RTE.chainFirstW(({ result: [, state] }) => saveDriveStateToFiles(state)),
       RTE.map(_ => _.result[0]),
     )
 }

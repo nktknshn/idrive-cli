@@ -2,10 +2,18 @@ import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import * as T from '../../drive-types'
-import { chain, get, Lookup, map, State } from '..'
+import { chain, Deps, get, Lookup, map, State } from '..'
 import * as C from '../cache'
 
 export const putCache = (cache: C.LookupCache): Lookup<void> =>
+  pipe(
+    putCacheNoHook(cache),
+    SRTE.chain(() => SRTE.asks((d: Deps) => d.hookPutCache)),
+    SRTE.chain(h => h ?? SRTE.of(constVoid())),
+    SRTE.map(constVoid),
+  )
+
+export const putCacheNoHook = (cache: C.LookupCache): Lookup<void> =>
   pipe(
     get(),
     SRTE.chain(

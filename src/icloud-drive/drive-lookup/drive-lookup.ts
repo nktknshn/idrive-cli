@@ -17,7 +17,13 @@ export { searchInPaths } from './methods/drive-search'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 
-export type Deps = DepApiMethod<'retrieveItemDetailsInFolders'>
+export type DepHooks = {
+  hookPutCache?: Lookup<void>
+}
+
+export type Deps =
+  & DepApiMethod<'retrieveItemDetailsInFolders'>
+  & DepHooks
 
 export type TempLookupCacheState = {
   tempCache: O.Option<C.LookupCache>

@@ -22,7 +22,7 @@ export const createCliCommandsDeps = (args: {
     O.getOrElse(() => defaults.sessionFile),
   )
 
-  const cacheFile = appendFilename(sessionFile, '.cache')
+  const cacheFile = args.cacheFile ?? appendFilename(sessionFile, '.cache')
 
   return ({
     api: deps.api,
@@ -31,8 +31,16 @@ export const createCliCommandsDeps = (args: {
     fetchClient: deps.fetchClient,
     askConfirmation: args.askConfirmation ?? deps.askConfirmation,
     sessionFile,
-    cacheFile: args.cacheFile ?? cacheFile,
+    cacheFile,
     noCache: args.noCache ?? false,
     tempdir: args.tempdir ?? defaults.tempDir,
+    // by using this hook we can save cache every time putCache is called
+    // and avoid wasting retrieved data when SRTE throws an error
+    // not tested yet
+    // hookPutCache: pipe(
+    //   DriveLookup.get(),
+    //   SRTE.chainFirstIOK(() => loggerIO.debug(`saving cache`)),
+    //   SRTE.map(constVoid),
+    // ),
   })
 }
