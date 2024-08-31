@@ -5,12 +5,16 @@ import { debugTimeRTE } from '../../logging/debug-time'
 import { ReadJsonFileError } from '../../util/files'
 import { Cache } from '..'
 
-export type Deps =
+export type DepsLoad =
   & { noCache: boolean; cacheFile: string }
   & DepFs<'readFile'>
 
+export type DepsSave =
+  & { cacheFile: string; noCache: boolean }
+  & DepFs<'writeFile'>
+
 export const loadCacheFromFile: RTE.ReaderTaskEither<
-  Deps,
+  DepsLoad,
   Error | ReadJsonFileError,
   Cache.LookupCache
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
@@ -26,12 +30,13 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
 
 export const saveCacheToFile = <S extends { cache: Cache.LookupCache }>(
   state: S,
-): RTE.ReaderTaskEither<{ cacheFile: string; noCache: boolean } & DepFs<'writeFile', 'fs'>, Error, void> =>
-  pipe(
-    RTE.asksReaderTaskEitherW((deps: { cacheFile: string; noCache: boolean }) =>
+): RTE.ReaderTaskEither<DepsSave, Error, void> => {
+  return pipe(
+    RTE.asksReaderTaskEitherW((deps: DepsSave) =>
       deps.noCache
         ? RTE.of(constVoid())
         : Cache.trySaveFile(state.cache)(deps.cacheFile)
     ),
     debugTimeRTE('saveCache'),
   )
+}

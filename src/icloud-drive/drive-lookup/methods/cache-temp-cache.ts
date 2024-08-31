@@ -71,7 +71,7 @@ const getMissingDetails = (
 ): string[] => pipe(NA.zip(drivewsids, result), A.filter(guardSnd(O.isNone)), A.map(_ => _[0]))
 
 /**
- * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty or inactive, the method will retrieve all the requested details from the api.
+ * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty or inactive, the method will retrieve all the requested details from the api. Useful when chaining multiple `retrieveItemDetailsInFoldersCached` for overlaping paths.
  */
 export function retrieveItemDetailsInFoldersTempCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],

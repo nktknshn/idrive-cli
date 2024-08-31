@@ -1,5 +1,6 @@
 import child_process from 'child_process'
 import { randomUUID } from 'crypto'
+import * as E from 'fp-ts/Either'
 import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Reader'
@@ -7,7 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as S from 'fp-ts/lib/string'
 
 import { DepFetchClient, DepFs } from '../../deps-types'
-import { err, FileNotFoundError } from '../../util/errors'
+import { err } from '../../util/errors'
 import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
 import * as SrteUtils from '../../util/srte-utils'
@@ -43,41 +44,43 @@ export const edit = (
       Path.basename(npath) + '.' + randomUUID().substring(0, 16),
     )
 
+  const doUpload = ({ sizeCheck, hash1, hash2 }: {
+    sizeCheck: E.Either<Error, void>
+    hash1: O.Option<string>
+    hash2: O.Option<string>
+  }): boolean => E.isRight(sizeCheck) && !O.getEq(S.Eq).equals(hash1, hash2)
+
   return pipe(
-    DriveLookup.chainCachedDocwsRoot(root => DriveLookup.getByPath(root, npath)),
+    DriveLookup.getByPathDocwsroot(npath),
     SRTE.bindTo('gbp'),
     SRTE.bind('tempfile', () => SRTE.fromReader(R.asks(tempFile))),
     SRTE.bind('handleResult', handle),
-    SRTE.bind('rm', () => SRTE.asks(({ fs }) => fs.rm)),
+    SRTE.bind('fs', () => SRTE.asks(({ fs }) => fs)),
     SRTE.bindW('hash1', ({ tempfile }) => SRTE.fromReaderTaskEither(calculateFileHashO(tempfile))),
     SRTE.bind('signal', ({ tempfile }) => SRTE.fromTask(spawnVim({ editor, tempfile }))),
-    SRTE.chainFirstW(({ tempfile }) =>
-      SRTE.fromReaderTaskEither<Deps, Error, void, DriveLookup.State>(
-        assertFileSize({ path: tempfile, minimumSize: 1 }),
-      )
+    SRTE.bindW(
+      'sizeCheck',
+      ({ tempfile }) => SrteUtils.fromReaderTask(assertFileSize({ path: tempfile, minimumSize: 1 })),
     ),
     SRTE.bindW('hash2', ({ tempfile }) => SRTE.fromReaderTaskEither(calculateFileHashO(tempfile))),
-    SRTE.chainFirst(({ hash1, hash2 }) =>
-      O.getEq(S.Eq).equals(hash1, hash2)
-        ? SRTE.left(err(`file not changed`))
-        : SRTE.of(constVoid())
-    ),
-    SRTE.chainW(({ tempfile, rm }) =>
+    SRTE.chainW(({ tempfile, fs, sizeCheck, hash1, hash2 }) =>
       pipe(
-        Actions.uploadSingleFile({
-          overwright: true,
-          srcpath: tempfile,
-          dstpath: npath,
-          skipTrash: false,
-        }),
-        SrteUtils.orElseW((e): DriveLookup.Lookup<void, Deps> =>
-          FileNotFoundError.is(e)
-            ? SRTE.left(err('canceled'))
-            : SRTE.of(constVoid())
-        ),
+        doUpload({ sizeCheck, hash1, hash2 })
+          ? Actions.uploadSingleFile({
+            overwright: true,
+            srcpath: tempfile,
+            dstpath: npath,
+            skipTrash: false,
+          })
+          : SRTE.of(constVoid()),
+        // SrteUtils.orElseW((e): DriveLookup.Lookup<void, Deps> =>
+        //   FileNotFoundError.is(e)
+        //     ? SRTE.left(err('canceled'))
+        //     : SRTE.of(constVoid())
+        // ),
         SRTE.chain(() => {
           loggerIO.debug(`removing temp file ${tempfile}`)()
-          return SRTE.fromTaskEither(rm(tempfile))
+          return SRTE.fromTaskEither(fs.rm(tempfile))
         }),
       )
     ),
