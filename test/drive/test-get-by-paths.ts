@@ -62,11 +62,6 @@ describe('getByPaths', () => {
           Cache.cachef(),
           Cache.putDetailss(
             structure.allFolders,
-            // [
-            //   structure.root.details,
-            //   structure.root.byName.Obsidian.details,
-            //   structure.root.byName.Obsidian.byName.my1.details,
-            // ],
           ),
         ),
       }),
@@ -78,10 +73,6 @@ describe('getByPaths', () => {
         ).toStrictEqual(
           structure.r.c.Obsidian.c.my1.c.misc.c.images.d,
         )
-
-        // expect(
-        //   Object.keys(state.cache.byDrivewsid).length,
-        // ).toBe(2)
       }),
       TE.mapLeft((e) => {
         expect(false).toBe(true)
@@ -101,29 +92,13 @@ describe('getByPaths', () => {
           Cache.cachef(),
           Cache.putDetailss(
             structure.allFolders,
-            // [
-            //   structure.root.details,
-            //   structure.root.byName.Obsidian.details,
-            //   structure.root.byName.Obsidian.byName.my1.details,
-            // ],
           ),
         ),
       }),
       TE.map(({ calls, res, state }) => {
-        // L.logger.debug(
-        //   showGetByPathResult(structure.r.c.Obsidian.c.my1.c.misc.c.images.validPath),
-        // )
-
         expect(res).toMatchObject(
-          [
-            structure.r.c.Obsidian.c.my1.c.misc.c.images.validPath,
-            // validPath([]),
-          ],
+          [structure.r.c.Obsidian.c.my1.c.misc.c.images.validPath],
         )
-
-        // expect(
-        //   Object.keys(state.cache.byDrivewsid).length,
-        // ).toBe(2)
       }),
       TE.mapLeft((e) => {
         expect(false).toBe(true)

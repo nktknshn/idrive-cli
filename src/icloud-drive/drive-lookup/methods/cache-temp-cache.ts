@@ -1,6 +1,7 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
+
 import { loggerIO } from '../../../logging/loggerIO'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
@@ -58,7 +59,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
   )
 
 /**
- * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty, the method will retrieve all the details from the api.
+ * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty or inactive, the method will retrieve all the requested details from the api.
  */
 export function retrieveItemDetailsInFoldersTempCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
@@ -120,12 +121,6 @@ export function retrieveItemDetailsInFoldersTempCachedStrict(
 ): Lookup<NEA<Types.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersTempCached(drivewsids),
-    SRTE.chain(res =>
-      pipe(
-        SRTE.fromOption(
-          () => err(`some of the ids was not found`),
-        )(sequenceNArrayO(res)),
-      )
-    ),
+    SRTE.chain(res => SRTE.fromOption(() => err(`some of the ids was not found`))(sequenceNArrayO(res))),
   )
 }

@@ -1,4 +1,5 @@
 import { pipe } from 'fp-ts/lib/function'
+import * as R from 'fp-ts/lib/Record'
 import * as TE from 'fp-ts/TaskEither'
 import { Cache, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/drive-types'
@@ -23,59 +24,54 @@ const structure = fakeicloud(
     ),
   ),
 )
+const run = executeDrive({
+  itemByDrivewsid: structure.itemByDrivewsid,
+  cache: pipe(
+    Cache.cachef(),
+    Cache.putDetails(structure.r.d),
+  ),
+})
+
+const check = (
+  req: DriveLookup.Lookup<
+    NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>
+  >,
+) => {
+  return pipe(
+    run(req),
+    TE.map(({ calls, res, state }) => {
+      expect(res).toEqual(
+        [expect.any(Array), expect.any(Array), expect.any(Array)],
+      )
+
+      expect(calls().total).toBe(4)
+
+      expect(Cache.getAllDetails(state.cache)).toEqual(
+        [expect.anything(), expect.anything(), expect.anything(), expect.anything()],
+      )
+
+      expect(
+        state.tempCache._tag,
+      ).toEqual('None')
+    }),
+    TE.mapLeft((e) => {
+      expect(false).toBe(true)
+    }),
+  )()
+}
 
 describe('usingTempCache', () => {
-  const run = executeDrive({
-    itemByDrivewsid: structure.itemByDrivewsid,
-    cache: pipe(
-      Cache.cachef(),
-      Cache.putDetails(structure.r.d),
-    ),
-  })
-
   const req = DriveLookup.getFoldersTreesByPathsFlattenDocwsroot([
     npath('/test1/test2/'),
     npath('/test1/'),
     npath('/test1/test2/test3/'),
   ])
 
-  const check = (
-    req: DriveLookup.Lookup<
-      NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>
-    >,
-  ) => {
-    return pipe(
-      run(req),
-      TE.map(({ calls, res, state }) => {
-        expect(res).toEqual(
-          [expect.any(Array), expect.any(Array), expect.any(Array)],
-        )
-
-        expect(calls().total).toBe(4)
-
-        expect(Cache.getAllDetails(state.cache)).toEqual(
-          [expect.anything(), expect.anything(), expect.anything(), expect.anything()],
-        )
-
-        expect(
-          state.tempCache._tag,
-        ).toEqual('None')
-      }),
-      TE.mapLeft((e) => {
-        expect(false).toBe(true)
-      }),
-    )()
-  }
-
-  it('nested1', async () => {
-    return pipe(
-      req,
-      DriveLookup.usingTempCache,
-      check,
-    )
+  it('not nested works', async () => {
+    return pipe(req, DriveLookup.usingTempCache, check)
   })
 
-  it('nested2', async () => {
+  it('nesting doesnt change the result 2', async () => {
     return pipe(
       DriveLookup.usingTempCache(req),
       DriveLookup.usingTempCache,
@@ -83,7 +79,7 @@ describe('usingTempCache', () => {
     )
   })
 
-  it('nested3', async () => {
+  it('nesting doesnt change the result 3', async () => {
     return pipe(
       DriveLookup.usingTempCache(req),
       DriveLookup.usingTempCache,
@@ -129,6 +125,37 @@ describe('usingTempCache with getByPath method', () => {
       TE.mapLeft((e) => {
         expect(false).toBe(true)
       }),
+    )()
+  })
+})
+
+describe('missing details are removed from the main cache', () => {
+  it('removes details from the main cache', async () => {
+    const req = pipe(
+      DriveLookup.retrieveItemDetailsInFoldersTempCached([structure.r.c.test1.d.drivewsid]),
+      executeDrive({
+        itemByDrivewsid: pipe(
+          structure.itemByDrivewsid,
+          R.deleteAt(
+            structure.r.c.test1.d.drivewsid,
+          ),
+        ),
+        // run fully cached
+        cache: structure.cache,
+      }),
+      TE.map(({ calls, res, state }) => {
+        expect(res).toEqual([expect.any(Object)])
+        expect(calls().total).toBe(1)
+        expect(Cache.getAllDetails(state.cache).length).toBe(3)
+        // expect(Cache.getAllDetails(state.cache)).toEqual(
+        //   [expect.anything(), expect.anything(), expect.anything()],
+        // )
+        expect(state.tempCache._tag).toEqual('None')
+      }),
+    )
+
+    return pipe(
+      req,
     )()
   })
 })

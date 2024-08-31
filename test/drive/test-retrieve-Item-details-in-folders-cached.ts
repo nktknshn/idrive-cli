@@ -10,7 +10,7 @@ import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 enableDebug(false)
 
 describe('retrieveItemDetailsInFoldersCached', () => {
-  it('works', async () => {
+  it('removes missing items from the main cache', async () => {
     const structure0 = fakeicloud(
       folder({ name: 'folder1' })(
         folder({ name: 'folder2' })(

@@ -100,10 +100,6 @@ describe('getByPaths', () => {
     const req0 = pipe(
       executeDrive({
         itemByDrivewsid: complexStructure0.itemByDrivewsid,
-        // cache: pipe(
-        // C.cachef(),
-        // C.putDetails(complexStructure0.root.details),
-        // ),
       })(
         DriveLookup.getByPathsDocwsroot([
           npath('/Obsidian/my1/misc'),
@@ -136,9 +132,5 @@ describe('getByPaths', () => {
     )
 
     assert((await req0())._tag === 'Right')
-
-    // console.log(
-    //   await req0(),
-    // )
   })
 })
