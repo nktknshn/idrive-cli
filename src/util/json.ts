@@ -20,6 +20,6 @@ export const saveJson = (file: string) =>
     ({ fs }) =>
       pipe(
         TE.fromEither(J.stringify(json)),
-        TE.mapLeft((e) => e instanceof Error ? e : new Error(`error stringifying json: ${e}`)),
+        TE.mapLeft((e) => new Error(`error stringifying json: ${e} ${json}`)),
         TE.chain((content) => fs.writeFile(file, content)),
       )

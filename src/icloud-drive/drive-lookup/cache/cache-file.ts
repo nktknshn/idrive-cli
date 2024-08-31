@@ -2,7 +2,6 @@ import * as E from 'fp-ts/lib/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as R from 'fp-ts/lib/Record'
-import * as TE from 'fp-ts/TaskEither'
 import { DepFs } from '../../../deps-types/dep-fs'
 import { cacheLogger } from '../../../logging/logging'
 import { TypeDecodingError } from '../../../util/errors'
@@ -17,9 +16,9 @@ export const trySaveFile = (
 ) =>
   (cacheFilePath: string): RTE.ReaderTaskEither<DepFs<'writeFile'>, Error, void> => {
     return pipe(
-      TE.fromIO(() => cacheLogger.debug(`saving cache: ${R.keys(cache.byDrivewsid).length} items`)),
-      TE.map(() => cache),
-      saveJson(cacheFilePath),
+      RTE.fromIO(() => cacheLogger.debug(`saving cache: ${R.keys(cache.byDrivewsid).length} items`)),
+      RTE.map(() => cache),
+      RTE.chain(saveJson(cacheFilePath)),
     )
   }
 
