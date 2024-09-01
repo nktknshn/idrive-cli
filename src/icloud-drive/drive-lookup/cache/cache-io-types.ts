@@ -20,27 +20,9 @@ export const cacheEntityFolderDetails = t.type({
   created: tt.DateFromISOString,
 })
 
-export const cacheEntityFolderItem = t.type({
-  type: t.readonly(t.literal('FOLDER')),
-  content: t.readonly(io.itemFolder),
-  created: tt.DateFromISOString,
-})
-
 export const cacheEntityAppLibraryDetails = t.type({
   type: t.readonly(t.literal('APP_LIBRARY')),
   content: t.readonly(io.detailsAppLibrary),
-  created: tt.DateFromISOString,
-})
-
-export const cacheEntityAppLibraryItem = t.type({
-  type: t.readonly(t.literal('APP_LIBRARY')),
-  content: t.readonly(io.itemAppLibrary),
-  created: tt.DateFromISOString,
-})
-
-export const cacheEntityFile = t.type({
-  type: t.readonly(t.literal('FILE')),
-  content: t.readonly(io.itemFile),
   created: tt.DateFromISOString,
 })
 
