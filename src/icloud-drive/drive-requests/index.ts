@@ -4,7 +4,6 @@ export { moveItems, type MoveItemsResponse } from './moveItems'
 export { moveItemsToTrash, type MoveItemToTrashResponse } from './moveItemsToTrash'
 export { renameItems, type RenameResponse } from './rename'
 export { retrieveHierarchy } from './retrieveHierarchy'
-// export { retrieveItemDetails } from './retrieveItemDetails'
 export { retrieveItemDetailsInFolders } from './retrieveItemDetailsInFolders'
 export { putBackItemsFromTrash, retrieveTrashDetails } from './retrieveTrashDetails'
 export {

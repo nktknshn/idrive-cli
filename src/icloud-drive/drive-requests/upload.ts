@@ -2,6 +2,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request'
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
+import { logAPI } from '../../icloud-core/icloud-request/log'
 import { readWebauthToken } from '../../icloud-core/session/session-cookies'
 import { debugTimeSRTE } from '../../logging/debug-time'
 import { apiLoggerIO } from '../../logging/loggerIO'
@@ -114,10 +115,7 @@ export const upload = <S extends AuthenticatedState>(
     type: 'FILE'
   },
 ): AR.ApiRequest<UploadResponse, S> =>
-  flow(
-    runLogging(apiLoggerIO.debug('upload')),
-    debugTimeSRTE('upload'),
-  )(AR.basicJsonRequest(
+  logAPI('upload')(AR.basicJsonRequest(
     ({ state: { accountData, session } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
@@ -144,10 +142,7 @@ export const singleFileUpload = <S extends AuthenticatedState>(
 export const updateDocuments = <S extends AuthenticatedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
 ): AR.ApiRequest<UpdateDocumentsResponse, S> =>
-  flow(
-    runLogging(apiLoggerIO.debug('updateDocuments')),
-    debugTimeSRTE('updateDocuments'),
-  )(AR.basicJsonRequest(
+  logAPI('updateDocuments')(AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,

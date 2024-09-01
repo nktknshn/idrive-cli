@@ -31,7 +31,7 @@ async function main() {
         if (output === undefined) {
           return
         }
-        printer.print(output)
+        printer.print(output, { newline: false })
       }),
   )()
 }

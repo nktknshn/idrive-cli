@@ -4,7 +4,7 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DriveActions, DriveLookup, DriveTree, GetByPath, Types } from '../../../icloud-drive'
-import { showDetailsInfo, showFileInfo } from '../../../icloud-drive/actions/ls/ls-printing'
+import { showDetailsInfo, showFileInfo } from '../../../icloud-drive/drive-actions/ls/ls-printing'
 import { Path } from '../../../util/path'
 
 type Args = {

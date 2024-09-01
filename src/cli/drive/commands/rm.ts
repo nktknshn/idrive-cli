@@ -3,7 +3,8 @@ import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DriveLookup } from '../../../icloud-drive'
 
-import * as Actions from '../../../icloud-drive/actions'
+import * as Actions from '../../../icloud-drive/drive-actions'
+import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 
 export const rm = (
@@ -20,6 +21,7 @@ export const rm = (
 
   return pipe(
     Actions.rm(paths, { skipTrash, force, recursive }),
+    SRTE.chainFirstIOK(({ items }) => printerIO.print(`Removed ${items.length} items`)),
     SRTE.map(constVoid),
   )
 }

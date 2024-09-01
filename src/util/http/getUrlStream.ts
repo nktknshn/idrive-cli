@@ -7,10 +7,8 @@ import { DepFetchClient } from '../../deps-types/dep-fetch-client'
 import { err } from '../errors'
 import { expectResponse, FetchClientEither } from './fetch-client'
 
-const getUrlStream_ = ({ fetchClient }: { fetchClient: FetchClientEither }) =>
-  (
-    { url }: { url: string },
-  ): TE.TaskEither<Error, Readable> => {
+const getUrlStreamTE = ({ fetchClient }: { fetchClient: FetchClientEither }) =>
+  ({ url }: { url: string }): TE.TaskEither<Error, Readable> => {
     return pipe(
       fetchClient({ method: 'GET', url, headers: {}, data: undefined, responseType: 'stream' }),
       expectResponse(
@@ -26,5 +24,5 @@ export const getUrlStream = ({ url }: {
 }): RTE.ReaderTaskEither<DepFetchClient, Error, Readable> =>
   pipe(
     RTE.ask<DepFetchClient>(),
-    RTE.chainTaskEitherK(flow(getUrlStream_, apply({ url }))),
+    RTE.chainTaskEitherK(flow(getUrlStreamTE, apply({ url }))),
   )

@@ -191,17 +191,19 @@ export const removeById = (drivewsid: string): (cache: CT.CacheF) => CT.CacheF =
 export const putDetailss = (
   detailss: T.Details[],
 ): ((cache: CT.CacheF) => CT.CacheF) => {
-  return cache =>
-    pipe(
+  return cache => {
+    cacheLogger.debug(`putDetailss(${detailss.length} items)`)
+    return pipe(
       detailss,
       A.reduce(cache, (c, d) => pipe(c, putDetails(d))),
     )
+  }
 }
 
 export const putDetails = (
   details: T.Details,
 ): ((cache: CT.CacheF) => CT.CacheF) => {
-  cacheLogger.debug(
+  cacheLogger.silly(
     `putting ${details.drivewsid} ${T.fileName(details)} etag: ${
       T.isTrashDetailsG(details) ? 'trash' : details.etag
     } items=[${details.items.map(T.fileName)}]`,
@@ -234,3 +236,13 @@ export function concat(c1: LookupCache, c2?: LookupCache): CT.CacheF | ((c2: Loo
 export const keysCount = (cache: CT.CacheF): number => Object.keys(cache.byDrivewsid).length
 export const keys = (cache: CT.CacheF): string[] => Object.keys(cache.byDrivewsid)
 export const keysString = (cache: CT.CacheF): string => Object.keys(cache.byDrivewsid).join(', ')
+
+export const keysAddRemove = (old: CT.CacheF, newCache: CT.CacheF): { added: string[]; removed: string[] } => {
+  const oldKeys = keys(old)
+  const newKeys = keys(newCache)
+
+  const added = newKeys.filter(k => !oldKeys.includes(k))
+  const removed = oldKeys.filter(k => !newKeys.includes(k))
+
+  return { added, removed }
+}

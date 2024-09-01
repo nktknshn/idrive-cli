@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { DepAuthenticateSession, DepFs } from '../../deps-types'
 import { cacheLogger } from '../../logging/logging'
-import { DriveLookup } from '..'
+import { Cache, DriveLookup } from '..'
 import { loadDriveStateFromFiles, saveDriveStateToFiles } from './state'
 
 type Deps =
@@ -22,11 +22,13 @@ export function persistentDriveState<A, R, Args extends unknown[]>(
       RTE.bindW('result', action(...args)),
       RTE.chainFirst(({ cache: oldCache, result: [, { cache }] }) =>
         RTE.fromIO(
-          () =>
+          () => {
+            const total = Cache.keysCount(cache)
+            const { added, removed } = Cache.keysAddRemove(oldCache, cache)
             cacheLogger.debug(
-              `saving cache: ${Object.keys(cache.byDrivewsid).length} items`
-                + `\n${Object.keys(cache.byDrivewsid).length - Object.keys(oldCache.byDrivewsid).length} new items`,
-            ),
+              `Saving cache: ${total} items. New items: ${added.length}, removed items: ${removed.length}`,
+            )
+          },
         )
       ),
       RTE.chainFirstW(({ result: [, state] }) => saveDriveStateToFiles(state)),

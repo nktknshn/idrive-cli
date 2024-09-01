@@ -9,10 +9,10 @@ export const edit = (
     DriveActions.edit(args),
     SRTE.map(res =>
       res === 'success'
-        ? 'File was saved.'
+        ? 'File was saved.\n'
         : res === 'not-modified'
-        ? 'File was not modified.'
-        : 'Canceled.'
+        ? 'File was not modified.\n'
+        : 'Canceled.\n'
     ),
   )
 }

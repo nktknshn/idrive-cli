@@ -5,6 +5,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Readable } from 'stream'
+import { ensureError } from './errors'
 import { NEA } from './types'
 
 export type ObjectType = object
@@ -83,13 +84,16 @@ export function splitPair(
 }
 
 export function consumeStreamToString(readable: Readable): TE.TaskEither<Error, string> {
-  return TE.fromTask<string, Error>(async () => {
-    let data = ''
-    for await (const chunk of readable) {
-      data += chunk
-    }
-    return data
-  })
+  return TE.tryCatch(
+    async () => {
+      let data = ''
+      for await (const chunk of readable) {
+        data += chunk
+      }
+      return data
+    },
+    ensureError,
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

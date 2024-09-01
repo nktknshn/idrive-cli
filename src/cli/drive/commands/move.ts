@@ -3,7 +3,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DriveLookup } from '../../../icloud-drive'
 import { normalizePath } from '../../../util/normalize-path'
 
-import * as Actions from '../../../icloud-drive/actions'
+import * as Actions from '../../../icloud-drive/drive-actions'
 
 export const move = ({ srcpath, dstpath }: {
   srcpath: string

@@ -1,6 +1,6 @@
 import { DepFetchClient } from '../../../deps-types/dep-fetch-client'
 import { DriveLookup } from '../../../icloud-drive'
-import * as Actions from '../../../icloud-drive/actions'
+import * as Actions from '../../../icloud-drive/drive-actions'
 import { DepApiMethod } from '../../../icloud-drive/drive-api'
 
 type Deps =

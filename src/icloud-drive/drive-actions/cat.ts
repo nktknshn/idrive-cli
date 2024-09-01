@@ -4,11 +4,11 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 
 import { DepFetchClient } from '../../deps-types'
-import { DriveLookup } from '../../icloud-drive'
 import { err } from '../../util/errors'
 import { getUrlStream } from '../../util/http/getUrlStream'
 import { normalizePath } from '../../util/normalize-path'
 import { consumeStreamToString } from '../../util/util'
+import { DriveLookup } from '..'
 import { DepApiMethod, DriveApiMethods } from '../drive-api'
 import { isFile } from '../drive-types'
 

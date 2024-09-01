@@ -5,6 +5,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { loggerIO } from '../../../logging/loggerIO'
+import { SrteUtils } from '../../../util'
 import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import * as T from '../../drive-types'
@@ -31,8 +32,6 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
     const doGoDeeper = depth > 0 && subfolders.length > 0
     const depthExceed = subfolders.length > 0 && depth == 0
 
-    loggerIO.debug(`getFoldersTrees(${folders.map(_ => _.drivewsid)}, ${depth})`)()
-
     return pipe(
       A.isNonEmpty(subfolders) && doGoDeeper
         ? pipe(
@@ -57,6 +56,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
           SRTE.map(
             NA.map(([parent, children]) => deepFolder(parent, children)),
           ),
+          SrteUtils.runLogging(loggerIO.debug(`getFoldersTrees(${folders.map(_ => _.drivewsid)}, ${depth})`)),
         )
         : depthExceed
         ? SRTE.of(pipe(folders, NA.map(shallowFolder)))

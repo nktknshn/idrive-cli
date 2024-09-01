@@ -6,7 +6,7 @@ import * as Ord from 'fp-ts/lib/Ord'
 import { not } from 'fp-ts/lib/Refinement'
 import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
-import { Types } from '../../'
+import { Types } from '../..'
 
 export const drawFileTree = (tree: TR.Tree<Types.HasName | Types.DetailsTrashRoot>): string => {
   return pipe(

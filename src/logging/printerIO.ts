@@ -21,8 +21,8 @@ export const printerIO = {
 
 /** Prints to the console */
 export const printer = {
-  print: <T>(value: T): void => {
-    console.log(value)
+  print: <T>(value: T, { newline = true }: { newline?: boolean } = {}): void => {
+    process.stdout.write(value + (newline ? '\n' : ''))
   },
   error: (value: Error | string): void => {
     console.error(value)

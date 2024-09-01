@@ -7,6 +7,6 @@ export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 export * from './methods/get-roots'
 
-export * as DriveActions from '../actions'
+export * as DriveActions from '../drive-actions'
 export * from './drive-lookup'
 export * from './methods/cache-temp-cache'

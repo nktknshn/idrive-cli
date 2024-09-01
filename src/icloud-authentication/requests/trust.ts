@@ -2,13 +2,13 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as AR from '../../icloud-core/icloud-request'
+
+import { logAPI } from '../../icloud-core/icloud-request/log'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
 import { sessionLens } from '../../icloud-core/session/session-type'
-import { apiLoggerIO } from '../../logging/loggerIO'
 import { logger } from '../../logging/logging'
 import { err } from '../../util/errors'
-import { runLogging } from '../../util/srte-utils'
 import { applyAuthenticationResponse } from './authentication-session'
 import { authenticationHeaders, getTrustToken } from './headers'
 
@@ -39,6 +39,6 @@ export const requestTrustDevice = <S extends AR.BaseState>(): AR.ApiRequest<Trus
         )
       ),
     )),
-    runLogging(apiLoggerIO.debug('requestTrustDevice')),
+    logAPI('requestTrustDevice'),
   )
 }

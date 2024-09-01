@@ -4,12 +4,11 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as RA from 'fp-ts/lib/ReadonlyArray'
 import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request'
+
 import { AuthenticatedState } from '../../icloud-core/icloud-request'
-import { debugTimeSRTE } from '../../logging/debug-time'
-import { apiLoggerIO } from '../../logging/loggerIO'
+import { logAPI } from '../../icloud-core/icloud-request/log'
 import { HttpRequest } from '../../util/http/fetch-client'
 import * as iot from '../../util/io-nonEmptyArrays'
-import { runLogging } from '../../util/srte-utils'
 import { NEA } from '../../util/types'
 import { Details, DriveDetailsWithHierarchy, InvalidId, MaybeInvalidId } from '../drive-types'
 import { driveDetails, driveDetailsWithHierarchyPartial, invalidIdItem } from '../drive-types/types-io'
@@ -60,7 +59,6 @@ export function retrieveItemDetailsInFolders<S extends AuthenticatedState>(
     AR.handleResponse(AR.basicJsonResponse(
       iot.nonEmptyArray(t.union([driveDetails, invalidIdItem])).decode,
     )),
-    runLogging(apiLoggerIO.debug('retrieveItemDetailsInFolders')),
-    debugTimeSRTE('retrieveItemDetailsInFolders'),
+    logAPI('retrieveItemDetailsInFolders'),
   )
 }

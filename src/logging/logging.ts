@@ -108,6 +108,7 @@ export const cacheLogger = winston.createLogger({
     }),
     plain('cache', chalk.greenBright),
   ),
+  transports: [loggingLevels.infoToStderr],
 })
 
 const httpfilelogger = winston.createLogger({

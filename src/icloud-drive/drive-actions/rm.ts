@@ -28,9 +28,7 @@ export const rm = (
   return pipe(
     DriveLookup.searchGlobs(globs, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
-    SRTE.map(
-      A.filter(guardProp('item', isNotRootDetails)),
-    ),
+    SRTE.map(A.filter(guardProp('item', isNotRootDetails))),
     SRTE.chainW((items) =>
       A.isNonEmpty(items)
         ? _rm({ items, trash: !skipTrash, force })
@@ -52,14 +50,8 @@ const _rm = (
         items: items.map(a => a.item),
         trash,
       }),
-      SRTE.chainW(
-        resp =>
-          pipe(
-            DriveLookup.removeByIdsFromCache(
-              resp.items.map(_ => _.drivewsid),
-            ),
-            SRTE.map(() => resp),
-          ),
+      SRTE.chainFirstW(
+        resp => DriveLookup.removeByIdsFromCache(resp.items.map(_ => _.drivewsid)),
       ),
     )
 

@@ -85,9 +85,9 @@ export function retrieveItemDetailsInFoldersTempCached(
   return chainState(prevstate =>
     pipe(
       loggerIO.debug(
-        `retrieveItemDetailsInFoldersTempCached. Main cache: ${Cache.keysString(prevstate.cache)}, temp cache: ${
-          prevstate.tempCache._tag === 'None' ? 'empty' : Cache.keysString(prevstate.tempCache.value)
-        }`,
+        `retrieveItemDetailsInFoldersTempCached. Main cache: ${Cache.keysCount(prevstate.cache)} items, temp cache: ${
+          prevstate.tempCache._tag === 'None' ? 'empty' : Cache.keysCount(prevstate.tempCache.value)
+        } items`,
       ),
       SRTE.fromIO,
       SRTE.chain(() => retrieveItemDetailsInFoldersCached(drivewsids)),

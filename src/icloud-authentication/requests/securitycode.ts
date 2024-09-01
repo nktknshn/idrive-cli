@@ -1,17 +1,15 @@
-import { constant, flow, pipe } from 'fp-ts/lib/function'
+import { constVoid, flow, pipe } from 'fp-ts/lib/function'
 import * as AR from '../../icloud-core/icloud-request'
+
+import { logAPI } from '../../icloud-core/icloud-request/log'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
-import { apiLoggerIO } from '../../logging/loggerIO'
-import { runLogging } from '../../util/srte-utils'
-import { EmptyObject } from '../../util/types'
 import { applyAuthenticationResponse } from './authentication-session'
 import { authenticationHeaders } from './headers'
 
-/** */
 export const requestSecurityCode = <S extends AR.BaseState>(
   code: number,
-): AR.ApiRequest<EmptyObject, S> => {
+): AR.ApiRequest<void, S> => {
   return pipe(
     AR.buildRequest<S>(() => ({
       method: 'POST',
@@ -31,7 +29,7 @@ export const requestSecurityCode = <S extends AR.BaseState>(
         )
       ),
     )),
-    AR.map(constant({})),
-    runLogging(apiLoggerIO.debug('requestSecurityCode')),
+    AR.map(constVoid),
+    logAPI('requestSecurityCode'),
   )
 }

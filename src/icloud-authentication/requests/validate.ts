@@ -4,10 +4,10 @@ import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request'
+
+import { logAPI } from '../../icloud-core/icloud-request/log'
 import { ICloudSessionWithSessionToken } from '../../icloud-core/session/session-type'
-import { apiLoggerIO } from '../../logging/loggerIO'
 import { InvalidGlobalSessionError } from '../../util/errors'
-import { runLogging } from '../../util/srte-utils'
 import { type AccountData } from '../type-accountdata'
 
 const decode = (v: unknown) => t.type({ dsInfo: t.unknown }).decode(v) as t.Validation<AccountData>
@@ -32,6 +32,6 @@ export function validateSession(): AR.ApiRequest<O.Option<AccountData>, {
         ? AR.of(O.none)
         : SRTE.left(e)
     ),
-    runLogging(apiLoggerIO.debug('validateSession')),
+    logAPI('validateSession'),
   )
 }

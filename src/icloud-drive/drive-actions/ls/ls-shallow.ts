@@ -6,7 +6,7 @@ import micromatch from 'micromatch'
 import { err } from '../../../util/errors'
 import { normalizePath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
-import { DriveLookup, Types } from '../../'
+import { DriveLookup, Types } from '../..'
 import { findInParentGlob } from '../../util/drive-helpers'
 import * as GetByPath from '../../util/get-by-path-types'
 

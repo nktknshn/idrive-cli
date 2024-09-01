@@ -2,24 +2,11 @@ import * as A from 'fp-ts/Array'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { DriveLookup } from '../../../icloud-drive'
 
-import * as Actions from '../../../icloud-drive/actions'
+import * as Actions from '../../../icloud-drive/drive-actions'
 import { err } from '../../../util/errors'
 
 export type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>)
 
-/*
-
-`upload ~/Documents/note1.md /Obsidian/my1/notes/`
-
-`upload ~/Documents/note1.md /Obsidian/my1/notes/note.md`
-
-`upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /Obsidian/my1/notes/`
-
-`upload -R ~/Documents/ /Obsidian/my1/notes/`
-
-`upload -R '~/Documents/** /*.md' /Obsidian/my1/notes/`
-
-*/
 export const upload = (
   args: {
     uploadargs: string[]

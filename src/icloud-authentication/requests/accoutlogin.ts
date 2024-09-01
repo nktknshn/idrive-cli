@@ -1,12 +1,12 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+
 import * as t from 'io-ts'
 import { countryCode } from '../../defaults'
 import * as AR from '../../icloud-core/icloud-request'
-import { apiLoggerIO } from '../../logging/loggerIO'
+import { logAPI } from '../../icloud-core/icloud-request/log'
 import { err } from '../../util/errors'
-import { runLogging } from '../../util/srte-utils'
 import { type AccountData } from '../type-accountdata'
 
 export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S> {
@@ -41,6 +41,6 @@ export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<Acco
         )),
       )
     ),
-    runLogging(apiLoggerIO.debug('requestAccoutLogin')),
+    logAPI('requestAccoutLogin'),
   )
 }

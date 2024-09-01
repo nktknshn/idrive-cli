@@ -1,4 +1,4 @@
-export * as DriveActions from './actions'
+export * as DriveActions from './drive-actions'
 export * as DriveLookup from './drive-lookup'
 /** Cache structure */
 export * as Cache from './drive-lookup/cache'

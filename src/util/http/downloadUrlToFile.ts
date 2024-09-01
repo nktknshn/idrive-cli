@@ -15,22 +15,20 @@ export type DownloadUrlToFile<R> = (
   destpath: string,
 ) => RTE.ReaderTaskEither<R, Error, void>
 
-export const downloadUrlToFile: DownloadUrlToFile<DepFetchClient & DepFs<'createWriteStream'>> = (
+type Deps = DepFetchClient & DepFs<'createWriteStream'>
+
+export const downloadUrlToFile: DownloadUrlToFile<Deps> = (
   url: string,
   destpath: string,
-): RTE.ReaderTaskEither<
-  DepFetchClient & DepFs<'createWriteStream'>,
-  Error,
-  void
-> =>
+): RTE.ReaderTaskEither<Deps, Error, void> =>
   pipe(
     loggerIO.debug(`getting ${destpath}`),
     RTE.fromIO,
     RTE.chain(() => getUrlStream({ url })),
-    RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
-    RTE.chainFirstIOK(() => printerIO.print(`writing ${destpath}`)),
+    RTE.orElseFirst((err) => RTE.fromIO(loggerIO.error(`${err}`))),
+    RTE.chainFirstIOK(() => loggerIO.debug(`writing ${destpath}`)),
     RTE.chainW(writeFileFromReadable(destpath)),
-    RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`[-] ${err}`))),
+    RTE.orElseFirst((err) => RTE.fromIO(printerIO.print(`${err}`))),
   )
 
 export type DownloadFileResult = [
@@ -40,10 +38,7 @@ export type DownloadFileResult = [
 
 export const downloadUrlsPar = (
   urlDest: Array<readonly [url: string, localpath: string]>,
-): RT.ReaderTask<
-  DepFetchClient & DepFs<'createWriteStream'>,
-  DownloadFileResult[]
-> => {
+): RT.ReaderTask<Deps, DownloadFileResult[]> => {
   return pipe(
     urlDest,
     A.map(([u, d]) => downloadUrlToFile(u, d)),

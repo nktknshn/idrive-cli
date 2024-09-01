@@ -17,8 +17,8 @@ import { DepApiMethod, DriveApiMethods } from '../drive-api'
 
 import { loggerIO } from '../../logging/loggerIO'
 import { assertFileSize, FsError } from '../../util/fs'
-import { AssetFileSizeError, FileSizeError } from '../../util/fs/check'
 import { calculateFileHashO } from '../../util/fs/file-hash'
+import { AssetFileSizeError, FileSizeError } from '../../util/fs/size-check'
 import { downloadUrlToFile } from '../../util/http/downloadUrlToFile'
 import * as Actions from '.'
 
@@ -57,6 +57,7 @@ export const edit = (
       if (FileNotFoundError.is(sizeCheck.left)) {
         return E.right('canceled')
       }
+
       // file is empty
       if (FileSizeError.is(sizeCheck.left)) {
         return E.right('canceled')
