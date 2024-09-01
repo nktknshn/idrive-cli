@@ -3,6 +3,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepFs } from '../../deps-types/dep-fs'
 import { FileInvalidError, FileNotFoundError } from '../errors'
+import { FsError } from '.'
 import { isEnoentError } from './is-enoent-error'
 
 type Deps = DepFs<'fstat'>
@@ -22,23 +23,25 @@ export class FileSizeError extends Error {
   }
 }
 
+export type AssetFileSizeError = FileNotFoundError | FileInvalidError | FileSizeError | FsError
+
 export const assertFileSize = (
   { path, minimumSize, maximumSize = Infinity }: {
     path: string
     minimumSize: number
     maximumSize?: number
   },
-): RTE.ReaderTaskEither<Deps, Error, void> =>
+): RTE.ReaderTaskEither<Deps, AssetFileSizeError, void> =>
   ({ fs }) =>
     pipe(
       fs.fstat(path),
       TE.mapLeft(e => isEnoentError(e) ? FileNotFoundError.create(path) : e),
-      TE.chain(a =>
+      TE.chainW((a) =>
         a.isFile()
           ? TE.right(a)
           : TE.left(FileInvalidError.create(path))
       ),
-      TE.chain(a =>
+      TE.chainW(a =>
         a.size >= minimumSize && a.size <= maximumSize
           ? TE.right(constVoid())
           : TE.left(FileSizeError.create(`File size ${a.size} is not in range [${minimumSize}, ${maximumSize}].`))

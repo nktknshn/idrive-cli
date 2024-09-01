@@ -45,7 +45,7 @@ export const createCliCommandsDeps = (args: {
     hookPesistState: pipe(
       DriveLookup.getState(),
       SRTE.chainFirstIOK(
-        ({ cache }) => loggerIO.debug(`saving cache. ${Cache.keysCount(cache)} keys`),
+        ({ cache }) => loggerIO.debug(`Saving state. Cache has ${Cache.keysCount(cache)} keys`),
       ),
       SRTE.chainTaskEitherK(cache =>
         saveDriveStateToFiles(cache)({

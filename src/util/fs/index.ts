@@ -1,5 +1,5 @@
 import * as TE from 'fp-ts/TaskEither'
-import { Dir, MakeDirectoryOptions, Mode, PathLike } from 'fs'
+import { Dir, MakeDirectoryOptions, Mode, PathLike, RmOptions } from 'fs'
 import { createReadStream, createWriteStream } from 'fs'
 import * as fs from 'fs/promises'
 import { err } from '../errors'
@@ -39,7 +39,7 @@ export type FsStats = {
 }
 
 export type FsType = {
-  fstat: (path: string) => TE.TaskEither<Error, FsStats>
+  fstat: (path: string) => TE.TaskEither<FsError, FsStats>
   opendir: (path: string) => TE.TaskEither<Error, Dir>
   writeFile: (path: string, data: string) => TE.TaskEither<Error, void>
   mkdir: (
@@ -49,7 +49,7 @@ export type FsType = {
   readFile: (path: PathLike) => TE.TaskEither<Error, Buffer>
   createWriteStream: typeof createWriteStream
   createReadStream: typeof createReadStream
-  rm: (path: string) => TE.TaskEither<Error, void>
+  rm: (path: string, options?: RmOptions) => TE.TaskEither<Error, void>
 }
 
 export const opendir = (path: string): TE.TaskEither<Error, Dir> =>
@@ -58,10 +58,10 @@ export const opendir = (path: string): TE.TaskEither<Error, Dir> =>
     reason => err(`cant open dir ${reason}`),
   )
 
-export const fstat = (path: string): TE.TaskEither<Error, import('fs').Stats> =>
+export const fstat = (path: string): TE.TaskEither<FsError, import('fs').Stats> =>
   TE.tryCatch(
     () => fs.stat(path),
-    (e) => isErrorWithCode(e) ? FsError.fromError(e, 'fs.fstat') : err(`fs.fstat: ${e}`),
+    (e) => isErrorWithCode(e) ? FsError.fromError(e, 'fs.fstat') : new FsError(`fs.fstat: ${e}`),
   )
 
 export const mkdir = TE.tryCatchK(
@@ -74,15 +74,15 @@ export const writeFile = TE.tryCatchK(
   (e) => e instanceof Error ? e : err(`error fs.writeFile: ${e}`),
 )
 
-export const readFile = (path: PathLike): TE.TaskEither<Error, Buffer> =>
+export const readFile = (path: PathLike): TE.TaskEither<FsError, Buffer> =>
   TE.tryCatch(
     () => fs.readFile(path),
-    (e) => isErrorWithCode(e) ? FsError.fromError(e, 'fs.readFile') : err(`fs.readFile: ${e}`),
+    (e) => isErrorWithCode(e) ? FsError.fromError(e, 'fs.readFile') : new FsError(`fs.readFile: ${e}`),
   )
 
-export const rm = (path: string): TE.TaskEither<Error, void> =>
+export const rm = (path: string, options?: RmOptions): TE.TaskEither<Error, void> =>
   TE.tryCatch(
-    () => fs.rm(path),
+    () => fs.rm(path, options),
     (e) => e instanceof Error ? e : err(`error fs.rm: ${e}`),
   )
 

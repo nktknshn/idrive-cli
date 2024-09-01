@@ -8,7 +8,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as S from 'fp-ts/lib/string'
 
 import { DepFetchClient, DepFs } from '../../deps-types'
-import { err } from '../../util/errors'
+import { err, FileInvalidError, FileNotFoundError } from '../../util/errors'
 import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
 import * as SrteUtils from '../../util/srte-utils'
@@ -16,7 +16,8 @@ import { DriveLookup, GetByPath, Types } from '..'
 import { DepApiMethod, DriveApiMethods } from '../drive-api'
 
 import { loggerIO } from '../../logging/loggerIO'
-import { assertFileSize } from '../../util/fs'
+import { assertFileSize, FsError } from '../../util/fs'
+import { AssetFileSizeError, FileSizeError } from '../../util/fs/check'
 import { calculateFileHashO } from '../../util/fs/file-hash'
 import { downloadUrlToFile } from '../../util/http/downloadUrlToFile'
 import * as Actions from '.'
@@ -33,9 +34,11 @@ export type Deps =
 
 // TODO add Editor interface
 
+type Result = 'canceled' | 'success' | 'not-modified'
+
 export const edit = (
   { path, editor }: { path: string; editor: string },
-): DriveLookup.Lookup<void, Deps> => {
+): DriveLookup.Lookup<Result, Deps> => {
   const npath = pipe(path, normalizePath)
 
   const tempFile = ({ tempdir }: Deps) =>
@@ -45,10 +48,31 @@ export const edit = (
     )
 
   const doUpload = ({ sizeCheck, hash1, hash2 }: {
-    sizeCheck: E.Either<Error, void>
+    sizeCheck: E.Either<AssetFileSizeError, void>
     hash1: O.Option<string>
     hash2: O.Option<string>
-  }): boolean => E.isRight(sizeCheck) && !O.getEq(S.Eq).equals(hash1, hash2)
+  }): E.Either<FsError | FileInvalidError, Result> => {
+    if (E.isLeft(sizeCheck) && sizeCheck.left) {
+      // new file was not saved
+      if (FileNotFoundError.is(sizeCheck.left)) {
+        return E.right('canceled')
+      }
+      // file is empty
+      if (FileSizeError.is(sizeCheck.left)) {
+        return E.right('canceled')
+      }
+
+      // other error
+      return E.left(sizeCheck.left)
+    }
+
+    // file is not modified
+    if (O.getEq(S.Eq).equals(hash1, hash2)) {
+      return E.right('not-modified')
+    }
+
+    return E.right('success')
+  }
 
   return pipe(
     DriveLookup.getByPathDocwsroot(npath),
@@ -63,9 +87,10 @@ export const edit = (
       ({ tempfile }) => SrteUtils.fromReaderTask(assertFileSize({ path: tempfile, minimumSize: 1 })),
     ),
     SRTE.bindW('hash2', ({ tempfile }) => SRTE.fromReaderTaskEither(calculateFileHashO(tempfile))),
-    SRTE.chainW(({ tempfile, fs, sizeCheck, hash1, hash2 }) =>
+    SRTE.bindW('checks', (a) => SRTE.fromEither(doUpload(a))),
+    SRTE.chainW(({ tempfile, fs, checks }) =>
       pipe(
-        doUpload({ sizeCheck, hash1, hash2 })
+        checks === 'success'
           ? Actions.uploadSingleFile({
             overwright: true,
             srcpath: tempfile,
@@ -73,14 +98,10 @@ export const edit = (
             skipTrash: false,
           })
           : SRTE.of(constVoid()),
-        // SrteUtils.orElseW((e): DriveLookup.Lookup<void, Deps> =>
-        //   FileNotFoundError.is(e)
-        //     ? SRTE.left(err('canceled'))
-        //     : SRTE.of(constVoid())
-        // ),
-        SRTE.chain(() => {
+        SRTE.map(() => checks),
+        SRTE.chainFirst(() => {
           loggerIO.debug(`removing temp file ${tempfile}`)()
-          return SRTE.fromTaskEither(fs.rm(tempfile))
+          return SRTE.fromTaskEither(fs.rm(tempfile, { force: true }))
         }),
       )
     ),
