@@ -5,8 +5,10 @@ import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
 import { sessionLens } from '../../icloud-core/session/session-type'
+import { apiLoggerIO } from '../../logging/loggerIO'
 import { logger } from '../../logging/logging'
 import { err } from '../../util/errors'
+import { runLogging } from '../../util/srte-utils'
 import { applyAuthenticationResponse } from './authentication-session'
 import { authenticationHeaders, getTrustToken } from './headers'
 
@@ -37,5 +39,6 @@ export const requestTrustDevice = <S extends AR.BaseState>(): AR.ApiRequest<Trus
         )
       ),
     )),
+    runLogging(apiLoggerIO.debug('requestTrustDevice')),
   )
 }

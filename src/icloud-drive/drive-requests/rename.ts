@@ -1,7 +1,10 @@
+import { flow } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
+import { apiLoggerIO } from '../../logging/loggerIO'
+import { runLogging } from '../../util/srte-utils'
 import { childrenItem } from '../drive-types/types-io'
 
 const renameResponse = t.type({ items: t.array(childrenItem) })
@@ -14,7 +17,10 @@ export const renameItems = <S extends AuthenticatedState>(
     items: { drivewsid: string; etag: string; name: string; extension?: string }[]
   },
 ): AR.ApiRequest<RenameResponse, S> =>
-  debugTimeSRTE('renameItems')(
+  flow(
+    runLogging(apiLoggerIO.debug('renameItems')),
+    debugTimeSRTE('renameItems'),
+  )(
     AR.basicJsonRequest(
       ({ state: { accountData } }) => ({
         method: 'POST',

@@ -1,30 +1,11 @@
 import * as winston from 'winston'
-import { logger } from './logging'
+import { apiLogger, logger, timeLogger } from './logging'
 
 export type LoggerIO = {
   debug: (msg: string) => () => void
   error: (msg: string) => () => void
   info: (msg: string) => () => void
   warn: (msg: string) => () => void
-}
-
-export const loggerIO = {
-  debug: (msg: string) =>
-    (): void => {
-      logger.debug(msg)
-    },
-  error: (msg: string) =>
-    (): void => {
-      logger.error(msg)
-    },
-  info: (msg: string) =>
-    (): void => {
-      logger.info(msg)
-    },
-  warn: (msg: string) =>
-    (): void => {
-      logger.warn(msg)
-    },
 }
 
 export const fromWinston = (w: winston.Logger): LoggerIO => {
@@ -35,3 +16,7 @@ export const fromWinston = (w: winston.Logger): LoggerIO => {
     warn: (msg: string) => () => w.warn(msg),
   }
 }
+
+export const loggerIO = fromWinston(logger)
+export const apiLoggerIO = fromWinston(apiLogger)
+export const timeLoggerIO = fromWinston(timeLogger)

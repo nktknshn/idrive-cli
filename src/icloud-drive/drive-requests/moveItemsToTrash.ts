@@ -1,7 +1,10 @@
+import { flow } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
+import { apiLoggerIO } from '../../logging/loggerIO'
+import { runLogging } from '../../util/srte-utils'
 
 export interface MoveItemToTrashResponse {
   items: { drivewsid: string }[]
@@ -11,7 +14,10 @@ export const moveItemsToTrash = <S extends AuthenticatedState>({ items, trash = 
   items: { drivewsid: string; etag: string }[]
   trash?: boolean
 }): AR.ApiRequest<MoveItemToTrashResponse, S> =>
-  debugTimeSRTE('moveItemsToTrash')(
+  flow(
+    debugTimeSRTE('moveItemsToTrash'),
+    runLogging(apiLoggerIO.debug('moveItemsToTrash')),
+  )(
     AR.basicJsonRequest(
       ({ state: { accountData } }) => ({
         method: 'POST',
@@ -30,6 +36,8 @@ export const moveItemsToTrash = <S extends AuthenticatedState>({ items, trash = 
         },
       }),
       v =>
-        t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<MoveItemToTrashResponse>,
+        t.type({ items: t.array(t.type({ drivewsid: t.string })) }).decode(v) as t.Validation<
+          MoveItemToTrashResponse
+        >,
     ),
   )

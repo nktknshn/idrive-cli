@@ -2,6 +2,8 @@ import { constant, flow, pipe } from 'fp-ts/lib/function'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
+import { apiLoggerIO } from '../../logging/loggerIO'
+import { runLogging } from '../../util/srte-utils'
 import { EmptyObject } from '../../util/types'
 import { applyAuthenticationResponse } from './authentication-session'
 import { authenticationHeaders } from './headers'
@@ -30,5 +32,6 @@ export const requestSecurityCode = <S extends AR.BaseState>(
       ),
     )),
     AR.map(constant({})),
+    runLogging(apiLoggerIO.debug('requestSecurityCode')),
   )
 }

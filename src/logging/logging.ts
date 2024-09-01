@@ -1,7 +1,6 @@
 import chalk from 'chalk'
 import * as winston from 'winston'
 import { isObjectWithOwnProperty } from '../util/util'
-import { fromWinston } from './loggerIO'
 const { combine, prettyPrint, json } = winston.format
 
 export const loggingLevels = {
@@ -66,8 +65,6 @@ export const timeLogger = winston.createLogger({
   ),
   transports: [loggingLevels.infoToStderr],
 })
-
-export const timeLoggerIO = fromWinston(timeLogger)
 
 export const authLogger = winston.createLogger({
   level: 'debug',

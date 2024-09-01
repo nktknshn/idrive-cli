@@ -1,9 +1,12 @@
-import { pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
-import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
+import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import { readWebauthToken } from '../../icloud-core/session/session-cookies'
+import { debugTimeSRTE } from '../../logging/debug-time'
+import { apiLoggerIO } from '../../logging/loggerIO'
 import { HttpRequest, uploadFileRequest } from '../../util/http/fetch-client'
+import { runLogging } from '../../util/srte-utils'
 
 export type UpdateDocumentsRequest = {
   allow_conflict: boolean
@@ -111,7 +114,10 @@ export const upload = <S extends AuthenticatedState>(
     type: 'FILE'
   },
 ): AR.ApiRequest<UploadResponse, S> =>
-  AR.basicJsonRequest(
+  flow(
+    runLogging(apiLoggerIO.debug('upload')),
+    debugTimeSRTE('upload'),
+  )(AR.basicJsonRequest(
     ({ state: { accountData, session } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
@@ -120,7 +126,7 @@ export const upload = <S extends AuthenticatedState>(
       options: { addClientInfo: true, data: { filename, content_type: contentType, size, type } },
     }),
     uploadResponse.decode,
-  )
+  ))
 
 export const singleFileUpload = <S extends AuthenticatedState>(
   { buffer, url, filename }: { buffer: Buffer; url: string; filename: string },
@@ -130,17 +136,22 @@ export const singleFileUpload = <S extends AuthenticatedState>(
     AR.handleResponse<SingleFileResponse, S, AR.RequestDeps>(
       AR.basicJsonResponse(singleFileResponse.decode),
     ),
+    runLogging(apiLoggerIO.debug('singleFileUpload')),
+    debugTimeSRTE('singleFileUpload'),
   )
 }
 
 export const updateDocuments = <S extends AuthenticatedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
 ): AR.ApiRequest<UpdateDocumentsResponse, S> =>
-  AR.basicJsonRequest(
+  flow(
+    runLogging(apiLoggerIO.debug('updateDocuments')),
+    debugTimeSRTE('updateDocuments'),
+  )(AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
       method: 'POST',
       url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
       options: { addClientInfo: true, data },
     }),
     updateDocumentsResponse.decode,
-  )
+  ))

@@ -4,13 +4,12 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as t from 'io-ts'
 import { countryCode } from '../../defaults'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
-import { logger } from '../../logging/logging'
+import { apiLoggerIO } from '../../logging/loggerIO'
 import { err } from '../../util/errors'
+import { runLogging } from '../../util/srte-utils'
 import { type AccountData } from '../type-accountdata'
 
 export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<AccountData, S> {
-  logger.debug('requestAccoutLogin')
-
   return pipe(
     AR.readStateAndDeps<S>(),
     SRTE.chainW(({ state }) => SRTE.fromOption(() => err(`session missing sessionToken`))(state.session.sessionToken)),
@@ -42,5 +41,6 @@ export function requestAccoutLogin<S extends AR.BaseState>(): AR.ApiRequest<Acco
         )),
       )
     ),
+    runLogging(apiLoggerIO.debug('requestAccoutLogin')),
   )
 }

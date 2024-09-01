@@ -1,6 +1,9 @@
+import { flow } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request'
 import { debugTimeSRTE } from '../../logging/debug-time'
+import { apiLoggerIO } from '../../logging/loggerIO'
+import { runLogging } from '../../util/srte-utils'
 
 export interface DownloadResponseBody {
   document_id: string
@@ -28,7 +31,10 @@ export function download<S extends AR.AuthenticatedState>(
     zone: string
   },
 ): AR.ApiRequest<DownloadResponseBody, S> {
-  return debugTimeSRTE('download')(
+  return flow(
+    runLogging(apiLoggerIO.debug('download')),
+    debugTimeSRTE('download'),
+  )(
     AR.basicJsonRequest(
       ({ state: { accountData } }) => ({
         method: 'GET',
@@ -44,7 +50,10 @@ export function download<S extends AR.AuthenticatedState>(
 export function downloadBatch<S extends AR.AuthenticatedState>(
   { docwsids, zone }: { docwsids: string[]; zone: string },
 ): AR.ApiRequest<DownloadResponseBody[], S, AR.RequestDeps> {
-  return debugTimeSRTE('downloadBatch')(
+  return flow(
+    runLogging(apiLoggerIO.debug('downloadBatch')),
+    debugTimeSRTE('downloadBatch'),
+  )(
     AR.basicJsonRequest(
       ({ state: { accountData } }) => ({
         method: 'POST',

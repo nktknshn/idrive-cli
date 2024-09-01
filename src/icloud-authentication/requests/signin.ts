@@ -6,9 +6,11 @@ import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
+import { apiLoggerIO } from '../../logging/loggerIO'
 import { err, UnexpectedResponse } from '../../util/errors'
 import { HttpResponse } from '../../util/http/fetch-client'
 import { getHeader } from '../../util/http/http-headers'
+import { runLogging } from '../../util/srte-utils'
 import { arrayFromOption } from '../../util/util'
 import { applyAuthenticationResponse } from './authentication-session'
 import { authenticationHeaders } from './headers'
@@ -101,5 +103,6 @@ export const requestSignIn = <S extends AR.BaseState>(): AR.ApiRequest<SignInRes
       ),
       AR.chain(_ => AR.fromEither(getResponse(_.httpResponse, _.decoded))),
     )),
+    runLogging(apiLoggerIO.debug('requestSignIn')),
   )
 }

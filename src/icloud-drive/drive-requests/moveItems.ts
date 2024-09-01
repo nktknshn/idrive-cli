@@ -1,6 +1,9 @@
+import { flow } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as AR from '../../icloud-core/icloud-request'
 import { debugTimeSRTE } from '../../logging/debug-time'
+import { apiLoggerIO } from '../../logging/loggerIO'
+import { runLogging } from '../../util/srte-utils'
 import { childrenItem } from '../drive-types/types-io'
 
 const moveItemResponse = t.type({
@@ -17,7 +20,10 @@ export const moveItems = <S extends AR.AuthenticatedState>({ items, destinationD
   destinationDrivewsId: string
   items: { drivewsid: string; etag: string }[]
 }): AR.ApiRequest<MoveItemsResponse, S, AR.RequestDeps> =>
-  debugTimeSRTE('moveItems')(
+  flow(
+    runLogging(apiLoggerIO.debug('moveItems')),
+    debugTimeSRTE('moveItems'),
+  )(
     AR.basicJsonRequest(
       ({ state: { accountData } }) => ({
         method: 'POST',

@@ -4,6 +4,8 @@ import * as t from 'io-ts'
 import { AuthenticatedState } from '../../icloud-core/icloud-request/lib/request'
 import * as AR from '../../icloud-core/icloud-request/lib/request'
 import { debugTimeSRTE } from '../../logging/debug-time'
+import { apiLoggerIO } from '../../logging/loggerIO'
+import { runLogging } from '../../util/srte-utils'
 import { DetailsTrashRoot, DriveChildrenItem } from '../drive-types'
 import { detailsItem, detailsTrash } from '../drive-types/types-io'
 import { getRetrieveItemDetailsInFoldersHttpRequest } from './retrieveItemDetailsInFolders'
@@ -24,6 +26,7 @@ export const retrieveTrashDetails = <S extends AuthenticatedState>(): AR.ApiRequ
     AR.handleResponse(AR.basicJsonResponse(
       flow(scheme.decode, E.map(_ => _[0])),
     )),
+    runLogging(apiLoggerIO.debug('retrieveTrashDetails')),
     debugTimeSRTE('retrieveTrashDetails'),
   )
 
