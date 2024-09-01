@@ -1,5 +1,5 @@
 import { constant, flow, pipe } from 'fp-ts/lib/function'
-import * as AR from '../../icloud-core/icloud-request/lib/request'
+import * as AR from '../../icloud-core/icloud-request'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
 import { apiLoggerIO } from '../../logging/loggerIO'

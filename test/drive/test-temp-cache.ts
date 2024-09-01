@@ -12,7 +12,7 @@ import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 import { chain } from '../../src/icloud-drive/drive-lookup'
 import { enableDebug } from './debug'
 
-enableDebug(true)
+enableDebug(false)
 
 const structure = fakeicloud(
   file({ name: 'fileinroot.txt' }),

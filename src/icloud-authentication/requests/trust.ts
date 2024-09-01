@@ -1,7 +1,7 @@
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as AR from '../../icloud-core/icloud-request/lib/request'
+import * as AR from '../../icloud-core/icloud-request'
 import { applyCookiesToSession } from '../../icloud-core/session/session-http'
 import { headers } from '../../icloud-core/session/session-http-headers'
 import { sessionLens } from '../../icloud-core/session/session-type'

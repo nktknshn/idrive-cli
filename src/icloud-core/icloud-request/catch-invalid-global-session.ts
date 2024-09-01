@@ -4,7 +4,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { DepAuthenticateSession } from '../../deps-types/dep-authenticate-session'
 import { InvalidGlobalSessionError } from '../../util/errors'
 import { EmptyObject } from '../../util/types'
-import { AuthenticatedState } from './lib/request'
+import { AuthenticatedState } from './lib'
 
 export type CatchSessDeps = { catchSessErrors: boolean } & DepAuthenticateSession
 
