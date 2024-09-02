@@ -34,6 +34,7 @@ export const orElseTaskEither = <S, R, E1, A, E2>(onLeft: (e: E1) => TE.TaskEith
 export const adoS = sequenceS(SRTE.Apply)
 export const adoT = sequenceT(SRTE.Apply)
 
+/** Runs a side effect before executing the effect */
 export const runLogging = (logfunc: IO<void>) =>
   <S, R, E, A>(ma: SRTE.StateReaderTaskEither<S, R, E, A>): SRTE.StateReaderTaskEither<S, R, E, A> =>
     pipe(logfunc, SRTE.fromIO, SRTE.chain(() => ma))

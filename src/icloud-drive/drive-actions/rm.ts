@@ -1,9 +1,13 @@
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
+import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { DepAskConfirmation } from '../../deps-types'
+import { loggerIO } from '../../logging'
 import { guardProp } from '../../util/guards'
+import { addLeadingSlash } from '../../util/normalize-path'
+import { runLogging } from '../../util/srte-utils'
 import { NEA } from '../../util/types'
 import { DriveLookup } from '..'
 import { DepApiMethod, DriveApiMethods } from '../drive-api'
@@ -25,8 +29,10 @@ export const rm = (
     force: boolean
   },
 ): DriveLookup.Lookup<Result, DepsRm> => {
+  const globsSlash = NA.map(addLeadingSlash)(globs)
+
   return pipe(
-    DriveLookup.searchGlobs(globs, recursive ? Infinity : 1),
+    DriveLookup.searchGlobs(globsSlash, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
     SRTE.map(A.filter(guardProp('item', isNotRootDetails))),
     SRTE.chainW((items) =>
@@ -53,6 +59,7 @@ const _rm = (
       SRTE.chainFirstW(
         resp => DriveLookup.removeByIdsFromCache(resp.items.map(_ => _.drivewsid)),
       ),
+      runLogging(loggerIO.debug(`removing ${items.length} items from cache`)),
     )
 
   return pipe(
@@ -61,7 +68,7 @@ const _rm = (
       force
         ? TE.of(true)
         : deps.askConfirmation({
-          message: `remove\n${pipe(items, A.map(a => a.path)).join('\n')}`,
+          message: `Remove?\n${pipe(items, A.map(a => a.path)).join('\n')}`,
         })
     ),
     SRTE.chain((answer) =>

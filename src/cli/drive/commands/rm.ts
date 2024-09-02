@@ -16,7 +16,7 @@ export const rm = (
   },
 ): DriveLookup.Lookup<void, Actions.DepsRm> => {
   if (!A.isNonEmpty(paths)) {
-    return SRTE.left(err('no paths provided'))
+    return SRTE.left(err('No paths provided'))
   }
 
   return pipe(

@@ -18,8 +18,13 @@ export type Branded<A, B> = A & Brand<B>
 
 export type NormalizedPath = Branded<string, NormalizedPathBrand>
 
+/** Removes a trailing slash if the path has one */
 export const stripTrailingSlash = (s: string): string => s == '/' ? s : s.replace(/\/$/, '')
+
+/** Adds a leading slash if the path does not already have one */
 export const addLeadingSlash = (s: string): string => s.startsWith('/') ? s : `/${s}`
+
+/** Adds a trailing slash if the path does not already have one */
 export const addTrailingSlash = (s: string): string => s.endsWith('/') ? s : `${s}/`
 
 /**
