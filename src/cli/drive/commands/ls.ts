@@ -1,10 +1,11 @@
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as Ord from 'fp-ts/lib/Ord'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DriveActions, DriveLookup, DriveTree, GetByPath, Types } from '../../../icloud-drive'
-import { ordDriveChildrenItemByName, ordDriveChildrenItemByType } from '../../../icloud-drive/drive-types'
+import { ordDriveChildrenItemByName, ordDriveChildrenItemByType, ordIsFolder } from '../../../icloud-drive/drive-types'
 import { addLeadingSlash } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { addTrailingNewline } from '../../../util/string'
@@ -65,6 +66,7 @@ const formatDate = (dateOrStr: Date | string) => {
 const showItem = (
   item: Types.DriveChildrenItem,
   path: string,
+  sizeWidth: number,
   { long, fullPath }: { long: number; fullPath: boolean },
 ): string => {
   let fname = fullPath
@@ -85,7 +87,7 @@ const showItem = (
     return ''
       + col(item.type, 14)
       + col(formatDate(item.dateCreated), 15)
-      + col(item.size.toString(), 15)
+      + item.size.toString().padStart(sizeWidth) + '   '
       + col(fname)
   }
 
@@ -93,7 +95,7 @@ const showItem = (
     return ''
       + col(item.type, 14)
       + col(formatDate(item.dateCreated), 15)
-      + col('', 15)
+      + col('', sizeWidth + 3)
       + col(fname)
   }
 
@@ -138,11 +140,24 @@ const showDetailsInfo = (details: Types.Details, path: string) =>
 
     const items = pipe(
       details.items,
-      A.sortBy([ordDriveChildrenItemByType, ordDriveChildrenItemByName]),
+      // APP_LIBRARY, FOLDER, FILE
+      A.sortBy([Ord.reverse(ordIsFolder), ordDriveChildrenItemByType, ordDriveChildrenItemByName]),
+    )
+
+    const maxSize = pipe(
+      items,
+      A.filter(Types.isFile),
+      A.map(_ => _.size),
+      A.reduce(0, Math.max),
     )
 
     for (const item of items) {
-      result += showItem(item, path, { fullPath: params.fullPath, long: params.long }) + '\n'
+      result += showItem(
+        item,
+        path,
+        maxSize.toString().length + 2,
+        { fullPath: params.fullPath, long: params.long },
+      ) + '\n'
     }
 
     return result
@@ -156,7 +171,6 @@ const showFileInfo = (item: Types.DriveChildrenItemFile) =>
     if (params.header) {
       result += `${column('Type')}${item.type}\n`
       result += `${column('Full name')}${Types.fileName(item)}\n`
-      // result += `${column('Name')}${item.name}\n`
       if (item.extension !== undefined) {
         result += `${column('Extension')}${item.extension}\n`
       }
@@ -181,7 +195,10 @@ const showValidPath = (res: DriveActions.ListPathsFolder | DriveActions.ListPath
   if (res.isFile) {
     return showFileInfo(res.item)
   }
-  return showDetailsInfo({ ...res.parentItem, items: res.items }, res.path)
+  return showDetailsInfo(
+    { ...res.parentItem, items: res.items },
+    GetByPath.pathString(res.validation),
+  )
 }
 
 export const ls = (

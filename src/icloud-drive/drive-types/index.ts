@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import * as Ord from 'fp-ts/lib/Ord'
 
-import { ord, string } from 'fp-ts'
+import { boolean, string } from 'fp-ts'
 import * as O from 'fp-ts/lib/Option'
 import * as t from 'io-ts'
 import { TypeOf } from 'io-ts'
@@ -221,5 +221,7 @@ export const fileNameAddSlash = (item: HasName | DetailsTrashRoot): string => {
   return fname
 }
 
-export const ordDriveChildrenItemByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
+export const ordIsFolder = Ord.contramap(isFolderLike)(boolean.Ord)
+
+export const ordDriveChildrenItemByType = Ord.contramap((d: DriveChildrenItem) => d.type)(string.Ord)
 export const ordDriveChildrenItemByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)

@@ -4,7 +4,7 @@ import { Eq } from 'fp-ts/lib/Eq'
 import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { NormalizedPath, normalizePath } from '../../util/normalize-path'
+import { addLeadingSlash, NormalizedPath, normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
 import { NEA } from '../../util/types'
 import * as T from '../drive-types'
@@ -54,7 +54,7 @@ export function pathString<R>(res: PathValidation<R>): string {
     elements.push(...res.rest)
   }
 
-  return elements.join('/')
+  return addLeadingSlash(elements.join('/'))
 }
 
 export function pathTarget<R>(
