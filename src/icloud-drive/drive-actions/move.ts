@@ -17,7 +17,7 @@ export type DepsMove =
   & DepApiMethod<'renameItems'>
 
 /**
- * move a file or a directory
+ * Move a file or a directory
  */
 export const move = ({ srcpath, dstpath }: {
   srcpath: string
@@ -34,11 +34,11 @@ export const move = ({ srcpath, dstpath }: {
   )
 }
 
-/*
-  dstitem must be either
+/**
+  Dstitem must be either:
   - an existing folder. then we move src item into it
   - partially valid path with path equal to the path of src and a single rest. Then we rename the item
-  - partially valid path with path *not* equal to the path of src and a singleton rest. Then we move the item into the path *and* rename the item
+  - partially valid path with path *not* equal to the path of src and a single rest. Then we move the item into the path *and* rename the item
 */
 const handle = (
   { srcdst: [srcitem, dstitem] }: {

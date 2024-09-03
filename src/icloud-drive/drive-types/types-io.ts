@@ -159,14 +159,11 @@ export const detailsAppLibrary = t.intersection([
 
 export const invalidIdItem = t.type({ status: t.literal('ID_INVALID') })
 
-// itemDetails
-
 export const itemDetails = t.union([
   t.intersection([itemFolder, t.type({ hierarchy })]),
   t.intersection([itemFile, t.type({ hierarchy })]),
   t.intersection([itemAppLibrary, t.type({ hierarchy })]),
   t.intersection([itemDocwsRoot, t.type({ hierarchy })]),
-  //   invalidIdItem,
 ])
 
 export const trashItemFolder = t.intersection([itemFolder, t.partial({ 'restorePath': t.string })])

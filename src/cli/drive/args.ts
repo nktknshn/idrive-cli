@@ -17,15 +17,31 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
   _
     .positional('paths', { type: 'string', array: true, default: ['/'] })
     .options({
-      fullPath: { alias: ['f'], default: false, type: 'boolean' },
-      listInfo: { alias: ['l'], default: false, type: 'boolean' },
-      header: { alias: ['h'], default: false, type: 'boolean' },
-      trash: { alias: ['t'], default: false, type: 'boolean' },
-      tree: { default: false, type: 'boolean' },
-      etag: { alias: ['e'], default: false, type: 'boolean' },
-      recursive: { alias: ['R'], default: false, type: 'boolean' },
-      depth: { alias: ['D'], default: Infinity, type: 'number', demandOption: 'recursive' },
-      cached: { default: false, type: 'boolean' },
+      cached: { default: false, type: 'boolean', description: 'Only list cached items' },
+      fullPath: { alias: ['f'], default: false, type: 'boolean', description: 'Print full paths' },
+      long: { alias: ['l'], default: false, description: 'Use a long listing format' },
+      recursive: { alias: ['R'], default: false, type: 'boolean', description: 'Recursive listing' },
+      depth: { alias: ['D'], default: Infinity, type: 'number', description: 'Depth of recursive listing' },
+      tree: { default: false, type: 'boolean', description: 'Print tree view' },
+      header: { alias: ['h'], default: false, type: 'boolean', description: 'Include folder info in listing' },
+      // etag: { alias: ['e'], default: false, type: 'boolean' },
+      trash: { alias: ['t'], default: false, type: 'boolean', description: 'List trash' },
+    })
+    .count('long')
+    .check((args) => {
+      if (args.depth < 0) {
+        throw new Error('Depth must be positive')
+      }
+
+      if (args.tree && !args.recursive) {
+        throw new Error('Tree view requires recursive listing')
+      }
+
+      if (args.depth > 0 && args.depth < Infinity && !args.recursive) {
+        throw new Error('Depth requires recursive listing')
+      }
+
+      return true
     }))
 
 const download = w.command(
@@ -142,8 +158,8 @@ export const cmd = w.composeCommands(
   _ =>
     _.version(defaults.cliVersion)
       .options({
-        sessionFile: { alias: ['s', 'session'], default: undefined, optional: true },
-        cacheFile: { alias: ['c', 'cache'], default: undefined, optional: true },
+        sessionFile: { alias: ['s'], default: undefined, optional: true },
+        cacheFile: { alias: ['c'], default: undefined, optional: true },
         noCache: { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
         debug: { alias: 'd', default: false, type: 'boolean' },
       }),

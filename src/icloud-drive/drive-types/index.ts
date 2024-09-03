@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
+import * as Ord from 'fp-ts/lib/Ord'
+
+import { ord, string } from 'fp-ts'
 import * as O from 'fp-ts/lib/Option'
 import * as t from 'io-ts'
 import { TypeOf } from 'io-ts'
+
 import { hasOwnProperty, isObjectWithOwnProperty } from '../../util/util'
 import * as types from './types-io'
 export * as TypesIo from './types-io'
@@ -68,8 +72,6 @@ export type DriveDetailsWithHierarchyRegular =
   | DriveDetailsAppLibraryWithHierarchy
   | DriveDetailsFolderWithHierarchy
 
-// TypeOf<typeof t.detailsWithHierarchy>
-
 export type DriveDetailsPartialWithHierarchy = TypeOf<typeof types.driveDetailsWithHierarchyPartial>
 
 export interface DriveDetailsRootWithHierarchy extends TypeOf<typeof types.rootDetailsWithHierarchy> {}
@@ -88,8 +90,6 @@ export interface DriveDetailsAppLibraryPartialWithHierarchy
   extends TypeOf<typeof types.appLibraryDetailsWithHierarchyPartial>
 {}
 
-// export interface DriveChildrenItem extends TypeOf<typeof t.childrenItem> {}
-
 export type Hierarchy = TypeOf<typeof types.hierarchy>
 
 export interface HierarchyItem extends TypeOf<typeof types.hierarchyItem> {}
@@ -106,10 +106,12 @@ export interface PartialItem extends TypeOf<typeof types.partialItem> {}
 
 export const invalidId: InvalidId = { status: 'ID_INVALID' as const }
 
+/** `details` is not root or trash and not an item of details */
 export const isRegularDetails = (details: Details | DetailsTrashRoot | DriveChildrenItem): details is
   | DetailsFolder
   | DetailsAppLibrary => !isCloudDocsRootDetails(details) && !isTrashDetails(details) && isFolderLike(details)
 
+/** `details` is a docws root */
 export const isCloudDocsRootDetails = (
   details: Details | DetailsTrashRoot | DriveChildrenItem,
 ): details is DetailsDocwsRoot => details.drivewsid === types.rootDrivewsid
@@ -118,6 +120,7 @@ export const isTrashDetails = (
   details: DetailsTrashRoot | DetailsDocwsRoot | DriveChildrenItem,
 ): details is DetailsTrashRoot => details.drivewsid === types.trashDrivewsid
 
+/** Generic version of `isTrashDetails` preventing the input type */
 export const isTrashDetailsG = <T extends { drivewsid: string }>(
   details: DetailsTrashRoot | T,
 ): details is DetailsTrashRoot => details.drivewsid === types.trashDrivewsid
@@ -217,3 +220,6 @@ export const fileNameAddSlash = (item: HasName | DetailsTrashRoot): string => {
 
   return fname
 }
+
+export const ordDriveChildrenItemByType = Ord.contramap((d: DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
+export const ordDriveChildrenItemByName = Ord.contramap((d: DriveChildrenItem) => d.name)(string.Ord)

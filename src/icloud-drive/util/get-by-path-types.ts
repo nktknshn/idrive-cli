@@ -5,6 +5,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { NormalizedPath, normalizePath } from '../../util/normalize-path'
+import { Path } from '../../util/path'
 import { NEA } from '../../util/types'
 import * as T from '../drive-types'
 
@@ -138,10 +139,14 @@ export const getFolder = <R>(res: PathValidFolder<R>): T.DetailsFolder | T.Detai
 
 export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): string => {
   if (p.valid === true) {
-    return `valid: ${p.details.map(T.fileName)} file: ${pipe(getFile(p), O.fold(() => `none`, T.fileName))}`
+    return `Valid path. Folder: ${p.details.map(T.fileName)} file: ${
+      pipe(getFile(p), O.fold(() => `none`, T.fileName))
+    }`
   }
-  // ${p.error.message}
-  return `invalid (). valid part ${p.details.map(T.fileName)}, rest: ${p.rest}`
+  const validpart = Path.join('/', ...p.details.map(T.fileName))
+  const rest = Path.join(...p.rest)
+
+  return `Invalid path. Valid part ${validpart}, rest: ${rest}`
 }
 
 export const validAsString = <R extends T.Root>(

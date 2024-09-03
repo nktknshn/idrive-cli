@@ -23,7 +23,7 @@ export const cat = (
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    DriveLookup.getByPathStrictDocwsroot(npath, DriveLookup.skipValidation(skipValidation)),
+    DriveLookup.getByPathStrictDocwsroot(npath, DriveLookup.onlyCache(skipValidation)),
     SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
     SRTE.chainW((item) => DriveApiMethods.getDriveItemUrl(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),

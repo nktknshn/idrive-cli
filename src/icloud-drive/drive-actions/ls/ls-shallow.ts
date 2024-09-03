@@ -10,19 +10,19 @@ import { DriveLookup, Types } from '../..'
 import { findInParentGlob } from '../../util/drive-helpers'
 import * as GetByPath from '../../util/get-by-path-types'
 
-export type ListPathsResult = ListPathsFolder | ListPathsFile | ListPathsInvalid
+export type ListPathResult = ListPathFolder | ListPathFile | ListPathInvalid
 
-export type ListPathsFolder = {
+export type ListPathFolder = {
   isFile: false
   valid: true
   path: string
-  item: Types.Root | Types.DetailsFolder | Types.DetailsAppLibrary
-  /** Filtered items */
+  parentItem: Types.Root | Types.DetailsFolder | Types.DetailsAppLibrary
+  /** Filtered children */
   items: (Types.DriveChildrenItem | Types.DriveChildrenTrashItem)[]
   validation: GetByPath.PathValidFolder<Types.Root>
 }
 
-export type ListPathsFile = {
+export type ListPathFile = {
   isFile: true
   valid: true
   path: string
@@ -30,7 +30,7 @@ export type ListPathsFile = {
   validation: GetByPath.PathValidFile<Types.Root>
 }
 
-export type ListPathsInvalid = {
+export type ListPathInvalid = {
   valid: false
   validation: GetByPath.PathInvalid<Types.Root>
   path: string
@@ -40,7 +40,7 @@ const result = (
   path: string,
   scan: micromatch.ScanInfo,
   res: GetByPath.Result<Types.Root>,
-): ListPathsResult => {
+): ListPathResult => {
   if (GetByPath.isInvalidPath(res)) {
     return { valid: false, path, validation: res }
   }
@@ -53,7 +53,7 @@ const result = (
       return {
         valid: true,
         path,
-        item: folder,
+        parentItem: folder,
         items: findInParentGlob(folder, scan.glob),
         validation: res,
         isFile: false,
@@ -64,7 +64,7 @@ const result = (
 
 export const listPaths = (
   { paths, trash, cached }: { paths: NA.NonEmptyArray<string>; trash: boolean; cached: boolean },
-): DriveLookup.Lookup<NEA<ListPathsResult>, DriveLookup.Deps> => {
+): DriveLookup.Lookup<NEA<ListPathResult>, DriveLookup.Deps> => {
   const scanned = pipe(paths, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
@@ -74,13 +74,11 @@ export const listPaths = (
     }
   }
 
+  const params = DriveLookup.onlyCache(cached)
+
   return pipe(
     DriveLookup.getCachedRootOrTrash(trash),
-    SRTE.chain(root =>
-      cached
-        ? DriveLookup.getByPathsFromCache(root, basepaths)
-        : DriveLookup.getByPaths(root, basepaths)
-    ),
+    SRTE.chain(root => DriveLookup.getByPaths(root, basepaths, params)),
     SRTE.map(NA.zip(scanned)),
     SRTE.map(NA.zip(paths)),
     SRTE.map(

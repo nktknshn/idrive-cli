@@ -7,7 +7,7 @@ export { type Deps as DownloadRecursiveDeps, downloadRecursive } from './downloa
 export { type Deps as DownloadDeps, downloadShallow } from './download/download-shallow'
 
 export { listRecursive, listRecursiveTree } from './ls/ls-recursive'
-export { listPaths, type ListPathsFile, type ListPathsFolder } from './ls/ls-shallow'
+export { type ListPathFile as ListPathsFile, type ListPathFolder as ListPathsFolder, listPaths } from './ls/ls-shallow'
 
 // export { lsRecursive } from './ls/ls-recursive'
 // export { lsShallow } from './ls/ls-shallow'

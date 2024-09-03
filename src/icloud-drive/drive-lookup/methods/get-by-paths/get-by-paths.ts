@@ -34,8 +34,8 @@ export const defaultParams: GetByPathsParams = {
   apiUsage: 'always',
 }
 
-export const skipValidation = (skip: boolean): GetByPathsParams => ({
-  apiUsage: skip ? 'onlycache' : 'always',
+export const onlyCache = (onlyCache: boolean): GetByPathsParams => ({
+  apiUsage: onlyCache ? 'onlycache' : 'always',
 })
 
 /** Given a root and a list of paths, retrieves the actual items if they exist. */

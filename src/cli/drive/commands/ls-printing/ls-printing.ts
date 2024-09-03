@@ -1,20 +1,12 @@
-import { ord, string } from 'fp-ts'
+import { string } from 'fp-ts'
 import * as A from 'fp-ts/lib/Array'
 import { constant, flow, identity, pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import * as Ord from 'fp-ts/lib/Ord'
 import { not } from 'fp-ts/lib/Refinement'
-import * as TR from 'fp-ts/lib/Tree'
 import Path from 'path'
-import { Types } from '../..'
 
-export const drawFileTree = (tree: TR.Tree<Types.HasName | Types.DetailsTrashRoot>): string => {
-  return pipe(
-    tree,
-    TR.map(Types.fileNameAddSlash),
-    TR.drawTree,
-  )
-}
+import { Types } from '../../../../icloud-drive'
+import { ordDriveChildrenItemByName, ordDriveChildrenItemByType } from '../../../../icloud-drive/drive-types'
 
 const joinWithPath = (path: string) =>
   (name: string) =>
@@ -22,6 +14,7 @@ const joinWithPath = (path: string) =>
       Path.join('/', path, name),
       Path.normalize,
     )
+
 const formatDate = (date: Date | string) =>
   pipe(
     typeof date === 'string' ? new Date(date) : date,
@@ -30,7 +23,7 @@ const formatDate = (date: Date | string) =>
         ? [
           date.toDateString().slice(4, 7),
           date.toDateString().slice(8, 10),
-          date.toTimeString().substr(0, 5),
+          date.toTimeString().substring(0, 5),
         ].join(' ')
         : [
           date.toDateString().slice(4, 7),
@@ -51,6 +44,7 @@ const Trash = ({ details }: { details: Types.DetailsTrashRoot }): Element[] => {
     ['numberOfItems', details.numberOfItems],
   ]
 }
+
 const Folder = ({ details }: { details: Types.DetailsDocwsRoot | Types.NonRootDetails }): Element[] => {
   return [
     ['name', Types.fileName(details)],
@@ -63,11 +57,13 @@ const Folder = ({ details }: { details: Types.DetailsDocwsRoot | Types.NonRootDe
     !Types.isCloudDocsRootDetails(details) && ['parentId', details.parentId],
   ]
 }
+
 const isRow = (input: Row | Element[]): input is Row => {
   return input.length == 2
     && typeof input[0] === 'string'
     && (typeof input[1] === 'string' || typeof input[1] === 'number')
 }
+
 const showElements = (elements: Element[]): string => {
   return pipe(
     elements,
@@ -107,6 +103,7 @@ export const showFileInfo = (result: Types.DriveChildrenItemFile) =>
       ],
       showElements,
     )
+
 const showItemRow = ({
   short = false,
   showDrivewsid = false,
@@ -159,8 +156,6 @@ const showItemRow = ({
 
     return row.join('\t')
   }
-const ordByType = Ord.contramap((d: Types.DriveChildrenItem) => d.type)(ord.reverse(string.Ord))
-const ordByName = Ord.contramap((d: Types.DriveChildrenItem) => d.name)(string.Ord)
 
 export const showDetailsInfo = (
   details: Types.Details,
@@ -194,7 +189,7 @@ export const showDetailsInfo = (
         : '',
       pipe(
         details.items,
-        A.sortBy([ordByType, ordByName]),
+        A.sortBy([ordDriveChildrenItemByType, ordDriveChildrenItemByName]),
         A.map(
           fullPath
             ? showWithFullPath(path)

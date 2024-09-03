@@ -59,6 +59,6 @@ export function retrieveItemDetailsInFolders<S extends AuthenticatedState>(
     AR.handleResponse(AR.basicJsonResponse(
       iot.nonEmptyArray(t.union([driveDetails, invalidIdItem])).decode,
     )),
-    logAPI('retrieveItemDetailsInFolders'),
+    logAPI(`retrieveItemDetailsInFolders(${drivewsids.length} items)`),
   )
 }

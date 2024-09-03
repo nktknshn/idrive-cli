@@ -11,7 +11,7 @@ import * as T from '../../../drive-types'
 import * as V from '../../../util/get-by-path-types'
 import { filterOrElse, Lookup, map } from '../..'
 import { ItemIsNotFolderError } from '../../errors'
-import { chainCachedDocwsRoot, getCachedDocwsRoot } from '../get-roots'
+import { chainCachedDocwsRoot, chainCachedTrash, getCachedDocwsRoot } from '../get-roots'
 import { defaultParams, getByPaths } from './get-by-paths'
 
 /** Fails if the path is not valid */
@@ -62,6 +62,29 @@ export const getByPathsStrictDocwsroot = (
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
     SRTE.chainEitherK(sequenceNArrayE),
+  )
+}
+
+export const getByPathsStrictTrash = (
+  path: NEA<NormalizedPath>,
+  params = defaultParams,
+): Lookup<NEA<T.DetailsOrFile<T.DetailsTrashRoot>>> => {
+  return pipe(
+    chainCachedTrash(root => getByPaths(root, path, params)),
+    SRTE.map(NA.map(
+      V.asEither((res) => err(V.showGetByPathResult(res))),
+    )),
+    SRTE.chainEitherK(sequenceNArrayE),
+  )
+}
+
+export const getByPathStrictTrash = (
+  path: NormalizedPath,
+  params = defaultParams,
+): Lookup<T.DetailsOrFile<T.DetailsTrashRoot>> => {
+  return pipe(
+    getByPathsStrictTrash([path], params),
+    map(NA.head),
   )
 }
 

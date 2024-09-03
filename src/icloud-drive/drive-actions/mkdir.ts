@@ -13,6 +13,7 @@ export type Deps =
   & DepApiMethod<'createFoldersStrict'>
 
 // TODO add -p option to create parent directories
+// TODO create multiple folders in the same call (API supports it)
 
 export const mkdir = (
   { path }: { path: string },
@@ -31,7 +32,7 @@ export const mkdir = (
     SRTE.bindW('parent', ({ root }) => DriveLookup.getByPathFolderStrict(root, nparentPath)),
     SRTE.bindW('result', ({ parent }) =>
       pipe(
-        // try to create folder returning new folders shallow details
+        // try to create folder returning shallow details for new folders
         createFoldersStrict<DriveLookup.State>({
           destinationDrivewsId: parent.drivewsid,
           names: [name],

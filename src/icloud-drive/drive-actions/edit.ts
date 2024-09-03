@@ -8,18 +8,17 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as S from 'fp-ts/lib/string'
 
 import { DepFetchClient, DepFs } from '../../deps-types'
+import { loggerIO } from '../../logging/loggerIO'
 import { err, FileInvalidError, FileNotFoundError } from '../../util/errors'
+import { assertFileSize, FsError } from '../../util/fs'
+import { calculateFileHashO } from '../../util/fs/file-hash'
+import { AssetFileSizeError, FileSizeError } from '../../util/fs/size-check'
+import { downloadUrlToFile } from '../../util/http/downloadUrlToFile'
 import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
 import * as SrteUtils from '../../util/srte-utils'
 import { DriveLookup, GetByPath, Types } from '..'
 import { DepApiMethod, DriveApiMethods } from '../drive-api'
-
-import { loggerIO } from '../../logging/loggerIO'
-import { assertFileSize, FsError } from '../../util/fs'
-import { calculateFileHashO } from '../../util/fs/file-hash'
-import { AssetFileSizeError, FileSizeError } from '../../util/fs/size-check'
-import { downloadUrlToFile } from '../../util/http/downloadUrlToFile'
 import * as Actions from '.'
 
 type DepTempDir = { tempdir: string }
@@ -100,10 +99,13 @@ export const edit = (
           })
           : SRTE.of(constVoid()),
         SRTE.map(() => checks),
-        SRTE.chainFirst(() => {
-          loggerIO.debug(`removing temp file ${tempfile}`)()
-          return SRTE.fromTaskEither(fs.rm(tempfile, { force: true }))
-        }),
+        SRTE.chainFirst(() =>
+          SrteUtils.runLogging(
+            loggerIO.debug(`removing temp file ${tempfile}`),
+          )(
+            SRTE.fromTaskEither(fs.rm(tempfile, { force: true })),
+          )
+        ),
       )
     ),
   )
