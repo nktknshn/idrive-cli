@@ -12,7 +12,7 @@ import { normalizePath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
 import { DriveLookup } from '../..'
 import * as T from '../../drive-types'
-import { flattenFolderTreeWithBasepath, shallowFolder } from '../../util/drive-folder-tree'
+import * as DTR from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
 import { getFoldersTrees } from './drive-get-folders-trees'
 
@@ -29,7 +29,7 @@ export const searchGlobsShallow = (
   return searchGlobs(globs, 0)
 }
 
-/** Searches for files and folders matching the glob patterns */
+/** Recursively searches for files and folders matching the glob patterns */
 export const searchGlobs = (
   globs: NEA<string>,
   depth = Infinity,
@@ -41,11 +41,11 @@ export const searchGlobs = (
   const basepaths = pipe(scanned, NA.map(_ => normalizePath(_.base)))
 
   return pipe(
-    // look for the paths leading the glob patterns
+    // look for the paths leading the glob patterns and get the details
     DriveLookup.getByPathsStrictDocwsroot(basepaths),
-    SRTE.chain((bases) =>
+    SRTE.chain((globsBases) =>
       modifySubset(
-        NA.zip(bases)(scanned),
+        NA.zip(globsBases)(scanned),
         // separate folders and files
         guardSnd(T.isNotFile),
         (dirs) =>
@@ -59,8 +59,9 @@ export const searchGlobs = (
                 getFoldersTrees(pipe(globParents, NA.map(snd)), depth),
                 SRTE.map(NA.map(E.of)),
               ),
-            //
-            ([_scan, dir]) => E.of(shallowFolder(dir)),
+            // return the details of the folders that are not globs
+            // like /folder1/*.txt /folder1/
+            ([_scan, dir]) => E.of(DTR.shallowFolder(dir)),
           ),
         ([_scan, file]) => E.left(file),
       )
@@ -81,7 +82,7 @@ export const searchGlobs = (
           tree => {
             return pipe(
               tree,
-              flattenFolderTreeWithBasepath(Path.dirname(scan.base)),
+              DTR.flattenFolderTreeWithBasepath(Path.dirname(scan.base)),
               A.filterMap(({ remotepath, remotefile }) => {
                 if (scan.glob.length == 0) {
                   if (micromatch.isMatch(remotepath, globpattern, options)) {

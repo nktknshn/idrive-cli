@@ -7,7 +7,7 @@ import micromatch from 'micromatch'
 
 import { addLeadingSlash, normalizePath } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
-import * as Tree from '../../../util/tree'
+import * as TreeUtil from '../../../util/tree'
 import { NEA } from '../../../util/types'
 import { DriveLookup, Types } from '../..'
 import * as DriveTree from '../../util/drive-folder-tree'
@@ -23,6 +23,18 @@ const getScanned = (paths: NA.NonEmptyArray<string>) =>
         : micromatch.scan(Path.join(scan.base, '**/*'))
     ),
   )
+
+/** List paths recursively. Globs are supported */
+export const listRecursive = ({ paths, depth }: {
+  paths: NA.NonEmptyArray<string>
+  depth: number
+}): DriveLookup.Lookup<NEA<DriveLookup.SearchGlobFoundItem[]>> => {
+  // appends globs to the paths that are not globs to make a recursive search
+  const scanned = getScanned(paths)
+  return pipe(
+    DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
+  )
+}
 
 export type ListRecursiveTreeResult = O.Option<
   TR.Tree<{
@@ -44,18 +56,8 @@ export const listRecursiveTree = (
       pipe(
         DriveTree.treeWithFiles(tree),
         DriveTree.addPathToFolderTree(Path.dirname(scan.base), identity),
-        Tree.filterTree(_ => micromatch.isMatch(_.path, scan.input)),
+        TreeUtil.filterTree(_ => micromatch.isMatch(_.path, scan.input)),
       )
     )),
-  )
-}
-
-export const listRecursive = ({ paths, depth }: {
-  paths: NA.NonEmptyArray<string>
-  depth: number
-}): DriveLookup.Lookup<NEA<DriveLookup.SearchGlobFoundItem[]>> => {
-  const scanned = getScanned(paths)
-  return pipe(
-    DriveLookup.searchGlobs(pipe(scanned, NA.map(_ => _.input)), depth),
   )
 }

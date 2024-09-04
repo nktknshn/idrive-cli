@@ -23,7 +23,13 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
       recursive: { alias: ['R'], default: false, type: 'boolean', description: 'Recursive listing' },
       depth: { alias: ['D'], default: Infinity, type: 'number', description: 'Depth of recursive listing' },
       tree: { default: false, type: 'boolean', description: 'Print tree view' },
-      header: { alias: ['h'], default: false, type: 'boolean', description: 'Include folder info in listing' },
+      info: { alias: ['i'], default: false, type: 'boolean', description: 'Include folder info in listing' },
+      'human-readable': {
+        alias: ['h'],
+        default: false,
+        type: 'boolean',
+        description: 'With -l, print sizes like 1K 234M 2G etc.',
+      },
       // etag: { alias: ['e'], default: false, type: 'boolean' },
       trash: { alias: ['t'], default: false, type: 'boolean', description: 'List trash' },
     })
@@ -158,9 +164,19 @@ export const cmd = w.composeCommands(
   _ =>
     _.version(defaults.cliVersion)
       .options({
-        sessionFile: { alias: ['s'], default: undefined, optional: true },
-        cacheFile: { alias: ['c'], default: undefined, optional: true },
-        noCache: { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
+        'session-file': {
+          alias: ['s'],
+          default: undefined,
+          optional: true,
+          description: 'Session file',
+        },
+        'cache-file': {
+          alias: ['c'],
+          default: undefined,
+          optional: true,
+          description: 'Cache file',
+        },
+        'no-cache': { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
         debug: { alias: 'd', default: false, type: 'boolean' },
       }),
   init,

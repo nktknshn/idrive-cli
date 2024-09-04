@@ -13,21 +13,21 @@ import { CommandsDeps } from '.'
 
 /** Create dependencies for the commands */
 export const createCliCommandsDeps = (args: {
-  sessionFile?: string
-  cacheFile?: string
-  noCache?: boolean
+  'session-file'?: string
+  'cache-file'?: string
+  'no-cache'?: boolean
   tempdir?: string
   fileEditor?: string
   askConfirmation?: DepAskConfirmation['askConfirmation']
 }): CommandsDeps => {
   const sessionFile = pipe(
-    O.fromNullable(args.sessionFile),
+    O.fromNullable(args['session-file']),
     O.orElse(() => getEnv(defaults.envSessionFileKey)),
     O.getOrElse(() => defaults.sessionFile),
   )
 
-  const cacheFile = args.cacheFile ?? appendFilename(sessionFile, '.cache')
-  const noCache = args.noCache ?? false
+  const cacheFile = args['cache-file'] ?? appendFilename(sessionFile, '.cache')
+  const noCache = args['no-cache'] ?? false
 
   return ({
     api: deps.api,
