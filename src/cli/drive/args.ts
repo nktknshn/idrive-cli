@@ -62,8 +62,13 @@ const download = w.command(
         include: { default: [], type: 'string', array: true },
         exclude: { default: [], type: 'string', array: true },
         recursive: { alias: ['R'], default: false, type: 'boolean' },
-        keepStructure: { alias: ['S'], default: false, type: 'boolean' },
-        chunkSize: { default: defaults.downloadChunkSize, type: 'number' },
+        'keep-structure': {
+          alias: ['S'],
+          default: false,
+          type: 'boolean',
+          description: 'Keep the remote folder structure',
+        },
+        'chunk-size': { default: defaults.downloadChunkSize, type: 'number', description: 'Chunk size' },
       }),
 )
 
@@ -79,7 +84,7 @@ const rm = w.command(
   (_) =>
     _.positional('paths', { type: 'string', array: true, demandOption: true })
       .options({
-        skipTrash: { default: false, type: 'boolean' },
+        'skip-trash': { default: false, type: 'boolean', description: 'Skip trash' },
         force: { default: false, type: 'boolean' },
         recursive: { alias: ['R'], default: false, type: 'boolean' },
       }),
@@ -91,7 +96,7 @@ const cat = w.command(
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .options({
-        skipValidation: { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
+        'skip-validation': { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
       }),
 )
 
@@ -122,7 +127,7 @@ const upload = w.command(
     _.positional('uploadargs', { type: 'string', array: true, demandOption: true })
       .options({
         overwright: { default: false, type: 'boolean' },
-        skipTrash: { default: false, type: 'boolean' },
+        'skip-trash': { default: false, type: 'boolean' },
         recursive: { alias: ['R'], default: false, type: 'boolean' },
 
         include: { default: [], type: 'string', array: true },

@@ -8,9 +8,9 @@ import { printerIO } from '../../../logging/printerIO'
 import { err } from '../../../util/errors'
 
 export const rm = (
-  { paths, skipTrash, force, recursive }: {
+  { paths, 'skip-trash': skipTrash, force, recursive }: {
     paths: string[]
-    skipTrash: boolean
+    'skip-trash': boolean
     recursive: boolean
     force: boolean
   },

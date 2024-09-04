@@ -9,7 +9,7 @@ type Deps =
   & DepFetchClient
 
 export const cat = (
-  args: { path: string; skipValidation: boolean },
+  { path, 'skip-validation': skipValidation }: { path: string; 'skip-validation': boolean },
 ): DriveLookup.Lookup<string, Deps> => {
-  return Actions.cat(args)
+  return Actions.cat({ path, skipValidation })
 }

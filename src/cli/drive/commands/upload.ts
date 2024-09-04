@@ -16,7 +16,7 @@ export const upload = (
     exclude: string[]
     // chunkSize: number
     overwright: boolean
-    skipTrash: boolean
+    'skip-trash': boolean
   },
 ): DriveLookup.Lookup<unknown, Actions.DepsUpload & Actions.DepsUploadFolder> => {
   if (!A.isNonEmpty(args.uploadargs)) {
@@ -39,7 +39,7 @@ export const upload = (
   if (args.uploadargs.length == 2) {
     return Actions.uploadSingleFile({
       overwright: args.overwright,
-      skipTrash: args.skipTrash,
+      skipTrash: args['skip-trash'],
       srcpath: args.uploadargs[0],
       dstpath: args.uploadargs[1],
     })
@@ -48,7 +48,7 @@ export const upload = (
     return Actions.uploads({
       uploadargs: args.uploadargs,
       overwright: args.overwright,
-      skipTrash: args.skipTrash,
+      skipTrash: args['skip-trash'],
     })
   }
 }

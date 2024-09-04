@@ -10,8 +10,8 @@ type Args = {
   overwright: boolean
   include: string[]
   exclude: string[]
-  keepStructure: boolean
-  chunkSize: number
+  'keep-structure': boolean
+  'chunk-size': number
 }
 
 export const download = (args: Args): DriveLookup.Lookup<string, DriveActions.DownloadRecursiveDeps> => {
@@ -23,9 +23,16 @@ export const download = (args: Args): DriveLookup.Lookup<string, DriveActions.Do
   }
 
   if (args.recursive) {
-    return DriveActions.downloadRecursive(args)
+    return DriveActions.downloadRecursive({
+      ...args,
+      chunkSize: args['chunk-size'],
+      keepStructure: args['keep-structure'],
+    })
   }
   else {
-    return DriveActions.downloadShallow(args)
+    return DriveActions.downloadShallow({
+      ...args,
+      chunkSize: args['chunk-size'],
+    })
   }
 }
