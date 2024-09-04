@@ -11,7 +11,7 @@ import * as LsPrinting from './ls-printing/printing'
 
 type Args = {
   paths: string[]
-  fullPath: boolean
+  'full-path': boolean
   long: number
   info: boolean
   'human-readable': boolean
@@ -55,7 +55,7 @@ const lsShallow = (
   const opts = {
     showInfo: args.info,
     long: args.long,
-    fullPath: args.fullPath,
+    fullPath: args['full-path'],
     humanReadable: args['human-readable'],
   }
 

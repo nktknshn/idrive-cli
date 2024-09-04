@@ -18,7 +18,7 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
     .positional('paths', { type: 'string', array: true, default: ['/'] })
     .options({
       cached: { default: false, type: 'boolean', description: 'Only list cached items' },
-      fullPath: { alias: ['f'], default: false, type: 'boolean', description: 'Print full paths' },
+      'full-path': { alias: ['f'], default: false, type: 'boolean', description: 'Print full paths' },
       long: { alias: ['l'], default: false, description: 'Use a long listing format' },
       recursive: { alias: ['R'], default: false, type: 'boolean', description: 'Recursive listing' },
       depth: { alias: ['D'], default: Infinity, type: 'number', description: 'Depth of recursive listing' },
