@@ -1,16 +1,15 @@
 import * as E from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/lib/TaskEither'
-
 import * as w from 'yargs-command-wrapper'
+
 import * as CliDrive from './cli/drive'
-import { cmd } from './cli/drive/args'
 import * as Log from './logging'
 import { debugTimeTE } from './logging/debug-time'
 import { printer } from './logging/printerIO'
 
 async function main() {
-  const { result, yargs } = w.buildAndParse(cmd)
+  const { result, yargs } = w.buildAndParse(CliDrive.cmd)
 
   if (E.isLeft(result)) {
     console.log(result.left.message)

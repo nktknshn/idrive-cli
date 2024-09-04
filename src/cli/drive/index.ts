@@ -4,6 +4,9 @@ import { persistentDriveState } from '../../icloud-drive/drive-persistence'
 import { CliCommands, cmd } from './args'
 import * as Commands from './commands'
 
+export { cmd }
+export { createCliCommandsDeps } from './deps'
+
 const handler = w.createHandlerFor(cmd, {
   ls: persistentDriveState(Commands.listUnixPath),
   mkdir: persistentDriveState(Commands.mkdir),
@@ -19,8 +22,6 @@ const handler = w.createHandlerFor(cmd, {
   init: Commands.initSession,
   auth: Commands.authSession,
 })
-
-export { createCliCommandsDeps } from './deps'
 
 export const runCliCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, unknown> => {
   return handler.handle(command)

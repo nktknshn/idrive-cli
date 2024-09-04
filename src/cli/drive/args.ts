@@ -163,6 +163,7 @@ const recover = w.command(
 export const cmd = w.composeCommands(
   _ =>
     _.version(defaults.cliVersion)
+      .scriptName('idrive')
       .options({
         'session-file': {
           alias: ['s'],

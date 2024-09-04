@@ -17,7 +17,6 @@ type Args = {
   'human-readable': boolean
   trash: boolean
   tree: boolean
-  // etag: boolean
   recursive: boolean
   depth: number
   cached: boolean
