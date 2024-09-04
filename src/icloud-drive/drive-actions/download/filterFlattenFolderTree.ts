@@ -4,7 +4,7 @@ import micromatch from 'micromatch'
 import { getDirectoryStructure } from '../../../util/get-directory-structure'
 import { guardProp } from '../../../util/guards'
 import { Types } from '../..'
-import { FlattenFolderTreeWPath, FlattenTreeItemP, RemoteFile } from '../../util/drive-folder-tree'
+import { FlattenFolderTreeWPath, FlattenTreeItemP, RemoteFileItem } from '../../util/drive-folder-tree'
 import { DownloadItem, DownloadTask } from './types'
 
 type DefaultFunc = (opts: {
@@ -18,7 +18,7 @@ export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =
     && (exclude.length == 0 || !micromatch.any(remotepath, exclude, { dot: true }))
 
 const filterFlatTree = ({ filterFiles }: {
-  filterFiles: (files: RemoteFile) => boolean
+  filterFiles: (files: RemoteFileItem) => boolean
 }) =>
   <T extends Types.Root>(flatTree: FlattenFolderTreeWPath<T>) => {
     const files = pipe(
@@ -44,7 +44,7 @@ const filterFlatTree = ({ filterFiles }: {
   }
 
 export const makeDownloadTaskFromTree = (opts: {
-  filterFiles: (files: RemoteFile) => boolean
+  filterFiles: (files: RemoteFileItem) => boolean
 }) =>
   <T extends Types.Root>(flatTree: FlattenFolderTreeWPath<T>): DownloadTask & {
     excluded: DownloadItem[]

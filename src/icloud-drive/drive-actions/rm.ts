@@ -10,10 +10,9 @@ import { guardProp } from '../../util/guards'
 import { addLeadingSlash } from '../../util/normalize-path'
 import { runLogging } from '../../util/srte-utils'
 import { NEA } from '../../util/types'
-import { DriveLookup } from '..'
+import { DriveLookup, Types } from '..'
 import { DepApiMethod, DriveApiMethods } from '../drive-api'
 import { MoveItemToTrashResponse } from '../drive-requests'
-import { DriveChildrenItemFile, isNotRootDetails, NonRootDetails } from '../drive-types'
 
 export type DepsRm =
   & DriveLookup.Deps
@@ -35,7 +34,7 @@ export const rm = (
   return pipe(
     DriveLookup.searchGlobs(globsSlash, recursive ? Infinity : 1),
     SRTE.map(A.flatten),
-    SRTE.map(A.filter(guardProp('item', isNotRootDetails))),
+    SRTE.map(A.filter(guardProp('item', Types.isNotRootDetails))),
     SRTE.chainW((items) =>
       A.isNonEmpty(items)
         ? _rm({ items, trash: !skipTrash, force })
@@ -48,7 +47,7 @@ const _rm = (
   { items, trash, force }: {
     trash: boolean
     force: boolean
-    items: NEA<{ path: string; item: NonRootDetails | DriveChildrenItemFile }>
+    items: NEA<{ path: string; item: Types.NonRootDetails | Types.DriveChildrenItemFile | Types.FolderLikeItem }>
   },
 ): DriveLookup.Lookup<Result, DepsRm> => {
   const effect = () =>

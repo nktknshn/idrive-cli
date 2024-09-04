@@ -8,10 +8,7 @@ import { DriveLookup } from '../..'
 import * as T from '../../drive-types'
 import { FlattenTreeItemP } from '../../util/drive-folder-tree'
 
-export type SearchInPathFoundItem<R extends T.Root> = {
-  remotepath: string
-  remotefile: T.DetailsOrFile<R>
-}
+export type SearchInPathFoundItem<R extends T.Root> = FlattenTreeItemP<R>
 
 export const searchInPaths = (
   paths: NEA<NormalizedPath>,

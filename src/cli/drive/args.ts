@@ -52,7 +52,7 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
 
 const download = w.command(
   'download <path> <dstpath>',
-  'Download a file or a folder content',
+  'Download a file or a folder',
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .positional('dstpath', { type: 'string', demandOption: true })
@@ -188,15 +188,15 @@ export const cmd = w.composeCommands(
   init,
   auth,
   ls,
-  download,
   mkdir,
-  edit,
-  autocomplete,
-  upload,
-  mv,
   cat,
+  edit,
+  mv,
   rm,
+  download,
+  upload,
   recover,
+  autocomplete,
 )
 
 export type CliCommands = w.GetCommandArgs<typeof cmd>

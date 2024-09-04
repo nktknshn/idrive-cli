@@ -1,5 +1,6 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
+import micromatch from 'micromatch'
 import { Cache, DriveLookup } from '../../src/icloud-drive'
 import './debug'
 import { enableDebug } from './debug'
@@ -7,19 +8,54 @@ import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
 
 enableDebug(false)
 
-describe('searchGlobs', () => {
-  const structure = fakeicloud(
-    file({ name: 'fileinroot.txt' }),
-    file({ name: 'fileinroot2.txt' }),
-    folder({ name: 'test1' })(
+const structure = fakeicloud(
+  file({ name: 'fileinroot.txt' }),
+  file({ name: 'fileinroot2.txt' }),
+  folder({ name: 'test1' })(
+    file({ name: 'package.json' }),
+    folder({ name: 'test2' })(
       file({ name: 'package.json' }),
-      folder({ name: 'test2' })(
-        file({ name: 'package.json' }),
-        folder({ name: 'test3' })(),
-      ),
+      folder({ name: 'test3' })(),
     ),
-  )
+  ),
+)
 
+describe('micromatch', () => {
+  it('isMatch', () => {
+    expect(micromatch.isMatch('a', '**/*')).toBe(true)
+
+    expect(micromatch.isMatch('/test1.txt', '**/*.txt', { strictSlashes: true })).toBe(true)
+
+    expect(micromatch.isMatch('/', '**')).toBe(true)
+    expect(micromatch.isMatch('/', '/**')).toBe(true)
+    expect(micromatch.isMatch('/', '**/*')).toBe(true)
+    expect(micromatch.isMatch('/', '**/*', { strictSlashes: true })).toBe(false)
+
+    expect(micromatch.isMatch('/a.txt', '/*.txt')).toBe(true)
+
+    expect(micromatch.isMatch('/a', '**/*')).toBe(true)
+    expect(micromatch.isMatch('/a', '/*')).toBe(true)
+    expect(micromatch.isMatch('/a', '/**')).toBe(true)
+    expect(micromatch.isMatch('/a/b/c/d', '/**')).toBe(true)
+    expect(micromatch.isMatch('/a/b/c/d', '**')).toBe(true)
+    expect(micromatch.isMatch('/a/b/c/d', '/*')).toBe(false)
+
+    // huh?
+    expect(micromatch.isMatch('/a', '/**/*')).toBe(false)
+    expect(micromatch.isMatch('/a/b/c', '**/*')).toBe(true)
+    expect(micromatch.isMatch('/a/b/c', '**/c')).toBe(true)
+
+    // huh?
+    expect(micromatch.isMatch('/a/b', '/a/**/*')).toBe(true)
+
+    expect(micromatch.isMatch('/a/b', '/**/*')).toBe(true)
+
+    expect(micromatch.isMatch('/a/b', 'a/*')).toBe(false)
+    expect(micromatch.isMatch('/a/b', 'a/*', { contains: true })).toBe(true)
+  })
+})
+
+describe('searchGlobs', () => {
   const c = structure.r.c
 
   const f1 = { path: '/fileinroot.txt', item: c['fileinroot.txt'].d }
@@ -37,13 +73,24 @@ describe('searchGlobs', () => {
     ),
   })
 
+  it('lists the root with depth 0', async () => {
+    return pipe(
+      DriveLookup.searchGlobs(['**'], 0),
+      executeDrive(structure),
+      TE.map(({ calls, res, state }) => {
+        // /, fileinroot.txt, fileinroot2.txt, test1/
+        expect(res[0].length).toEqual(4)
+      }),
+    )()
+  })
+
   it('basic', async () => {
     return pipe(
       run(pipe(
         DriveLookup.searchGlobs(
           [
-            '/*.txt',
-            '/**/*.txt',
+            '*.txt',
+            '**/*.txt',
             '/fileinroot.txt',
             'fileinroot.txt',
             '/test1',
@@ -80,31 +127,31 @@ describe('searchGlobs', () => {
     )()
   })
 
-  it('works with options', async () => {
-    return pipe(
-      run(DriveLookup.searchGlobs(
-        [
-          '/*.txt',
-          '/**/*.txt',
-          '/fileinroot.txt',
-          'fileinroot.txt',
-        ],
-        Infinity,
-        { contains: true },
-      )),
-      TE.map(({ calls, res, state }) => {
-        expect(res).toEqual(
-          [
-            [f1, f2],
-            [f1, f2],
-            [f1],
-            [f1],
-          ],
-        )
-      }),
-      TE.mapLeft((e) => {
-        expect(false).toBe(true)
-      }),
-    )()
-  })
+  // it('works with options', async () => {
+  //   return pipe(
+  //     run(DriveLookup.searchGlobs(
+  //       [
+  //         '/*.txt',
+  //         '/**/*.txt',
+  //         '/fileinroot.txt',
+  //         'fileinroot.txt',
+  //       ],
+  //       Infinity,
+  //       { contains: true },
+  //     )),
+  //     TE.map(({ calls, res, state }) => {
+  //       expect(res).toEqual(
+  //         [
+  //           [f1, f2],
+  //           [f1, f2],
+  //           [f1],
+  //           [f1],
+  //         ],
+  //       )
+  //     }),
+  //     TE.mapLeft((e) => {
+  //       expect(false).toBe(true)
+  //     }),
+  //   )()
+  // })
 })

@@ -1,9 +1,10 @@
 import * as A from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { DriveActions, DriveLookup, DriveTree } from '../../../icloud-drive'
+import { DriveActions, DriveLookup, DriveTree, Types } from '../../../icloud-drive'
 import { addLeadingSlash } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { addTrailingNewline } from '../../../util/string'
@@ -52,7 +53,7 @@ const lsShallow = (
   }
 
   const opts = {
-    showInfo: args.info,
+    info: args.info,
     long: args.long,
     fullPath: args['full-path'],
     humanReadable: args['human-readable'],
@@ -85,23 +86,54 @@ const lsRecursive = (
     return DriveLookup.errString('no paths')
   }
 
+  const opts = {
+    info: args.info,
+    long: args.long,
+    fullPath: true,
+    humanReadable: args['human-readable'],
+  }
+
   return pipe(
-    DriveActions.listRecursive({ paths: args.paths, depth: args.depth }),
+    DriveActions.listRecursive({ globs: args.paths, depth: args.depth }),
     SRTE.map(NA.zip(args.paths)),
-    SRTE.map(NA.map(([res, path]) => {
-      let result = ''
-      for (const item of res) {
-        // const row = LsPrinting.showItem(
-        //   item.item,
-        //   path,
-        //   10,
-        //   10,
-        //   10,
-        //   { fullPath: true, long: 0, header: false },
-        // )
+    SRTE.map(NA.map(([found, path]) => {
+      const result: string[] = []
+      const items = pipe(
+        found,
+        A.map(_ => _.item),
+        A.filter(not(Types.isCloudDocsRootDetailsG)),
+        A.filter(not(Types.isTrashDetailsG)),
+      )
+
+      const ms = LsPrinting.maxSize(items)
+      const tw = LsPrinting.typeWidth(items)
+      const fw = found.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
+
+      for (const { item, path } of found) {
+        if (Types.isTrashDetails(item)) {
+          continue
+        }
+
+        if (Types.isCloudDocsRootDetails(item)) {
+          continue
+        }
+
+        result.push(
+          LsPrinting.showItem(
+            item,
+            Path.dirname(path),
+            {
+              filenameWidth: fw,
+              typeWidth: tw,
+              sizeWidth: ms.toString().length,
+            },
+            opts,
+          ),
+        )
       }
+
+      return `${path}:\n` + result.join('\n')
     })),
-    // SRTE.map(NA.map(([res, path]) => `${path}:\n${res.map(_ => _.path).join('\n')}`)),
     SRTE.map(_ => _.join('\n\n')),
   )
 }
@@ -115,14 +147,14 @@ const lsRecursiveTree = (
   }
 
   return pipe(
-    DriveActions.listRecursiveTree({ paths: args.paths, depth: args.depth }),
+    DriveActions.listRecursiveTree({ globs: args.paths, depth: args.depth }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([tree, path]) =>
       pipe(
         tree,
         O.fold(
           () => Path.dirname(path) + '/',
-          DriveTree.showTreeWithFiles,
+          DriveTree.showTreeWithItemsP,
         ),
       )
     )),

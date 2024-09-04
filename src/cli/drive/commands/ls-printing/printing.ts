@@ -21,7 +21,7 @@ export type ShowDetailsInfoParams = {
   info: boolean
 }
 
-// like unix ls -l
+// formating like ls -l
 // Aug 30 08:41
 // Sep  2 19:14
 // Sep  3  2023
@@ -51,12 +51,21 @@ export const formatDate = (dateOrStr: Date | string) => {
   ].join(' ')
 }
 
+// export const showItems = (
+//   items: Types.DriveChildrenItem[],
+//   path: string,
+//   { long, fullPath }: { long: number; fullPath: boolean },
+// ): string => {
+// }
+
 export const showItem = (
   item: Types.DriveChildrenItem,
   path: string,
-  filenameWidth: number,
-  typeWidth: number,
-  sizeWidth: number,
+  widths: {
+    filenameWidth: number
+    typeWidth: number
+    sizeWidth: number
+  },
   { long, fullPath }: { long: number; fullPath: boolean },
 ): string => {
   let fname = fullPath
@@ -75,10 +84,10 @@ export const showItem = (
 
   if (item.type === 'FILE') {
     const output = ''
-      + col(item.type, typeWidth + 2)
+      + col(item.type, widths.typeWidth + 2)
       + col(formatDate(item.dateCreated), 14)
-      + item.size.toString().padStart(sizeWidth) + ' '
-      + col(fname, filenameWidth) + '  '
+      + item.size.toString().padStart(widths.sizeWidth) + ' '
+      + col(fname, widths.filenameWidth) + '  '
 
     if (long == 1) {
       return output
@@ -93,10 +102,10 @@ export const showItem = (
 
   if (item.type !== 'FILE') {
     const output = ''
-      + col(item.type, typeWidth + 2)
+      + col(item.type, widths.typeWidth + 2)
       + col(formatDate(item.dateCreated), 14)
-      + col('', sizeWidth + 1)
-      + col(fname, filenameWidth) + '  '
+      + col('', widths.sizeWidth + 1)
+      + col(fname, widths.filenameWidth) + '  '
 
     if (long == 1) {
       return output
@@ -111,6 +120,24 @@ export const showItem = (
 
   return Types.fileName(item)
 }
+
+export const maxSize = (items: Types.DriveChildrenItem[]) =>
+  pipe(
+    items,
+    A.filter(Types.isFile),
+    A.map(_ => _.size),
+    A.reduce(0, Math.max),
+  )
+
+export const typeWidth = (items: Types.DriveChildrenItem[]) =>
+  pipe(
+    items,
+    A.map(_ => _.type.length),
+    A.reduce(0, Math.max),
+  )
+
+export const filenameWidth = (items: Types.DriveChildrenItem[]) =>
+  pipe(items, A.map(Types.fileName), A.map(_ => _.length), A.reduce(0, Math.max))
 
 export const showDetailsInfo = (details: Types.Details, path: string) =>
   (params: ShowDetailsInfoParams) => {
@@ -158,37 +185,21 @@ export const showDetailsInfo = (details: Types.Details, path: string) =>
       ]),
     )
 
-    const maxSize = pipe(
-      items,
-      A.filter(Types.isFile),
-      A.map(_ => _.size),
-      A.reduce(0, Math.max),
-    )
-
-    const typeWidth = pipe(
-      items,
-      A.map(_ => _.type.length),
-      A.reduce(0, Math.max),
-    )
-
-    let filenameWidth = pipe(
-      items,
-      A.map(Types.fileName),
-      A.map(_ => _.length),
-      A.reduce(0, Math.max),
-    )
+    let fw = filenameWidth(items)
 
     if (params.fullPath) {
-      filenameWidth += path.length + 1
+      fw += path.length + 1
     }
 
     for (const item of items) {
       result += showItem(
         item,
         path,
-        filenameWidth,
-        typeWidth,
-        maxSize.toString().length,
+        {
+          filenameWidth: fw,
+          typeWidth: typeWidth(items),
+          sizeWidth: maxSize(items).toString().length,
+        },
         { fullPath: params.fullPath, long: params.long },
       ) + '\n'
     }

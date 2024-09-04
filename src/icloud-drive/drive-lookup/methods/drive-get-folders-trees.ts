@@ -12,6 +12,7 @@ import * as T from '../../drive-types'
 import { deepFolder, DriveFolderTree, shallowFolder } from '../../util/drive-folder-tree'
 import { equalsDrivewsId } from '../../util/drive-helpers'
 
+/** If depth is 0 returns shallowFolder(details) */
 export function getFoldersTrees(
   folders: NEA<T.NonRootDetails>,
   depth: number,
