@@ -51,6 +51,7 @@ export const formatDate = (dateOrStr: Date | string) => {
   ].join(' ')
 }
 
+// TODO function to show bunch of items
 // export const showItems = (
 //   items: Types.DriveChildrenItem[],
 //   path: string,
@@ -85,7 +86,8 @@ export const showItem = (
   if (item.type === 'FILE') {
     const output = ''
       + col(item.type, widths.typeWidth + 2)
-      + col(formatDate(item.dateCreated), 14)
+      //
+      + col(formatDate(item.dateModified), 14)
       + item.size.toString().padStart(widths.sizeWidth) + ' '
       + col(fname, widths.filenameWidth) + '  '
 
@@ -168,6 +170,7 @@ export const showDetailsInfo = (details: Types.Details, path: string) =>
         }
         result += `${column('Number of items')}${details.numberOfItems}\n`
         result += `${column('Date created')}${details.dateCreated}\n`
+
         if (details.restorePath !== undefined) {
           result += `${column('Restore path')}${details.restorePath}\n`
         }

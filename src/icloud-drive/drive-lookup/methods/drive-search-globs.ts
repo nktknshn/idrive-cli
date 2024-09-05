@@ -73,7 +73,7 @@ export const searchGlobs = (
         guardSnd(T.isNotFile),
         (dirs) =>
           modifySubset(
-            dirs, // dirs is a list of folders details
+            dirs, // `dirs` is a list of folders details
             // separate globs and plain paths
             ([scan, _dir]) => scan.isGlob,
             // go deeper recursively getting content of the parents of globs

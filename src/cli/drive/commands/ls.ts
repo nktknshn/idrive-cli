@@ -5,6 +5,7 @@ import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DriveActions, DriveLookup, DriveTree, Types } from '../../../icloud-drive'
+import { guardProp } from '../../../util/guards'
 import { addLeadingSlash } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
 import { addTrailingNewline } from '../../../util/string'
@@ -89,8 +90,8 @@ const lsRecursive = (
   const opts = {
     info: args.info,
     long: args.long,
-    fullPath: true,
     humanReadable: args['human-readable'],
+    fullPath: true,
   }
 
   return pipe(
@@ -100,24 +101,15 @@ const lsRecursive = (
       const result: string[] = []
       const items = pipe(
         found,
-        A.map(_ => _.item),
-        A.filter(not(Types.isCloudDocsRootDetailsG)),
-        A.filter(not(Types.isTrashDetailsG)),
+        A.filter(guardProp('item', not(Types.isCloudDocsRootDetailsG))),
+        A.filter(guardProp('item', not(Types.isTrashDetailsG))),
       )
 
-      const ms = LsPrinting.maxSize(items)
-      const tw = LsPrinting.typeWidth(items)
-      const fw = found.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
+      const ms = LsPrinting.maxSize(items.map(_ => _.item))
+      const tw = LsPrinting.typeWidth(items.map(_ => _.item))
+      const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
 
-      for (const { item, path } of found) {
-        if (Types.isTrashDetails(item)) {
-          continue
-        }
-
-        if (Types.isCloudDocsRootDetails(item)) {
-          continue
-        }
-
+      for (const { item, path } of items) {
         result.push(
           LsPrinting.showItem(
             item,
@@ -156,6 +148,7 @@ const lsRecursiveTree = (
           () => Path.dirname(path) + '/',
           DriveTree.showTreeWithItemsP,
         ),
+        a => `${path}:\n${a}`,
       )
     )),
     SRTE.map(_ => _.join('\n\n')),
