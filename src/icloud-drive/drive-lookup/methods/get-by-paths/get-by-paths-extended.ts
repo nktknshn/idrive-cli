@@ -111,6 +111,7 @@ export const getByPathFolderStrictDocwsroot = (
     SRTE.chainW((root) => getByPathFolderStrict(root, path, params)),
   )
 
+/** Fails if some of the paths are not valid or not folders */
 export const getByPathsFoldersStrict = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,

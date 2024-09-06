@@ -13,8 +13,7 @@ import { isMatching } from '../../../util/glob-matching'
 import { guardSnd } from '../../../util/guards'
 import { normalizePath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
-import { DriveLookup } from '../..'
-import * as T from '../../drive-types'
+import { DriveLookup, Types } from '../..'
 import * as DTR from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
 import { getFoldersTrees } from './drive-get-folders-trees'
@@ -24,14 +23,17 @@ export type SearchGlobFoundItem = {
   path: string
   /** Item data */
   item:
-    // if the depth is enough the get the item details
-    | T.DetailsDocwsRoot
-    | T.DetailsTrashRoot
-    // item for the parent's details
-    | T.NonRootDetails
-    | T.DriveChildrenItemFile
-    | T.DriveChildrenItemFolder
-    | T.DriveChildrenItemAppLibrary
+    // a root
+    | Types.DetailsDocwsRoot
+    | Types.DetailsTrashRoot
+    // info about a folder
+    | Types.NonRootDetails
+    // if the depth is not enough the get a folder details
+    // item from the parent's details is returned
+    | Types.DriveChildrenItemFolder
+    | Types.DriveChildrenItemAppLibrary
+    // file
+    | Types.DriveChildrenItemFile
 }
 
 export const searchGlobsShallow = (
@@ -61,8 +63,6 @@ export const searchGlobs = (
     NA.map(normalizePath),
   )
 
-  // console.log('globsBases', globsBases)
-
   return pipe(
     // look for the paths leading the glob patterns and get the details
     DriveLookup.getByPathsStrictDocwsroot(globsBases),
@@ -70,7 +70,7 @@ export const searchGlobs = (
       modifySubset(
         NA.zip(globsBases)(scanned),
         // separate input paths into folders and files
-        guardSnd(T.isNotFile),
+        guardSnd(Types.isNotFile),
         (dirs) =>
           modifySubset(
             dirs, // `dirs` is a list of folders details
@@ -107,10 +107,6 @@ export const searchGlobs = (
           tree => {
             return pipe(
               tree,
-              // (tree) => {
-              //   console.log('tree: ' + DTR.showFolderTree(tree))
-              //   return tree
-              // },
               DTR.flattenFolderTreeWithBasepath(Path.dirname(basepath)),
               A.filterMap(({ remotepath, remotefile }) => {
                 if (scan.glob.length == 0) {
@@ -122,8 +118,6 @@ export const searchGlobs = (
                 }
 
                 const isMatch = isMatching(remotepath, globpattern, options)
-
-                // console.log({ remotepath, globpattern, remotefile, isMatch })
 
                 return isMatch
                   ? O.some({ path: remotepath, item: remotefile })

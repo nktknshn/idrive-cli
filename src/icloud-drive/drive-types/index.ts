@@ -128,7 +128,7 @@ export const isTrashDetails = (
   details: Details | DriveChildrenItem,
 ): details is DetailsTrashRoot => details.drivewsid === types.trashDrivewsid
 
-/** Generic version of `isTrashDetails` preventing the input type */
+/** Generic version of `isTrashDetails` preserving the type */
 export const isTrashDetailsG = <T extends { drivewsid: string }>(
   details: DetailsTrashRoot | T,
 ): details is DetailsTrashRoot => details.drivewsid === types.trashDrivewsid

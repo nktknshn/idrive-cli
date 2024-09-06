@@ -99,6 +99,7 @@ const lsRecursive = (
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([found, path]) => {
       const result: string[] = []
+      // exclude roots from the results
       const items = pipe(
         found,
         A.filter(guardProp('item', not(Types.isCloudDocsRootDetailsG))),

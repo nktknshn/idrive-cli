@@ -14,6 +14,7 @@ export const getFoldersTreesByPathsDocwsroot = (
   pipe(
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     SRTE.chain(dir => DriveLookup.getFoldersTrees(dir, depth)),
+    // save calls for overlapping paths
     DriveLookup.usingTempCache,
   )
 
@@ -33,10 +34,7 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
   NEA<FlattenFolderTreeWPath<Types.DetailsDocwsRoot>>
 > => {
   return pipe(
-    // provide existing cache for getByPathsFromCache
-    // and accumulate new details here
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
-    // and use here
     SRTE.chain(dirs => DriveLookup.getFoldersTrees<Types.DetailsDocwsRoot>(dirs, depth)),
     DriveLookup.usingTempCache,
     SRTE.map(NA.zip(paths)),
