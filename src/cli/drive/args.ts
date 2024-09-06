@@ -31,7 +31,15 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
         description: 'With -l, print sizes like 1K 234M 2G etc.',
       },
       // etag: { alias: ['e'], default: false, type: 'boolean' },
-      trash: { alias: ['t'], default: false, type: 'boolean', description: 'List trash' },
+      trash: { alias: ['trash'], default: false, type: 'boolean', description: 'List trash' },
+      // TODO
+      // sort: {
+      //   alias: ['S'],
+      //   choices: ['name', 'date', 'size'],
+      //   default: 'name',
+      //   type: 'string',
+      //   description: 'Sort by',
+      // },
     })
     .count('long')
     .check((args) => {
@@ -43,9 +51,9 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
         throw new Error('Tree view requires recursive listing')
       }
 
-      if (args.depth > 0 && args.depth < Infinity && !args.recursive) {
-        throw new Error('Depth requires recursive listing')
-      }
+      // if (args.depth > 0 && args.depth < Infinity && !args.recursive) {
+      //   throw new Error('Depth requires recursive listing')
+      // }
 
       return true
     }))

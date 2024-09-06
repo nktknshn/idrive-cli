@@ -45,6 +45,7 @@ export const ls = (
 }
 
 // TODO show other dates for files
+// TODO sort
 /** List a folder with zero depth */
 const lsShallow = (
   args: Args,
@@ -110,7 +111,7 @@ const lsRecursive = (
         A.filter(guardProp('item', not(Types.isTrashDetailsG))),
       )
 
-      const sw = LsPrinting.sizeWidth(items.map(_ => _.item))
+      const sw = LsPrinting.sizeWidth(items.map(_ => _.item), opts.humanReadable)
       const tw = LsPrinting.typeWidth(items.map(_ => _.item))
       const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
 

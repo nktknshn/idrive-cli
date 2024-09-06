@@ -9,6 +9,7 @@ import {
   ordIsFolder,
 } from '../../../../icloud-drive/drive-types'
 import { Path } from '../../../../util/path'
+import { sizeHumanReadable } from './util'
 
 export const showInvalidPath = (path: GetByPath.PathInvalid<Types.Root>) => {
   return GetByPath.showGetByPathResult(path)
@@ -67,7 +68,7 @@ export const showItem = (
     typeWidth: number
     sizeWidth: number
   },
-  { long, fullPath }: { long: number; fullPath: boolean },
+  { long, fullPath, humanReadable }: { long: number; fullPath: boolean; humanReadable: boolean },
 ): string => {
   let fname = fullPath
     ? Path.join(path, Types.fileName(item))
@@ -84,11 +85,15 @@ export const showItem = (
   const col = (s: string, n = 20) => s.padEnd(n)
 
   if (item.type === 'FILE') {
+    const sizeStr = humanReadable
+      ? sizeHumanReadable(item.size)
+      : item.size.toString()
+
     const output = ''
       + col(item.type, widths.typeWidth + 2)
       //
       + col(formatDate(item.dateModified), 14)
-      + item.size.toString().padStart(widths.sizeWidth) + ' '
+      + sizeStr.padStart(widths.sizeWidth) + ' '
       + col(fname, widths.filenameWidth) + '  '
 
     if (long == 1) {
@@ -131,7 +136,21 @@ export const maxSize = (items: Types.DriveChildrenItem[]) =>
     A.reduce(0, Math.max),
   )
 
-export const sizeWidth = (items: Types.DriveChildrenItem[]) => maxSize(items).toString().length
+export const longestSizeHumanReadable = (items: Types.DriveChildrenItem[]) =>
+  pipe(
+    items,
+    A.filter(Types.isFile),
+    A.map(_ => sizeHumanReadable(_.size)),
+    A.reduce(0, (a, b) => Math.max(a, b.length)),
+  )
+
+export const sizeWidth = (items: Types.DriveChildrenItem[], hr = false) => {
+  if (hr) {
+    return longestSizeHumanReadable(items)
+  }
+
+  return maxSize(items).toString().length
+}
 
 export const typeWidth = (items: Types.DriveChildrenItem[]) =>
   pipe(
@@ -191,6 +210,8 @@ export const showDetailsInfo = (details: Types.Details, path: string) =>
     )
 
     let fw = filenameWidth(items)
+    const sw = sizeWidth(items, params.humanReadable)
+    const tw = typeWidth(items)
 
     if (params.fullPath) {
       fw += path.length + 1
@@ -199,8 +220,8 @@ export const showDetailsInfo = (details: Types.Details, path: string) =>
     for (const item of items) {
       result += showItem(item, path, {
         filenameWidth: fw,
-        typeWidth: typeWidth(items),
-        sizeWidth: maxSize(items).toString().length,
+        typeWidth: tw,
+        sizeWidth: sw,
       }, params) + '\n'
     }
 
@@ -218,7 +239,7 @@ export const showFileInfo = (item: Types.DriveChildrenItemFile, path: string) =>
       if (item.extension !== undefined) {
         result += `${col('Extension')}${item.extension}\n`
       }
-      result += `${col('Size')}${item.size}\n`
+      result += `${col('Size')}${params.humanReadable ? sizeHumanReadable(item.size) : item.size}\n`
       result += `${col('Date created')}${item.dateCreated}\n`
       result += `${col('Date modified')}${item.dateModified}\n`
       result += `${col('Date changed')}${item.dateChanged}\n`
@@ -235,7 +256,7 @@ export const showFileInfo = (item: Types.DriveChildrenItemFile, path: string) =>
 
     result += showItem(item, path, {
       filenameWidth: item.name.length,
-      sizeWidth: item.size.toString().length,
+      sizeWidth: sizeWidth([item], params.humanReadable),
       typeWidth: 4,
     }, params)
 
@@ -248,5 +269,6 @@ export const showValidPath = (res: DriveActions.ListPathsFolder | DriveActions.L
   if (res.isFile) {
     return showFileInfo(res.item, path)
   }
+
   return showDetailsInfo({ ...res.parentItem, items: res.items }, path)
 }
