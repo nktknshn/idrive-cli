@@ -1,10 +1,12 @@
 import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
+import { identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
+import * as Ord from 'fp-ts/lib/Ord'
 import { not } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 import { DriveActions, DriveLookup, DriveTree, Types } from '../../../icloud-drive'
+import { ordDriveChildrenItemBySize } from '../../../icloud-drive/drive-types'
 import { guardProp } from '../../../util/guards'
 import { addLeadingSlash } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
@@ -22,7 +24,10 @@ type Args = {
   recursive: boolean
   depth: number
   cached: boolean
+  sort: LsPrinting.Sort | undefined
 }
+
+const defaultSort = 'name'
 
 export const ls = (
   args: Args,
@@ -59,6 +64,7 @@ const lsShallow = (
     long: args.long,
     fullPath: args['full-path'],
     humanReadable: args['human-readable'],
+    sort: args.sort ?? defaultSort,
   }
 
   return pipe(
@@ -93,6 +99,7 @@ const lsRecursive = (
     long: args.long,
     humanReadable: args['human-readable'],
     fullPath: true,
+    sort: args.sort ?? defaultSort,
   }
 
   return pipe(
@@ -111,11 +118,22 @@ const lsRecursive = (
         A.filter(guardProp('item', not(Types.isTrashDetailsG))),
       )
 
-      const sw = LsPrinting.sizeWidth(items.map(_ => _.item), opts.humanReadable)
-      const tw = LsPrinting.typeWidth(items.map(_ => _.item))
+      const driveItems = items.map(_ => _.item)
+
+      const sw = LsPrinting.sizeWidth(driveItems, opts.humanReadable)
+      const tw = LsPrinting.typeWidth(driveItems)
       const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
 
-      for (const { item, path } of items) {
+      const sortedItems = pipe(
+        items,
+        opts.sort === 'size'
+          ? A.sortBy([
+            Ord.contramap((a: { item: Types.DriveChildrenItem }) => a.item)(ordDriveChildrenItemBySize),
+          ])
+          : identity,
+      )
+
+      for (const { item, path } of sortedItems) {
         result.push(
           LsPrinting.showItem(
             item,

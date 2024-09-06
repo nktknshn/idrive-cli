@@ -56,7 +56,7 @@ export const searchGlobs = (
     goDeeper = false,
   }: {
     options?: micromatch.Options
-    /** If true, go deeper into the folders appended with ** */
+    /** If true, automatically go deeper into folders */
     goDeeper?: boolean
   },
 ): DriveLookup.Lookup<

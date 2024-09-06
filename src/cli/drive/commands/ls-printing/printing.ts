@@ -5,11 +5,14 @@ import * as Ord from 'fp-ts/lib/Ord'
 import { DriveActions, GetByPath, Types } from '../../../../icloud-drive'
 import {
   ordDriveChildrenItemByName,
+  ordDriveChildrenItemBySize,
   ordDriveChildrenItemByType,
   ordIsFolder,
 } from '../../../../icloud-drive/drive-types'
 import { Path } from '../../../../util/path'
 import { sizeHumanReadable } from './util'
+
+export type Sort = 'name' | 'size'
 
 export const showInvalidPath = (path: GetByPath.PathInvalid<Types.Root>) => {
   return GetByPath.showGetByPathResult(path)
@@ -20,6 +23,7 @@ export type ShowDetailsInfoParams = {
   long: number
   humanReadable: boolean
   info: boolean
+  sort: Sort
 }
 
 // formating like ls -l
@@ -59,6 +63,17 @@ export const formatDate = (dateOrStr: Date | string) => {
 //   { long, fullPath }: { long: number; fullPath: boolean },
 // ): string => {
 // }
+
+export const getOrds = (sort: Sort): Ord.Ord<Types.DriveChildrenItem>[] => [
+  // APP_LIBRARY, FOLDER, FILE
+  Ord.reverse(ordIsFolder),
+  ordDriveChildrenItemByType,
+  sort === 'size'
+    ? ordDriveChildrenItemBySize
+    : ordDriveChildrenItemByName,
+]
+
+export const sortItems = (items: Types.DriveChildrenItem[], sort: Sort) => pipe(items, A.sortBy(getOrds(sort)))
 
 export const showItem = (
   item: Types.DriveChildrenItem,
@@ -199,15 +214,7 @@ export const showDetailsInfo = (details: Types.Details, path: string) =>
       }
     }
 
-    const items = pipe(
-      details.items,
-      // APP_LIBRARY, FOLDER, FILE
-      A.sortBy([
-        Ord.reverse(ordIsFolder),
-        ordDriveChildrenItemByType,
-        ordDriveChildrenItemByName,
-      ]),
-    )
+    const items = sortItems(details.items, params.sort)
 
     let fw = filenameWidth(items)
     const sw = sizeWidth(items, params.humanReadable)

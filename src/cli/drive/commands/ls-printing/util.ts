@@ -10,6 +10,8 @@ export const sizeHumanReadable = (size: number) => {
     size /= 1024
     i++
   }
+  // round up
+  size = Math.ceil(size * 10) / 10
 
   return `${size.toFixed(1)}${units[i]}`
 }

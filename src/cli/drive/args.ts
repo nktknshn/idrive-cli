@@ -33,13 +33,20 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
       // etag: { alias: ['e'], default: false, type: 'boolean' },
       trash: { alias: ['trash'], default: false, type: 'boolean', description: 'List trash' },
       // TODO
-      // sort: {
-      //   alias: ['S'],
-      //   choices: ['name', 'date', 'size'],
-      //   default: 'name',
-      //   type: 'string',
-      //   description: 'Sort by',
-      // },
+      sort: {
+        alias: ['S'],
+        choices: ['name', 'size'],
+        default: 'name',
+        type: 'string',
+        description: 'Sort by',
+      },
+    })
+    .coerce('sort', (a): 'name' | 'size' => {
+      if (['name', 'size'].includes(a)) {
+        return a
+      }
+
+      throw new Error(`Invalid sort option: ${a}`)
     })
     .count('long')
     .check((args) => {
