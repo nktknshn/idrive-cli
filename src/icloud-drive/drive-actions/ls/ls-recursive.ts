@@ -29,14 +29,13 @@ const getScanned = (paths: NA.NonEmptyArray<string>) =>
 export const listRecursive = ({ globs, depth }: {
   globs: NA.NonEmptyArray<string>
   depth: number
+  cached: boolean
 }): DriveLookup.Lookup<NEA<DriveLookup.SearchGlobFoundItem[]>> => {
   // appends '**' to the paths that are not globs to make a recursive search
   const scanned = getScanned(globs)
   globs = pipe(scanned, NA.map(_ => _.input))
 
-  return pipe(
-    DriveLookup.searchGlobs(globs, depth),
-  )
+  return DriveLookup.searchGlobs(globs, depth)
 }
 
 export type ListRecursiveTreeResult = O.Option<

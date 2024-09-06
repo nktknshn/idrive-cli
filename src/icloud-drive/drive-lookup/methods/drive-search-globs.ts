@@ -1,10 +1,9 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
+import { flow, identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as O from 'fp-ts/Option'
 import micromatch from 'micromatch'
 
 import { loggerIO } from '../../../logging'
@@ -13,7 +12,7 @@ import { isMatching } from '../../../util/glob-matching'
 import { guardSnd } from '../../../util/guards'
 import { normalizePath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
-import { DriveLookup, Types } from '../..'
+import { DriveLookup, DriveTree, Types } from '../..'
 import * as DTR from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
 import { getFoldersTrees } from './drive-get-folders-trees'
@@ -67,14 +66,14 @@ export const searchGlobs = (
     // look for the paths leading the glob patterns and get the details
     DriveLookup.getByPathsStrictDocwsroot(globsBases),
     SRTE.chain((globsBases) =>
+      // separate input paths into folders and files
       modifySubset(
         NA.zip(globsBases)(scanned),
-        // separate input paths into folders and files
         guardSnd(Types.isNotFile),
         (dirs) =>
+          // separate globs and other paths (like plain paths and wildcards)
           modifySubset(
             dirs, // `dirs` is a list of folders details
-            // separate globs and plain paths
             ([scan, _dir]) => scan.isGlob,
             // go deeper recursively getting content of the parents of globs
             globParents =>
@@ -98,33 +97,18 @@ export const searchGlobs = (
       pipe(
         fileOrTree,
         E.fold(
-          // handle basepaths that turned out to be files
+          // handle paths that turned out to be files
           file =>
-            !scan.isGlob && micromatch.isMatch(basepath, scan.input, options)
+            !scan.isGlob && isMatching(basepath, scan.input, options)
               ? [{ path: basepath, item: file }]
               : [],
           // handle trees
-          tree => {
-            return pipe(
-              tree,
-              DTR.flattenFolderTreeWithBasepath(Path.dirname(basepath)),
-              A.filterMap(({ remotepath, remotefile }) => {
-                if (scan.glob.length == 0) {
-                  if (micromatch.isMatch(remotepath, globpattern, options)) {
-                    return O.some({ path: remotepath, item: remotefile })
-                  }
-
-                  return O.none
-                }
-
-                const isMatch = isMatching(remotepath, globpattern, options)
-
-                return isMatch
-                  ? O.some({ path: remotepath, item: remotefile })
-                  : O.none
-              }),
-            )
-          },
+          flow(
+            DriveTree.treeWithItems,
+            DriveTree.addPath(Path.dirname(basepath), identity),
+            DriveTree.flattenTree,
+            A.filter(({ path }) => isMatching(path, globpattern, options)),
+          ),
         ),
       )
     ))),

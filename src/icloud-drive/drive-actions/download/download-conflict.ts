@@ -85,5 +85,5 @@ const handleStats = (item: DownloadItemMapped) =>
 
 export const showConflict = (conflict: Conflict): string =>
   conflict.tag === 'exists'
-    ? `local file ${conflict.item.localpath} (${conflict.localitem.stats.size} bytes) conflicts with remote file (${conflict.item.item.remotefile.size} bytes)`
+    ? `local file ${conflict.item.localpath} (${conflict.localitem.stats.size} bytes) conflicts with remote file (${conflict.item.item.item.size} bytes)`
     : `error: ${conflict.error}`

@@ -58,7 +58,7 @@ export const applySoultions = (
         solutions,
         RA.findFirstMap(
           ([conflict, action]) =>
-            conflict.item.item.remotefile.drivewsid === d.item.remotefile.drivewsid
+            conflict.item.item.item.drivewsid === d.item.item.drivewsid
               ? O.some([conflict.item, action] as const)
               : O.none,
         ),

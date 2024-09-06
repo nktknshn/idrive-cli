@@ -1,10 +1,10 @@
-import { pipe } from 'fp-ts/lib/function'
+import { identity, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
-import { DriveLookup, Types } from '../..'
-import { DriveFolderTree, flattenFolderTreeWithBasepath, FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
+import { DriveLookup, DriveTree, Types } from '../..'
+import { DriveFolderTree } from '../../util/drive-folder-tree'
 
 /** Returns a list of folder trees for the given paths */
 export const getFoldersTreesByPathsDocwsroot = (
@@ -31,7 +31,7 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
 ): DriveLookup.Lookup<
-  NEA<FlattenFolderTreeWPath<Types.DetailsDocwsRoot>>
+  NEA<DriveTree.FlattenWithItems<Types.DetailsDocwsRoot>>
 > => {
   return pipe(
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
@@ -39,7 +39,12 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
     DriveLookup.usingTempCache,
     SRTE.map(NA.zip(paths)),
     SRTE.map(NA.map(
-      ([tree, path]) => flattenFolderTreeWithBasepath(Path.dirname(path))<Types.DetailsDocwsRoot>(tree),
+      ([tree, path]) =>
+        pipe(
+          DriveTree.treeWithItems(tree),
+          DriveTree.addPath(Path.dirname(path), identity),
+          DriveTree.flattenTree,
+        ),
     )),
   )
 }
@@ -47,7 +52,7 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
 export const getFolderTreeByPathFlattenWPDocwsroot = (
   path: NormalizedPath,
   depth = Infinity,
-): DriveLookup.Lookup<FlattenFolderTreeWPath<Types.DetailsDocwsRoot>> =>
+): DriveLookup.Lookup<DriveTree.FlattenWithItems<Types.DetailsDocwsRoot>> =>
   pipe(
     getFoldersTreesByPathsFlattenDocwsroot([path], depth),
     SRTE.map(NA.head),

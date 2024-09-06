@@ -60,8 +60,8 @@ const resolveConflictsOverwrightIfSizeDifferent = (
         conflicts,
         A.map((conflict) =>
           conflict.tag === 'exists'
-            ? conflict.localitem.stats.size !== conflict.item.item.remotefile.size
-                && !skipRemotes(conflict.item.item.remotefile)
+            ? conflict.localitem.stats.size !== conflict.item.item.item.size
+                && !skipRemotes(conflict.item.item.item)
               ? [conflict, 'overwright' as SolutionAction] as const
               : [conflict, 'skip' as SolutionAction] as const
             : [
@@ -101,7 +101,7 @@ const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts
         A.map((conflict) =>
           askConfirmation({
             message:
-              `overwright ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${conflict.item.item.remotefile.size} bytes`,
+              `overwright ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${conflict.item.item.item.size} bytes`,
           })
         ),
         TE.sequenceSeqArray,

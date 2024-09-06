@@ -162,11 +162,6 @@ export const isDetailsG = <R extends Root>(
 ): entity is R | NonRootDetails =>
   isTrashDetails(entity) || (isFolderLike(entity) && isObjectWithOwnProperty(entity, 'items'))
 
-// export const isItem = (
-//   entity: DriveChildrenItem,
-// ): entity is DriveChildrenItemFile | DriveChildrenItemFolder | DriveChildrenItemAppLibrary =>
-//   entity.type === 'FILE' || entity.type === 'FOLDER' || entity.type === 'APP_LIBRARY'
-
 export const isFileItem = (
   entity: DriveChildrenItem,
 ): entity is DriveChildrenItemFile => entity.type === 'FILE'

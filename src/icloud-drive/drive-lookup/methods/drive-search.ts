@@ -4,18 +4,15 @@ import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath } from '../../../util/normalize-path'
 import { NEA } from '../../../util/types'
-import { DriveLookup } from '../..'
+import { DriveLookup, DriveTree } from '../..'
 import * as T from '../../drive-types'
-import { FlattenTreeItemP } from '../../util/drive-folder-tree'
-
-export type SearchInPathFoundItem<R extends T.Root> = FlattenTreeItemP<R>
 
 export const searchInPaths = (
   paths: NEA<NormalizedPath>,
-  query: (item: FlattenTreeItemP<T.DetailsDocwsRoot>) => boolean,
+  query: (item: DriveTree.FlattenWithItemsValue<T.DetailsDocwsRoot>) => boolean,
   depth = Infinity,
 ): DriveLookup.Lookup<
-  NA.NonEmptyArray<SearchInPathFoundItem<T.DetailsDocwsRoot>[]>
+  NA.NonEmptyArray<DriveTree.FlattenWithItemsValue<T.DetailsDocwsRoot>[]>
 > => {
   return pipe(
     DriveLookup.getFoldersTreesByPathsFlattenDocwsroot(paths, depth),

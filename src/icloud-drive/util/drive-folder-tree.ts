@@ -30,32 +30,12 @@ export const deepFolder = <R extends Types.Details>(
   children: TR.Forest<FolderTreeValue<R>>,
 ): DriveFolderTree<R> => TR.make({ details, deep: true }, children)
 
-export type RemoteFolder<R extends Types.Details> = {
-  remotepath: string
-  remotefile: Types.DetailsOrRoot<R>
-}
-
-export type RemoteFileItem = {
-  remotepath: string
-  remotefile: Types.DriveChildrenItemFile
-}
-
-// item of a folder
-export type RemoteFolderItem = {
-  remotepath: string
-  remotefile: Types.FolderLikeItem
-}
-
-export type FlattenTreeItemP<R extends Types.Details> =
-  | RemoteFolder<R>
-  | RemoteFileItem
-  | RemoteFolderItem
-
-export type FlattenFolderTreeWPath<R extends Types.Details> = FlattenTreeItemP<R>[]
-
 export type TreeWithItemsValue<R extends Types.Details> =
-  | Types.DetailsOrRoot<R>
+  | R
+  | Types.DetailsFolder
+  | Types.DetailsAppLibrary
   | Types.DriveChildrenItemFile
+  // extracted from the details
   | Types.FolderLikeItem
 
 /** Extract files/folder items from folders details making them tree values */
@@ -107,54 +87,24 @@ export const addPath = <T>(
     )
   }
 
-/** Covnerts a tree into a list of items with their full paths */
-export const flattenFolderTreeWithBasepath = (
-  parentPath: string,
-) =>
-  <R extends Types.Root>(tree: DriveFolderTree<R>): FlattenFolderTreeWPath<R> => {
-    const name = Types.fileName(tree.value.details)
-    const path = Path.normalize(Path.join(parentPath, name))
+export type FlattenWithItemsValue<R extends Types.Details> = {
+  path: string
+  item: TreeWithItemsValue<R>
+}
 
-    const subfiles = pipe(
-      tree.value.details.items,
-      A.filter(Types.isFile),
-    )
+export type FlattenWithItems<R extends Types.Details> = FlattenWithItemsValue<R>[]
 
-    const zippedsubfiles = pipe(
-      subfiles,
-      A.map(Types.fileName),
-      A.map(f => Path.join(path, f)),
-      A.zip(subfiles),
-      A.map(([remotepath, remotefile]) => ({ remotepath, remotefile })),
-    )
-
-    const subfoldersItems = pipe(
-      tree.value.details.items,
-      A.filter(Types.isFolderLikeItem),
-    )
-
-    const zippedsubfoldersItems = pipe(
-      subfoldersItems,
-      A.map(Types.fileName),
-      A.map(f => Path.join(path, f)),
-      A.zip(subfoldersItems),
-      A.map(([remotepath, remotefile]) => ({ remotepath, remotefile })),
-    )
-
-    const subfolders = pipe(
-      tree.forest,
-      A.map(flattenFolderTreeWithBasepath(path)),
-      A.flatten,
-    )
-
-    return [
-      { remotefile: tree.value.details, remotepath: path },
-      ...zippedsubfiles,
-      // skip adding subfolders items if the tree is deep
-      ...(!tree.value.deep ? zippedsubfoldersItems : []),
-      ...subfolders,
-    ]
+export const flattenTree = <A>(tree: TR.Tree<A>): A[] => {
+  const res: A[] = []
+  const go = (tree: TR.Tree<A>) => {
+    res.push(tree.value)
+    for (const child of tree.forest) {
+      go(child)
+    }
   }
+  go(tree)
+  return res
+}
 
 export const showFolderTree = <R extends Types.Root>(tree: DriveFolderTree<R>): string => {
   const witems = treeWithItems(tree)
@@ -165,17 +115,8 @@ export const showFolderTree = <R extends Types.Root>(tree: DriveFolderTree<R>): 
   )
 }
 
-export const showTreeWithItemsP = (
-  tree: TR.Tree<
-    {
-      item:
-        | Types.DetailsDocwsRoot
-        | Types.NonRootDetails
-        | Types.DriveChildrenItemFile
-        | Types.FolderLikeItem
-      path: string
-    }
-  >,
+export const showTreeWithItems = (
+  tree: TR.Tree<{ item: Types.HasName; path: string }>,
 ): string => {
   return pipe(
     tree,

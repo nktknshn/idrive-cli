@@ -8,9 +8,8 @@ import { DepFs } from '../../../deps-types'
 import { printerIO } from '../../../logging/printerIO'
 import { guardFst } from '../../../util/guards'
 import { normalizePath } from '../../../util/path'
-import { DriveLookup, Types } from '../..'
+import { DriveLookup, DriveTree, Types } from '../..'
 import { of } from '../../drive-lookup'
-import { FlattenFolderTreeWPath } from '../../util/drive-folder-tree'
 import { applySoultions, ConflictsSolver, Solution } from './conflict-solution'
 import { Conflict, lookForLocalConflicts } from './download-conflict'
 import { createEmpties, createLocalDirStruct } from './download-local'
@@ -58,13 +57,13 @@ type DownloadFolderOpts<SolverDeps, DownloadDeps> = Args & {
   toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped
   conflictsSolver: ConflictsSolver<SolverDeps>
   downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
-  treefilter: <T extends Types.Root>(flatTree: FlattenFolderTreeWPath<T>) => DownloadTask & {
+  treefilter: <T extends Types.Root>(flatTree: DriveTree.FlattenWithItems<T>) => DownloadTask & {
     excluded: DownloadItem[]
   }
 }
 
 type DownloadFolderInfo = {
-  folderTree: FlattenFolderTreeWPath<
+  folderTree: DriveTree.FlattenWithItems<
     Types.DetailsDocwsRoot | Types.NonRootDetails
   >
   downloadTask: DownloadTask & {
@@ -181,9 +180,7 @@ const showTask = ({ verbose = false }) =>
     task.downloadable.length > 0
       ? verbose
         ? `will be downloaded: \n${
-          [...task.downloadable, ...task.empties].map(({ item: info, localpath }) =>
-            `${info.remotepath} into ${localpath}`
-          )
+          [...task.downloadable, ...task.empties].map(({ item: info, localpath }) => `${info.path} into ${localpath}`)
             .join(
               '\n',
             )

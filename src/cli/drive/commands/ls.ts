@@ -8,7 +8,7 @@ import { DriveActions, DriveLookup, DriveTree, Types } from '../../../icloud-dri
 import { guardProp } from '../../../util/guards'
 import { addLeadingSlash } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
-import { addTrailingNewline } from '../../../util/string'
+import { addTrailingNewline, ensureSingleNewline } from '../../../util/string'
 import * as LsPrinting from './ls-printing/printing'
 
 type Args = {
@@ -95,7 +95,7 @@ const lsRecursive = (
   }
 
   return pipe(
-    DriveActions.listRecursive({ globs: args.paths, depth: args.depth }),
+    DriveActions.listRecursive({ globs: args.paths, depth: args.depth, cached: args.cached }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([found, path]) => {
       const result: string[] = []
@@ -106,7 +106,7 @@ const lsRecursive = (
         A.filter(guardProp('item', not(Types.isTrashDetailsG))),
       )
 
-      const ms = LsPrinting.maxSize(items.map(_ => _.item))
+      const sw = LsPrinting.maxSize(items.map(_ => _.item)).toString().length
       const tw = LsPrinting.typeWidth(items.map(_ => _.item))
       const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
 
@@ -115,11 +115,7 @@ const lsRecursive = (
           LsPrinting.showItem(
             item,
             Path.dirname(path),
-            {
-              filenameWidth: fw,
-              typeWidth: tw,
-              sizeWidth: ms.toString().length,
-            },
+            { filenameWidth: fw, typeWidth: tw, sizeWidth: sw },
             opts,
           ),
         )
@@ -128,6 +124,7 @@ const lsRecursive = (
       return `${path}:\n` + result.join('\n')
     })),
     SRTE.map(_ => _.join('\n\n')),
+    SRTE.map(ensureSingleNewline),
   )
 }
 
@@ -145,13 +142,11 @@ const lsRecursiveTree = (
     SRTE.map(NA.map(([tree, path]) =>
       pipe(
         tree,
-        O.fold(
-          () => Path.dirname(path) + '/',
-          DriveTree.showTreeWithItemsP,
-        ),
+        O.fold(() => Path.dirname(path) + '/', DriveTree.showTreeWithItems),
         a => `${path}:\n${a}`,
       )
     )),
     SRTE.map(_ => _.join('\n\n')),
+    SRTE.map(ensureSingleNewline),
   )
 }

@@ -109,7 +109,7 @@ describe('searchGlobs', () => {
             [f1, f2],
             [f1, f2],
             [f1],
-            [],
+            [f1],
             [test1folder],
             [package1, package2],
             [test2folder],
@@ -126,32 +126,4 @@ describe('searchGlobs', () => {
       }),
     )()
   })
-
-  // it('works with options', async () => {
-  //   return pipe(
-  //     run(DriveLookup.searchGlobs(
-  //       [
-  //         '/*.txt',
-  //         '/**/*.txt',
-  //         '/fileinroot.txt',
-  //         'fileinroot.txt',
-  //       ],
-  //       Infinity,
-  //       { contains: true },
-  //     )),
-  //     TE.map(({ calls, res, state }) => {
-  //       expect(res).toEqual(
-  //         [
-  //           [f1, f2],
-  //           [f1, f2],
-  //           [f1],
-  //           [f1],
-  //         ],
-  //       )
-  //     }),
-  //     TE.mapLeft((e) => {
-  //       expect(false).toBe(true)
-  //     }),
-  //   )()
-  // })
 })

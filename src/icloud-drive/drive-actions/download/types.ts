@@ -6,14 +6,9 @@ import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
 import { SRA } from '../../../util/types'
 
 export type DownloadItem = {
-  remotepath: string
-  remotefile: Types.DriveChildrenItemFile
+  path: string
+  item: Types.DriveChildrenItemFile
 }
-
-// (readonly [
-//   remotepath: string,
-//   remotefile: T.DriveChildrenItemFile,
-// ])
 
 export type DownloadTask = {
   dirstruct: string[]
@@ -49,6 +44,3 @@ export type DownloadICloudFilesFunc<R> = <S extends AuthenticatedState>(
 ) => SRA<S, R, DownloadFileResult[]>
 
 export { type DownloadFileResult }
-// export type FilterTreeResult = DownloadStructure & {
-//   excluded: DownloadInfo[]
-// }
