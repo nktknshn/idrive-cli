@@ -40,7 +40,7 @@ describe('retrieveItemDetailsInFoldersSaving', () => {
 
   it('searchGlobs', async () => {
     const req0 = pipe(
-      DriveLookup.searchGlobs(['/*.txt']),
+      DriveLookup.searchGlobs(['/*.txt'], Infinity, {}),
       executeDrive({ itemByDrivewsid: complexStructure0.itemByDrivewsid }),
       TE.map(({ calls, res, state }) => {
         assert.deepEqual(

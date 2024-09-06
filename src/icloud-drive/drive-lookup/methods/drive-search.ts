@@ -9,10 +9,10 @@ import * as T from '../../drive-types'
 
 export const searchInPaths = (
   paths: NEA<NormalizedPath>,
-  query: (item: DriveTree.FlattenWithItemsValue<T.DetailsDocwsRoot>) => boolean,
+  query: (item: DriveTree.WithItemPathValue<T.DetailsDocwsRoot>) => boolean,
   depth = Infinity,
 ): DriveLookup.Lookup<
-  NA.NonEmptyArray<DriveTree.FlattenWithItemsValue<T.DetailsDocwsRoot>[]>
+  NA.NonEmptyArray<DriveTree.WithItemPathValue<T.DetailsDocwsRoot>[]>
 > => {
   return pipe(
     DriveLookup.getFoldersTreesByPathsFlattenDocwsroot(paths, depth),

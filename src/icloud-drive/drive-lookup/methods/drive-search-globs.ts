@@ -8,7 +8,7 @@ import micromatch from 'micromatch'
 
 import { loggerIO } from '../../../logging'
 import { SrteUtils } from '../../../util'
-import { isMatching } from '../../../util/glob-matching'
+import { isGlobstar, isMatching } from '../../../util/glob-matching'
 import { guardSnd } from '../../../util/guards'
 import { normalizePath, Path } from '../../../util/path'
 import { NEA } from '../../../util/types'
@@ -26,7 +26,8 @@ export type SearchGlobFoundItem = {
     | Types.DetailsDocwsRoot
     | Types.DetailsTrashRoot
     // info about a folder
-    | Types.NonRootDetails
+    | Types.DetailsFolder
+    | Types.DetailsAppLibrary
     // if the depth is not enough the get a folder details
     // item from the parent's details is returned
     | Types.DriveChildrenItemFolder
@@ -40,7 +41,7 @@ export const searchGlobsShallow = (
 ): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
-  return searchGlobs(globs, 0)
+  return searchGlobs(globs, 0, {})
 }
 
 /** Recursively searches for files and folders matching the glob patterns.
@@ -50,11 +51,20 @@ export const searchGlobs = (
   // or glob patterns (like **/*.txt)
   globs: NEA<string>,
   depth = Infinity,
-  options?: micromatch.Options,
+  {
+    options,
+    goDeeper = false,
+  }: {
+    options?: micromatch.Options
+    /** If true, go deeper into the folders appended with ** */
+    goDeeper?: boolean
+  },
 ): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
   const scanned = pipe(globs, NA.map(micromatch.scan))
+
+  // base folder for each glob
   const globsBases = pipe(
     scanned,
     // for globs starting with **
@@ -71,11 +81,12 @@ export const searchGlobs = (
         NA.zip(globsBases)(scanned),
         guardSnd(Types.isNotFile),
         (dirs) =>
-          // separate globs and other paths (like plain paths and wildcards)
+          // separate globstars from other paths (like plain paths and wildcards)
           modifySubset(
             dirs, // `dirs` is a list of folders details
-            ([scan, _dir]) => scan.isGlob,
-            // go deeper recursively getting content of the parents of globs
+            // go deep into plain paths if enabled,
+            ([scan, _dir]) => isGlobstar(scan.input) || (goDeeper && !scan.isGlob),
+            // go deeper recursively getting content of the parents of globstars
             globParents =>
               pipe(
                 getFoldersTrees(pipe(globParents, NA.map(snd)), depth),
@@ -93,21 +104,32 @@ export const searchGlobs = (
     DriveLookup.usingTempCache,
     // zip all the results together
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned), NA.zip(globsBases))),
-    SRTE.map(flow(NA.map(([[[fileOrTree, globpattern], scan], basepath]) =>
+    SRTE.map(flow(NA.map(([[[fileOrTree, glob], scan], basepath]) =>
       pipe(
         fileOrTree,
         E.fold(
           // handle paths that turned out to be files
           file =>
-            !scan.isGlob && isMatching(basepath, scan.input, options)
+            // if the input glob is a plain path to a file, just compare the paths
+            !scan.isGlob && isMatching(basepath, glob, options)
               ? [{ path: basepath, item: file }]
-              : [],
+              : // otherwise it's a path like /test.txt/**
+                [],
           // handle trees
           flow(
             DriveTree.treeWithItems,
             DriveTree.addPath(Path.dirname(basepath), identity),
             DriveTree.flattenTree,
-            A.filter(({ path }) => isMatching(path, globpattern, options)),
+            A.filter(
+              ({ path }) =>
+                scan.isGlob
+                  ? isMatching(path, glob, options)
+                  : goDeeper
+                  // if this is a clean folder path and `goDeeper` is true, append ** to the glob
+                  // to match all the nested items
+                  ? isMatching(path, Path.join(glob, '**'), options)
+                  : isMatching(path, glob, options),
+            ),
           ),
         ),
       )

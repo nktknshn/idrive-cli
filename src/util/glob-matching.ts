@@ -9,7 +9,7 @@ import micromatch from 'micromatch'
 // it seems micromatch doesn't like leading slashes
 // so we remove them
 
-/** Returns true if the path matches the glob */
+/** Returns true if the path matches the glob. Leading slash from `path` is removed unless it is `/`. Leading slash is also removed from `glob` */
 export const isMatching = (path: string, glob: string, options?: micromatch.Options): boolean => {
   return micromatch.isMatch(
     path === '/' ? '/' : path.replace(/^\//, ''),
@@ -17,3 +17,5 @@ export const isMatching = (path: string, glob: string, options?: micromatch.Opti
     options,
   )
 }
+
+export const isGlobstar = (glob: string): boolean => glob.indexOf('**') > 0

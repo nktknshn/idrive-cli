@@ -36,7 +36,8 @@ export type TreeWithItemsValue<R extends Types.Details> =
   | Types.DetailsAppLibrary
   | Types.DriveChildrenItemFile
   // extracted from the details
-  | Types.FolderLikeItem
+  | Types.DriveChildrenItemFolder
+  | Types.DriveChildrenItemAppLibrary
 
 /** Extract files/folder items from folders details making them tree values */
 export const treeWithItems = <R extends Types.Details>(
@@ -80,19 +81,19 @@ export const addPath = <T>(
 
     return TR.make(
       { item: tree.value, path },
-      pipe(
-        tree.forest,
-        A.map(addPath(path, f)),
-      ),
+      pipe(tree.forest, A.map(addPath(path, f))),
     )
   }
 
-export type FlattenWithItemsValue<R extends Types.Details> = {
+/** Tree with path and items/details */
+export type TreeWithItemPath<R extends Types.Details> = TR.Tree<WithItemPathValue<R>>
+
+export type WithItemPathValue<R extends Types.Details> = {
   path: string
   item: TreeWithItemsValue<R>
 }
 
-export type FlattenWithItems<R extends Types.Details> = FlattenWithItemsValue<R>[]
+export type FlattenWithItems<R extends Types.Details> = WithItemPathValue<R>[]
 
 export const flattenTree = <A>(tree: TR.Tree<A>): A[] => {
   const res: A[] = []

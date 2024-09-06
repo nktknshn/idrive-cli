@@ -97,7 +97,7 @@ export const showItem = (
 
     if (long == 2) {
       return output
-        + item.etag.padStart('b73::b72'.length) + '  '
+        + item.etag.padEnd('b73::b72'.length) + '  '
         + col(item.drivewsid)
     }
   }
@@ -115,7 +115,7 @@ export const showItem = (
 
     if (long == 2) {
       return output
-        + item.etag.padStart('b73::b72'.length) + '  '
+        + item.etag.padEnd('b73::b72'.length) + '  '
         + col(item.drivewsid)
     }
   }
@@ -130,6 +130,8 @@ export const maxSize = (items: Types.DriveChildrenItem[]) =>
     A.map(_ => _.size),
     A.reduce(0, Math.max),
   )
+
+export const sizeWidth = (items: Types.DriveChildrenItem[]) => maxSize(items).toString().length
 
 export const typeWidth = (items: Types.DriveChildrenItem[]) =>
   pipe(
@@ -195,22 +197,17 @@ export const showDetailsInfo = (details: Types.Details, path: string) =>
     }
 
     for (const item of items) {
-      result += showItem(
-        item,
-        path,
-        {
-          filenameWidth: fw,
-          typeWidth: typeWidth(items),
-          sizeWidth: maxSize(items).toString().length,
-        },
-        { fullPath: params.fullPath, long: params.long },
-      ) + '\n'
+      result += showItem(item, path, {
+        filenameWidth: fw,
+        typeWidth: typeWidth(items),
+        sizeWidth: maxSize(items).toString().length,
+      }, params) + '\n'
     }
 
     return result
   }
 
-export const showFileInfo = (item: Types.DriveChildrenItemFile) =>
+export const showFileInfo = (item: Types.DriveChildrenItemFile, path: string) =>
   (params: ShowDetailsInfoParams) => {
     let result = ''
     const col = (s: string) => s.padEnd(20)
@@ -233,17 +230,23 @@ export const showFileInfo = (item: Types.DriveChildrenItemFile) =>
       if (item.restorePath !== undefined) {
         result += `${col('Restore path')}${item.restorePath}\n`
       }
+      result += '\n'
     }
+
+    result += showItem(item, path, {
+      filenameWidth: item.name.length,
+      sizeWidth: item.size.toString().length,
+      typeWidth: 4,
+    }, params)
 
     return result
   }
 
 export const showValidPath = (res: DriveActions.ListPathsFolder | DriveActions.ListPathsFile) => {
+  const path = GetByPath.pathString(res.validation)
+
   if (res.isFile) {
-    return showFileInfo(res.item)
+    return showFileInfo(res.item, path)
   }
-  return showDetailsInfo(
-    { ...res.parentItem, items: res.items },
-    GetByPath.pathString(res.validation),
-  )
+  return showDetailsInfo({ ...res.parentItem, items: res.items }, path)
 }

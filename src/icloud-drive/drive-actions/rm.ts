@@ -32,7 +32,7 @@ export const rm = (
   const globsSlash = NA.map(addLeadingSlash)(globs)
 
   return pipe(
-    DriveLookup.searchGlobs(globsSlash, recursive ? Infinity : 1),
+    DriveLookup.searchGlobs(globsSlash, recursive ? Infinity : 1, { goDeeper: true }),
     SRTE.map(A.flatten),
     SRTE.map(A.filter(guardProp('item', Types.isNotRootDetails))),
     SRTE.chainW((items) =>

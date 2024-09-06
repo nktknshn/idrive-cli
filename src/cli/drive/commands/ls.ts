@@ -8,7 +8,7 @@ import { DriveActions, DriveLookup, DriveTree, Types } from '../../../icloud-dri
 import { guardProp } from '../../../util/guards'
 import { addLeadingSlash } from '../../../util/normalize-path'
 import { Path } from '../../../util/path'
-import { addTrailingNewline, ensureSingleNewline } from '../../../util/string'
+import { ensureSingleNewline } from '../../../util/string'
 import * as LsPrinting from './ls-printing/printing'
 
 type Args = {
@@ -76,7 +76,7 @@ const lsShallow = (
           [res[0][0]]
     ),
     SRTE.map(_ => _.join('\n')),
-    SRTE.map(addTrailingNewline),
+    SRTE.map(ensureSingleNewline),
   )
 }
 
@@ -95,7 +95,11 @@ const lsRecursive = (
   }
 
   return pipe(
-    DriveActions.listRecursive({ globs: args.paths, depth: args.depth, cached: args.cached }),
+    DriveActions.listRecursive({
+      globs: args.paths,
+      depth: args.depth,
+      cached: args.cached,
+    }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([found, path]) => {
       const result: string[] = []
@@ -106,7 +110,7 @@ const lsRecursive = (
         A.filter(guardProp('item', not(Types.isTrashDetailsG))),
       )
 
-      const sw = LsPrinting.maxSize(items.map(_ => _.item)).toString().length
+      const sw = LsPrinting.sizeWidth(items.map(_ => _.item))
       const tw = LsPrinting.typeWidth(items.map(_ => _.item))
       const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
 

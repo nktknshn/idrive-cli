@@ -10,7 +10,7 @@ import { DownloadItem, DownloadTask } from './types'
 type DefaultFunc = (opts: {
   include: string[]
   exclude: string[]
-}) => (file: DriveTree.FlattenWithItemsValue<Types.Root>) => boolean
+}) => (file: DriveTree.WithItemPathValue<Types.Root>) => boolean
 
 export const filterByIncludeExcludeGlobs: DefaultFunc = ({ include, exclude }) =>
   ({ path }) =>

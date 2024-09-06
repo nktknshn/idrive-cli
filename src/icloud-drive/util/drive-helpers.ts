@@ -3,7 +3,7 @@ import * as E from 'fp-ts/lib/Either'
 import { fromEquals } from 'fp-ts/lib/Eq'
 import { pipe } from 'fp-ts/lib/function'
 import * as O from 'fp-ts/lib/Option'
-import micromatch from 'micromatch'
+import { isMatching } from '../../util/glob-matching'
 import * as T from '../drive-types'
 
 export const makeMissedFound = <T>(
@@ -48,7 +48,7 @@ export const findInParentGlob = <R extends T.Root>(
     A.filter(
       item =>
         glob.length > 0
-          ? micromatch.isMatch(
+          ? isMatching(
             T.fileName(item),
             glob,
             { basename: true, noglobstar: true },
