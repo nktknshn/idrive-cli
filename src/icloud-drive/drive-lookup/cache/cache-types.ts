@@ -1,7 +1,7 @@
 import * as CT from '../../drive-types'
 
 /** Cache is just a key-val storage for folders details */
-export interface CacheF {
+export interface Cache {
   readonly byDrivewsid: { readonly [drivewsid: string]: CacheEntity }
 }
 

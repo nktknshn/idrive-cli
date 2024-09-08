@@ -7,7 +7,7 @@ import { Refinement } from 'fp-ts/lib/Refinement'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as DL from '../drive-lookup'
 
-/** Modify a subset of input array. Subset is defined by a predicate. */
+/** Modify a subset of input array preserving the order. Subset is defined by a predicate. */
 export function modifySubset<A, B extends A, C, D extends A>(
   input: NA.NonEmptyArray<A>,
   refinement: Refinement<A, B>,

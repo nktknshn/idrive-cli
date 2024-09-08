@@ -36,7 +36,7 @@ export const getCache = (): Lookup<C.LookupCache> =>
     getState(),
     map(({ cache, tempCache }) =>
       pipe(
-        C.concat(cache, pipe(tempCache, O.getOrElse(() => C.cachef()))),
+        C.concat(cache, pipe(tempCache, O.getOrElse(() => C.cache()))),
       )
     ),
   )

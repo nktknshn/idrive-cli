@@ -4,7 +4,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as TE from 'fp-ts/TaskEither'
 import { Cache, DriveLookup } from '../../src/icloud-drive'
 import { DetailsDocwsRoot, NonRootDetails } from '../../src/icloud-drive/drive-types'
-import { FlattenFolderTreeWPath } from '../../src/icloud-drive/util/drive-folder-tree'
+import { FlattenWithItems } from '../../src/icloud-drive/util/drive-folder-tree'
 import { npath } from '../../src/util/normalize-path'
 import { NEA } from '../../src/util/types'
 import { executeDrive, fakeicloud, file, folder } from './util/mocked-drive'
@@ -28,13 +28,13 @@ const structure = fakeicloud(
 const run = executeDrive({
   itemByDrivewsid: structure.itemByDrivewsid,
   cache: pipe(
-    Cache.cachef(),
+    Cache.cache(),
     Cache.putDetails(structure.r.d),
   ),
 })
 
 const check = (
-  req: DriveLookup.Lookup<NEA<FlattenFolderTreeWPath<DetailsDocwsRoot | NonRootDetails>>>,
+  req: DriveLookup.Lookup<NEA<FlattenWithItems<DetailsDocwsRoot | NonRootDetails>>>,
 ) => {
   return pipe(
     run(req),
@@ -58,6 +58,69 @@ const check = (
     }),
   )()
 }
+
+describe('usingTempCache with getByPath method', () => {
+  const req = pipe(
+    DriveLookup.getByPathDocwsroot(npath('/test1/test2/')),
+    chain(() => DriveLookup.getByPathDocwsroot(npath('/test1/'))),
+  )
+
+  // const req2 = pipe(
+  //   DriveLookup.getByPathsDocwsroot(
+  //     [npath('/test1/test2/'), npath('/test1/')],
+  //   ),
+  // )
+  // 3 calls
+  // getByPaths itself does not require temp cache
+
+  const run = executeDrive({
+    itemByDrivewsid: structure.itemByDrivewsid,
+    cache: pipe(
+      Cache.cache(),
+      Cache.putDetails(structure.r.d),
+    ),
+  })
+
+  /*
+   Without temp cache `retrieveItemDetailsInFolders` calls are:
+   1. get details: root
+   2. test1
+   3. test2
+   4. root, test1
+  */
+  it('works', async () => {
+    return pipe(
+      run(req),
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(4)
+      }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
+    )()
+  })
+
+  /*
+   With temp cache `retrieveItemDetailsInFolders` calls are:
+   1. get details: root
+   2. test1
+   3. test2
+   */
+
+  it('saves a call', async () => {
+    return pipe(
+      req,
+      DriveLookup.usingTempCache,
+      run,
+      TE.map(({ calls }) => {
+        expect(calls().total).toBe(3)
+      }),
+      TE.mapLeft((e) => {
+        expect(false).toBe(true)
+      }),
+    )()
+  })
+})
 
 describe('usingTempCache', () => {
   const req = DriveLookup.getFoldersTreesByPathsFlattenDocwsroot([
@@ -85,46 +148,6 @@ describe('usingTempCache', () => {
       DriveLookup.usingTempCache,
       check,
     )
-  })
-})
-
-describe('usingTempCache with getByPath method', () => {
-  const req = pipe(
-    DriveLookup.getByPathDocwsroot(npath('/test1/test2/')),
-    chain(() => DriveLookup.getByPathDocwsroot(npath('/test1/'))),
-  )
-
-  const run = executeDrive({
-    itemByDrivewsid: structure.itemByDrivewsid,
-    cache: pipe(
-      Cache.cachef(),
-      Cache.putDetails(structure.r.d),
-    ),
-  })
-
-  it('saves a call', async () => {
-    return pipe(
-      DriveLookup.usingTempCache(req),
-      run,
-      TE.map(({ calls }) => {
-        expect(calls().total).toBe(3)
-      }),
-      TE.mapLeft((e) => {
-        expect(false).toBe(true)
-      }),
-    )()
-  })
-
-  it('works', async () => {
-    return pipe(
-      run(req),
-      TE.map(({ calls }) => {
-        expect(calls().total).toBe(4)
-      }),
-      TE.mapLeft((e) => {
-        expect(false).toBe(true)
-      }),
-    )()
   })
 })
 
@@ -192,7 +215,7 @@ describe('nesting does not break behavior', () => {
       R.deleteAt(structure.r.c.test1.c.test2.c.test3.d.drivewsid),
     ),
     cache: pipe(
-      Cache.cachef(),
+      Cache.cache(),
       Cache.putDetails(structure.r.c.test1.c.test2.c.test3.d),
     ),
   })

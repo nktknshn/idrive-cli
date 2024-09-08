@@ -1,4 +1,4 @@
-import { identity, pipe } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { NormalizedPath, Path } from '../../../util/path'
@@ -14,17 +14,8 @@ export const getFoldersTreesByPathsDocwsroot = (
   pipe(
     DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
     SRTE.chain(dir => DriveLookup.getFoldersTrees(dir, depth)),
-    // save calls for overlapping paths
+    // saves calls for overlapping paths
     DriveLookup.usingTempCache,
-  )
-
-export const getFolderTreeByPathDocwsroot = (
-  path: NormalizedPath,
-  depth = Infinity,
-): DriveLookup.Lookup<DriveFolderTree<Types.DetailsDocwsRoot>> =>
-  pipe(
-    getFoldersTreesByPathsDocwsroot([path], depth),
-    SRTE.map(NA.head),
   )
 
 export const getFoldersTreesByPathsFlattenDocwsroot = (
@@ -34,20 +25,22 @@ export const getFoldersTreesByPathsFlattenDocwsroot = (
   NEA<DriveTree.FlattenWithItems<Types.DetailsDocwsRoot>>
 > => {
   return pipe(
-    DriveLookup.getByPathsFoldersStrictDocwsroot(paths),
-    SRTE.chain(dirs => DriveLookup.getFoldersTrees<Types.DetailsDocwsRoot>(dirs, depth)),
-    DriveLookup.usingTempCache,
+    DriveLookup.getFoldersTreesByPathsDocwsroot(paths, depth),
+    // saves calls for overlapping paths
     SRTE.map(NA.zip(paths)),
     SRTE.map(NA.map(
-      ([tree, path]) =>
-        pipe(
-          DriveTree.treeWithItems(tree),
-          DriveTree.addPath(Path.dirname(path), identity),
-          DriveTree.flattenTree,
-        ),
+      ([tree, path]) => DriveTree.flattenTreeWithItemsDocwsroot(Path.dirname(path))(tree),
     )),
   )
 }
+export const getFolderTreeByPathDocwsroot = (
+  path: NormalizedPath,
+  depth = Infinity,
+): DriveLookup.Lookup<DriveFolderTree<Types.DetailsDocwsRoot>> =>
+  pipe(
+    getFoldersTreesByPathsDocwsroot([path], depth),
+    SRTE.map(NA.head),
+  )
 
 export const getFolderTreeByPathFlattenWPDocwsroot = (
   path: NormalizedPath,

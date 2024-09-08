@@ -87,7 +87,7 @@ describe('searchGlobs', () => {
   const run = executeDrive({
     itemByDrivewsid: structure.itemByDrivewsid,
     cache: pipe(
-      Cache.cachef(),
+      Cache.cache(),
       Cache.putDetails(structure.r.d),
     ),
   })

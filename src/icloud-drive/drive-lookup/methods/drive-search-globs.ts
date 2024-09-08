@@ -1,6 +1,6 @@
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow, identity, pipe } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import { snd } from 'fp-ts/lib/ReadonlyTuple'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
@@ -15,7 +15,9 @@ import { NEA } from '../../../util/types'
 import { DriveLookup, DriveTree, Types } from '../..'
 import * as DTR from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
+import { ApiUsage } from '../drive-lookup'
 import { getFoldersTrees } from './drive-get-folders-trees'
+import { defaultParams } from './get-by-paths'
 
 export type SearchGlobFoundItem = {
   /** Matching path */
@@ -36,29 +38,27 @@ export type SearchGlobFoundItem = {
     | Types.DriveChildrenItemFile
 }
 
-export const searchGlobsShallow = (
-  globs: NEA<string>,
-): DriveLookup.Lookup<
-  NA.NonEmptyArray<SearchGlobFoundItem[]>
-> => {
-  return searchGlobs(globs, 0, {})
+export type SearchGlobsParams = {
+  options?: micromatch.Options
+  /** If true, automatically go deeper into folders */
+  goDeeper?: boolean
+  /** When to use cache */
+  apiUsage?: ApiUsage
 }
 
 /** Recursively searches for files and folders matching the glob patterns.
  * `micromatch` is used for matching. */
 export const searchGlobs = (
-  // globs might be plain paths (folders/files), wildcards (like /test/*.txt)
-  // or glob patterns (like **/*.txt)
+  /**  globs might be plain paths (folders/files), wildcards (like /test/*.txt)
+   * or glob patterns (like **\/*) */
   globs: NEA<string>,
   depth = Infinity,
   {
     options,
     goDeeper = false,
-  }: {
-    options?: micromatch.Options
-    /** If true, automatically go deeper into folders */
-    goDeeper?: boolean
-  },
+    // cached = false,
+    apiUsage = defaultParams.apiUsage,
+  }: SearchGlobsParams,
 ): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
@@ -72,28 +72,68 @@ export const searchGlobs = (
     NA.map(normalizePath),
   )
 
+  const handleBases = (
+    fileOrTree: E.Either<
+      // it's actually Types.DriveChildrenItemFile but type inference didn't work
+      Types.DetailsOrFile<Types.DetailsDocwsRoot>,
+      // tree of globs base paths
+      DriveTree.DriveFolderTree<Types.DetailsDocwsRoot>
+    >,
+    // input glob
+    glob: string,
+    // glob's scan info
+    scan: micromatch.ScanInfo,
+    // base path
+    basepath: string,
+  ) =>
+    pipe(
+      fileOrTree,
+      E.fold(
+        // handle paths that turned out to be files
+        file =>
+          // if the input glob is a plain path to a file, just compare the paths
+          !scan.isGlob && isMatching(basepath, glob, options)
+            ? [{ path: basepath, item: file }]
+            : // otherwise it's a path like /test.txt/**
+              [],
+        // handle trees
+        flow(
+          DriveTree.flattenTreeWithItemsDocwsroot(Path.dirname(basepath)),
+          A.filter(
+            ({ path }) =>
+              scan.isGlob
+                ? isMatching(path, glob, options)
+                : goDeeper
+                // if this is a clean folder path and `goDeeper` is true, append ** to the glob
+                // to match all the nested items
+                ? isMatching(path, Path.join(glob, '**'), options)
+                : isMatching(path, glob, options),
+          ),
+        ),
+      ),
+    )
+
   return pipe(
     // look for the paths leading the glob patterns and get the details
-    DriveLookup.getByPathsStrictDocwsroot(globsBases),
+    DriveLookup.getByPathsStrictDocwsroot(globsBases, { apiUsage }),
     SRTE.chain((globsBases) =>
       // separate input paths into folders and files
       modifySubset(
         NA.zip(globsBases)(scanned),
-        guardSnd(Types.isNotFile),
+        guardSnd(Types.isDetailsG),
         (dirs) =>
           // separate globstars from other paths (like plain paths and wildcards)
           modifySubset(
             dirs, // `dirs` is a list of folders details
-            // go deep into plain paths if enabled,
-            ([scan, _dir]) => isGlobstar(scan.input) || (goDeeper && !scan.isGlob),
+            ([scan, _dir]) => isGlobstar(scan.input) || (!scan.isGlob && goDeeper),
             // go deeper recursively getting content of the parents of globstars
+            // go deep into plain paths if enabled,
             globParents =>
               pipe(
                 getFoldersTrees(pipe(globParents, NA.map(snd)), depth),
                 SRTE.map(NA.map(E.of)),
               ),
-            // return the details of the folders that are not globs
-            // like /folder1/*.txt /folder1/
+            // return details of the folders that do not require deeper lookup
             ([_scan, dir]) => E.of(DTR.shallowFolder(dir)),
           ),
         // file goes as is
@@ -102,38 +142,13 @@ export const searchGlobs = (
     ),
     // execute `getByPathsStrictDocwsroot` and `getFoldersTrees` with temp cache to save api calls
     DriveLookup.usingTempCache,
-    // zip all the results together
+    // zip all the data together
     SRTE.map(flow(NA.zip(globs), NA.zip(scanned), NA.zip(globsBases))),
-    SRTE.map(flow(NA.map(([[[fileOrTree, glob], scan], basepath]) =>
-      pipe(
-        fileOrTree,
-        E.fold(
-          // handle paths that turned out to be files
-          file =>
-            // if the input glob is a plain path to a file, just compare the paths
-            !scan.isGlob && isMatching(basepath, glob, options)
-              ? [{ path: basepath, item: file }]
-              : // otherwise it's a path like /test.txt/**
-                [],
-          // handle trees
-          flow(
-            DriveTree.treeWithItems,
-            DriveTree.addPath(Path.dirname(basepath), identity),
-            DriveTree.flattenTree,
-            A.filter(
-              ({ path }) =>
-                scan.isGlob
-                  ? isMatching(path, glob, options)
-                  : goDeeper
-                  // if this is a clean folder path and `goDeeper` is true, append ** to the glob
-                  // to match all the nested items
-                  ? isMatching(path, Path.join(glob, '**'), options)
-                  : isMatching(path, glob, options),
-            ),
-          ),
-        ),
-      )
-    ))),
+    SRTE.map(
+      NA.map(
+        ([[[fileOrTree, glob], scan], basepath]) => handleBases(fileOrTree, glob, scan, basepath),
+      ),
+    ),
     SrteUtils.runLogging(loggerIO.debug(`searchGlobs(${globs})`)),
   )
 }

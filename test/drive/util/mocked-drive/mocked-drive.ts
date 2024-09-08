@@ -361,7 +361,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
 
   // cache contains all details
   const cache = pipe(
-    Cache.cachef(),
+    Cache.cache(),
     Cache.putDetailss([d, ...allFolders]),
   )
 

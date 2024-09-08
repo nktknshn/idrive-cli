@@ -9,7 +9,7 @@ import { findInParentFilename } from '../../util/drive-helpers'
 import * as GetByPath from '../../util/get-by-path-types'
 import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
 import * as C from './cache'
-import { CacheF } from './cache-types'
+import { Cache } from './cache-types'
 
 const showDetails = (d: Types.Details): string => {
   return Types.isTrashDetails(d) ? 'TRASH' : `${d.type}: ${Types.fileName(d)}`
@@ -22,7 +22,7 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
   path: string[],
   parentEntity: R,
 ) =>
-  (cache: CacheF): GetByPath.PathValidation<R> => {
+  (cache: Cache): GetByPath.PathValidation<R> => {
     cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`)
 
     if (!A.isNonEmpty(path)) {

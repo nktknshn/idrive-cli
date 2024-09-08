@@ -44,16 +44,14 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
             ),
           ),
           SRTE.chain(
-            subfoldersdetails =>
-              go(
-                subfoldersdetails,
-                depth - 1,
-              ),
+            subfoldersdetails => go(subfoldersdetails, depth - 1),
           ),
           SRTE.map(
             groupBy(_ => _.value.details.parentId),
           ),
-          SRTE.map(g => zipWithChildren(folders, g)),
+          SRTE.map(
+            detailsByParent => zipWithChildren(folders, detailsByParent),
+          ),
           SRTE.map(
             NA.map(([parent, children]) => deepFolder(parent, children)),
           ),
@@ -70,6 +68,7 @@ export function getFoldersTrees<R extends T.Root | T.NonRootDetails>(
   )
 }
 
+/** Extract subfolders from a list of folders */
 const getSubfolders = (folders: T.Details[]): (T.FolderLikeItem)[] =>
   pipe(
     folders,

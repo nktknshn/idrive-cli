@@ -81,7 +81,7 @@ Use recursive flag for the globstar pattern (may take some time to process deep 
 
 Limit the depth of recursion
 
-`idrive ls -R --depth 2 '/MyNotes/my1/**/*.md'`
+`idrive ls -R -D 2 '/MyNotes/my1/**/*.md'`
 
 Multiple paths
 
@@ -89,11 +89,29 @@ Multiple paths
 
 Output result as a tree
 
-`idrive ls -R --depth 2 --tree '/MyNotes/my1/'`
+`idrive ls -R -D 2 --tree '/MyNotes/my1/'`
+
+More verbose output
+
+`idrive ls -l '/MyNotes/my1/'`
+
+`idrive ls -ll '/MyNotes/my1/'`
+
+Print folder or file info
+
+`idrive ls --info '/MyNotes/my1/' '/Camera/IMG_0198.jpg'`
+
+Human readable sizes
+
+`idrive ls -lh '/MyNotes/my1/'`
+
+Sort by size recursively looking for the largest files
+
+`idrive ls -S size -R -h size /`
 
 list trash
 
-`idrive ls -t`
+`idrive ls --trash`
 
 ### rm [paths..]
 
@@ -115,7 +133,7 @@ Use `--dry` flag to check what is going to be removed
 
 Delete file skipping trash
 
-`idrive rm --skipTrash /Camera/IMG_0198.jpg`
+`idrive rm --skip-trash /Camera/IMG_0198.jpg`
 
 Do not ask for the confirmation
 
@@ -147,7 +165,7 @@ Creates a folder
 
 ### edit
 
-Opens the file in the editor. If the file is not found, it will be created.
+Opens the file in `vi`. If the file is not found, it will be created.
 
 `idrive edit /MyNotes/my1/notes/note1.md` 
 
@@ -155,9 +173,11 @@ Opens the file in a different editor (defaults to `vi`)
 
 `idrive edit --editor gedit /MyNotes/my1/notes/note1.md`
 
-Skip path validation if you are sure that cache is up to date
+`idrive edit /Camera/IMG_0205.PNG --editor feh`
 
-`idrive edit -K /MyNotes/my1/notes/note1.md`
+<!-- Skip path validation if you are sure that cache is up to date
+
+`idrive edit -K /MyNotes/my1/notes/note1.md` -->
 
 ### upload 
 

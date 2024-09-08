@@ -21,7 +21,7 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
 > = RTE.asksReaderTaskEitherW((deps: { noCache: boolean; cacheFile: string }) =>
   pipe(
     deps.noCache
-      ? RTE.of(Cache.cachef())
+      ? RTE.of(Cache.cache())
       : pipe(
         RTE.fromIO(() => loggerIO.debug(`loading cache from file: ${deps.cacheFile}`)),
         RTE.chain(() => Cache.tryReadFromFile(deps.cacheFile)),
@@ -31,7 +31,7 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
         pipe(
           loggerIO.error(`couldn't read cache from file. (${e}). Creating new cache`),
           RTE.fromIO,
-          RTE.map(() => Cache.cachef()),
+          RTE.map(() => Cache.cache()),
         ),
     ),
     RTE.chainFirstIOK((c) => loggerIO.debug(`loaded cache: ${Cache.keysCount(c)} items`)),

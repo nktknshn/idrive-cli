@@ -25,7 +25,7 @@ export const trySaveFile = (
 
 export const tryReadFromFile = (
   accountDataFilePath: string,
-): RTE.ReaderTaskEither<DepFs<'readFile'>, Error | ReadJsonFileError, CT.CacheF> => {
+): RTE.ReaderTaskEither<DepFs<'readFile'>, Error | ReadJsonFileError, CT.Cache> => {
   return pipe(
     tryReadJsonFile(accountDataFilePath),
     RTE.chainEitherKW(flow(

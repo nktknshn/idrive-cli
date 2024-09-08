@@ -59,7 +59,7 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid: structure.itemByDrivewsid,
         cache: pipe(
-          Cache.cachef(),
+          Cache.cache(),
           Cache.putDetailss(
             structure.allFolders,
           ),
@@ -89,7 +89,7 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid: structure.itemByDrivewsid,
         cache: pipe(
-          Cache.cachef(),
+          Cache.cache(),
           Cache.putDetailss(
             structure.allFolders,
           ),
@@ -120,7 +120,7 @@ describe('getByPaths', () => {
       executeDrive({
         itemByDrivewsid,
         cache: pipe(
-          Cache.cachef(),
+          Cache.cache(),
           Cache.putDetailss(structure.allFolders),
         ),
       }),

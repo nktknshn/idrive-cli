@@ -17,7 +17,7 @@ import { createRootDetails, docwsroot, folder, makeFolder } from './mocked-drive
 export const fakeicloud = flow(docwsroot, createRootDetails)
 
 export const createState = ({
-  cache = C.cachef(),
+  cache = C.cache(),
   tempCache = O.none,
   tempCacheMissingDetails = [],
 }: {
@@ -107,7 +107,7 @@ export const createEnv = (
 
 export const executeDrive = ({
   itemByDrivewsid: details,
-  cache = C.cachef(),
+  cache = C.cache(),
 }: {
   itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>
   cache?: C.LookupCache

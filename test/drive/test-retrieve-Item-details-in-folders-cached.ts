@@ -33,7 +33,7 @@ describe('retrieveItemDetailsInFoldersCached', () => {
           ),
         ),
         cache: pipe(
-          Cache.cachef(),
+          Cache.cache(),
           Cache.putDetailss([
             structure0.r.d,
             structure0.r.c.folder1.d,

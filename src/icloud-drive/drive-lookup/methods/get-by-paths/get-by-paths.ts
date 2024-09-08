@@ -18,16 +18,11 @@ import { DriveLookup, Types } from '../../..'
 import { equalsDrivewsId, findInParentFilename } from '../../../util/drive-helpers'
 import { modifySubset } from '../../../util/drive-modify-subset'
 import * as GetByPath from '../../../util/get-by-path-types'
+import { ApiUsage } from '../../drive-lookup'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
 
 export type GetByPathsParams = {
-  apiUsage:
-    /** Default behaviour. Always validates cached paths by retrieving from API. */
-    | 'always'
-    /** Retrieves from cache only. */
-    | 'onlycache'
-    /** Retrieves from API if the path is not fully cached. */
-    | 'fallback'
+  apiUsage: ApiUsage
 }
 
 export const defaultParams: GetByPathsParams = {

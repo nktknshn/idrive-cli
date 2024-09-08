@@ -30,9 +30,8 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
         type: 'boolean',
         description: 'With -l, print sizes like 1K 234M 2G etc.',
       },
-      // etag: { alias: ['e'], default: false, type: 'boolean' },
       trash: { alias: ['trash'], default: false, type: 'boolean', description: 'List trash' },
-      // TODO
+      // TODO date
       sort: {
         alias: ['S'],
         choices: ['name', 'size'],

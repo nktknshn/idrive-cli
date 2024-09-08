@@ -10,4 +10,5 @@ export const mockedFs = (): FsType => ({
   readFile: (path: PathLike) => hole(),
   writeFile: (path: string) => hole(),
   rm: (path: PathLike) => hole(),
+  createReadStream: (path: PathLike) => hole(),
 })

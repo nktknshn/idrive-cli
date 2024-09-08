@@ -10,13 +10,13 @@ import { guardSnd } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 import { sequenceNArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
-import { chainState, getState, Lookup, map, TempLookupCacheState } from '../drive-lookup'
+import { chainState, chainStateAndDeps, getState, Lookup, map, TempLookupCacheState } from '../drive-lookup'
 import { putCache, usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieve-details'
 
 const setActive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
-  tempCache: O.some(Cache.cachef()),
+  tempCache: O.some(Cache.cache()),
   tempCacheMissingDetails: [],
 })
 
@@ -27,7 +27,7 @@ const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
 })
 
 /**
- * Execute effect enabling temporary cache.
+ * Execute effect enabling temporary cache. Saves some calls to the api when chaining `retrieveItemDetailsInFoldersTempCachedStrict`. Creates a separate cache for those calls which is considered fresh and does not need to be verified.
  */
 export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
   chainState((prevstate) =>
@@ -47,7 +47,7 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
               // after execution
               pipe(
                 newstate.tempCache,
-                O.getOrElse(() => Cache.cachef()),
+                O.getOrElse(() => Cache.cache()),
                 // merge the temporary cache into the main cache
                 Cache.concat(prevstate.cache),
                 Cache.removeByIds(newstate.tempCacheMissingDetails),
@@ -71,7 +71,7 @@ const getMissingDetails = (
 ): string[] => pipe(NA.zip(drivewsids, result), A.filter(guardSnd(O.isNone)), A.map(_ => _[0]))
 
 /**
- * Wraps `retrieveItemDetailsInFoldersCached` to use the temporary cache instead of the main. This method ignores the main cache as a source of details. If the the temporary cache is empty or inactive, the method will retrieve all the requested details from the api. Useful when chaining multiple `retrieveItemDetailsInFoldersCached` for overlaping paths.
+ * Wraps `retrieveItemDetailsInFoldersCached` to rely onthe temporary cache instead of the main one. If the temporary cache is empty or inactive, the method will retrieve all the requested details from the api. Useful when chaining multiple `retrieveItemDetailsInFoldersCached` for overlaping paths because it saves api calls.
  */
 export function retrieveItemDetailsInFoldersTempCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
@@ -82,21 +82,30 @@ export function retrieveItemDetailsInFoldersTempCached(
 export function retrieveItemDetailsInFoldersTempCached(
   drivewsids: NEA<string>,
 ): Lookup<NEA<O.Option<Types.Details>>> {
-  return chainState(prevstate =>
+  return chainStateAndDeps(({ deps: { apiUsage }, state: prevstate }) =>
     pipe(
       loggerIO.debug(
-        `retrieveItemDetailsInFoldersTempCached. Main cache: ${Cache.keysCount(prevstate.cache)} items, temp cache: ${
-          prevstate.tempCache._tag === 'None' ? 'empty' : Cache.keysCount(prevstate.tempCache.value)
-        } items`,
+        `retrieveItemDetailsInFoldersTempCached. `
+          + `Main cache: ${Cache.keysCount(prevstate.cache)} items. `
+          + `Temp cache: ${
+            prevstate.tempCache._tag === 'None'
+              ? 'inactive'
+              : Cache.keysCount(prevstate.tempCache.value).toString() + ' items'
+          }`,
       ),
       SRTE.fromIO,
-      SRTE.chain(() => retrieveItemDetailsInFoldersCached(drivewsids)),
-      usingCache(pipe(
-        // use existing temp cache if present
-        prevstate.tempCache,
-        // or run with empty cache
-        O.getOrElse(Cache.cachef),
-      )),
+      SRTE.chain(
+        () =>
+          pipe(
+            retrieveItemDetailsInFoldersCached(drivewsids),
+            usingCache(pipe(
+              // use existing temp cache if present
+              prevstate.tempCache,
+              // or run with empty cache
+              O.getOrElse(Cache.cache),
+            )),
+          ),
+      ),
       SRTE.bindTo('res'),
       SRTE.bindW('newstate', getState),
       SRTE.chainW(({ newstate, res }) =>

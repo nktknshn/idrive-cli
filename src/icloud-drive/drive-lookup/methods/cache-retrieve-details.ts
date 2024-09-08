@@ -2,9 +2,9 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { Eq } from 'fp-ts/lib/string'
 import * as O from 'fp-ts/Option'
 
+import { string } from 'fp-ts'
 import { loggerIO } from '../../../logging/loggerIO'
 import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
@@ -13,7 +13,7 @@ import { Cache, DriveCache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { TypesIo } from '../../drive-types'
 
-/** Retrieves actual drivewsids from cache or from api (if they are missing from cache) and removes those that were not found */
+/** Retrieves actual drivewsids from cache or from api (if they are missing from cache) and removes those that were not found. */
 export function retrieveItemDetailsInFoldersCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
 ): DriveLookup.Lookup<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
@@ -32,7 +32,7 @@ export function retrieveItemDetailsInFoldersCached(
 export function retrieveItemDetailsInFoldersCached(
   drivewsids: NEA<string>,
 ): DriveLookup.Lookup<NEA<O.Option<Types.Details>>> {
-  const uniqids = pipe(drivewsids, NA.uniq(Eq))
+  const uniqids = pipe(drivewsids, NA.uniq(string.Eq))
 
   return pipe(
     () => loggerIO.debug(`retrieveItemDetailsInFoldersCached: ${uniqids}`),

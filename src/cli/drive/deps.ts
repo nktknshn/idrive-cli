@@ -39,6 +39,7 @@ export const createCliCommandsDeps = (args: {
     cacheFile,
     noCache,
     tempdir: args.tempdir ?? defaults.tempDir,
+    apiUsage: defaults.apiUsage,
 
     // save state by chaining DriveLookup.persistState
     // unused for now

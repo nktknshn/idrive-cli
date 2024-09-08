@@ -1,3 +1,4 @@
+import { pipe } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
@@ -17,14 +18,27 @@ export { searchInPaths } from './methods/drive-search'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 
+export type ApiUsage =
+  /** Default behaviour. Always validates cached paths by retrieving from API. */
+  | 'always'
+  /** Retrieves from cache only. */
+  | 'onlycache'
+  /** Retrieves from API if the path is not fully cached. */
+  | 'fallback'
+
 export type DepHooks = {
   hookPutCache?: Lookup<void>
   hookPesistState?: Lookup<void>
 }
 
+export type DepApiUsage = {
+  apiUsage: ApiUsage
+}
+
 export type Deps =
   & DepApiMethod<'retrieveItemDetailsInFolders'>
   & DepHooks
+  & DepApiUsage
 
 export type TempLookupCacheState = {
   /** A second cache is used for temporary caching. The details in this cache are considered fresh and do not need to be verified. `retrieveItemDetailsInFoldersTempCached` utilizes this cache to avod repeated api calls. */
@@ -53,6 +67,16 @@ export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<State,
 export const chainState = <A>(
   f: (s: State) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
 ): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(getState())
+
+export const chainStateAndDeps = <A>(
+  f: (a: { state: State; deps: Deps }) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
+): SRTE.StateReaderTaskEither<State, Deps, Error, A> =>
+  pipe(
+    SRTE.get<State, Deps>(),
+    SRTE.bindTo('state'),
+    SRTE.bind('deps', () => SRTE.ask()),
+    SRTE.chain(f),
+  )
 
 export const errString = <A>(s: string): Lookup<A> => SRTE.left(err(s))
 

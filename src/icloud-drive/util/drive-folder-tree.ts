@@ -1,5 +1,5 @@
 import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
+import { identity, pipe } from 'fp-ts/lib/function'
 import * as TR from 'fp-ts/lib/Tree'
 import { normalizePath } from '../../util/normalize-path'
 import { Path } from '../../util/path'
@@ -30,7 +30,7 @@ export const deepFolder = <R extends Types.Details>(
   children: TR.Forest<FolderTreeValue<R>>,
 ): DriveFolderTree<R> => TR.make({ details, deep: true }, children)
 
-export type TreeWithItemsValue<R extends Types.Details> =
+export type TreeWithItemValue<R extends Types.Details> =
   | R
   | Types.DetailsFolder
   | Types.DetailsAppLibrary
@@ -39,11 +39,21 @@ export type TreeWithItemsValue<R extends Types.Details> =
   | Types.DriveChildrenItemFolder
   | Types.DriveChildrenItemAppLibrary
 
+export type WithItemPathValue<R extends Types.Details> = {
+  path: string
+  item: TreeWithItemValue<R>
+}
+
+/** Tree with path and items/details */
+export type TreeWithItemPath<R extends Types.Details> = TR.Tree<WithItemPathValue<R>>
+
+export type FlattenWithItems<R extends Types.Details> = WithItemPathValue<R>[]
+
 /** Extract files/folder items from folders details making them tree values */
 export const treeWithItems = <R extends Types.Details>(
   tree: DriveFolderTree<R>,
 ): TR.Tree<
-  TreeWithItemsValue<R>
+  TreeWithItemValue<R>
 > => {
   const filesitems = pipe(
     tree.value.details.items,
@@ -85,16 +95,6 @@ export const addPath = <T>(
     )
   }
 
-/** Tree with path and items/details */
-export type TreeWithItemPath<R extends Types.Details> = TR.Tree<WithItemPathValue<R>>
-
-export type WithItemPathValue<R extends Types.Details> = {
-  path: string
-  item: TreeWithItemsValue<R>
-}
-
-export type FlattenWithItems<R extends Types.Details> = WithItemPathValue<R>[]
-
 export const flattenTree = <A>(tree: TR.Tree<A>): A[] => {
   const res: A[] = []
   const go = (tree: TR.Tree<A>) => {
@@ -106,6 +106,18 @@ export const flattenTree = <A>(tree: TR.Tree<A>): A[] => {
   go(tree)
   return res
 }
+
+/** Extract files/folder items into the tree, add full path and flatten the tree */
+export const flattenTreeWithItemsDocwsroot = (basepath: string) =>
+  (
+    tree: DriveFolderTree<Types.DetailsDocwsRoot>,
+  ): FlattenWithItems<Types.DetailsDocwsRoot> => {
+    return pipe(
+      treeWithItems(tree),
+      addPath(basepath, identity),
+      flattenTree,
+    )
+  }
 
 export const showFolderTree = <R extends Types.Root>(tree: DriveFolderTree<R>): string => {
   const witems = treeWithItems(tree)
