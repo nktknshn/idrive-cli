@@ -13,7 +13,7 @@ import { Cache, DriveCache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { TypesIo } from '../../drive-types'
 
-/** Retrieves actual drivewsids from cache or from api (if they are missing from cache) and removes those that were not found. */
+/** Retrieves actual drivewsids from cache or from api (if they are missing from cache) and removes those that were not found. If `apiUsage` is set to 'onlycache', the method will only retrieve details from cache. */
 export function retrieveItemDetailsInFoldersCached<R extends Types.Root>(
   drivewsids: [R['drivewsid'], ...Types.NonRootDrivewsid[]],
 ): DriveLookup.Lookup<[O.Some<R>, ...O.Option<Types.NonRootDetails>[]]>
@@ -37,13 +37,18 @@ export function retrieveItemDetailsInFoldersCached(
   return pipe(
     () => loggerIO.debug(`retrieveItemDetailsInFoldersCached: ${uniqids}`),
     SRTE.fromIO,
-    SRTE.chain(() => DriveCache.getsCache(Cache.getFoldersDetailsByIdsSeparated(uniqids))),
-    SRTE.chainW(({ missed }) =>
+    SRTE.chain(DriveLookup.ask),
+    SRTE.bindTo('deps'),
+    SRTE.bindW('cached', () => DriveCache.getsCache(Cache.getFoldersDetailsByIdsSeparated(uniqids))),
+    SRTE.chainW(({ deps: { apiUsage }, cached }) =>
       pipe(
-        missed,
+        cached.missed,
         A.matchW(
           () => DriveLookup.of({ missed: [], found: [] }),
-          (missed) => DriveApiMethods.retrieveItemDetailsInFoldersSeparated<DriveLookup.State>(missed),
+          (missed) =>
+            apiUsage === 'onlycache'
+              ? DriveLookup.of({ missed: [], found: [] })
+              : DriveApiMethods.retrieveItemDetailsInFoldersSeparated<DriveLookup.State>(missed),
         ),
       )
     ),

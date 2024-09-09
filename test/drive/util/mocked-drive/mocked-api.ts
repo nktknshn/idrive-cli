@@ -8,6 +8,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { DriveLookup, Types } from '../../../../src/icloud-drive'
 import { DepApiMethod } from '../../../../src/icloud-drive/drive-api'
 import { DriveApiWrapped } from '../../../../src/icloud-drive/drive-api-wrapped'
+import { ApiUsage, DepApiUsage } from '../../../../src/icloud-drive/drive-lookup'
 import * as C from '../../../../src/icloud-drive/drive-lookup/cache'
 import { CreateFoldersResponse } from '../../../../src/icloud-drive/drive-requests'
 import * as L from '../../../../src/logging'
@@ -26,7 +27,7 @@ export const createState = ({
   tempCacheMissingDetails?: string[]
 }): DriveLookup.State => ({ ...authenticatedState, cache, tempCache, tempCacheMissingDetails })
 
-type Calls = {
+export type Calls = {
   calls: () => {
     retrieveItemDetailsInFolders: number
     createFolders: number
@@ -51,9 +52,11 @@ const retrieveItemDetailsInFolders = (
 export type Deps =
   & DriveLookup.Deps
   & DepApiMethod<'createFolders'>
+  & DepApiUsage
 
 export const createEnv = (
   details: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
+  apiUsage: ApiUsage = 'always',
 ):
   & Calls
   & Deps =>
@@ -65,6 +68,7 @@ export const createEnv = (
   }
   return {
     calls: () => calls,
+    apiUsage,
     api: {
       retrieveItemDetailsInFolders: (args) => {
         calls.retrieveItemDetailsInFolders += 1
@@ -105,21 +109,29 @@ export const createEnv = (
   }
 }
 
+export type ExecuteResult<A> = { res: A; state: DriveLookup.State } & Calls
+
+export const executeDriveS = (itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>) =>
+  (p: { cache?: C.LookupCache; apiUsage?: ApiUsage }) =>
+    executeDrive({ itemByDrivewsid, cache: p.cache, apiUsage: p.apiUsage })
+
 export const executeDrive = ({
   itemByDrivewsid: details,
   cache = C.cache(),
+  apiUsage,
 }: {
   itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>
   cache?: C.LookupCache
+  apiUsage?: ApiUsage
 }): <A>(
   m: DriveLookup.Lookup<A, Deps>,
-) => TE.TaskEither<Error, { res: A; state: DriveLookup.State } & Calls> => {
+) => TE.TaskEither<Error, ExecuteResult<A>> => {
   return m =>
     pipe(
       TE.of(cache),
       TE.chain(cache => {
         const state = createState({ cache, tempCache: O.none })
-        const env = createEnv(details)
+        const env = createEnv(details, apiUsage)
 
         return pipe(
           m(state)(env),

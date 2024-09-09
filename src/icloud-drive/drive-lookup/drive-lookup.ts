@@ -61,6 +61,11 @@ export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateR
 
 export const getState = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>()
 
+export const ask = (): SRTE.StateReaderTaskEither<State, Deps, never, Deps> => SRTE.ask<State, Deps>()
+
+export const asks = <A>(f: (d: Deps) => A): SRTE.StateReaderTaskEither<State, Deps, never, A> =>
+  SRTE.asks<State, Deps, A, never>(f)
+
 export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<State, R, E, State> =>
   SRTE.left<State, Deps, E>(e)
 

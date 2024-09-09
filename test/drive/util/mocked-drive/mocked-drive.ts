@@ -53,7 +53,9 @@ type RootDict<T> = T extends [infer A, ...(infer Rest)] ?
       Record<
         N,
         {
+          /** folder details */
           d: Types.DetailsFolder
+          /** children dict */
           c: RootDict<G>
           validPath: V.PathValid<Types.DetailsDocwsRoot>
         } & Folder<G, N>
@@ -293,10 +295,13 @@ const addValidPath = <C extends Child>(
 export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]>(
   tree: DocwsRoot<T>,
 ): {
+  /** root details */
   r: {
+    /** folder details */
     d: Types.DetailsDocwsRoot
     children: RootResult<T>
     childrenWithPath: RootResult<T>
+    /** children dict */
     c: RootDict<T>
   }
   itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>
