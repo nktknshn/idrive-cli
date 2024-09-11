@@ -18,6 +18,8 @@ export { searchInPaths } from './methods/drive-search'
 export * from './methods/drive-search-globs'
 export * from './methods/get-by-paths'
 
+export type Cache = C.LookupCache
+
 export type ApiUsage =
   /** Default behaviour. Always validates cached paths by retrieving from API. */
   | 'always'

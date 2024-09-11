@@ -39,6 +39,7 @@ export type PathValidation<R> =
   | PathValidFile<R>
   | PathInvalid<R>
 
+/** Either a valid path or an invalid path */
 export type Result<R extends T.Root> = PathValidation<R>
 export type ResultRoot = PathValidation<T.DetailsDocwsRoot>
 

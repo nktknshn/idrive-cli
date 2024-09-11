@@ -6,6 +6,9 @@ import * as T from '../../drive-types'
 import { chain, Deps, getState, Lookup, map, State } from '..'
 import * as C from '../cache'
 
+export const cache = C.cache
+export const keysCount = C.keysCount
+
 export const putCache = (cache: C.LookupCache): Lookup<void> =>
   pipe(
     putCacheWithNoHook(cache),

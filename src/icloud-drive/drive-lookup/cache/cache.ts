@@ -12,7 +12,7 @@ import { NEA } from '../../../util/types'
 import * as T from '../../drive-types'
 import { rootDrivewsid, trashDrivewsid } from '../../drive-types/types-io'
 import * as GetByPath from '../../util/get-by-path-types'
-import { MissinRootError, NotFoundError } from '../errors'
+import { MissingRootError, NotFoundError } from '../errors'
 import { getFromCacheByPath } from './cache-get-by-path'
 import { cacheEntityFromDetails, hierarchyToPath, parsePath } from './cache-helpers'
 import * as CT from './cache-types'
@@ -29,11 +29,11 @@ export const cache = (): CT.Cache => ({
   byDrivewsid: {},
 })
 
-export const getDocwsRoot = (cache: CT.Cache): E.Either<MissinRootError, CT.CacheEntityFolderRootDetails> =>
+export const getDocwsRoot = (cache: CT.Cache): E.Either<MissingRootError, CT.CacheEntityFolderRootDetails> =>
   pipe(
     cache.byDrivewsid,
     R.lookup(rootDrivewsid),
-    E.fromOption(() => MissinRootError.create(`getDocwsRootE(): missing root`)),
+    E.fromOption(() => MissingRootError.create(`getDocwsRootE(): missing root`)),
     E.filterOrElse(CT.isDocwsRootCacheEntity, () => err('getDocwsRootE(): invalid root details')),
   )
 
@@ -41,7 +41,7 @@ export const getTrash = (cache: CT.Cache): E.Either<Error, CT.CacheEntityFolderT
   pipe(
     cache.byDrivewsid,
     R.lookup(trashDrivewsid),
-    E.fromOption(() => MissinRootError.create(`getTrashE(): missing trash`)),
+    E.fromOption(() => MissingRootError.create(`getTrashE(): missing trash`)),
     E.filterOrElse(CT.isTrashCacheEntity, () => err('getTrashE(): invalid trash details')),
   )
 

@@ -6,12 +6,12 @@ import * as O from 'fp-ts/Option'
 
 import { string } from 'fp-ts'
 import { loggerIO } from '../../../logging/loggerIO'
-import { err } from '../../../util/errors'
 import { NEA } from '../../../util/types'
 import { sequenceNArrayO } from '../../../util/util'
 import { Cache, DriveCache, DriveLookup, Types } from '../..'
 import { DriveApiMethods } from '../../drive-api'
 import { TypesIo } from '../../drive-types'
+import { NotFoundError } from '../errors'
 
 /** Retrieves actual drivewsids from cache or from api (if they are missing from cache) and removes those that were not found. If `apiUsage` is set to 'onlycache', the method will only retrieve details from cache. */
 export function retrieveItemDetailsInFoldersCached<R extends Types.Root>(
@@ -68,7 +68,13 @@ export function retrieveItemDetailsInFoldersCachedStrict(
   return pipe(
     retrieveItemDetailsInFoldersCached(drivewsids),
     SRTE.chain(res =>
-      SRTE.fromOption(() => err(`some of the ids was not found`))(
+      SRTE.fromOption(() =>
+        NotFoundError.createTemplate({
+          item: drivewsids.join(', '),
+          container: 'cloud',
+          prefix: 'retrieveItemDetailsInFoldersCachedStrict',
+        })
+      )(
         sequenceNArrayO(res),
       )
     ),

@@ -41,8 +41,7 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
         details: result,
         rest: path,
         error: NotFoundError.createTemplate(
-          subItemName,
-          showDetails(parentEntity),
+          { item: subItemName, container: showDetails(parentEntity) },
         ),
       }
     }

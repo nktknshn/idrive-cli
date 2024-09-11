@@ -33,7 +33,7 @@ export const onlyCache = (onlyCache: boolean): GetByPathsParams => ({
   apiUsage: onlyCache ? 'onlycache' : 'always',
 })
 
-/** Given a root and a list of paths, retrieves the actual items if they exist. */
+/** Given a root details and a list of paths, retrieves the actual items if they exist. */
 export const getByPaths = <R extends Types.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
@@ -71,7 +71,8 @@ const getByPathsC = <R extends Types.Root>(
     ),
     SRTE.chain((cached) =>
       pipe(
-        // validate
+        // validate the cached chain of details if they still represent the same path
+        // a folder might be renamed or moved and another folder with the same name is created instead
         validateCachedHierarchies(
           pipe(cached, NA.map(_ => _.details)),
         ),
@@ -127,7 +128,7 @@ const validateCachedHierarchies = <R extends Types.Root>(
       return pipe(
         cachedRests,
         NA.map(cachedPath =>
-          getValidHierarchyPart<R>(
+          getValidHierarchyPart(
             [cachedRoot, ...cachedPath],
             [actualRoot.value, ...toActual(cachedPath, detailsRecord)],
           )
@@ -156,7 +157,7 @@ const concatCachedWithValidated = <R extends Types.Root>(
         return pipe(
           findInParentFilename(parent, Types.fileName(file.value)),
           O.fold(
-            () => E.left(NotFoundError.createTemplate(fname, parent.drivewsid)),
+            () => E.left(NotFoundError.createTemplate({ item: fname, container: parent.drivewsid })),
             (actualFileItem) =>
               // if a folder with the same name as the file was found
               Types.isFileItem(actualFileItem)
@@ -195,6 +196,7 @@ const concatCachedWithValidated = <R extends Types.Root>(
   }
 }
 
+/** Given the most valid parts of the paths, try to retrieve all the actual details representing the paths */
 const getActuals = <R extends Types.Root>(
   validationResults: NEA<[GetByPath.PathValidation<R>, NormalizedPath]>,
 ): DriveLookup.Lookup<NEA<GetByPath.PathValidation<R>>> => {
@@ -207,7 +209,7 @@ const getActuals = <R extends Types.Root>(
     modifySubset(
       validationResults,
       guardFst(GetByPath.isInvalidPath),
-      (subset) => pipe(subset, NA.map(fst), handleInvalidPaths),
+      (invalidPaths) => pipe(invalidPaths, NA.map(fst), handleInvalidPaths),
       ([h, p]): GetByPath.Result<R> => h,
     ),
   )
@@ -223,9 +225,9 @@ type DeeperFolders<R extends Types.Root> =
   ]
 
 const handleInvalidPaths = <R extends Types.Root>(
-  partialPaths: NEA<GetByPath.PathInvalid<R>>,
+  invalidPaths: NEA<GetByPath.PathInvalid<R>>,
 ): DriveLookup.Lookup<NEA<GetByPath.PathValidation<R>>> => {
-  loggerIO.debug(`retrivePartials: ${partialPaths.map(GetByPath.showGetByPathResult)}`)()
+  loggerIO.debug(`handleInvalidPaths: ${invalidPaths.map(GetByPath.showGetByPathResult)}`)()
 
   const handleSubfolders = <R extends Types.Root>(
     subfolders: NEA<DeeperFolders<R>>,
@@ -323,9 +325,9 @@ const handleInvalidPaths = <R extends Types.Root>(
   }
 
   const nextItems = pipe(
-    partialPaths,
+    invalidPaths,
     NA.map(_ => findInParentFilename(NA.last(_.details), NA.head(_.rest))),
-    NA.zip(pipe(partialPaths, NA.map(_ => NA.tail(_.rest)), NA.zip(partialPaths))),
+    NA.zip(pipe(invalidPaths, NA.map(_ => NA.tail(_.rest)), NA.zip(invalidPaths))),
   )
 
   return modifySubset(
@@ -338,8 +340,11 @@ const handleInvalidPaths = <R extends Types.Root>(
       return {
         valid: false,
         error: NotFoundError.createTemplate(
-          NA.head(partial.rest),
-          Types.fileName(NA.last(partial.details)),
+          {
+            item: NA.head(partial.rest),
+            container: Types.fileName(NA.last(partial.details)),
+            prefix: 'getByPaths.handleInvalidPaths',
+          },
         ),
         details: partial.details,
         rest: partial.rest,

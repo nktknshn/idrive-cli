@@ -5,12 +5,12 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
 
 import { loggerIO } from '../../../logging/loggerIO'
-import { err } from '../../../util/errors'
 import { guardSnd } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 import { sequenceNArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
 import { chainState, chainStateAndDeps, getState, Lookup, map, TempLookupCacheState } from '../drive-lookup'
+import { NotFoundError } from '../errors'
 import { putCache, usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieve-details'
 
@@ -155,6 +155,14 @@ export function retrieveItemDetailsInFoldersTempCachedStrict(
 ): Lookup<NEA<Types.Details>> {
   return pipe(
     retrieveItemDetailsInFoldersTempCached(drivewsids),
-    SRTE.chain(res => SRTE.fromOption(() => err(`some of the ids was not found`))(sequenceNArrayO(res))),
+    SRTE.chain(res =>
+      SRTE.fromOption(() =>
+        NotFoundError.createTemplate({
+          item: drivewsids.join(', '),
+          container: 'icloud',
+          prefix: 'retrieveItemDetailsInFoldersTempCachedStrict',
+        })
+      )(sequenceNArrayO(res))
+    ),
   )
 }

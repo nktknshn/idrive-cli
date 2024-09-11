@@ -9,8 +9,11 @@ export class NotFoundError extends Error {
     return new NotFoundError(message)
   }
 
-  static createTemplate(target: string, container: string, prefix?: string): NotFoundError {
-    return new NotFoundError(`${prefix ? prefix + ': ' : ''}${target} was not found in ${container}`)
+  /** ${prefix}: ${item} was not found in ${container} */
+  static createTemplate(
+    { item, container, prefix }: { item: string; container: string; prefix?: string },
+  ): NotFoundError {
+    return new NotFoundError(`${prefix ? prefix + ': ' : ''}${item} was not found in ${container}`)
   }
 }
 
@@ -52,11 +55,11 @@ export class FolderLikeMissingDetailsError extends Error {
   }
 }
 
-export class MissinRootError extends Error {
-  static is(e: Error): e is MissinRootError {
-    return e instanceof MissinRootError
+export class MissingRootError extends Error {
+  static is(e: Error): e is MissingRootError {
+    return e instanceof MissingRootError
   }
-  static create(message?: string): MissinRootError {
-    return new MissinRootError(message)
+  static create(message?: string): MissingRootError {
+    return new MissingRootError(message)
   }
 }

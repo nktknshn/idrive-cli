@@ -2,7 +2,7 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
-import { Cache, Types } from '../../../../src/icloud-drive'
+import { Cache, GetByPath, Types } from '../../../../src/icloud-drive'
 import { rootDrivewsid } from '../../../../src/icloud-drive/drive-types/types-io'
 import * as V from '../../../../src/icloud-drive/util/get-by-path-types'
 import { parseFilename } from '../../../../src/util/filename'
@@ -130,11 +130,15 @@ export const docwsroot = <T extends (Folder<any[], any> | AppLibray<any[], any> 
 }
 
 export const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
-  (f: Folder<any[], any>): Folder<any[], any> & {
-    d: Types.DetailsFolder
-    children: RootResult<any>
-    c: RootDict<any>
-  } => {
+  (f: Folder<any[], any>):
+    & Folder<any[], any>
+    & {
+      d: Types.DetailsFolder
+      children: RootResult<any>
+      c: RootDict<any>
+      // validPath: V.PathValid<Types.DetailsDocwsRoot>
+    } =>
+  {
     const docwsid = f.docwsid ?? (randomUUIDCap() + '::' + f.name)
     const drivewsid = `FOLDER::${zone}::${docwsid}`
 
@@ -145,7 +149,7 @@ export const makeFolder = ({ parentId, zone }: { parentId: string; zone: string 
       }),
     )
 
-    const c = pipe(
+    const childrenRecord = pipe(
       children.map(_ => [_.name, _] as const),
       recordFromTuples,
     )
@@ -173,7 +177,8 @@ export const makeFolder = ({ parentId, zone }: { parentId: string; zone: string 
       ...f,
       d: d,
       children: pipe(children) as any,
-      c,
+      c: childrenRecord,
+      // validPath: GetByPath.validFolder<Types.DetailsDocwsRoot>([d]),
     }
   }
 
@@ -320,7 +325,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     ),
   )
 
-  const c = pipe(
+  const childrenRecord = pipe(
     children.map(_ => [_.name, _] as const),
     recordFromTuples,
   )
@@ -380,7 +385,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
       childrenWithPath: children.map(
         c => addValidPath(c, V.validPath([d])),
       ) as RootResult<T>,
-      c: c as RootDict<T>,
+      c: childrenRecord as RootDict<T>,
     },
     itemByDrivewsid,
     allFolders,
