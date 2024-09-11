@@ -161,7 +161,8 @@ export const validAsString = <R extends T.Root>(
   )
 }
 
-export const concat = <R>(h: Hierarchy<R>, details: NEA<T.Details>): Hierarchy<R> => [...h, ...details] as Hierarchy<R>
+export const appendHierarchy = <R>(h: Hierarchy<R>, details: NEA<T.Details>): Hierarchy<R> =>
+  [...h, ...details] as Hierarchy<R>
 
 export const eq = <R extends T.Root>(): Eq<Hierarchy<R>> => ({
   equals: (a, b) => {

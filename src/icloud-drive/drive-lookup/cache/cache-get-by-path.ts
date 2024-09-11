@@ -81,11 +81,11 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
               (result): GetByPath.PathValidation<R> =>
                 result.valid
                   ? GetByPath.validPath<R>(
-                    GetByPath.concat([parentEntity], result.details),
+                    GetByPath.appendHierarchy([parentEntity], result.details),
                     GetByPath.getFile(result),
                   )
                   : GetByPath.invalidPath<R>(
-                    GetByPath.concat([parentEntity], result.details),
+                    GetByPath.appendHierarchy([parentEntity], result.details),
                     result.rest,
                     result.error,
                   ),
@@ -106,7 +106,7 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
             error: FolderLikeMissingDetailsError.create(`${subitem.value.drivewsid} needs details: ${e}`),
           }),
           ({ content }): GetByPath.PathValidation<R> =>
-            GetByPath.validFolder<R>(GetByPath.concat([parentEntity], [content])),
+            GetByPath.validFolder<R>(GetByPath.appendHierarchy([parentEntity], [content])),
         ),
       )
     }

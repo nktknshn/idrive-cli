@@ -20,6 +20,9 @@ type TestMatcher<T> = {
   state: StateMatcherF
 }
 
+export const allTests = (...tests: Array<TE.TaskEither<Error, M.ExecuteResult<any>>>) =>
+  Promise.all(tests.map(f => f()))
+
 export const testStateTE = (f: (exp: jest.JestMatchers<any>) => void) =>
   <T>(req: TE.TaskEither<Error, M.ExecuteResult<T>>) =>
     pipe(
@@ -57,6 +60,7 @@ export const testErrorIs = (isError: (e: Error) => boolean) =>
   (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
     pipe(
       req,
+      testError,
       TE.mapLeft((a) => {
         expect(isError(a)).toBe(true)
         return a
@@ -66,13 +70,8 @@ export const testErrorIs = (isError: (e: Error) => boolean) =>
 export const testError = (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
   pipe(
     req,
-    TE.mapLeft((a) => {
-      expect(a).toBeDefined()
-      return a
-    }),
     TE.map((a) => {
-      expect(a.res).toBeUndefined()
-      return a
+      throw new Error(`Expected error during test.`)
     }),
   )
 

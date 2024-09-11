@@ -44,7 +44,11 @@ export const getByPaths = <R extends Types.Root>(
     SRTE.fromIO,
     // get what we have cached
     SRTE.chain(() => DriveLookup.getByPathsFromCache(root, paths)),
-    SRTE.chain((cached) => {
+    SRTE.bindTo('cached'),
+    SRTE.bindW('deps', DriveLookup.ask),
+    SRTE.chain(({ cached, deps }) => {
+      const { apiUsage } = deps
+
       switch (apiUsage) {
         case 'onlycache':
           return SRTE.of(cached)
@@ -196,7 +200,7 @@ const concatCachedWithValidated = <R extends Types.Root>(
   }
 }
 
-/** Given the most valid parts of the paths, try to retrieve all the actual details representing the paths */
+/** Given the most valid parts of the paths, try to retrieve the rest */
 const getActuals = <R extends Types.Root>(
   validationResults: NEA<[GetByPath.PathValidation<R>, NormalizedPath]>,
 ): DriveLookup.Lookup<NEA<GetByPath.PathValidation<R>>> => {
@@ -216,12 +220,15 @@ const getActuals = <R extends Types.Root>(
 }
 
 type DeeperFolders<R extends Types.Root> =
-  // folders items with empty rest (valid, requires details)
-  | [O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>, [[], GetByPath.PathInvalid<R>]]
+  // folders items with empty rest (valid, requires one last details)
+  | [
+    lastitem: O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
+    [rest: [], invalidPath: GetByPath.PathInvalid<R>],
+  ]
   // folders items with non empty rest (incomplete paths)
   | [
-    O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
-    [NEA<string>, GetByPath.PathInvalid<R>],
+    nextitem: O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
+    [rest: NEA<string>, invalidPath: GetByPath.PathInvalid<R>],
   ]
 
 const handleInvalidPaths = <R extends Types.Root>(
@@ -253,16 +260,19 @@ const handleInvalidPaths = <R extends Types.Root>(
           (v): v is [
             Types.NonRootDetails,
             [
-              O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
+              O.Some<
+                Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary
+              >,
               [NEA<string>, GetByPath.PathInvalid<R>],
             ],
           ] => pipe(v, ([details, [item, [rest, partial]]]) => A.isNonEmpty(rest)),
+          // when
           (task) => {
             return pipe(
               task,
               NA.map(([details, [item, [rest, partial]]]): GetByPath.PathInvalid<R> =>
                 GetByPath.invalidPath(
-                  GetByPath.concat(partial.details, [details]),
+                  GetByPath.appendHierarchy(partial.details, [details]),
                   rest,
                   err(`we need to go deepr)`),
                 )
@@ -270,8 +280,9 @@ const handleInvalidPaths = <R extends Types.Root>(
               handleInvalidPaths,
             )
           },
+          // when the last item of the path is received, return the valid path
           ([details, [item, [rest, partial]]]): GetByPath.PathValid<R> => {
-            return GetByPath.validFolder(GetByPath.concat(partial.details, [details]))
+            return GetByPath.validFolder(GetByPath.appendHierarchy(partial.details, [details]))
           },
         )
       }),

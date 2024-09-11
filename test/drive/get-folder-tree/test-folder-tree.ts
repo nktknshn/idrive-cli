@@ -6,25 +6,24 @@ import { DriveLookup } from '../../../src/icloud-drive'
 import * as C from '../../../src/icloud-drive/drive-lookup/cache'
 import { npath } from '../../../src/util/normalize-path'
 import { enableDebug } from '../debug'
-import { executeDrive, fakeicloud } from '../util/mocked-drive'
-import { file, folder } from '../util/mocked-drive'
+import * as M from '../util/mocked-drive'
 
 enableDebug(false)
 
-const struct0 = fakeicloud(
-  file({ name: 'file1.txt' }),
-  folder({ name: 'test1' })(
-    file({ name: 'file2.txt' }),
-    folder({ name: 'test2' })(
-      file({ name: 'file2.txt' }),
-      folder({ name: 'test3' })(
-        file({ name: 'file2.txt' }),
-        folder({ name: 'test4' })(
-          file({ name: 'file2.txt' }),
-          folder({ name: 'test5' })(
-            file({ name: 'file2.txt' }),
-            folder({ name: 'test6' })(
-              file({ name: 'file2.txt' }),
+const struct0 = M.fakeicloud(
+  M.file({ name: 'file1.txt' }),
+  M.folder({ name: 'test1' })(
+    M.file({ name: 'file2.txt' }),
+    M.folder({ name: 'test2' })(
+      M.file({ name: 'file2.txt' }),
+      M.folder({ name: 'test3' })(
+        M.file({ name: 'file2.txt' }),
+        M.folder({ name: 'test4' })(
+          M.file({ name: 'file2.txt' }),
+          M.folder({ name: 'test5' })(
+            M.file({ name: 'file2.txt' }),
+            M.folder({ name: 'test6' })(
+              M.file({ name: 'file2.txt' }),
             ),
           ),
         ),
@@ -33,7 +32,7 @@ const struct0 = fakeicloud(
   ),
 )
 
-const runWithRootCache = executeDrive({
+const runWithRootCache = M.executeDrive({
   itemByDrivewsid: struct0.itemByDrivewsid,
   cache: pipe(
     C.cache(),
@@ -66,7 +65,7 @@ describe('getFoldersTrees', () => {
           npath('/test1/test2/test3'),
         ],
       ),
-      executeDrive({
+      M.executeDrive({
         itemByDrivewsid: struct0.itemByDrivewsid,
         cache: pipe(
           C.cache(),
@@ -77,12 +76,7 @@ describe('getFoldersTrees', () => {
           ]),
         ),
       }),
-      TE.map(({ calls }) => {
-        expect(calls().total).toBe(5)
-      }),
-      TE.mapLeft(() => {
-        expect(false).toBe(true)
-      }),
+      M.testCallsTE({ total: 5 }),
     )()
   })
 
@@ -96,12 +90,7 @@ describe('getFoldersTrees', () => {
       SRTE.chain(dirs => DriveLookup.getFoldersTrees(dirs, Infinity)),
       DriveLookup.usingTempCache,
       runWithRootCache,
-      TE.map(({ calls }) => {
-        expect(calls().total).toBe(7)
-      }),
-      TE.mapLeft(() => {
-        expect(false).toBe(true)
-      }),
+      M.testCallsTE({ total: 7 }),
     )()
   })
 
@@ -114,31 +103,19 @@ describe('getFoldersTrees', () => {
 
     assert(r0._tag === 'Right')
 
-    const req1 = pipe(
+    const test1 = pipe(
       DriveLookup.getFoldersTrees(r0.right.res, Infinity),
       runWithRootCache,
-      TE.map(({ calls }) => {
-        expect(calls().total).toBe(5)
-      }),
-      TE.mapLeft(() => {
-        expect(false).toBe(true)
-      }),
+      M.testCallsTE({ total: 5 }),
     )
 
-    const req2 = pipe(
+    const test2 = pipe(
       DriveLookup.getFoldersTrees(r0.right.res, Infinity),
       DriveLookup.usingTempCache,
       runWithRootCache,
-      TE.map(({ calls }) => {
-        expect(calls().total).toBe(3)
-      }),
-      TE.mapLeft(() => {
-        expect(false).toBe(true)
-      }),
+      M.testCallsTE({ total: 3 }),
     )
 
-    return pipe(
-      TE.sequenceSeqArray([req1, req2]),
-    )()
+    return M.allTests(test1, test2)
   })
 })

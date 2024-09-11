@@ -32,6 +32,7 @@ export type Calls = {
     retrieveItemDetailsInFolders: number
     createFolders: number
     total: number
+    retrieveItemDetailsInFoldersIds: string[][]
   }
 }
 
@@ -65,7 +66,9 @@ export const createEnv = (
     retrieveItemDetailsInFolders: 0,
     createFolders: 0,
     total: 0,
+    retrieveItemDetailsInFoldersIds: [] as string[][],
   }
+
   return {
     calls: () => calls,
     apiUsage,
@@ -73,6 +76,8 @@ export const createEnv = (
       retrieveItemDetailsInFolders: (args) => {
         calls.retrieveItemDetailsInFolders += 1
         calls.total += 1
+        calls.retrieveItemDetailsInFoldersIds.push(args.drivewsids)
+
         L.apiLogger.debug(`retrieveItemDetailsInFolders(${JSON.stringify(args)})`)
 
         return pipe(
