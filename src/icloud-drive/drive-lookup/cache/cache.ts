@@ -189,6 +189,12 @@ export const getByIdWithPath = (drivewsid: string) =>
 export const removeById = (drivewsid: string): (cache: CT.Cache) => CT.Cache =>
   (cache: CT.Cache) => pipe(cache, lens.byDrivewsid.modify(R.deleteAt(drivewsid)))
 
+export const createWithDetailss = (detailss: T.Details[]): CT.Cache =>
+  pipe(
+    cache(),
+    putDetailss(detailss),
+  )
+
 export const putDetailss = (
   detailss: T.Details[],
 ): ((cache: CT.Cache) => CT.Cache) => {

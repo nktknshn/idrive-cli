@@ -6,6 +6,7 @@ export {
   allTests,
   testCacheTE,
   testCallsTE,
+  testError,
   testErrorIs,
   testExpectResTE,
   testNoError,

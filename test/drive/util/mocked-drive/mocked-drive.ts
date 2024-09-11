@@ -2,11 +2,14 @@ import * as A from 'fp-ts/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { randomRange } from 'fp-ts/lib/Random'
 import * as R from 'fp-ts/Record'
-import { Cache, GetByPath, Types } from '../../../../src/icloud-drive'
+import { Cache, DriveTree, GetByPath, Types } from '../../../../src/icloud-drive'
+import { TypesIo } from '../../../../src/icloud-drive/drive-types'
 import { rootDrivewsid } from '../../../../src/icloud-drive/drive-types/types-io'
 import * as V from '../../../../src/icloud-drive/util/get-by-path-types'
 import { parseFilename } from '../../../../src/util/filename'
 import { guardFstRO, isDefined } from '../../../../src/util/guards'
+import { NormalizedPath } from '../../../../src/util/normalize-path'
+import { NEA } from '../../../../src/util/types'
 import { randomUUIDCap, recordFromTuples } from '../../../../src/util/util'
 
 type File<N extends string> = {
@@ -424,3 +427,17 @@ export const removeByDrivewsid = (drivewsid: string) =>
       ),
     )
   }
+
+// export const getFoldersTreesByPathsDocwsroot = (
+//   paths: NEA<NormalizedPath>,
+//   depth = Infinity,
+// ) =>
+//   (
+//     itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
+//   ): DriveTree.DriveFolderTree<Types.DetailsDocwsRoot> => {
+//     const root = itemByDrivewsid[TypesIo.rootDrivewsid]
+
+//     for (const path of paths) {
+
+//     }
+//   }

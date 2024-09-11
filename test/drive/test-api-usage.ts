@@ -2,7 +2,7 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import * as O from 'fp-ts/Option'
-import { Cache, DriveCache, DriveLookup, GetByPath, Types } from '../../src/icloud-drive'
+import { Cache, DriveCache, DriveLookup, DriveTree, GetByPath, Types } from '../../src/icloud-drive'
 import { MissingRootError, NotFoundError } from '../../src/icloud-drive/drive-lookup/errors'
 import { npath } from '../../src/util/normalize-path'
 import { NEA } from '../../src/util/types'
@@ -336,6 +336,78 @@ describe('apiUsage with getByPaths', () => {
       test2(reqChainedTempCached),
       test3(req),
       test3(reqChainedTempCached),
+    )
+  })
+})
+
+describe('works with getFoldersTrees', () => {
+  const reqGetFolderTrees = (depth: number) =>
+    pipe(
+      DriveLookup.getFoldersTreesByPathsDocwsroot([
+        npath('/test1/'),
+      ], depth),
+    )
+
+  it('works with getFoldersTrees(onlycache)', async () => {
+    // test without cache. Missing root is an error
+    const test1 = pipe(
+      reqGetFolderTrees(0),
+      execStructure({ apiUsage: 'onlycache' }),
+      M.testErrorIs(MissingRootError.is),
+    )
+
+    // works partially cached
+    const test2 = pipe(
+      reqGetFolderTrees(0),
+      execStructure({
+        apiUsage: 'onlycache',
+        cache: Cache.createWithDetailss([structure.r.d, structure.r.c.test1.d]),
+      }),
+      M.testCallsTE({ retrieveItemDetailsInFolders: 0 }),
+      M.testResTE(res =>
+        expect(res).toMatchObject([
+          DriveTree.shallowFolder(structure.r.c.test1.d),
+        ])
+      ),
+    )
+
+    // throws error when the cache is not enough
+    const test3 = pipe(
+      reqGetFolderTrees(1),
+      execStructure({
+        apiUsage: 'onlycache',
+        cache: Cache.createWithDetailss([
+          structure.r.d,
+          structure.r.c.test1.d,
+        ]),
+      }),
+      M.testError,
+    )
+
+    // works when fully cached
+    const test4 = pipe(
+      reqGetFolderTrees(Infinity),
+      execStructure({
+        apiUsage: 'onlycache',
+        cache: structure.cache,
+      }),
+      M.testResTE(res => {
+        const flat = DriveTree.flattenTreeWithItemsDocwsroot('/')(res[0])
+        expect(flat.map(_ => _.path)).toEqual([
+          '/test1',
+          '/test1/package.json',
+          '/test1/test2',
+          '/test1/test2/package.json',
+          '/test1/test2/test3',
+        ])
+      }),
+    )
+
+    return M.allTests(
+      test1,
+      test2,
+      test3,
+      test4,
     )
   })
 })

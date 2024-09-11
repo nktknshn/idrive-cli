@@ -81,7 +81,6 @@ export const createEnv = (
         L.apiLogger.debug(`retrieveItemDetailsInFolders(${JSON.stringify(args)})`)
 
         return pipe(
-          // SRTE.fromIO(() =>)),
           retrieveItemDetailsInFolders(details)(args),
         )
       },
