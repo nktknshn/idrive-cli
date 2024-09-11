@@ -163,8 +163,6 @@ describe('apiUsage with getByPaths', () => {
     npath('/test1/'),
   ])
 
-  type ReqResult = DriveLookup.Lookup<NEA<GetByPath.Result<Types.DetailsDocwsRoot>>>
-
   const reqChained = pipe(
     DriveLookup.getByPathDocwsroot(npath('/test1/test2/')),
     SRTE.bindTo('res1'),
@@ -348,7 +346,7 @@ describe('works with getFoldersTrees', () => {
       ], depth),
     )
 
-  it('works with getFoldersTrees(onlycache)', async () => {
+  it('works with getFoldersTrees(onlycache)', () => {
     // test without cache. Missing root is an error
     const test1 = pipe(
       reqGetFolderTrees(0),
@@ -403,11 +401,76 @@ describe('works with getFoldersTrees', () => {
       }),
     )
 
-    return M.allTests(
-      test1,
-      test2,
-      test3,
-      test4,
+    return M.allTests(test1, test2, test3, test4)
+  })
+
+  it('works with getFoldersTrees(fallback)', () => {
+    const test1 = pipe(
+      reqGetFolderTrees(0),
+      execStructure({ apiUsage: 'fallback' }),
+      M.testCallsTE({
+        retrieveItemDetailsInFoldersIds: [
+          [structure.r.d.drivewsid],
+          [structure.r.c.test1.d.drivewsid],
+        ],
+      }),
+      M.testResTE(res => {
+        const flat = pipe(
+          res[0],
+          DriveTree.flattenTreeWithItemsDocwsroot('/'),
+        )
+
+        expect(flat.map(_ => _.path)).toEqual([
+          '/test1',
+          '/test1/package.json',
+          '/test1/test2',
+        ])
+      }),
     )
+
+    return M.allTests(test1)
+  })
+
+  const reqGetFolderTreesChain = (depth1: number, depth2: number) =>
+    pipe(
+      DriveLookup.getFoldersTreesByPathsDocwsroot([npath('/')], depth1),
+      SRTE.bindTo('res1'),
+      SRTE.bind('res2', () =>
+        DriveLookup.getFoldersTreesByPathsDocwsroot(
+          [npath('/test1/')],
+          depth2,
+        )),
+      SRTE.map(({ res1, res2 }) => NA.fromReadonlyNonEmptyArray([res1[0], res2[0]])),
+    )
+
+  it('works with getFoldersTrees(fallback) chained', () => {
+    const test1 = pipe(
+      reqGetFolderTreesChain(1, 0),
+      execStructure({ apiUsage: 'fallback' }),
+      M.testCallsTE({
+        retrieveItemDetailsInFoldersIds: [
+          // first call
+          [structure.r.d.drivewsid],
+          [structure.r.c.test1.d.drivewsid],
+        ],
+      }),
+      M.testResTE(res => {
+        const flat0 = pipe(
+          res[0],
+          DriveTree.flattenTreeWithItemsDocwsroot('/'),
+        )
+
+        expect(flat0.map(_ => [_.path, _.item] as const)).toEqual([
+          ['/', structure.r.d],
+          ['/fileinroot.txt', structure.r.c['fileinroot.txt'].d],
+          ['/fileinroot2.txt', structure.r.c['fileinroot2.txt'].d],
+          ['/test1', structure.r.c.test1.d],
+          ['/test1/package.json', structure.r.c.test1.c['package.json'].d],
+          ['/test1/test2', structure.r.c.test1.c.test2.d], // supposed to be shallow details
+        ])
+      }),
+    )
+
+    return M.allTests(test1)
   })
 })
