@@ -13,16 +13,15 @@ import * as V from '../../../util/get-by-path-types'
 import { filterOrElse, Lookup, map } from '../..'
 import { ItemIsNotFolderError } from '../../errors'
 import { chainCachedDocwsRoot, chainCachedTrash, getCachedDocwsRoot } from '../get-roots'
-import { defaultParams, getByPaths } from './get-by-paths'
+import { getByPaths } from './get-by-paths'
 
 /** Fails if the path is not valid */
 export const getByPathStrict = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<T.DetailsOrFile<R>> => {
   return pipe(
-    getByPathsStrict(root, [path], params),
+    getByPathsStrict(root, [path]),
     map(NA.head),
   )
 }
@@ -31,10 +30,9 @@ export const getByPathStrict = <R extends T.Root>(
 export const getByPathsStrict = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-  params = defaultParams,
 ): Lookup<NEA<T.DetailsOrFile<R>>> => {
   return pipe(
-    getByPaths(root, paths, params),
+    getByPaths(root, paths),
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
@@ -44,10 +42,9 @@ export const getByPathsStrict = <R extends T.Root>(
 
 export const getByPathStrictDocwsroot = (
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<T.DetailsOrFile<T.DetailsDocwsRoot>> => {
   return pipe(
-    getByPathsStrictDocwsroot([path], params),
+    getByPathsStrictDocwsroot([path]),
     map(NA.head),
   )
 }
@@ -55,10 +52,9 @@ export const getByPathStrictDocwsroot = (
 /** Fails if some of the paths are not valid */
 export const getByPathsStrictDocwsroot = (
   paths: NEA<NormalizedPath>,
-  params = defaultParams,
 ): Lookup<NEA<T.DetailsOrFile<T.DetailsDocwsRoot>>> => {
   return pipe(
-    chainCachedDocwsRoot(root => getByPaths(root, paths, params)),
+    chainCachedDocwsRoot(root => getByPaths(root, paths)),
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
@@ -68,10 +64,9 @@ export const getByPathsStrictDocwsroot = (
 
 export const getByPathsStrictTrash = (
   path: NEA<NormalizedPath>,
-  params = defaultParams,
 ): Lookup<NEA<T.DetailsOrFile<T.DetailsTrashRoot>>> => {
   return pipe(
-    chainCachedTrash(root => getByPaths(root, path, params)),
+    chainCachedTrash(root => getByPaths(root, path)),
     SRTE.map(NA.map(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
@@ -81,10 +76,9 @@ export const getByPathsStrictTrash = (
 
 export const getByPathStrictTrash = (
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<T.DetailsOrFile<T.DetailsTrashRoot>> => {
   return pipe(
-    getByPathsStrictTrash([path], params),
+    getByPathsStrictTrash([path]),
     map(NA.head),
   )
 }
@@ -92,10 +86,9 @@ export const getByPathStrictTrash = (
 export const getByPathFolderStrict = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<R | T.NonRootDetails> =>
   pipe(
-    getByPathsStrict(root, [path], params),
+    getByPathsStrict(root, [path]),
     map(NA.head),
     filterOrElse(
       T.isDetailsG,
@@ -105,21 +98,19 @@ export const getByPathFolderStrict = <R extends T.Root>(
 
 export const getByPathFolderStrictDocwsroot = (
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<T.DetailsDocwsRoot | T.NonRootDetails> =>
   pipe(
     getCachedDocwsRoot(),
-    SRTE.chainW((root) => getByPathFolderStrict(root, path, params)),
+    SRTE.chainW((root) => getByPathFolderStrict(root, path)),
   )
 
 /** Fails if some of the paths are not valid or not folders */
 export const getByPathsFoldersStrict = <R extends T.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-  params = defaultParams,
 ): Lookup<NEA<R | T.NonRootDetails>> =>
   pipe(
-    getByPathsStrict(root, paths, params),
+    getByPathsStrict(root, paths),
     filterOrElse(
       (items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items),
       () => ItemIsNotFolderError.create(`some of the paths are not folders`),
@@ -128,41 +119,37 @@ export const getByPathsFoldersStrict = <R extends T.Root>(
 
 export const getByPathsFoldersStrictDocwsroot = (
   paths: NEA<NormalizedPath>,
-  params = defaultParams,
 ): Lookup<NEA<T.DetailsDocwsRoot | T.NonRootDetails>> =>
   pipe(
     chainCachedDocwsRoot(
-      root => getByPathsFoldersStrict(root, paths, params),
+      root => getByPathsFoldersStrict(root, paths),
     ),
   )
 
 export const getByPath = <R extends T.Root>(
   root: R,
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<V.Result<R>> => {
   return pipe(
-    getByPaths(root, [path], params),
+    getByPaths(root, [path]),
     map(NA.head),
   )
 }
 
 export const getByPathsDocwsroot = (
   paths: NEA<NormalizedPath>,
-  params = defaultParams,
 ): Lookup<NEA<V.Result<T.DetailsDocwsRoot>>> => {
   logger.debug('getByPathsDocwsroot')
   return pipe(
-    chainCachedDocwsRoot(root => getByPaths(root, paths, params)),
+    chainCachedDocwsRoot(root => getByPaths(root, paths)),
   )
 }
 
 export const getByPathDocwsroot = (
   path: NormalizedPath,
-  params = defaultParams,
 ): Lookup<V.Result<T.DetailsDocwsRoot>> => {
   return pipe(
-    getByPathsDocwsroot([path], params),
+    getByPathsDocwsroot([path]),
     map(NA.head),
   )
 }

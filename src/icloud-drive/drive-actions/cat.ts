@@ -18,12 +18,12 @@ export type Deps =
   & DepFetchClient
 
 export const cat = (
-  { path, skipValidation }: { path: string; skipValidation: boolean },
+  { path }: { path: string },
 ): DriveLookup.Lookup<string, Deps> => {
   const npath = pipe(path, normalizePath)
 
   return pipe(
-    DriveLookup.getByPathStrictDocwsroot(npath, DriveLookup.onlyCache(skipValidation)),
+    DriveLookup.getByPathStrictDocwsroot(npath),
     SRTE.filterOrElse(isFile, () => err(`you cannot cat a directory`)),
     SRTE.chainW((item) => DriveApiMethods.getDriveItemUrl(item)),
     SRTE.chainOptionK(() => err(`cannot get url`))(O.fromNullable),

@@ -23,7 +23,6 @@ type Args = {
   tree: boolean
   recursive: boolean
   depth: number
-  cached: boolean
   sort: LsPrinting.Sort | undefined
 }
 
@@ -68,7 +67,7 @@ const lsShallow = (
   }
 
   return pipe(
-    DriveActions.listPaths({ paths: args.paths, trash: args.trash, cached: args.cached }),
+    DriveActions.listPaths({ paths: args.paths, trash: args.trash }),
     SRTE.map(NA.map(a =>
       a.valid
         ? LsPrinting.showValidPath(a)({ ...args, ...opts })
@@ -106,7 +105,6 @@ const lsRecursive = (
     DriveActions.listRecursive({
       globs: args.paths,
       depth: args.depth,
-      cached: args.cached,
     }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([found, path]) => {

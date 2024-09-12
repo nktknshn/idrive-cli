@@ -261,6 +261,19 @@ describe('apiUsage with getByPaths', () => {
       M.testResTE(res => expect(res).toMatchObject([validPathTest2, validPathTest1])),
     )
 
+    // works when partially cached. Expected 1 calls to check if there is a new item
+    const test4 = pipe(
+      DriveLookup.getByPathDocwsroot(npath('/test666/')),
+      execStructure({
+        apiUsage: 'fallback',
+        cache: Cache.createWithDetailss([
+          structure.r.d,
+          structure.r.c.test1.d,
+        ]),
+      }),
+      M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),
+    )
+
     return M.allTests(
       test1(req),
       test1(reqChainedTempCached),
@@ -268,6 +281,7 @@ describe('apiUsage with getByPaths', () => {
       test2(reqChainedTempCached),
       test3(req),
       test3(reqChainedTempCached),
+      test4,
     )
   })
 

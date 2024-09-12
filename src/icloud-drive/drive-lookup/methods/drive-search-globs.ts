@@ -15,9 +15,7 @@ import { NEA } from '../../../util/types'
 import { DriveLookup, DriveTree, Types } from '../..'
 import * as DTR from '../../util/drive-folder-tree'
 import { modifySubset } from '../../util/drive-modify-subset'
-import { ApiUsage } from '../drive-lookup'
 import { getFoldersTrees } from './drive-get-folders-trees'
-import { defaultParams } from './get-by-paths'
 
 export type SearchGlobFoundItem = {
   /** Matching path */
@@ -34,7 +32,7 @@ export type SearchGlobFoundItem = {
     // item from the parent's details is returned
     | Types.DriveChildrenItemFolder
     | Types.DriveChildrenItemAppLibrary
-    // file
+    // a file
     | Types.DriveChildrenItemFile
 }
 
@@ -42,8 +40,6 @@ export type SearchGlobsParams = {
   options?: micromatch.Options
   /** If true, automatically go deeper into folders */
   goDeeper?: boolean
-  /** When to use cache */
-  apiUsage?: ApiUsage
 }
 
 /** Recursively searches for files and folders matching the glob patterns.
@@ -57,7 +53,6 @@ export const searchGlobs = (
     options,
     goDeeper = false,
     // cached = false,
-    apiUsage = defaultParams.apiUsage,
   }: SearchGlobsParams,
 ): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
@@ -67,7 +62,7 @@ export const searchGlobs = (
   // base folder for each glob
   const globsBases = pipe(
     scanned,
-    // for globs starting with **
+    // for globs starting with ** prepend a slash
     NA.map(_ => _.base === '' ? '/' : _.base),
     NA.map(normalizePath),
   )
@@ -94,7 +89,7 @@ export const searchGlobs = (
           // if the input glob is a plain path to a file, just compare the paths
           !scan.isGlob && isMatching(basepath, glob, options)
             ? [{ path: basepath, item: file }]
-            : // otherwise it's a path like /test.txt/**
+            : // otherwise it's an invalid path like /test.txt/**
               [],
         // handle trees
         flow(
@@ -115,7 +110,7 @@ export const searchGlobs = (
 
   return pipe(
     // look for the paths leading the glob patterns and get the details
-    DriveLookup.getByPathsStrictDocwsroot(globsBases, { apiUsage }),
+    DriveLookup.getByPathsStrictDocwsroot(globsBases),
     SRTE.chain((globsBases) =>
       // separate input paths into folders and files
       modifySubset(

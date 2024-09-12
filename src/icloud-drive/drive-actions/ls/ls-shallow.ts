@@ -63,7 +63,7 @@ const result = (
 }
 
 export const listPaths = (
-  { paths, trash, cached }: { paths: NA.NonEmptyArray<string>; trash: boolean; cached: boolean },
+  { paths, trash }: { paths: NA.NonEmptyArray<string>; trash: boolean },
 ): DriveLookup.Lookup<NEA<ListPathResult>, DriveLookup.Deps> => {
   const scanned = pipe(paths, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
@@ -74,11 +74,9 @@ export const listPaths = (
     }
   }
 
-  const params = DriveLookup.onlyCache(cached)
-
   return pipe(
     DriveLookup.getCachedRootOrTrash(trash),
-    SRTE.chain(root => DriveLookup.getByPaths(root, basepaths, params)),
+    SRTE.chain(root => DriveLookup.getByPaths(root, basepaths)),
     SRTE.map(NA.zip(scanned)),
     SRTE.map(NA.zip(paths)),
     SRTE.map(

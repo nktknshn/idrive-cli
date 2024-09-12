@@ -18,26 +18,12 @@ import { DriveLookup, Types } from '../../..'
 import { equalsDrivewsId, findInParentFilename } from '../../../util/drive-helpers'
 import { modifySubset } from '../../../util/drive-modify-subset'
 import * as GetByPath from '../../../util/get-by-path-types'
-import { ApiUsage } from '../../drive-lookup'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
-
-export type GetByPathsParams = {
-  apiUsage: ApiUsage
-}
-
-export const defaultParams: GetByPathsParams = {
-  apiUsage: 'always',
-}
-
-export const onlyCache = (onlyCache: boolean): GetByPathsParams => ({
-  apiUsage: onlyCache ? 'onlycache' : 'always',
-})
 
 /** Given a root details and a list of paths, retrieves the actual items if they exist. */
 export const getByPaths = <R extends Types.Root>(
   root: R,
   paths: NEA<NormalizedPath>,
-  { apiUsage } = defaultParams,
 ): DriveLookup.Lookup<NEA<GetByPath.Result<R>>> =>
   pipe(
     loggerIO.debug(`getByPaths(${paths})`),
@@ -57,7 +43,23 @@ export const getByPaths = <R extends Types.Root>(
           return getByPathsC(paths, cached)
         case 'fallback':
           return GetByPath.containsInvalidPath(cached)
-            ? getByPathsC(paths, cached)
+            ? pipe(
+              getByPathsC(paths, cached),
+              SRTE.chain(res =>
+                // if some paths were not found
+                // rerun with apiUsage set to always
+                // note: not optimal but easier to implement
+                GetByPath.containsInvalidPath(res)
+                  ? pipe(
+                    getByPathsC(paths, res),
+                    SRTE.local((deps): DriveLookup.Deps => ({
+                      ...deps,
+                      apiUsage: 'always',
+                    })),
+                  )
+                  : SRTE.of(res)
+              ),
+            )
             : SRTE.of(cached)
       }
     }),

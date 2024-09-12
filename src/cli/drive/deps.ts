@@ -19,6 +19,7 @@ export const createCliCommandsDeps = (args: {
   tempdir?: string
   fileEditor?: string
   askConfirmation?: DepAskConfirmation['askConfirmation']
+  'api-usage'?: DriveLookup.ApiUsage
 }): CommandsDeps => {
   const sessionFile = pipe(
     O.fromNullable(args['session-file']),
@@ -39,7 +40,7 @@ export const createCliCommandsDeps = (args: {
     cacheFile,
     noCache,
     tempdir: args.tempdir ?? defaults.tempDir,
-    apiUsage: defaults.apiUsage,
+    apiUsage: args['api-usage'] ?? defaults.apiUsage,
 
     // save state by chaining DriveLookup.persistState
     // unused for now

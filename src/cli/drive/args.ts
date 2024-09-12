@@ -17,7 +17,7 @@ const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
   _
     .positional('paths', { type: 'string', array: true, default: ['/'] })
     .options({
-      cached: { default: false, type: 'boolean', description: 'Only list cached items' },
+      // cached: { default: false, type: 'boolean', description: 'Only list cached items' },
       'full-path': { alias: ['f'], default: false, type: 'boolean', description: 'Print full paths' },
       long: { alias: ['l'], default: false, description: 'Use a long listing format' },
       recursive: { alias: ['R'], default: false, type: 'boolean', description: 'Recursive listing' },
@@ -110,7 +110,7 @@ const cat = w.command(
   (_) =>
     _.positional('path', { type: 'string', demandOption: true })
       .options({
-        'skip-validation': { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
+        // 'skip-validation': { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
       }),
 )
 
@@ -179,6 +179,8 @@ const recover = w.command(
   (_) => _.positional('path', { type: 'string', demandOption: true }),
 )
 
+const apiUsageChoices = ['onlycache', 'fallback', 'always'] as const
+
 export const cmd = w.composeCommands(
   _ =>
     _.version(defaults.cliVersion)
@@ -197,6 +199,20 @@ export const cmd = w.composeCommands(
           description: 'Cache file',
         },
         'no-cache': { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
+        'api-usage': {
+          alias: ['a'],
+          default: defaults.apiUsage,
+          type: 'string',
+          choices: apiUsageChoices,
+          description: 'API usage',
+          coerce: (a): typeof apiUsageChoices[number] => {
+            if (apiUsageChoices.includes(a)) {
+              return a
+            }
+
+            throw new Error(`Invalid api usage: ${a}`)
+          },
+        },
         debug: { alias: 'd', default: false, type: 'boolean' },
       }),
   init,
