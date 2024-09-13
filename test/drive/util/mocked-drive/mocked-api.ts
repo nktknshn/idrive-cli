@@ -36,6 +36,8 @@ export type Calls = {
   }
 }
 
+type CallsObj = ReturnType<Calls['calls']>
+
 const retrieveItemDetailsInFolders = (
   detailsRec: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
 ): DriveApiWrapped['retrieveItemDetailsInFolders'] =>
@@ -55,7 +57,7 @@ export type Deps =
   & DepApiMethod<'createFolders'>
   & DepApiUsage
 
-export const createEnv = (
+export const createDeps = (
   details: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
   apiUsage: ApiUsage = 'always',
 ):
@@ -114,6 +116,7 @@ export const createEnv = (
 }
 
 export type ExecuteResult<A> = { res: A; state: DriveLookup.State } & Calls
+export type ExecuteError = { error: Error; calls: Calls['calls'] }
 
 export const executeDriveS = (itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>) =>
   (p: { cache?: C.LookupCache; apiUsage?: ApiUsage }) =>
@@ -129,18 +132,18 @@ export const executeDrive = ({
   apiUsage?: ApiUsage
 }): <A>(
   m: DriveLookup.Lookup<A, Deps>,
-) => TE.TaskEither<Error, ExecuteResult<A>> => {
-  return m =>
-    pipe(
-      TE.of(cache),
-      TE.chain(cache => {
-        const state = createState({ cache, tempCache: O.none })
-        const env = createEnv(details, apiUsage)
+) => TE.TaskEither<
+  ExecuteError,
+  ExecuteResult<A>
+> => {
+  return m => {
+    const state = createState({ cache, tempCache: O.none })
+    const deps = createDeps(details, apiUsage)
 
-        return pipe(
-          m(state)(env),
-          TE.map(([res, state]) => ({ res, state, calls: env.calls })),
-        )
-      }),
+    return pipe(
+      m(state)(deps),
+      TE.map(([res, state]) => ({ res, state, calls: deps.calls })),
+      TE.mapError(e => ({ error: e, calls: deps.calls })),
     )
+  }
 }

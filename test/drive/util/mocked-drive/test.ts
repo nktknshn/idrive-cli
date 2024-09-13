@@ -2,6 +2,7 @@ import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
 import { DriveLookup } from '../../../../src/icloud-drive'
 import * as M from '.'
+import { ExecuteError } from './mocked-api'
 
 type CallsPartial = Partial<ReturnType<M.Calls['calls']>>
 
@@ -20,11 +21,11 @@ type TestMatcher<T> = {
   state: StateMatcherF
 }
 
-export const allTests = (...tests: Array<TE.TaskEither<Error, M.ExecuteResult<any>>>) =>
+export const allTests = (...tests: Array<TE.TaskEither<ExecuteError, M.ExecuteResult<any>>>) =>
   Promise.all(tests.map(f => f()))
 
 export const testStateTE = (f: (exp: jest.JestMatchers<any>) => void) =>
-  <T>(req: TE.TaskEither<Error, M.ExecuteResult<T>>) =>
+  <T>(req: TE.TaskEither<ExecuteError, M.ExecuteResult<T>>) =>
     pipe(
       req,
       TE.map((a) => {
@@ -35,7 +36,7 @@ export const testStateTE = (f: (exp: jest.JestMatchers<any>) => void) =>
     )
 
 export const testCacheTE = (f: (exp: DriveLookup.Cache) => void) =>
-  (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
+  (req: TE.TaskEither<ExecuteError, M.ExecuteResult<any>>) =>
     pipe(
       req,
       TE.map((a) => {
@@ -46,7 +47,7 @@ export const testCacheTE = (f: (exp: DriveLookup.Cache) => void) =>
     )
 
 export const testCallsTE = (toMatch: CallsPartial) =>
-  <T>(req: TE.TaskEither<Error, M.ExecuteResult<T>>) =>
+  <T>(req: TE.TaskEither<ExecuteError, M.ExecuteResult<T>>) =>
     pipe(
       req,
       TE.map((a) => {
@@ -56,18 +57,29 @@ export const testCallsTE = (toMatch: CallsPartial) =>
       testNoError,
     )
 
+export const testCallsErrorTE = (toMatch: CallsPartial) =>
+  <T>(req: TE.TaskEither<ExecuteError, M.ExecuteResult<T>>) =>
+    pipe(
+      req,
+      TE.mapLeft((a) => {
+        expect(a.calls()).toMatchObject(toMatch)
+        return a
+      }),
+      testError,
+    )
+
 export const testErrorIs = (isError: (e: Error) => boolean) =>
-  (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
+  (req: TE.TaskEither<ExecuteError, M.ExecuteResult<any>>) =>
     pipe(
       req,
       testError,
       TE.mapLeft((a) => {
-        expect(isError(a)).toBe(true)
+        expect(isError(a.error)).toBe(true)
         return a
       }),
     )
 
-export const testError = (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
+export const testError = (req: TE.TaskEither<ExecuteError, M.ExecuteResult<any>>) =>
   pipe(
     req,
     TE.map((a) => {
@@ -75,7 +87,7 @@ export const testError = (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
     }),
   )
 
-export const testNoError = <T>(req: TE.TaskEither<Error, M.ExecuteResult<T>>) =>
+export const testNoError = <T>(req: TE.TaskEither<ExecuteError, M.ExecuteResult<T>>) =>
   pipe(
     req,
     TE.mapLeft((a) => {
@@ -84,7 +96,7 @@ export const testNoError = <T>(req: TE.TaskEither<Error, M.ExecuteResult<T>>) =>
   )
 
 export const testResTE = <T>(f: (res: T) => void) =>
-  (req: TE.TaskEither<Error, M.ExecuteResult<T>>) =>
+  (req: TE.TaskEither<ExecuteError, M.ExecuteResult<T>>) =>
     pipe(
       req,
       TE.map((a) => {
@@ -95,7 +107,7 @@ export const testResTE = <T>(f: (res: T) => void) =>
     )
 
 export const testExpectResTE = (f: (exp: jest.JestMatchers<any>) => void) =>
-  (req: TE.TaskEither<Error, M.ExecuteResult<any>>) =>
+  (req: TE.TaskEither<ExecuteError, M.ExecuteResult<any>>) =>
     pipe(
       req,
       TE.map((a) => {
@@ -114,7 +126,7 @@ const testRes = (f: (exp: jest.JestMatchers<any>) => void): ResultMatcherF => (r
 
 const createTest = <T>(
   tm: Partial<TestMatcher<T>>,
-): (req: TE.TaskEither<Error, M.ExecuteResult<T>>) => void => {
+): (req: TE.TaskEither<ExecuteError, M.ExecuteResult<T>>) => void => {
   return req => {
     return pipe(
       req,

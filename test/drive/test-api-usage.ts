@@ -272,6 +272,27 @@ describe('apiUsage with getByPaths', () => {
         ]),
       }),
       M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),
+      M.testResTE(res =>
+        expect(res).toEqual(
+          expect.objectContaining({ valid: false }),
+        )
+      ),
+    )
+
+    // same with temp cache
+    const test5 = pipe(
+      DriveLookup.getByPathDocwsroot(npath('/Z/test666/')),
+      DriveLookup.usingTempCache,
+      execStructure({
+        apiUsage: 'fallback',
+        cache: structure.cache,
+      }),
+      M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),
+      M.testResTE(res =>
+        expect(res).toEqual(
+          expect.objectContaining({ valid: false }),
+        )
+      ),
     )
 
     return M.allTests(
@@ -282,6 +303,7 @@ describe('apiUsage with getByPaths', () => {
       test3(req),
       test3(reqChainedTempCached),
       test4,
+      test5,
     )
   })
 
@@ -482,6 +504,29 @@ describe('works with getFoldersTrees', () => {
           ['/test1/package.json', structure.r.c.test1.c['package.json'].d],
           ['/test1/test2', structure.r.c.test1.c.test2.d], // supposed to be shallow details
         ])
+      }),
+    )
+
+    return M.allTests(test1)
+  })
+})
+
+describe('works with searchGlobs', () => {
+  it('works with searchGlobs', async () => {
+    const req = DriveLookup.searchGlobs(['/test1/Z/**'], 1, { goDeeper: true })
+
+    const test1 = pipe(
+      req,
+      execStructure({
+        cache: structure.cache,
+        apiUsage: 'fallback',
+      }),
+      // should try to retrieve the details for the uncached path
+      M.testCallsErrorTE({
+        retrieveItemDetailsInFolders: 1,
+        retrieveItemDetailsInFoldersIds: [
+          [structure.r.d.drivewsid, structure.r.c.test1.d.drivewsid],
+        ],
       }),
     )
 

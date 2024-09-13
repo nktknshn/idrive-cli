@@ -9,22 +9,40 @@ import { guardSnd } from '../../../util/guards'
 import { NEA } from '../../../util/types'
 import { sequenceNArrayO } from '../../../util/util'
 import { Cache, Types } from '../..'
-import { chainState, chainStateAndDeps, getState, Lookup, map, TempLookupCacheState } from '../drive-lookup'
+import { chainState, chainStateAndDeps, getState, Lookup, map, State, TempLookupCacheState } from '../drive-lookup'
 import { NotFoundError } from '../errors'
-import { putCache, usingCache } from './cache-methods'
+import { usingCache } from './cache-methods'
 import { retrieveItemDetailsInFoldersCached } from './cache-retrieve-details'
 
-const setActive = <S extends TempLookupCacheState>(s: S): S => ({
+export const setTempCacheActive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
   tempCache: O.some(Cache.cache()),
   tempCacheMissingDetails: [],
 })
 
-const setInactive = <S extends TempLookupCacheState>(s: S): S => ({
+export const setTempCacheInactive = <S extends TempLookupCacheState>(s: S): S => ({
   ...s,
   tempCache: O.none,
   tempCacheMissingDetails: [],
 })
+
+export const clearTempCache = <S extends TempLookupCacheState>(s: S): S => ({
+  ...s,
+  // clear the temp cache if it is active
+  tempCache: pipe(s.tempCache, O.map(Cache.cache)),
+  tempCacheMissingDetails: [],
+})
+
+export const mergeTempCache = <S extends State>(state: S): S =>
+  pipe({
+    ...state,
+    cache: pipe(
+      state.tempCache,
+      O.getOrElse(() => Cache.cache()),
+      Cache.concat(state.cache),
+      Cache.removeByIds(state.tempCacheMissingDetails),
+    ),
+  }, clearTempCache)
 
 /**
  * Execute effect enabling temporary cache. Saves some calls to the api when chaining `retrieveItemDetailsInFoldersTempCachedStrict`. Creates a separate cache for those calls which is considered fresh and does not need to be verified.
@@ -38,25 +56,11 @@ export const usingTempCache = <A>(ma: Lookup<A>): Lookup<A> =>
         () =>
           pipe(
             // activate it
-            SRTE.modify(setActive),
+            SRTE.modify(setTempCacheActive),
             // execute the effect
             SRTE.chain(() => ma),
-            SRTE.bindTo('res'),
-            SRTE.bindW('newstate', getState),
-            SRTE.chain(({ res, newstate }) =>
-              // after execution
-              pipe(
-                newstate.tempCache,
-                O.getOrElse(() => Cache.cache()),
-                // merge the temporary cache into the main cache
-                Cache.concat(prevstate.cache),
-                Cache.removeByIds(newstate.tempCacheMissingDetails),
-                putCache,
-                // deactivate the temporary cache
-                SRTE.chain(() => SRTE.modify(setInactive)),
-                SRTE.map(() => res),
-              )
-            ),
+            SRTE.chainFirst(() => SRTE.modify(mergeTempCache)),
+            SRTE.chainFirst(() => SRTE.modify(setTempCacheInactive)),
           ),
         // otherwise do nothing, the state will be merged and temp cache
         // deactivated by the initial `usingTempCache` call

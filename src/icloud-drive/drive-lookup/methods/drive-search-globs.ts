@@ -43,7 +43,7 @@ export type SearchGlobsParams = {
 }
 
 /** Recursively searches for files and folders matching the glob patterns.
- * `micromatch` is used for matching. */
+ * Will throw an error on invalid paths. `micromatch` is used for matching. */
 export const searchGlobs = (
   /**  globs might be plain paths (folders/files), wildcards (like /test/*.txt)
    * or glob patterns (like **\/*) */
@@ -52,7 +52,6 @@ export const searchGlobs = (
   {
     options,
     goDeeper = false,
-    // cached = false,
   }: SearchGlobsParams,
 ): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchGlobFoundItem[]>

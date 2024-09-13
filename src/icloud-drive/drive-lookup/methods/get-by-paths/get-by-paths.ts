@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
+import { constVoid, pipe } from 'fp-ts/lib/function'
 import * as NA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as R from 'fp-ts/lib/Record'
@@ -9,6 +9,7 @@ import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
 import { fst } from 'fp-ts/lib/Tuple'
 
 import { loggerIO } from '../../../../logging'
+import { SrteUtils } from '../../../../util'
 import { err } from '../../../../util/errors'
 import { guardFst } from '../../../../util/guards'
 import { NormalizedPath } from '../../../../util/normalize-path'
@@ -19,6 +20,8 @@ import { equalsDrivewsId, findInParentFilename } from '../../../util/drive-helpe
 import { modifySubset } from '../../../util/drive-modify-subset'
 import * as GetByPath from '../../../util/get-by-path-types'
 import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
+import { getCache } from '../cache-methods'
+import { mergeTempCache } from '../cache-temp-cache'
 
 /** Given a root details and a list of paths, retrieves the actual items if they exist. */
 export const getByPaths = <R extends Types.Root>(
@@ -33,9 +36,7 @@ export const getByPaths = <R extends Types.Root>(
     SRTE.bindTo('cached'),
     SRTE.bindW('deps', DriveLookup.ask),
     SRTE.chain(({ cached, deps }) => {
-      const { apiUsage } = deps
-
-      switch (apiUsage) {
+      switch (deps.apiUsage) {
         case 'onlycache':
           return SRTE.of(cached)
         case 'always':
@@ -45,13 +46,17 @@ export const getByPaths = <R extends Types.Root>(
           return GetByPath.containsInvalidPath(cached)
             ? pipe(
               getByPathsC(paths, cached),
+              SrteUtils.runLogging(loggerIO.debug(`getByPaths(${paths}) fallback`)),
               SRTE.chain(res =>
                 // if some paths were not found
-                // rerun with apiUsage set to always
+                // rerun with apiUsage set to 'always'
                 // note: not optimal but easier to implement
                 GetByPath.containsInvalidPath(res)
                   ? pipe(
-                    getByPathsC(paths, res),
+                    // reset the temp cache if it was active otherwise the method will return the same result
+                    SRTE.modify(mergeTempCache),
+                    SRTE.chain(() => getByPathsC(paths, res)),
+                    SrteUtils.runLogging(loggerIO.debug(`getByPaths(${paths}) fallback 2`)),
                     SRTE.local((deps): DriveLookup.Deps => ({
                       ...deps,
                       apiUsage: 'always',
