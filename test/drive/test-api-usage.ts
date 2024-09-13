@@ -52,8 +52,8 @@ describe('apiUsage with retrieveItemDetailsInFoldersTempCached', () => {
     return M.allTests(test1, test2)
   })
 
-  // same behavior for fallback and always
-  it('works with retrieveItemDetailsInFoldersCached(fallback/always)', () => {
+  // same behavior for fallback and validate
+  it('works with retrieveItemDetailsInFoldersCached(fallback/validate)', () => {
     const test1 = pipe(
       req,
       execStructure({ apiUsage: 'fallback' }),
@@ -74,14 +74,14 @@ describe('apiUsage with retrieveItemDetailsInFoldersTempCached', () => {
 
     const test3 = pipe(
       req,
-      execStructure({ apiUsage: 'always' }),
+      execStructure({ apiUsage: 'validate' }),
       M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),
       M.testExpectResTE(_ => _.toEqual([O.some(structure.r.c.test1.d)])),
     )
 
     const test4 = pipe(
       req,
-      execStructure({ apiUsage: 'always', cache: structure.cache }),
+      execStructure({ apiUsage: 'validate', cache: structure.cache }),
       M.testCallsTE({ retrieveItemDetailsInFolders: 0 }),
       M.testExpectResTE(_ => _.toEqual([O.some(structure.r.c.test1.d)])),
     )
@@ -135,20 +135,20 @@ describe('apiUsage with retrieveItemDetailsInFoldersTempCached', () => {
     return Promise.all([test1, test2])
   })
 
-  it('works with retrieveItemDetailsInFoldersTempCached(always)', () => {
+  it('works with retrieveItemDetailsInFoldersTempCached(validate)', () => {
     const req = DriveLookup.retrieveItemDetailsInFoldersTempCached(
       [structure.r.c.test1.d.drivewsid],
     )
 
     const test1 = pipe(
-      execStructure({ apiUsage: 'always' })(req),
+      execStructure({ apiUsage: 'validate' })(req),
       M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),
       M.testExpectResTE(_ => _.toEqual([O.some(structure.r.c.test1.d)])),
       M.testCacheTE(_ => expect(DriveCache.keysCount(_)).toBe(1)),
     )
 
     const test2 = pipe(
-      execStructure({ cache: structure.cache, apiUsage: 'always' })(req),
+      execStructure({ cache: structure.cache, apiUsage: 'validate' })(req),
       M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),
       M.testExpectResTE(_ => _.toEqual([O.some(structure.r.c.test1.d)])),
     )()
@@ -307,10 +307,10 @@ describe('apiUsage with getByPaths', () => {
     )
   })
 
-  it('works with getByPaths(always)', () => {
+  it('works with getByPaths(validate)', () => {
     // test without cache. Expected 4 calls: root, root, test1, test2
     const test1 = flow(
-      execStructure({ apiUsage: 'always' }),
+      execStructure({ apiUsage: 'validate' }),
       M.testCallsTE({
         retrieveItemDetailsInFolders: 4,
         retrieveItemDetailsInFoldersIds: [
@@ -327,7 +327,7 @@ describe('apiUsage with getByPaths', () => {
     // test partially cached. Expected 2 calls
     const test2 = flow(
       execStructure({
-        apiUsage: 'always',
+        apiUsage: 'validate',
         cache: pipe(
           Cache.cache(),
           Cache.putDetailss([structure.r.d, structure.r.c.test1.d]),
@@ -348,7 +348,7 @@ describe('apiUsage with getByPaths', () => {
     // test fully cached. Expected 1 call
     const test3 = flow(
       execStructure({
-        apiUsage: 'always',
+        apiUsage: 'validate',
         cache: structure.cache,
       }),
       M.testCallsTE({ retrieveItemDetailsInFolders: 1 }),

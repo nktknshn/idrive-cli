@@ -7,7 +7,7 @@
   "indentWidth": 2,
   "useTabs": false,
   "typescript": {
-    "quoteStyle": "alwaysSingle",
+    "quoteStyle": "validateSingle",
     "semiColons": "asi",
     "ifStatement.nextControlFlowPosition": "nextLine"
   }

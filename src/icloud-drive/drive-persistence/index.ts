@@ -1,4 +1,4 @@
-export { accountDataFile, loadAccountDataFromFile as loadAccountData } from './account-data'
+export { accountDataFilename as accountDataFile, loadAccountDataFromFile as loadAccountData } from './account-data'
 export { loadAccountDataFromFile, saveAccountDataToFile } from './account-data'
 export { loadCacheFromFile, saveCacheToFile } from './cache'
 export { persistentDriveState } from './persistent-drive-state'

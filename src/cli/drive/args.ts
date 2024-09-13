@@ -179,7 +179,7 @@ const recover = w.command(
   (_) => _.positional('path', { type: 'string', demandOption: true }),
 )
 
-const apiUsageChoices = ['onlycache', 'fallback', 'always'] as const
+const apiUsageChoices = ['onlycache', 'fallback', 'validate'] as const
 
 export const cmd = w.composeCommands(
   _ =>

@@ -59,7 +59,7 @@ export type Deps =
 
 export const createDeps = (
   details: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>,
-  apiUsage: ApiUsage = 'always',
+  apiUsage: ApiUsage = 'validate',
 ):
   & Calls
   & Deps =>

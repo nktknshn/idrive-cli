@@ -34,7 +34,7 @@ export const fromFunction = (
   get: (req: HttpRequest) => E.Either<FetchError, HttpResponse>,
 ): FetchClientEither => mockedClient({ get })
 
-export const always = (resp: E.Either<FetchError, HttpResponse>): FetchClientEither =>
+export const validate = (resp: E.Either<FetchError, HttpResponse>): FetchClientEither =>
   mockedClient({
     get: () => resp,
   })

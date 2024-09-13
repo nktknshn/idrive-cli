@@ -39,7 +39,7 @@ export const getByPaths = <R extends Types.Root>(
       switch (deps.apiUsage) {
         case 'onlycache':
           return SRTE.of(cached)
-        case 'always':
+        case 'validate':
           // validate the cached paths
           return getByPathsC(paths, cached)
         case 'fallback':
@@ -49,7 +49,7 @@ export const getByPaths = <R extends Types.Root>(
               SrteUtils.runLogging(loggerIO.debug(`getByPaths(${paths}) fallback`)),
               SRTE.chain(res =>
                 // if some paths were not found
-                // rerun with apiUsage set to 'always'
+                // rerun with apiUsage set to 'validate'
                 // note: not optimal but easier to implement
                 GetByPath.containsInvalidPath(res)
                   ? pipe(
@@ -59,7 +59,7 @@ export const getByPaths = <R extends Types.Root>(
                     SrteUtils.runLogging(loggerIO.debug(`getByPaths(${paths}) fallback 2`)),
                     SRTE.local((deps): DriveLookup.Deps => ({
                       ...deps,
-                      apiUsage: 'always',
+                      apiUsage: 'validate',
                     })),
                   )
                   : SRTE.of(res)

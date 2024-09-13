@@ -1,17 +1,20 @@
 import { pipe } from 'fp-ts/lib/function'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
+
 import { DepFs } from '../../deps-types'
 import { BaseState } from '../../icloud-core/icloud-request'
 import { readSessionFile } from '../../icloud-core/session/session-file'
 import { saveSession as _saveSession } from '../../icloud-core/session/session-file'
 import { debugTimeRTE } from '../../logging/debug-time'
 import { err } from '../../util/errors'
+import { loggerIO } from '../../logging'
 
 export const loadSessionFromFile = pipe(
-  RTE.asksReaderTaskEitherW(
-    readSessionFile,
+  RTE.ask<{ sessionFile: string }>(),
+  RTE.chainFirstIOK(({ sessionFile }) => loggerIO.debug(`loadSessionFromFile(${sessionFile})`)
   ),
+  RTE.chainW(readSessionFile),
   RTE.orElse(
     (e) =>
       ({ sessionFile }) =>

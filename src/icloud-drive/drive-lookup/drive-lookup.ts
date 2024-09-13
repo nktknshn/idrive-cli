@@ -22,7 +22,7 @@ export type Cache = C.LookupCache
 
 export type ApiUsage =
   /** Default behaviour. Always validates cached paths by retrieving from API. */
-  | 'always'
+  | 'validate'
   /** Retrieves from cache only. */
   | 'onlycache'
   /** Retrieves from API if the path is not fully cached. */

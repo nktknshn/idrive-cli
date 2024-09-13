@@ -23,7 +23,7 @@ export const loadCacheFromFile: RTE.ReaderTaskEither<
     deps.noCache
       ? RTE.of(Cache.cache())
       : pipe(
-        RTE.fromIO(() => loggerIO.debug(`loading cache from file: ${deps.cacheFile}`)),
+        RTE.fromIO(loggerIO.debug(`loadCacheFromFile(${deps.cacheFile})`)),
         RTE.chain(() => Cache.tryReadFromFile(deps.cacheFile)),
       ),
     RTE.orElseW(

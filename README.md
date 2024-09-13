@@ -20,28 +20,44 @@ This is an unofficial client. Use it at your own risk. The author is not respons
 - Fish shell completions for `idrive` are available in `/opt/node-icloud-drive-client/completions/idrive.fish`
 
 ```Commands:
-  idrive init                       init session
-  idrive auth                       auth session
-  idrive ls [paths..]               list files in a folder
-  idrive download <path> <dstpath>  download
-  idrive mkdir <path>               mkdir
-  idrive edit <path>                edit
-  idrive autocomplete <path>        autocomplete
-  idrive upload <uploadargs..>      upload
-  idrive mv <srcpath> <dstpath>     move
-  idrive cat <path>                 cat
-  idrive rm [paths..]               check updates
-  idrive recover <path>             recover
+  idrive init                       Init new session
+  idrive auth                       Authenticate a session
+  idrive ls [paths..]               List files in a folder
+  idrive mkdir <path>               Create a folder
+  idrive cat <path>                 View the content of a text file
+  idrive edit <path>                Edit a text file
+  idrive mv <srcpath> <dstpath>     Move or rename a file or a folder
+  idrive rm [paths..]               Remove files and folders
+  idrive download <path> <dstpath>  Download a file or a folder
+  idrive upload <uploadargs..>      Upload files and folders
+  idrive recover <path>             Recover a file from the trash
+  idrive autocomplete <path>        Autocomplete path
 
 Options:
-      --help                    Show help                              [boolean]
-      --version                 Show version number                    [boolean]
-  -s, --sessionFile, --session               [default: "data/last-session.json"]
-  -c, --cacheFile, --cache                [default: "data/cli-drive-cache.json"]
-  -n, --noCache                                       [boolean] [default: false]
+      --help          Show help                                        [boolean]
+      --version       Show version number                              [boolean]
+  -s, --session-file  Session file
+  -c, --cache-file    Cache file
+  -n, --no-cache      Disable cache                   [boolean] [default: false]
+  -a, --api-usage     API usage
+       [string] [choices: "onlycache", "fallback", "validate"] [default: "validate"]
   -d, --debug                                         [boolean] [default: false]
 
 ```
+
+### API/cache usage strategy
+
+`--api-usage validate`
+
+Default behaviour. Always validates cached paths by retrieving them from API.
+
+`--api-usage onlycache`
+
+Will only retrieve from cache.
+
+`--api-usage fallback`
+
+Retrieves from API if the path is not fully cached.
 
 ### init
 

@@ -13,7 +13,7 @@ export type Deps =
   & { sessionFile: string }
   & DepFs<'readFile'>
 
-export const accountDataFile = (sessionFile: string): string => appendFilename(sessionFile, '.accountdata')
+export const accountDataFilename = (sessionFile: string): string => appendFilename(sessionFile, '.accountdata')
 
 export const loadAccountDataFromFile = (
   { session }: BaseState,
@@ -24,7 +24,11 @@ export const loadAccountDataFromFile = (
 > =>
   pipe(
     RTE.asksReaderTaskEitherW(
-      (deps: { sessionFile: string }) => Auth.readAccountData(accountDataFile(deps.sessionFile)),
+      (deps: { sessionFile: string }) => pipe(
+        RTE.of(accountDataFilename(deps.sessionFile)),
+        RTE.chainFirstIOK((fpath) => loggerIO.debug(`loadAccountDataFromFile(${fpath})`)),
+        RTE.chain(Auth.readAccountData),
+      )
     ),
     RTE.map(accountData => ({ session, accountData })),
     RTE.orElseW(e =>
@@ -41,7 +45,7 @@ export const saveAccountDataToFile = <S extends { accountData: Auth.AccountData 
 ): RTE.ReaderTaskEither<{ sessionFile: string } & DepFs<'writeFile'>, Error, void> =>
   pipe(
     RTE.asksReaderTaskEitherW((deps: { sessionFile: string }) =>
-      Auth.saveAccountData(state.accountData, accountDataFile(deps.sessionFile))
+      Auth.saveAccountData(state.accountData, accountDataFilename(deps.sessionFile))
     ),
     debugTimeRTE('saveAccountData'),
   )

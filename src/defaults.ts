@@ -19,4 +19,4 @@ export const clientInfo: ClientInfo = {
 
 export const cliVersion = '0.0.1'
 
-export const apiUsage = 'always'
+export const apiUsage = 'validate'
