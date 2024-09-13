@@ -204,7 +204,7 @@ export const cmd = w.composeCommands(
           default: defaults.apiUsage,
           type: 'string',
           choices: apiUsageChoices,
-          description: 'API usage',
+          description: 'API usage strategy',
           coerce: (a): typeof apiUsageChoices[number] => {
             if (apiUsageChoices.includes(a)) {
               return a

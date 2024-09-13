@@ -39,25 +39,11 @@ Options:
   -s, --session-file  Session file
   -c, --cache-file    Cache file
   -n, --no-cache      Disable cache                   [boolean] [default: false]
-  -a, --api-usage     API usage
+  -a, --api-usage     API usage strategy
        [string] [choices: "onlycache", "fallback", "validate"] [default: "validate"]
   -d, --debug                                         [boolean] [default: false]
 
 ```
-
-### API/cache usage strategy
-
-`--api-usage validate`
-
-Default behaviour. Always validates cached paths by retrieving them from API.
-
-`--api-usage onlycache`
-
-Will only retrieve from cache.
-
-`--api-usage fallback`
-
-Retrieves from API if the path is not fully cached.
 
 ### init
 
@@ -253,3 +239,17 @@ Recover a file from the trash
 
 Autocomplete path. Used for shell autocompletions.
 
+
+### API/cache usage strategy
+
+`--api-usage validate`
+
+Default behaviour. Always validates cached paths by retrieving them from API.
+
+`--api-usage onlycache`
+
+Will not use the API. Only retrieve from cache.
+
+`--api-usage fallback`
+
+Retrieves from API if the cache is not enough.
