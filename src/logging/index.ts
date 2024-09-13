@@ -1,4 +1,4 @@
-import { apiLogger, cacheLogger, logger, stderrLogger, timeLogger } from './logging'
+import { apiLogger, cacheLogger, logger, stderrLogger, timeLogger } from "./logging";
 
 export {
   apiLogger,
@@ -9,7 +9,7 @@ export {
   logger,
   stderrLogger,
   timeLogger,
-} from './logging'
+} from "./logging";
 
 export const defaultLoggers = [
   logger,
@@ -17,6 +17,7 @@ export const defaultLoggers = [
   stderrLogger,
   apiLogger,
   timeLogger,
-]
+];
 
-export { loggerIO } from './loggerIO'
+export * from "./debug-time";
+export { loggerIO } from "./loggerIO";

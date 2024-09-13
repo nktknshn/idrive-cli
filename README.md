@@ -69,7 +69,7 @@ Use `ICLOUD_SESSION_FILE` environment variable to specify the session file
 
 ### ls
 
-List files in folders. Supports globs
+List directory contents. Supports globs
 
 `idrive ls`
 
@@ -77,21 +77,9 @@ List files in folders. Supports globs
 
 `idrive ls '/MyNotes/my1/*.md'`
 
-Use recursive flag for the globstar pattern (may take some time to process deep trees)
-
-`idrive ls -R '/MyNotes/my1/**/*.md'`
-
-Limit the depth of recursion
-
-`idrive ls -R -D 2 '/MyNotes/my1/**/*.md'`
-
 Multiple paths
 
 `idrive ls /MyNotes/ '/Camera/*.jpg' /Pages/Стильный\ отчет.pages`
-
-Output result as a tree
-
-`idrive ls -R -D 2 --tree '/MyNotes/my1/'`
 
 More verbose output
 
@@ -101,7 +89,11 @@ More verbose output
 
 Print folder or file info
 
-`idrive ls --info '/MyNotes/my1/' '/Camera/IMG_0198.jpg'`
+`idrive ls -i '/MyNotes/my1/' '/Camera/IMG_0198.jpg'`
+
+Print full paths
+
+`idrive ls -f '/MyNotes/my1/'`
 
 Human readable sizes
 
@@ -110,6 +102,30 @@ Human readable sizes
 Sort by size recursively looking for the largest files
 
 `idrive ls -S size -R -h size /`
+
+Recursive listing (may take some time to process deep trees). The command below will save the whole tree into the cache
+
+`idrive ls -R '/`
+
+Use recursive flag for the globstar pattern
+
+`idrive ls -R '/MyNotes/my1/**/*.md'`
+
+Limit the depth of recursion
+
+`idrive ls -R -D 2 '/MyNotes/my1/**/*.md'`
+
+Output result as a tree
+
+`idrive ls -R -D 2 --tree '/MyNotes/my1/'`
+
+Search in the cache (will fail if the cache is not enough to fulfill the request)
+
+`idrive ls -R '/**/*.md' -a onlycache`
+
+Search in the cache and fall back to the API if the cache is not enough
+
+`idrive ls -R '/**/*.md' -a fallback`
 
 list trash
 
@@ -158,7 +174,6 @@ Remote file will be renamed
 
 `idrive mv /MyNotes/my1/note1.md /MyNotes/old/note2.md`
 
-
 ### mkdir <path>
 
 Creates a folder
@@ -173,21 +188,23 @@ Opens the file in `vi`. If the file is not found, it will be created.
 
 Opens the file in a different editor (defaults to `vi`)
 
-`idrive edit --editor gedit /MyNotes/my1/notes/note1.md`
+`idrive edit --editor subl /MyNotes/my1/notes/note1.md`
 
-`idrive edit /Camera/IMG_0205.PNG --editor feh`
-
-<!-- Skip path validation if you are sure that cache is up to date
-
-`idrive edit -K /MyNotes/my1/notes/note1.md` -->
+`idrive edit /Camera/IMG_0205.PNG --editor gimp`
 
 ### upload 
+
+Web version of icloud drive doesn't support overwriting files. Old file has to be removed before uploading.
 
 Upload a single file
 
 `idrive upload ~/Documents/note1.md /MyNotes/my1/notes/`
 
 `idrive upload ~/Documents/note1.md /MyNotes/my1/notes/different_name.md`
+
+Overwrite existing file (removes the old file before uploading)
+
+`idrive upload --overwrite ~/Documents/note1.md /MyNotes/my1/notes/`
 
 Upload multiple files
 
@@ -197,7 +214,7 @@ Upload a folder
 
 `idrive upload -R ~/Documents/ /MyNotes/my1/notes/`
 
-Upload a folder 
+Upload a selection of files
 
 `idrive upload -R '~/Documents/**/*.md' /MyNotes/my1/notes/`
 

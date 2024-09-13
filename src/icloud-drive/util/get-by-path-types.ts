@@ -1,107 +1,106 @@
-import * as E from 'fp-ts/Either'
-import * as A from 'fp-ts/lib/Array'
-import { Eq } from 'fp-ts/lib/Eq'
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as O from 'fp-ts/lib/Option'
-import { addLeadingSlash, NormalizedPath, normalizePath } from '../../util/normalize-path'
-import { Path } from '../../util/path'
-import { NEA } from '../../util/types'
-import * as T from '../drive-types'
+import * as E from "fp-ts/Either";
+import * as A from "fp-ts/lib/Array";
+import { Eq } from "fp-ts/lib/Eq";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import * as O from "fp-ts/lib/Option";
+import { addLeadingSlash, NormalizedPath, normalizePath } from "../../util/normalize-path";
+import { Path } from "../../util/path";
+import { NEA } from "../../util/types";
+import * as T from "../drive-types";
 
 /** Chain of details, R is the root type */
-export type Hierarchy<R> = [R, ...T.NonRootDetails[]]
+export type Hierarchy<R> = [R, ...T.NonRootDetails[]];
 
-export type PathValid<R> = PathValidFile<R> | PathValidFolder<R>
+export type PathValid<R> = PathValidFile<R> | PathValidFolder<R>;
 
 export type PathValidFile<R> = {
-  valid: true
-  folder: false
-  details: Hierarchy<R>
-  file: T.DriveChildrenItemFile
-}
+  valid: true;
+  folder: false;
+  details: Hierarchy<R>;
+  file: T.DriveChildrenItemFile;
+};
 
 export type PathValidFolder<R> = {
-  valid: true
-  folder: true
-  details: Hierarchy<R>
-}
+  valid: true;
+  folder: true;
+  details: Hierarchy<R>;
+};
 
 export type PathInvalid<R> = {
-  valid: false
-  details: Hierarchy<R>
-  rest: NEA<string>
-  error: Error
-}
+  valid: false;
+  details: Hierarchy<R>;
+  rest: NEA<string>;
+  error: Error;
+};
 
 export type PathValidation<R> =
   | PathValidFolder<R>
   | PathValidFile<R>
-  | PathInvalid<R>
+  | PathInvalid<R>;
 
 /** Either a valid path or an invalid path */
-export type Result<R extends T.Root> = PathValidation<R>
-export type ResultRoot = PathValidation<T.DetailsDocwsRoot>
+export type Result<R extends T.Root> = PathValidation<R>;
+export type ResultRoot = PathValidation<T.DetailsDocwsRoot>;
 
-export const containsInvalidPath = <R>(res: Array<PathValidation<R>>): boolean => pipe(res, A.some(isInvalidPath))
+export const containsInvalidPath = <R>(res: Array<PathValidation<R>>): boolean => pipe(res, A.some(isInvalidPath));
 
-export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail
-export const root = <R>([root]: Hierarchy<R>): R => root
+export const tail = <R>([, ...tail]: Hierarchy<R>): T.NonRootDetails[] => tail;
+export const root = <R>([root]: Hierarchy<R>): R => root;
 
 export function pathString<R>(res: PathValidation<R>): string {
-  const elements = [...tail(res.details).map(T.fileName)]
+  const elements = [...tail(res.details).map(T.fileName)];
 
   if (res.valid === false) {
-    elements.push(...res.rest)
+    elements.push(...res.rest);
   }
 
-  return addLeadingSlash(elements.join('/'))
+  return addLeadingSlash(elements.join("/"));
 }
 
 export function pathTarget<R>(
   res: PathValidFile<R>,
-): T.DriveChildrenItemFile
+): T.DriveChildrenItemFile;
 export function pathTarget<R>(
   res: PathValidFolder<R>,
-): R | T.DetailsFolder | T.DetailsAppLibrary
+): R | T.DetailsFolder | T.DetailsAppLibrary;
 export function pathTarget<R>(
   res: PathValid<R>,
-): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile
+): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile;
 export function pathTarget<R>(
   res: PathValid<R>,
 ): R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile {
   if (isValidFile(res)) {
-    return res.file
-  }
-  else {
-    return NA.last(res.details)
+    return res.file;
+  } else {
+    return NA.last(res.details);
   }
 }
 
-export function isValidFile<R>(res: PathValid<R>): res is PathValidFile<R>
-export function isValidFile<R>(res: PathValidation<R>): res is PathValidFile<R>
+export function isValidFile<R>(res: PathValid<R>): res is PathValidFile<R>;
+export function isValidFile<R>(res: PathValidation<R>): res is PathValidFile<R>;
 export function isValidFile<R>(res: PathValidation<R>): res is PathValidFile<R> {
-  return res.valid === true && res.folder === false
+  return res.valid === true && res.folder === false;
 }
 
-export function isValidFolder<R>(res: PathValid<R>): res is PathValidFolder<R>
-export function isValidFolder<R>(res: PathValidation<R>): res is PathValidFolder<R>
+export function isValidFolder<R>(res: PathValid<R>): res is PathValidFolder<R>;
+export function isValidFolder<R>(res: PathValidation<R>): res is PathValidFolder<R>;
 export function isValidFolder<R>(res: PathValidation<R>): res is PathValidFolder<R> {
-  return res.valid === true && res.folder === true
+  return res.valid === true && res.folder === true;
 }
 
 export const isValidPath = <R>(res: PathValidation<R>): res is PathValid<R> => {
-  return res.valid === true
-}
+  return res.valid === true;
+};
 
 export const isInvalidPath = <R>(res: PathValidation<R>): res is PathInvalid<R> => {
-  return res.valid === false
-}
+  return res.valid === false;
+};
 
 export const validPath = <R>(
   path: Hierarchy<R>,
   file: O.Option<T.DriveChildrenItemFile> = O.none,
-): PathValid<R> => O.isSome(file) ? validFile(path, file.value) : validFolder(path)
+): PathValid<R> => O.isSome(file) ? validFile(path, file.value) : validFolder(path);
 
 export const validFile = <R>(
   path: Hierarchy<R>,
@@ -111,7 +110,7 @@ export const validFile = <R>(
   details: path,
   folder: false,
   file,
-})
+});
 
 export const validFolder = <R>(
   path: Hierarchy<R>,
@@ -119,7 +118,7 @@ export const validFolder = <R>(
   valid: true,
   folder: true,
   details: path,
-})
+});
 
 export const invalidPath = <R>(
   details: Hierarchy<R>,
@@ -130,25 +129,33 @@ export const invalidPath = <R>(
   rest,
   details,
   error,
-})
+});
 
-export function getFile<R>(res: PathValid<R>): O.Option<T.DriveChildrenItemFile> {
-  return isValidFile(res) ? O.some(res.file) : O.none
+export function tryGetFile<R>(res: PathValid<R>): O.Option<T.DriveChildrenItemFile> {
+  return isValidFile(res) ? O.some(res.file) : O.none;
 }
 
-export const getFolder = <R>(res: PathValidFolder<R>): T.DetailsFolder | T.DetailsAppLibrary | R => pathTarget(res)
+export function getFile<R>(res: PathValidFile<R>): T.DriveChildrenItemFile {
+  return res.file;
+}
+
+export const getFolder = <R>(res: PathValidFolder<R>): T.DetailsFolder | T.DetailsAppLibrary | R => pathTarget(res);
+
+/** Folder containing the file or folder itself */
+export const getLastDetails = <R>(res: PathValidFolder<R> | PathValidFile<R>): R | T.NonRootDetails =>
+  NA.last(res.details);
 
 export const showGetByPathResult = <R extends T.Root>(p: PathValidation<R>): string => {
   if (p.valid === true) {
     return `Valid path. Folder: ${p.details.map(T.fileName)} file: ${
-      pipe(getFile(p), O.fold(() => `none`, T.fileName))
-    }`
+      pipe(tryGetFile(p), O.fold(() => `none`, T.fileName))
+    }`;
   }
-  const validpart = Path.join('/', ...p.details.map(T.fileName))
-  const rest = Path.join(...p.rest)
+  const validpart = Path.join("/", ...p.details.map(T.fileName));
+  const rest = Path.join(...p.rest);
 
-  return `Invalid path. Valid part ${validpart}, rest: ${rest}`
-}
+  return `Invalid path. Valid part ${validpart}, rest: ${rest}`;
+};
 
 export const validAsString = <R extends T.Root>(
   result: PathValid<R>,
@@ -156,44 +163,44 @@ export const validAsString = <R extends T.Root>(
   return normalizePath(
     [
       ...result.details.map(T.fileName),
-      ...pipe(getFile(result), O.fold(() => [], flow(T.fileName, A.of))),
-    ].join('/'),
-  )
-}
+      ...pipe(tryGetFile(result), O.fold(() => [], flow(T.fileName, A.of))),
+    ].join("/"),
+  );
+};
 
 export const appendHierarchy = <R>(h: Hierarchy<R>, details: NEA<T.Details>): Hierarchy<R> =>
-  [...h, ...details] as Hierarchy<R>
+  [...h, ...details] as Hierarchy<R>;
 
 export const eq = <R extends T.Root>(): Eq<Hierarchy<R>> => ({
   equals: (a, b) => {
     if (a.length !== b.length) {
-      return false
+      return false;
     }
 
     return pipe(
       A.zip(a, b),
       A.every(([a, b]) => isSameDetails(a, b)),
-    )
+    );
   },
-})
+});
 
 export const isSameDetails = (a: T.Details, b: T.Details): boolean => {
   if (a.drivewsid !== b.drivewsid) {
-    return false
+    return false;
   }
 
   if (T.isRegularDetails(a) && T.isRegularDetails(b)) {
     if (a.parentId !== b.parentId) {
-      return false
+      return false;
     }
   }
 
   if (T.hasName(a) && T.hasName(b)) {
-    return T.fileName(a) == T.fileName(b)
+    return T.fileName(a) == T.fileName(b);
   }
 
-  return true
-}
+  return true;
+};
 
 export const asEither = <R extends T.Root, E>(
   onLeft: (path: PathInvalid<R>) => E,
@@ -201,5 +208,5 @@ export const asEither = <R extends T.Root, E>(
   path: Result<R>,
 ) => E.Either<E, R | T.DetailsFolder | T.DetailsAppLibrary | T.DriveChildrenItemFile> =>
   (path: Result<R>) => {
-    return path.valid === true ? E.of(pathTarget(path)) : E.left(onLeft(path))
-  }
+    return path.valid === true ? E.of(pathTarget(path)) : E.left(onLeft(path));
+  };

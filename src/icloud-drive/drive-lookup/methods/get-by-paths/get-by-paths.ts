@@ -1,27 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { constVoid, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as O from 'fp-ts/lib/Option'
-import * as R from 'fp-ts/lib/Record'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { fst } from 'fp-ts/lib/Tuple'
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import * as O from "fp-ts/lib/Option";
+import * as R from "fp-ts/lib/Record";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import { fst } from "fp-ts/lib/Tuple";
 
-import { loggerIO } from '../../../../logging'
-import { SrteUtils } from '../../../../util'
-import { err } from '../../../../util/errors'
-import { guardFst } from '../../../../util/guards'
-import { NormalizedPath } from '../../../../util/normalize-path'
-import { NEA } from '../../../../util/types'
-import { recordFromTuples } from '../../../../util/util'
-import { DriveLookup, Types } from '../../..'
-import { equalsDrivewsId, findInParentFilename } from '../../../util/drive-helpers'
-import { modifySubset } from '../../../util/drive-modify-subset'
-import * as GetByPath from '../../../util/get-by-path-types'
-import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from '../../errors'
-import { getCache } from '../cache-methods'
-import { mergeTempCache } from '../cache-temp-cache'
+import { loggerIO } from "../../../../logging";
+import { SrteUtils } from "../../../../util";
+import { err } from "../../../../util/errors";
+import { guardFst } from "../../../../util/guards";
+import { NormalizedPath } from "../../../../util/normalize-path";
+import { NEA } from "../../../../util/types";
+import { recordFromTuples } from "../../../../util/util";
+import { DriveLookup, Types } from "../../..";
+import { equalsDrivewsId, findInParentFilename } from "../../../util/drive-helpers";
+import { modifySubset } from "../../../util/drive-modify-subset";
+import * as GetByPath from "../../../util/get-by-path-types";
+import { ItemIsNotFileError, ItemIsNotFolderError, NotFoundError } from "../../errors";
+import { mergeTempCache } from "../cache-temp-cache";
 
 /** Given a root details and a list of paths, retrieves the actual items if they exist. */
 export const getByPaths = <R extends Types.Root>(
@@ -33,16 +32,16 @@ export const getByPaths = <R extends Types.Root>(
     SRTE.fromIO,
     // get what we have cached
     SRTE.chain(() => DriveLookup.getByPathsFromCache(root, paths)),
-    SRTE.bindTo('cached'),
-    SRTE.bindW('deps', DriveLookup.ask),
+    SRTE.bindTo("cached"),
+    SRTE.bindW("deps", DriveLookup.ask),
     SRTE.chain(({ cached, deps }) => {
       switch (deps.apiUsage) {
-        case 'onlycache':
-          return SRTE.of(cached)
-        case 'validate':
+        case "validate":
           // validate the cached paths
-          return getByPathsC(paths, cached)
-        case 'fallback':
+          return getByPathsC(paths, cached);
+        case "onlycache":
+          return SRTE.of(cached);
+        case "fallback":
           return GetByPath.containsInvalidPath(cached)
             ? pipe(
               getByPathsC(paths, cached),
@@ -53,22 +52,22 @@ export const getByPaths = <R extends Types.Root>(
                 // note: not optimal but easier to implement
                 GetByPath.containsInvalidPath(res)
                   ? pipe(
-                    // reset the temp cache if it was active otherwise the method will return the same result
+                    // reset the temp cache if it was active. otherwise the method will return the same result
                     SRTE.modify(mergeTempCache),
                     SRTE.chain(() => getByPathsC(paths, res)),
                     SrteUtils.runLogging(loggerIO.debug(`getByPaths(${paths}) fallback 2`)),
                     SRTE.local((deps): DriveLookup.Deps => ({
                       ...deps,
-                      apiUsage: 'validate',
+                      apiUsage: "validate",
                     })),
                   )
                   : SRTE.of(res)
               ),
             )
-            : SRTE.of(cached)
+            : SRTE.of(cached);
       }
     }),
-  )
+  );
 
 const getByPathsC = <R extends Types.Root>(
   paths: NEA<NormalizedPath>,
@@ -78,7 +77,7 @@ const getByPathsC = <R extends Types.Root>(
     DriveLookup.of(cached),
     SRTE.chainFirstIOK(() => loggerIO.debug(`getByPathsC(${paths})`)),
     SRTE.chainFirstIOK(
-      (cached) => loggerIO.debug(`cached: ${cached.map(GetByPath.showGetByPathResult).join('\n')}`),
+      (cached) => loggerIO.debug(`cached: ${cached.map(GetByPath.showGetByPathResult).join("\n")}`),
     ),
     SRTE.chain((cached) =>
       pipe(
@@ -93,7 +92,7 @@ const getByPathsC = <R extends Types.Root>(
     ),
     SRTE.map(NA.zip(paths)),
     SRTE.chain(getActuals),
-  )
+  );
 
 /**
 Given cached root and a cached hierarchy determine which part of the hierarchy is unchanged
@@ -109,17 +108,17 @@ const validateCachedHierarchies = <R extends Types.Root>(
       cachedPath,
       A.map(h => R.lookup(h.drivewsid)(actualsRecord)),
       A.map(O.flatten),
-    )
-  }
+    );
+  };
 
-  const cachedRoot = GetByPath.root(NA.head(cachedHierarchies))
-  const cachedRests = pipe(cachedHierarchies, NA.map(GetByPath.tail))
+  const cachedRoot = GetByPath.root(NA.head(cachedHierarchies));
+  const cachedRests = pipe(cachedHierarchies, NA.map(GetByPath.tail));
 
   const drivewsids = pipe(
     A.flatten(cachedRests),
     A.uniq(equalsDrivewsId()),
     A.map(_ => _.drivewsid),
-  )
+  );
 
   return pipe(
     loggerIO.debug(`validateHierarchies: [${cachedHierarchies.map(showHierarchiy)}]`),
@@ -134,7 +133,7 @@ const validateCachedHierarchies = <R extends Types.Root>(
     SRTE.map(([actualRoot, ...actualRest]) => {
       const detailsRecord = recordFromTuples(
         A.zip(drivewsids, actualRest),
-      )
+      );
 
       return pipe(
         cachedRests,
@@ -144,10 +143,10 @@ const validateCachedHierarchies = <R extends Types.Root>(
             [actualRoot.value, ...toActual(cachedPath, detailsRecord)],
           )
         ),
-      )
+      );
     }),
-  )
-}
+  );
+};
 
 const concatCachedWithValidated = <R extends Types.Root>(
   cached: GetByPath.Result<R>,
@@ -159,11 +158,11 @@ const concatCachedWithValidated = <R extends Types.Root>(
     if (GetByPath.isValidPath(validated)) {
       // if original path was targeting a file
       // try to find it in the actual details
-      const file = GetByPath.getFile(cached)
+      const file = GetByPath.tryGetFile(cached);
 
       if (O.isSome(file)) {
-        const fname = Types.fileName(file.value)
-        const parent = NA.last(validated.details)
+        const fname = Types.fileName(file.value);
+        const parent = NA.last(validated.details);
 
         return pipe(
           findInParentFilename(parent, Types.fileName(file.value)),
@@ -179,33 +178,29 @@ const concatCachedWithValidated = <R extends Types.Root>(
             (e) => GetByPath.invalidPath(validated.details, [fname], e),
             file => GetByPath.validPath(validated.details, O.some(file)),
           ),
-        )
-      }
-      else {
+        );
+      } else {
         // if not a file was targeted then the cached path is still valid
-        loggerIO.debug(`V.validResult: ${showDetails(NA.last(validated.details))}`)()
-        return GetByPath.validPath(validated.details)
+        loggerIO.debug(`V.validResult: ${showDetails(NA.last(validated.details))}`)();
+        return GetByPath.validPath(validated.details);
       }
-    }
-    else {
+    } else {
       // return what is actually valid currently
-      return validated
+      return validated;
     }
-  }
-  else {
+  } else {
     // cached path is invalid
     if (GetByPath.isValidPath(validated)) {
-      return GetByPath.invalidPath(validated.details, cached.rest, cached.error)
-    }
-    else {
+      return GetByPath.invalidPath(validated.details, cached.rest, cached.error);
+    } else {
       return GetByPath.invalidPath(
         validated.details,
         NA.concat(cached.rest)(validated.rest),
         err(`the path changed`),
-      )
+      );
     }
   }
-}
+};
 
 /** Given the most valid parts of the paths, try to retrieve the rest */
 const getActuals = <R extends Types.Root>(
@@ -215,7 +210,7 @@ const getActuals = <R extends Types.Root>(
     `getActuals: ${
       validationResults.map(([p, path]) => `for ${path}. so far we have: ${GetByPath.showGetByPathResult(p)}`)
     }`,
-  )()
+  )();
   return pipe(
     modifySubset(
       validationResults,
@@ -223,8 +218,8 @@ const getActuals = <R extends Types.Root>(
       (invalidPaths) => pipe(invalidPaths, NA.map(fst), handleInvalidPaths),
       ([h, p]): GetByPath.Result<R> => h,
     ),
-  )
-}
+  );
+};
 
 type DeeperFolders<R extends Types.Root> =
   // folders items with empty rest (valid, requires one last details)
@@ -236,26 +231,26 @@ type DeeperFolders<R extends Types.Root> =
   | [
     nextitem: O.Some<Types.DriveChildrenItemFolder | Types.DriveChildrenItemAppLibrary>,
     [rest: NEA<string>, invalidPath: GetByPath.PathInvalid<R>],
-  ]
+  ];
 
 const handleInvalidPaths = <R extends Types.Root>(
   invalidPaths: NEA<GetByPath.PathInvalid<R>>,
 ): DriveLookup.Lookup<NEA<GetByPath.PathValidation<R>>> => {
-  loggerIO.debug(`handleInvalidPaths: ${invalidPaths.map(GetByPath.showGetByPathResult)}`)()
+  loggerIO.debug(`handleInvalidPaths: ${invalidPaths.map(GetByPath.showGetByPathResult)}`)();
 
   const handleSubfolders = <R extends Types.Root>(
     subfolders: NEA<DeeperFolders<R>>,
   ): DriveLookup.Lookup<NEA<GetByPath.Result<R>>> => {
     loggerIO.debug(`handleSubfolders: ${
       subfolders.map(([item, [rest, partial]]) => {
-        return `item: ${Types.fileName(item.value)}. rest: [${rest}]`
+        return `item: ${Types.fileName(item.value)}. rest: [${rest}]`;
       })
-    }`)()
+    }`)();
 
     const foldersToRetrieve = pipe(
       subfolders,
       NA.map(([item, [rest, validPart]]) => item.value.drivewsid),
-    )
+    );
 
     return pipe(
       DriveLookup.retrieveItemDetailsInFoldersTempCachedStrict(foldersToRetrieve),
@@ -285,16 +280,16 @@ const handleInvalidPaths = <R extends Types.Root>(
                 )
               ),
               handleInvalidPaths,
-            )
+            );
           },
           // when the last item of the path is received, return the valid path
           ([details, [item, [rest, partial]]]): GetByPath.PathValid<R> => {
-            return GetByPath.validFolder(GetByPath.appendHierarchy(partial.details, [details]))
+            return GetByPath.validFolder(GetByPath.appendHierarchy(partial.details, [details]));
           },
-        )
+        );
       }),
-    )
-  }
+    );
+  };
 
   const handleFiles = <R extends Types.Root>() =>
     (
@@ -314,21 +309,21 @@ const handleInvalidPaths = <R extends Types.Root>(
             rest: NA.concat([Types.fileName(item.value)], rest),
           }),
         ),
-      )
-    }
+      );
+    };
 
   const handleFoundItems = <R extends Types.Root>(
     found: NEA<[O.Some<Types.DriveChildrenItem>, [string[], GetByPath.PathInvalid<R>]]>,
   ): DriveLookup.Lookup<GetByPath.Result<R>[]> => {
     loggerIO.debug(`handleFoundItems. ${
       found.map(([item, [rest, partial]]) => {
-        return `item: ${Types.fileName(item.value)}.`
+        return `item: ${Types.fileName(item.value)}.`;
       })
-    }`)()
+    }`)();
 
     const selectFolders = (
       v: [O.Some<Types.DriveChildrenItem>, [string[], GetByPath.PathInvalid<R>]],
-    ): v is DeeperFolders<R> => Types.isFolderLikeItem(v[0].value)
+    ): v is DeeperFolders<R> => Types.isFolderLikeItem(v[0].value);
 
     if (A.isNonEmpty(found)) {
       return modifySubset(
@@ -336,17 +331,17 @@ const handleInvalidPaths = <R extends Types.Root>(
         selectFolders,
         handleSubfolders,
         handleFiles(),
-      )
+      );
     }
 
-    return SRTE.of([])
-  }
+    return SRTE.of([]);
+  };
 
   const nextItems = pipe(
     invalidPaths,
     NA.map(_ => findInParentFilename(NA.last(_.details), NA.head(_.rest))),
     NA.zip(pipe(invalidPaths, NA.map(_ => NA.tail(_.rest)), NA.zip(invalidPaths))),
-  )
+  );
 
   return modifySubset(
     nextItems,
@@ -361,28 +356,28 @@ const handleInvalidPaths = <R extends Types.Root>(
           {
             item: NA.head(partial.rest),
             container: Types.fileName(NA.last(partial.details)),
-            prefix: 'getByPaths.handleInvalidPaths',
+            prefix: "getByPaths.handleInvalidPaths",
           },
         ),
         details: partial.details,
         rest: partial.rest,
-      }
+      };
     },
-  )
-}
+  );
+};
 
 const getValidHierarchyPart = <R extends Types.Root>(
   cachedHierarchy: GetByPath.Hierarchy<R>,
   actualDetails: [R, ...O.Option<Types.NonRootDetails>[]],
 ): GetByPath.PathValidation<R> => {
-  const [actualRoot, ...actualPath] = actualDetails
-  const [cachedroot, ...cachedPath] = cachedHierarchy
+  const [actualRoot, ...actualPath] = actualDetails;
+  const [cachedroot, ...cachedPath] = cachedHierarchy;
 
   const actualPathDetails = pipe(
     actualPath,
     A.takeLeftWhile(O.isSome),
     A.map(_ => _.value),
-  )
+  );
 
   return pipe(
     A.zip(actualPathDetails, cachedPath),
@@ -403,17 +398,17 @@ const getValidHierarchyPart = <R extends Types.Root>(
           rest => GetByPath.invalidPath([actualRoot, ...validPart], rest, err(`details changed`)),
         ),
       ),
-  )
-}
+  );
+};
 
 const showHierarchiy = (h: GetByPath.Hierarchy<Types.Root>): string => {
-  const [root, ...rest] = h
+  const [root, ...rest] = h;
 
-  return `${Types.isCloudDocsRootDetails(root) ? 'root' : 'trash'}/${rest.map(Types.fileName).join('/')}`
-}
+  return `${Types.isCloudDocsRootDetails(root) ? "root" : "trash"}/${rest.map(Types.fileName).join("/")}`;
+};
 
 const showDetails = (details: Types.Details) => {
-  return `${Types.isTrashDetailsG(details) ? 'TRASH_ROOT' : details.type} ${Types.fileName(details)}. items: [${
+  return `${Types.isTrashDetailsG(details) ? "TRASH_ROOT" : details.type} ${Types.fileName(details)}. items: [${
     details.items.map(Types.fileName)
-  }]`
-}
+  }]`;
+};

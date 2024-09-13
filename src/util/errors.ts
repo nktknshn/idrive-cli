@@ -1,99 +1,99 @@
-import * as E from 'fp-ts/lib/Either'
-import * as t from 'io-ts'
-import { HttpResponse } from './http/fetch-client'
-import { isObjectWithOwnProperty } from './util'
+import * as E from "fp-ts/lib/Either";
+import * as t from "io-ts";
+import { HttpResponse } from "./http/fetch-client";
+import { isObjectWithOwnProperty } from "./util";
 
-export const wrapError = (message: string) => (e: Error): Error => new Error(`${message}: ${e.message}`)
+export const wrapError = (prefix: string) => (e: Error): Error => new Error(`${prefix}: ${e.message}`);
 
 export class InvalidGlobalSessionError extends Error {
-  readonly tag = 'InvalidGlobalSessionResponse'
+  readonly tag = "InvalidGlobalSessionResponse";
   constructor(public readonly httpResponse: HttpResponse) {
-    super('InvalidGlobalSessionResponse')
+    super("InvalidGlobalSessionResponse");
   }
   public static is(a: Error): a is InvalidGlobalSessionError {
-    return a instanceof InvalidGlobalSessionError
+    return a instanceof InvalidGlobalSessionError;
   }
   static create(httpResponse: HttpResponse): InvalidGlobalSessionError {
-    return new InvalidGlobalSessionError(httpResponse)
+    return new InvalidGlobalSessionError(httpResponse);
   }
 }
 
 export class BadRequestError extends Error {
-  readonly tag = 'BadRequestError'
+  readonly tag = "BadRequestError";
   constructor(public readonly httpResponse: HttpResponse) {
-    super('BadRequestError')
+    super("BadRequestError");
   }
   public static is(a: Error): a is BadRequestError {
-    return a instanceof BadRequestError
+    return a instanceof BadRequestError;
   }
   static create(httpResponse: HttpResponse): BadRequestError {
-    return new BadRequestError(httpResponse)
+    return new BadRequestError(httpResponse);
   }
 }
 
 export class UnexpectedResponse extends Error {
-  readonly tag = 'UnexpectedResponse'
+  readonly tag = "UnexpectedResponse";
   constructor(
     public readonly httpResponse: HttpResponse,
     public readonly json: E.Either<unknown, unknown>,
   ) {
-    super('UnexpectedResponse')
+    super("UnexpectedResponse");
   }
 
   static is(error: Error): error is UnexpectedResponse {
     return (
-      isObjectWithOwnProperty(error, 'tag') && error.tag === 'UnexpectedResponse'
-    )
+      isObjectWithOwnProperty(error, "tag") && error.tag === "UnexpectedResponse"
+    );
   }
 
   static create(httpResponse: HttpResponse, json: E.Either<unknown, unknown>): UnexpectedResponse {
-    return new UnexpectedResponse(httpResponse, json)
+    return new UnexpectedResponse(httpResponse, json);
   }
 }
 
 export class InvalidResponseStatusError extends Error {
-  readonly tag = 'InvalidResponseStatusError'
+  readonly tag = "InvalidResponseStatusError";
   constructor(
     public readonly httpResponse: HttpResponse,
-    public readonly message = 'InvalidResponseStatusError',
+    public readonly message = "InvalidResponseStatusError",
   ) {
-    super(message)
+    super(message);
   }
 
   static is(error: Error): error is InvalidResponseStatusError {
     return (
-      isObjectWithOwnProperty(error, 'tag') && error.tag === 'InvalidResponseStatusError'
-    )
+      isObjectWithOwnProperty(error, "tag") && error.tag === "InvalidResponseStatusError"
+    );
   }
 
   static create(httpResponse: HttpResponse, message: string): InvalidResponseStatusError {
-    return new InvalidResponseStatusError(httpResponse, message)
+    return new InvalidResponseStatusError(httpResponse, message);
   }
 }
 
 export class FileReadingError extends Error {
-  readonly tag = 'FileReadingError'
+  readonly tag = "FileReadingError";
 
-  constructor(public readonly error: unknown, message = 'FileReadingError') {
-    super(message)
+  constructor(public readonly error: unknown, message = "FileReadingError") {
+    super(message);
   }
 
   static is(v: Error): v is FileReadingError {
-    return isObjectWithOwnProperty(v, 'tag') && v.tag === 'FileReadingError'
+    return isObjectWithOwnProperty(v, "tag") && v.tag === "FileReadingError";
   }
 
-  static create(err: unknown, message = 'FileReadingError'): FileReadingError {
-    return new FileReadingError(err, message)
+  static create(err: unknown, message = "FileReadingError"): FileReadingError {
+    return new FileReadingError(err, message);
   }
 }
 
 export class SomeError extends Error {
   constructor(message?: string) {
-    super(message)
+    super(message);
   }
 
   public toString(): string {
-    return `SomeError(${this.message})`
+    return `SomeError(${this.message})`;
   }
 }
 
@@ -102,16 +102,16 @@ export class InvalidJsonInResponse extends Error {
     public readonly httpResponse: HttpResponse,
     public readonly input: string,
   ) {
-    super('InvalidJsonInResponse')
+    super("InvalidJsonInResponse");
   }
-  readonly tag = 'InvalidJsonInResponse'
+  readonly tag = "InvalidJsonInResponse";
 
   public static is(a: Error): a is InvalidJsonInResponse {
-    return a instanceof InvalidJsonInResponse
+    return a instanceof InvalidJsonInResponse;
   }
 
   static create(httpResponse: HttpResponse, input: string): InvalidJsonInResponse {
-    return new InvalidJsonInResponse(httpResponse, input)
+    return new InvalidJsonInResponse(httpResponse, input);
   }
 }
 
@@ -120,12 +120,12 @@ export class MissingResponseBody extends Error {
     public readonly httpResponse: HttpResponse,
     public readonly error: unknown,
   ) {
-    super('MissingResponseBody')
+    super("MissingResponseBody");
   }
-  readonly tag = 'ErrorReadingResponseBody'
+  readonly tag = "ErrorReadingResponseBody";
 
   public static is(a: Error): a is MissingResponseBody {
-    return a instanceof MissingResponseBody
+    return a instanceof MissingResponseBody;
   }
 }
 
@@ -134,81 +134,81 @@ export class JsonParsingError extends Error {
     public readonly input: string,
     public readonly error: unknown,
   ) {
-    super(`JsonParsingError: ${error}`)
+    super(`JsonParsingError: ${error}`);
   }
 
-  readonly tag = 'JsonParsingError'
+  readonly tag = "JsonParsingError";
 
   static is(v: Error): v is JsonParsingError {
-    return isObjectWithOwnProperty(v, 'tag') && v.tag === 'JsonParsingError'
+    return isObjectWithOwnProperty(v, "tag") && v.tag === "JsonParsingError";
   }
 }
 
 export class TypeDecodingError extends Error {
-  readonly tag = 'TypeDecodingError'
+  readonly tag = "TypeDecodingError";
 
-  constructor(public readonly errors: t.Errors, message = 'TypeDecodingError') {
-    super(message)
+  constructor(public readonly errors: t.Errors, message = "TypeDecodingError") {
+    super(message);
   }
 
   static is(v: Error): v is JsonParsingError {
-    return isObjectWithOwnProperty(v, 'tag') && v.tag === 'TypeDecodingError'
+    return isObjectWithOwnProperty(v, "tag") && v.tag === "TypeDecodingError";
   }
 
   // static create(errors: t.Errors): TypeDecodingError
   static create(errors: t.Errors, message?: string): TypeDecodingError {
-    return new TypeDecodingError(errors, message)
+    return new TypeDecodingError(errors, message);
   }
 }
 
 export class BufferDecodingError extends Error {
-  readonly tag = 'BufferDecodingError'
+  readonly tag = "BufferDecodingError";
 
-  constructor(public readonly error: unknown, message = 'BufferDecodingError') {
-    super(message)
+  constructor(public readonly error: unknown, message = "BufferDecodingError") {
+    super(message);
   }
 
   static is(v: Error): v is BufferDecodingError {
-    return isObjectWithOwnProperty(v, 'tag') && v.tag === 'BufferDecodingError'
+    return isObjectWithOwnProperty(v, "tag") && v.tag === "BufferDecodingError";
   }
 
   static create(errors: unknown, message?: string): BufferDecodingError {
-    return new BufferDecodingError(errors, message)
+    return new BufferDecodingError(errors, message);
   }
 }
 
 export class FileNotFoundError extends Error {
-  readonly tag = 'FileNotFoundError'
+  readonly tag = "FileNotFoundError";
   constructor(public readonly path: string) {
-    super(`File not found: ${path}`)
+    super(`File not found: ${path}`);
   }
 
   static is(a: Error): a is FileNotFoundError {
-    return a instanceof FileNotFoundError
+    return a instanceof FileNotFoundError;
   }
 
   static create(path: string): FileNotFoundError {
-    return new FileNotFoundError(path)
+    return new FileNotFoundError(path);
   }
 }
 
 export class FileInvalidError extends Error {
-  readonly tag = 'FileInvalidError'
+  readonly tag = "FileInvalidError";
   constructor(public readonly path: string) {
-    super(`Invalid file: ${path}`)
+    super(`Invalid file: ${path}`);
   }
 
   static is(a: Error): a is FileInvalidError {
-    return a instanceof FileInvalidError
+    return a instanceof FileInvalidError;
   }
 
   static create(path: string): FileInvalidError {
-    return new FileInvalidError(path)
+    return new FileInvalidError(path);
   }
 }
 
 /** Returns `Error` with the given message */
-export const err = (message: string): Error => new Error(message)
+export const err = (message: string): Error => new Error(message);
 
 /** Returns `Error` with the given message if `e` is not an `Error` */
-export const ensureError = (e: unknown): Error => e instanceof Error ? e : err(`${e}`)
+export const ensureError = (e: unknown): Error => e instanceof Error ? e : err(`${e}`);

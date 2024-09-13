@@ -19,3 +19,5 @@ export const isMatching = (path: string, glob: string, options?: micromatch.Opti
 }
 
 export const isGlobstar = (glob: string): boolean => glob.indexOf('**') > 0
+
+export const includesGlobstar = (globs: string[]): boolean => globs.some(isGlobstar)

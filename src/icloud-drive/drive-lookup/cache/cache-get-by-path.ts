@@ -1,19 +1,19 @@
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { pipe } from 'fp-ts/lib/function'
-import * as O from 'fp-ts/lib/Option'
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 
-import { cacheLogger } from '../../../logging/logging'
-import * as Types from '../../drive-types'
-import { findInParentFilename } from '../../util/drive-helpers'
-import * as GetByPath from '../../util/get-by-path-types'
-import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from '../errors'
-import * as C from './cache'
-import { Cache } from './cache-types'
+import { cacheLogger } from "../../../logging/logging";
+import * as Types from "../../drive-types";
+import { findInParentFilename } from "../../util/drive-helpers";
+import * as GetByPath from "../../util/get-by-path-types";
+import { FolderLikeMissingDetailsError, ItemIsNotFolderError, NotFoundError } from "../errors";
+import * as C from "./cache";
+import { Cache } from "./cache-types";
 
 const showDetails = (d: Types.Details): string => {
-  return Types.isTrashDetails(d) ? 'TRASH' : `${d.type}: ${Types.fileName(d)}`
-}
+  return Types.isTrashDetails(d) ? "TRASH" : `${d.type}: ${Types.fileName(d)}`;
+};
 
 /**
  * Tries to get starting from `parentEntity`
@@ -23,16 +23,16 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
   parentEntity: R,
 ) =>
   (cache: Cache): GetByPath.PathValidation<R> => {
-    cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`)
+    cacheLogger.debug(`getFromCacheByPath: [${path}], parent: ${showDetails(parentEntity)}`);
 
     if (!A.isNonEmpty(path)) {
-      return GetByPath.validFolder<R>([parentEntity])
+      return GetByPath.validFolder<R>([parentEntity]);
     }
 
-    const [subItemName, ...rest] = path
-    const subitem = findInParentFilename(parentEntity, subItemName)
+    const [subItemName, ...rest] = path;
+    const subitem = findInParentFilename(parentEntity, subItemName);
 
-    const result: GetByPath.Hierarchy<R> = [parentEntity]
+    const result: GetByPath.Hierarchy<R> = [parentEntity];
 
     // item was not found
     if (O.isNone(subitem)) {
@@ -43,26 +43,24 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
         error: NotFoundError.createTemplate(
           { item: subItemName, container: showDetails(parentEntity) },
         ),
-      }
+      };
     }
 
-    if (subitem.value.type === 'FILE') {
+    if (subitem.value.type === "FILE") {
       if (A.isNonEmpty(rest)) {
         return {
           valid: false,
           details: result,
           rest: path,
           error: ItemIsNotFolderError.createTemplate(subitem.value),
-        }
-      }
-      else {
+        };
+      } else {
         return GetByPath.validFile<R>(
           result,
           subitem.value,
-        )
+        );
       }
-    }
-    else if (A.isNonEmpty(rest)) {
+    } else if (A.isNonEmpty(rest)) {
       // sub item is a folder and we need to go deeper
 
       return pipe(
@@ -82,7 +80,7 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
                 result.valid
                   ? GetByPath.validPath<R>(
                     GetByPath.appendHierarchy([parentEntity], result.details),
-                    GetByPath.getFile(result),
+                    GetByPath.tryGetFile(result),
                   )
                   : GetByPath.invalidPath<R>(
                     GetByPath.appendHierarchy([parentEntity], result.details),
@@ -91,9 +89,8 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
                   ),
             ),
         ),
-      )
-    }
-    else {
+      );
+    } else {
       // sub item is a folder and since there is no rest
       // the item is the target. Get the details and return it
       return pipe(
@@ -108,6 +105,6 @@ export const getFromCacheByPath = <R extends Types.Root | Types.NonRootDetails>(
           ({ content }): GetByPath.PathValidation<R> =>
             GetByPath.validFolder<R>(GetByPath.appendHierarchy([parentEntity], [content])),
         ),
-      )
+      );
     }
-  }
+  };

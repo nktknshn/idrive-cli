@@ -1,219 +1,220 @@
-import * as w from 'yargs-command-wrapper'
-import * as defaults from '../../defaults'
+import * as w from "yargs-command-wrapper";
+import * as defaults from "../../defaults";
 
 const init = w.command(
-  'init',
-  'Init new session',
-  a => a.options({ skipLogin: { default: false, type: 'boolean' } }),
-)
+  "init",
+  "Init new session",
+  a => a.options({ skipLogin: { default: false, type: "boolean" } }),
+);
 
 const auth = w.command(
-  'auth',
-  'Authenticate a session',
+  "auth",
+  "Authenticate a session",
   a => a.options({}),
-)
+);
 
-const ls = w.command('ls [paths..]', 'List files in a folder', _ =>
+const ls = w.command("ls [paths..]", "List files in a folder", _ =>
   _
-    .positional('paths', { type: 'string', array: true, default: ['/'] })
+    .positional("paths", { type: "string", array: true, default: ["/"] })
     .options({
       // cached: { default: false, type: 'boolean', description: 'Only list cached items' },
-      'full-path': { alias: ['f'], default: false, type: 'boolean', description: 'Print full paths' },
-      long: { alias: ['l'], default: false, description: 'Use a long listing format' },
-      recursive: { alias: ['R'], default: false, type: 'boolean', description: 'Recursive listing' },
-      depth: { alias: ['D'], default: Infinity, type: 'number', description: 'Depth of recursive listing' },
-      tree: { default: false, type: 'boolean', description: 'Print tree view' },
-      info: { alias: ['i'], default: false, type: 'boolean', description: 'Include folder info in listing' },
-      'human-readable': {
-        alias: ['h'],
+      "full-path": { alias: ["f"], default: false, type: "boolean", description: "Print full paths" },
+      long: { alias: ["l"], default: false, description: "Use a long listing format" },
+      recursive: { alias: ["R"], default: false, type: "boolean", description: "Recursive listing" },
+      depth: { alias: ["D"], default: Infinity, type: "number", description: "Depth of recursive listing" },
+      tree: { default: false, type: "boolean", description: "Print tree view" },
+      info: { alias: ["i"], default: false, type: "boolean", description: "Include folder info in listing" },
+      "human-readable": {
+        alias: ["h"],
         default: false,
-        type: 'boolean',
-        description: 'With -l, print sizes like 1K 234M 2G etc.',
+        type: "boolean",
+        description: "With -l, print sizes like 1K 234M 2G etc.",
       },
-      trash: { alias: ['trash'], default: false, type: 'boolean', description: 'List trash' },
+      trash: { alias: ["trash"], default: false, type: "boolean", description: "List trash" },
       // TODO date
       sort: {
-        alias: ['S'],
-        choices: ['name', 'size'],
-        default: 'name',
-        type: 'string',
-        description: 'Sort by',
+        alias: ["S"],
+        choices: ["name", "size"],
+        default: "name",
+        type: "string",
+        description: "Sort by",
       },
     })
-    .coerce('sort', (a): 'name' | 'size' => {
-      if (['name', 'size'].includes(a)) {
-        return a
+    .coerce("sort", (a): "name" | "size" => {
+      if (["name", "size"].includes(a)) {
+        return a;
       }
 
-      throw new Error(`Invalid sort option: ${a}`)
+      throw new Error(`Invalid sort option: ${a}`);
     })
-    .count('long')
+    .count("long")
     .check((args) => {
       if (args.depth < 0) {
-        throw new Error('Depth must be positive')
+        throw new Error("Depth must be positive");
       }
 
       if (args.tree && !args.recursive) {
-        throw new Error('Tree view requires recursive listing')
+        throw new Error("Tree view requires recursive listing");
       }
 
       // if (args.depth > 0 && args.depth < Infinity && !args.recursive) {
       //   throw new Error('Depth requires recursive listing')
       // }
 
-      return true
-    }))
+      return true;
+    }));
 
 const download = w.command(
-  'download <path> <dstpath>',
-  'Download a file or a folder',
+  "download <path> <dstpath>",
+  "Download a file or a folder",
   (_) =>
-    _.positional('path', { type: 'string', demandOption: true })
-      .positional('dstpath', { type: 'string', demandOption: true })
+    _.positional("path", { type: "string", demandOption: true })
+      .positional("dstpath", { type: "string", demandOption: true })
       .options({
-        dry: { default: false, type: 'boolean' },
-        overwright: { default: false, type: 'boolean' },
-        include: { default: [], type: 'string', array: true },
-        exclude: { default: [], type: 'string', array: true },
-        recursive: { alias: ['R'], default: false, type: 'boolean' },
-        'keep-structure': {
-          alias: ['S'],
+        dry: { default: false, type: "boolean" },
+        overwrite: { default: false, type: "boolean" },
+        include: { default: [], type: "string", array: true },
+        exclude: { default: [], type: "string", array: true },
+        recursive: { alias: ["R"], default: false, type: "boolean" },
+        "keep-structure": {
+          alias: ["S"],
           default: false,
-          type: 'boolean',
-          description: 'Keep the remote folder structure',
+          type: "boolean",
+          description: "Keep the remote folder structure",
         },
-        'chunk-size': { default: defaults.downloadChunkSize, type: 'number', description: 'Chunk size' },
+        "chunk-size": { default: defaults.downloadChunkSize, type: "number", description: "Chunk size" },
       }),
-)
+);
 
 const mkdir = w.command(
-  'mkdir <path>',
-  'Create a folder',
-  (_) => _.positional('path', { type: 'string', demandOption: true }),
-)
+  "mkdir <path>",
+  "Create a folder",
+  (_) => _.positional("path", { type: "string", demandOption: true }),
+);
 
 const rm = w.command(
-  'rm [paths..]',
-  'Remove files and folders',
+  "rm [paths..]",
+  "Remove files and folders",
   (_) =>
-    _.positional('paths', { type: 'string', array: true, demandOption: true })
+    _.positional("paths", { type: "string", array: true, demandOption: true })
       .options({
-        'skip-trash': { default: false, type: 'boolean', description: 'Skip trash' },
-        force: { default: false, type: 'boolean' },
-        recursive: { alias: ['R'], default: false, type: 'boolean' },
+        "dry": { default: false, type: "boolean", description: "Dry run" },
+        "skip-trash": { default: false, type: "boolean", description: "Skip trash" },
+        force: { default: false, type: "boolean" },
+        recursive: { alias: ["R"], default: false, type: "boolean" },
       }),
-)
+);
 
 const cat = w.command(
-  'cat <path>',
-  'View the content of a text file',
+  "cat <path>",
+  "View the content of a text file",
   (_) =>
-    _.positional('path', { type: 'string', demandOption: true })
+    _.positional("path", { type: "string", demandOption: true })
       .options({
         // 'skip-validation': { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
       }),
-)
+);
 
 const edit = w.command(
-  'edit <path>',
-  'Edit a text file',
+  "edit <path>",
+  "Edit a text file",
   (_) =>
-    _.positional('path', { type: 'string', demandOption: true })
+    _.positional("path", { type: "string", demandOption: true })
       .options({
-        editor: { type: 'string', default: defaults.fileEditor },
+        editor: { type: "string", default: defaults.fileEditor },
         // unapplieable since the cache is not updated after file upload, so without validation the old file id is returned from cache
         // skipValidation: { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
       }),
-)
+);
 
 const mv = w.command(
-  'mv <srcpath> <dstpath>',
-  'Move or rename a file or a folder',
+  "mv <srcpath> <dstpath>",
+  "Move or rename a file or a folder",
   (_) =>
-    _.positional('srcpath', { type: 'string', demandOption: true })
-      .positional('dstpath', { type: 'string', demandOption: true }),
-)
+    _.positional("srcpath", { type: "string", demandOption: true })
+      .positional("dstpath", { type: "string", demandOption: true }),
+);
 
 const upload = w.command(
-  'upload <uploadargs..>',
-  'Upload files and folders',
+  "upload <uploadargs..>",
+  "Upload files and folders",
   (_) =>
-    _.positional('uploadargs', { type: 'string', array: true, demandOption: true })
+    _.positional("uploadargs", { type: "string", array: true, demandOption: true })
       .options({
-        overwright: { default: false, type: 'boolean' },
-        'skip-trash': { default: false, type: 'boolean' },
-        recursive: { alias: ['R'], default: false, type: 'boolean' },
+        overwrite: { default: false, type: "boolean" },
+        "skip-trash": { default: false, type: "boolean" },
+        recursive: { alias: ["R"], default: false, type: "boolean" },
 
-        include: { default: [], type: 'string', array: true },
-        exclude: { default: [], type: 'string', array: true },
-        dry: { default: false, type: 'boolean' },
+        include: { default: [], type: "string", array: true },
+        exclude: { default: [], type: "string", array: true },
+        dry: { default: false, type: "boolean" },
         // chunkSize: { default: 2, type: 'number', implies: ['recursive'] },
       })
       .check((args) => {
-        const uploadargs = args.uploadargs
+        const uploadargs = args.uploadargs;
 
         if (Array.isArray(uploadargs) && uploadargs.length < 2) {
-          throw new Error('Missing destination path')
+          throw new Error("Missing destination path");
         }
 
-        return true
+        return true;
       }),
-)
+);
 
 const autocomplete = w.command(
-  'autocomplete <path>',
-  'Autocomplete path',
+  "autocomplete <path>",
+  "Autocomplete path",
   (_) =>
-    _.positional('path', { type: 'string', demandOption: true })
+    _.positional("path", { type: "string", demandOption: true })
       .options({
-        file: { default: false, type: 'boolean' },
-        dir: { default: false, type: 'boolean' },
-        trash: { default: false, type: 'boolean' },
-        cached: { default: false, type: 'boolean' },
+        file: { default: false, type: "boolean" },
+        dir: { default: false, type: "boolean" },
+        trash: { default: false, type: "boolean" },
+        cached: { default: false, type: "boolean" },
       }),
-)
+);
 
 const recover = w.command(
-  'recover <path>',
-  'Recover a file from the trash',
-  (_) => _.positional('path', { type: 'string', demandOption: true }),
-)
+  "recover <path>",
+  "Recover a file from the trash",
+  (_) => _.positional("path", { type: "string", demandOption: true }),
+);
 
-const apiUsageChoices = ['onlycache', 'fallback', 'validate'] as const
+const apiUsageChoices = ["onlycache", "fallback", "validate"] as const;
 
 export const cmd = w.composeCommands(
   _ =>
     _.version(defaults.cliVersion)
-      .scriptName('idrive')
+      .scriptName("idrive")
       .options({
-        'session-file': {
-          alias: ['s'],
+        "session-file": {
+          alias: ["s"],
           default: undefined,
           optional: true,
-          description: 'Session file',
+          description: "Session file",
         },
-        'cache-file': {
-          alias: ['c'],
+        "cache-file": {
+          alias: ["c"],
           default: undefined,
           optional: true,
-          description: 'Cache file',
+          description: "Cache file",
         },
-        'no-cache': { alias: 'n', default: false, type: 'boolean', description: 'Disable cache' },
-        'api-usage': {
-          alias: ['a'],
+        "no-cache": { alias: "n", default: false, type: "boolean", description: "Disable cache" },
+        "api-usage": {
+          alias: ["a"],
           default: defaults.apiUsage,
-          type: 'string',
+          type: "string",
           choices: apiUsageChoices,
-          description: 'API usage strategy',
+          description: "API usage strategy",
           coerce: (a): typeof apiUsageChoices[number] => {
             if (apiUsageChoices.includes(a)) {
-              return a
+              return a;
             }
 
-            throw new Error(`Invalid api usage: ${a}`)
+            throw new Error(`Invalid api usage: ${a}`);
           },
         },
-        debug: { alias: 'd', default: false, type: 'boolean' },
+        debug: { alias: "d", default: false, type: "boolean" },
       }),
   init,
   auth,
@@ -227,6 +228,6 @@ export const cmd = w.composeCommands(
   upload,
   recover,
   autocomplete,
-)
+);
 
-export type CliCommands = w.GetCommandArgs<typeof cmd>
+export type CliCommands = w.GetCommandArgs<typeof cmd>;

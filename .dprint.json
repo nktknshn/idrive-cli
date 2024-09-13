@@ -6,9 +6,4 @@
   "plugins": ["https://plugins.dprint.dev/typescript-0.60.0.wasm"],
   "indentWidth": 2,
   "useTabs": false,
-  "typescript": {
-    "quoteStyle": "validateSingle",
-    "semiColons": "asi",
-    "ifStatement.nextControlFlowPosition": "nextLine"
-  }
 }

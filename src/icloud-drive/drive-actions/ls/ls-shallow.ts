@@ -9,6 +9,7 @@ import { NEA } from '../../../util/types'
 import { DriveLookup, Types } from '../..'
 import { findInParentGlob } from '../../util/drive-helpers'
 import * as GetByPath from '../../util/get-by-path-types'
+import { includesGlobstar } from '../../../util/glob-matching'
 
 export type ListPathResult = ListPathFolder | ListPathFile | ListPathInvalid
 
@@ -68,10 +69,8 @@ export const listPaths = (
   const scanned = pipe(paths, NA.map(micromatch.scan))
   const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
 
-  for (const p of paths) {
-    if (p.indexOf('**') > -1) {
-      return SRTE.left(err('globstar is not supported for non recursive ls'))
-    }
+  if(includesGlobstar(paths)) {
+    return SRTE.left(err('globstar is not supported for non recursive ls'))
   }
 
   return pipe(

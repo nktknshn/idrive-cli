@@ -1,55 +1,55 @@
-import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import * as TE from 'fp-ts/lib/TaskEither'
-import * as RA from 'fp-ts/ReadonlyArray'
-import { DepAskConfirmation } from '../../../deps-types'
-import { err } from '../../../util/errors'
-import { Types } from '../..'
-import { ConflictsSolver, SolutionAction } from './conflict-solution'
-import { ConflictExists } from './download-conflict'
+import * as A from "fp-ts/lib/Array";
+import { pipe } from "fp-ts/lib/function";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as RA from "fp-ts/ReadonlyArray";
+import { DepAskConfirmation } from "../../../deps-types";
+import { err } from "../../../util/errors";
+import { Types } from "../..";
+import { ConflictsSolver, SolutionAction } from "./conflict-solution";
+import { ConflictExists } from "./download-conflict";
 
 const failOnConflicts: ConflictsSolver = () =>
   () =>
     pipe(
       TE.left(err(`conflicts`)),
-    )
+    );
 
 const resolveConflictsSkipAll: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
       conflicts,
-      A.map(c => [c, 'skip'] as const),
+      A.map(c => [c, "skip"] as const),
       TE.of,
-    )
+    );
 const resolveConflictsOverwrightAll: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
       conflicts,
-      A.map(c => [c, 'overwright'] as const),
+      A.map(c => [c, "overwrite"] as const),
       TE.of,
-    )
+    );
 
 const resolveConflictsRename: ConflictsSolver = (conflicts) =>
   () =>
     pipe(
       conflicts,
       A.map((conflict) =>
-        conflict.tag === 'exists'
+        conflict.tag === "exists"
           ? [
             {
               ...conflict,
-              item: { ...conflict.item, localpath: conflict.item.localpath + '.new' },
+              item: { ...conflict.item, localpath: conflict.item.localpath + ".new" },
             },
-            'overwright',
+            "overwrite",
           ] as const
           : [
             conflict,
-            'skip',
+            "skip",
           ] as const
       ),
       TE.of,
-    )
+    );
 
 const resolveConflictsOverwrightIfSizeDifferent = (
   skipRemotes = (_f: Types.DriveChildrenItemFile) => false,
@@ -59,37 +59,37 @@ const resolveConflictsOverwrightIfSizeDifferent = (
       pipe(
         conflicts,
         A.map((conflict) =>
-          conflict.tag === 'exists'
+          conflict.tag === "exists"
             ? conflict.localitem.stats.size !== conflict.item.item.item.size
                 && !skipRemotes(conflict.item.item.item)
-              ? [conflict, 'overwright' as SolutionAction] as const
-              : [conflict, 'skip' as SolutionAction] as const
+              ? [conflict, "overwrite" as SolutionAction] as const
+              : [conflict, "skip" as SolutionAction] as const
             : [
               conflict,
-              'skip',
+              "skip",
             ] as const
         ),
         TE.of,
-      )
+      );
 
 const resolveConflictsAskAll: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
   return pipe(
     RTE.ask<DepAskConfirmation>(),
     RTE.chainTaskEitherK(({ askConfirmation }) =>
       askConfirmation({
-        message: `overwright?\n${
+        message: `overwrite?\n${
           pipe(
             conflicts,
-            A.filter((_): _ is ConflictExists => _.tag === 'exists'),
+            A.filter((_): _ is ConflictExists => _.tag === "exists"),
             A.map((conflict) => conflict.localitem.path),
-            _ => _.join('\n'),
+            _ => _.join("\n"),
           )
         }`,
       })
     ),
     RTE.chainW(a => a ? resolveConflictsOverwrightAll(conflicts) : failOnConflicts(conflicts)),
-  )
-}
+  );
+};
 
 const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
   return pipe(
@@ -97,11 +97,11 @@ const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts
     RTE.chainTaskEitherK(({ askConfirmation }) =>
       pipe(
         conflicts,
-        A.filter((_): _ is ConflictExists => _.tag === 'exists'),
+        A.filter((_): _ is ConflictExists => _.tag === "exists"),
         A.map((conflict) =>
           askConfirmation({
             message:
-              `overwright ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${conflict.item.item.item.size} bytes`,
+              `overwrite ${conflict.localitem.path} ${conflict.localitem.stats.size} bytes with ${conflict.item.item.item.size} bytes`,
           })
         ),
         TE.sequenceSeqArray,
@@ -111,12 +111,12 @@ const resolveConflictsAskEvery: ConflictsSolver<DepAskConfirmation> = (conflicts
     RTE.map(RA.map(
       ([ov, conflict]) =>
         ov
-          ? [conflict, 'overwright'] as const
-          : [conflict, 'skip'] as const,
+          ? [conflict, "overwrite"] as const
+          : [conflict, "skip"] as const,
     )),
     RTE.map(RA.toArray),
-  )
-}
+  );
+};
 
 export const solvers = {
   failOnConflicts,
@@ -126,4 +126,4 @@ export const solvers = {
   resolveConflictsOverwrightIfSizeDifferent,
   resolveConflictsAskAll,
   resolveConflictsAskEvery,
-}
+};

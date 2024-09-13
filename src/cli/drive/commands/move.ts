@@ -14,6 +14,12 @@ export const move = ({ srcpath, dstpath }: {
 
   return pipe(
     Actions.move({ srcpath: nsrc, dstpath: ndst }),
-    SRTE.map((res) => `Statuses.: ${JSON.stringify(res.items.map(_ => _.status))}`),
+    SRTE.map((res) => {
+      if(res.items[0].status === 'OK') {
+        return `Moved.\n`
+      }
+
+      return `Failed to move: ${res.items[0].status}\n`
+    }),
   )
 }
