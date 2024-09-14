@@ -173,11 +173,22 @@ View the content of a text file
 
 Move or rename a file or a folder. You cannot move between different zones (e.g. between APP_LIBRARIES and Docws)
 
+Remote fil will be renamed
+
 `idrive mv /MyNotes/my1/note1.md /MyNotes/my1/note2.md`
 
-Remote file will be renamed
+Remote file will be moved and renamed
 
 `idrive mv /MyNotes/my1/note1.md /MyNotes/old/note2.md`
+
+Remote file will be moved
+
+`idrive mv /MyNotes/my1/note1.md /MyNotes/note1.md`
+
+<!-- 
+### cp <srcpath> <dstpath> 
+TODO not implemented
+-->
 
 ### mkdir <path>
 

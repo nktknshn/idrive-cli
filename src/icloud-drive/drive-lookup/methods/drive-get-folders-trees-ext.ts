@@ -6,7 +6,7 @@ import { NEA } from "../../../util/types";
 import { DriveLookup, DriveTree, Types } from "../..";
 import { DriveFolderTree } from "../../util/drive-folder-tree";
 
-/** Returns a list of folder trees for the given paths. Throws an error if any of `paths` does not exist or is not a folder. */
+/** Returns a list of folder trees for the given paths. Throws an error if any of `paths` do not exist or are not a folder. */
 export const getFoldersTreesByPathsDocwsroot = (
   paths: NEA<NormalizedPath>,
   depth = Infinity,
