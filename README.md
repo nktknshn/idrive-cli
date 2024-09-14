@@ -129,9 +129,9 @@ Search in the cache and fall back to the API if the cache is not enough
 
 `idrive ls -R '/**/*.md' -a fallback`
 
-list trash
+Same for trash
 
-`idrive ls --trash`
+`idrive ls --trash ...`
 
 ### rm [paths..]
 
@@ -159,6 +159,9 @@ Do not ask for the confirmation
 
 `idrive rm --force /Camera/IMG_0198.jpg`
 
+Remove from trash (forever)
+
+`idrive rm --trash /file.txt`
 
 ### cat <path>
 

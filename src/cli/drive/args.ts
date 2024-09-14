@@ -3,6 +3,8 @@ import * as defaults from "../../defaults";
 
 // const LS_MAX_VERBOSITY = 2;
 
+const SortChoices = ["name", "size", "date"] as const;
+
 const init = w.command(
   "init",
   "Init new session",
@@ -35,14 +37,14 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
       // TODO date
       sort: {
         alias: ["S"],
-        choices: ["name", "size"],
+        choices: SortChoices,
         default: "name",
         type: "string",
         description: "Sort by",
       },
     })
-    .coerce("sort", (a): "name" | "size" => {
-      if (["name", "size"].includes(a)) {
+    .coerce("sort", (a): typeof SortChoices[number] => {
+      if (SortChoices.includes(a)) {
         return a;
       }
 

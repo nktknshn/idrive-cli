@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import * as Ord from "fp-ts/lib/Ord";
 
-import { boolean, number, string } from "fp-ts";
+import { boolean, date, number, string } from "fp-ts";
 import * as O from "fp-ts/lib/Option";
 import * as t from "io-ts";
 import { TypeOf } from "io-ts";
@@ -246,3 +246,10 @@ export const ordDriveChildrenItemByName = Ord.contramap((d: DriveChildrenItem) =
 export const ordDriveChildrenItemBySize = Ord.contramap((d: DriveChildrenItem) => isFileItem(d) ? d.size : 0)(
   Ord.reverse(number.Ord),
 );
+
+/** Sort by date modified (files) or date created (folders) */
+export const ordDriveChildrenItemByDate = Ord.contramap((d: DriveChildrenItem) =>
+  d.type === "FILE"
+    ? new Date(d.dateModified)
+    : new Date(d.dateCreated)
+)(date.Ord);
