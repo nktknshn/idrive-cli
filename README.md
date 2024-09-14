@@ -173,7 +173,7 @@ View the content of a text file
 
 Move or rename a file or a folder. You cannot move between different zones (e.g. between APP_LIBRARIES and Docws)
 
-Remote fil will be renamed
+Remote file will be renamed
 
 `idrive mv /MyNotes/my1/note1.md /MyNotes/my1/note2.md`
 
@@ -189,6 +189,12 @@ Remote file will be moved
 ### cp <srcpath> <dstpath> 
 TODO not implemented
 -->
+
+### recover
+
+Recover a file from the trash
+
+`idrive recover '/note1.md'`
 
 ### mkdir <path>
 
@@ -262,16 +268,26 @@ Use `dry` flag to only check what is going to be downloaded
 
 `include` and `exclude` flags can be used to filter files (supports globs)
 
-### recover
-
-Recover a file from the trash
-
-`idrive recover '/note1.md'`
 
 ### autocomplete <path>
 
 Autocomplete path. Used for shell autocompletions.
 
+Select files
+
+`idrive autocomplete --file /`
+
+Select folders
+
+`idrive autocomplete --dir /`
+
+From trash
+
+`idrive autocomplete --trash /`
+
+Use cache (faster but not always up to date)
+
+`idrive autocomplete --cached /`
 
 ### API/cache usage strategy
 
