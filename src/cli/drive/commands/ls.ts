@@ -1,52 +1,52 @@
-import * as A from 'fp-ts/lib/Array'
-import { identity, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as Ord from 'fp-ts/lib/Ord'
-import { not } from 'fp-ts/lib/Refinement'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import * as O from 'fp-ts/Option'
-import { DriveActions, DriveLookup, DriveTree, Types } from '../../../icloud-drive'
-import { ordDriveChildrenItemBySize } from '../../../icloud-drive/drive-types'
-import { guardProp } from '../../../util/guards'
-import { addLeadingSlash } from '../../../util/normalize-path'
-import { Path } from '../../../util/path'
-import { ensureSingleNewline } from '../../../util/string'
-import * as LsPrinting from './ls-printing/printing'
+import * as A from "fp-ts/lib/Array";
+import { identity, pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import * as Ord from "fp-ts/lib/Ord";
+import { not } from "fp-ts/lib/Refinement";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import * as O from "fp-ts/Option";
+import { DriveActions, DriveLookup, DriveTree, Types } from "../../../icloud-drive";
+import { ordDriveChildrenItemBySize } from "../../../icloud-drive/drive-types";
+import { guardProp } from "../../../util/guards";
+import { addLeadingSlash } from "../../../util/normalize-path";
+import { Path } from "../../../util/path";
+import { ensureSingleNewline } from "../../../util/string";
+import * as LsPrinting from "./ls-printing/printing";
 
 type Args = {
-  paths: string[]
-  'full-path': boolean
-  long: number
-  info: boolean
-  'human-readable': boolean
-  trash: boolean
-  tree: boolean
-  recursive: boolean
-  depth: number
-  sort: LsPrinting.Sort | undefined
-}
+  paths: string[];
+  "full-path": boolean;
+  long: number;
+  info: boolean;
+  "human-readable": boolean;
+  trash: boolean;
+  tree: boolean;
+  recursive: boolean;
+  depth: number;
+  sort: LsPrinting.Sort | undefined;
+};
 
-const defaultSort = 'name'
+const defaultSort = "name";
 
 export const ls = (
   args: Args,
 ): DriveLookup.Lookup<string> => {
   if (!A.isNonEmpty(args.paths)) {
-    return DriveLookup.errString('no paths')
+    return DriveLookup.errString("no paths");
   }
 
-  args.paths = pipe(args.paths, A.map(addLeadingSlash))
+  args.paths = pipe(args.paths, A.map(addLeadingSlash));
 
   if (args.recursive && args.tree) {
-    return lsRecursiveTree(args)
+    return lsRecursiveTree(args);
   }
 
   if (args.recursive) {
-    return lsRecursive(args)
+    return lsRecursive(args);
   }
 
-  return lsShallow(args)
-}
+  return lsShallow(args);
+};
 
 // TODO show other dates for files
 // TODO sort
@@ -55,23 +55,23 @@ const lsShallow = (
   args: Args,
 ): DriveLookup.Lookup<string> => {
   if (!A.isNonEmpty(args.paths)) {
-    return DriveLookup.errString('no paths')
+    return DriveLookup.errString("no paths");
   }
 
   const opts = {
     info: args.info,
     long: args.long,
-    fullPath: args['full-path'],
-    humanReadable: args['human-readable'],
+    fullPath: args["full-path"],
+    humanReadable: args["human-readable"],
     sort: args.sort ?? defaultSort,
-  }
+  };
 
   return pipe(
-    DriveActions.listPaths({ paths: args.paths, trash: args.trash }),
+    DriveActions.listShallow({ paths: args.paths, trash: args.trash }),
     SRTE.map(NA.map(a =>
       a.valid
         ? LsPrinting.showValidPath(a)({ ...args, ...opts })
-        : LsPrinting.showInvalidPath(a.validation) + '\n'
+        : LsPrinting.showInvalidPath(a.validation) + "\n"
     )),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(res =>
@@ -81,25 +81,25 @@ const lsShallow = (
         : // just show the first item without the path
           [res[0][0]]
     ),
-    SRTE.map(_ => _.join('\n')),
+    SRTE.map(_ => _.join("\n")),
     SRTE.map(ensureSingleNewline),
-  )
-}
+  );
+};
 
 const lsRecursive = (
   args: Args,
 ): DriveLookup.Lookup<string> => {
   if (!A.isNonEmpty(args.paths)) {
-    return DriveLookup.errString('no paths')
+    return DriveLookup.errString("no paths");
   }
 
   const opts = {
     info: args.info,
     long: args.long,
-    humanReadable: args['human-readable'],
+    humanReadable: args["human-readable"],
     fullPath: true,
     sort: args.sort ?? defaultSort,
-  }
+  };
 
   return pipe(
     DriveActions.listRecursive({
@@ -108,28 +108,28 @@ const lsRecursive = (
     }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([found, path]) => {
-      const result: string[] = []
+      const result: string[] = [];
       // exclude roots from the results
       const items = pipe(
         found,
-        A.filter(guardProp('item', not(Types.isCloudDocsRootDetailsG))),
-        A.filter(guardProp('item', not(Types.isTrashDetailsG))),
-      )
+        A.filter(guardProp("item", not(Types.isCloudDocsRootDetailsG))),
+        A.filter(guardProp("item", not(Types.isTrashDetailsG))),
+      );
 
-      const driveItems = items.map(_ => _.item)
+      const driveItems = items.map(_ => _.item);
 
-      const sw = LsPrinting.sizeWidth(driveItems, opts.humanReadable)
-      const tw = LsPrinting.typeWidth(driveItems)
-      const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0)
+      const sw = LsPrinting.sizeWidth(driveItems, opts.humanReadable);
+      const tw = LsPrinting.typeWidth(driveItems);
+      const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0);
 
       const sortedItems = pipe(
         items,
-        opts.sort === 'size'
+        opts.sort === "size"
           ? A.sortBy([
             Ord.contramap((a: { item: Types.DriveChildrenItem }) => a.item)(ordDriveChildrenItemBySize),
           ])
           : identity,
-      )
+      );
 
       for (const { item, path } of sortedItems) {
         result.push(
@@ -139,22 +139,22 @@ const lsRecursive = (
             { filenameWidth: fw, typeWidth: tw, sizeWidth: sw },
             opts,
           ),
-        )
+        );
       }
 
-      return `${path}:\n` + result.join('\n')
+      return `${path}:\n` + result.join("\n");
     })),
-    SRTE.map(_ => _.join('\n\n')),
+    SRTE.map(_ => _.join("\n\n")),
     SRTE.map(ensureSingleNewline),
-  )
-}
+  );
+};
 
 /** Output as tree */
 const lsRecursiveTree = (
   args: Args,
 ): DriveLookup.Lookup<string> => {
   if (!A.isNonEmpty(args.paths)) {
-    return DriveLookup.errString('no paths')
+    return DriveLookup.errString("no paths");
   }
 
   return pipe(
@@ -163,11 +163,11 @@ const lsRecursiveTree = (
     SRTE.map(NA.map(([tree, path]) =>
       pipe(
         tree,
-        O.fold(() => Path.dirname(path) + '/', DriveTree.showTreeWithItems),
+        O.fold(() => Path.dirname(path) + "/", DriveTree.showTreeWithItems),
         a => `${path}:\n${a}`,
       )
     )),
-    SRTE.map(_ => _.join('\n\n')),
+    SRTE.map(_ => _.join("\n\n")),
     SRTE.map(ensureSingleNewline),
-  )
-}
+  );
+};

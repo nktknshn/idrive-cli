@@ -1,41 +1,52 @@
-import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DriveLookup } from '../../../icloud-drive'
+import * as A from "fp-ts/lib/Array";
+import { pipe } from "fp-ts/lib/function";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import { DriveLookup } from "../../../icloud-drive";
 
-import * as Actions from '../../../icloud-drive/drive-actions'
-import { err } from '../../../util/errors'
-import { includesGlobstar } from '../../../util/glob-matching'
-import { ensureSingleNewline } from '../../../util/string'
+import * as Actions from "../../../icloud-drive/drive-actions";
+import { err } from "../../../util/errors";
+import { includesGlobstar } from "../../../util/glob-matching";
+import { ensureSingleNewline } from "../../../util/string";
 
 export const rm = (
-  { paths, 'skip-trash': skipTrash, force, recursive, dry }: {
-    paths: string[]
-    'skip-trash': boolean
-    recursive: boolean
-    force: boolean
-    dry: boolean
+  { paths, "skip-trash": skipTrash, force, recursive, dry, trash }: {
+    paths: string[];
+    "skip-trash": boolean;
+    recursive: boolean;
+    force: boolean;
+    dry: boolean;
+    trash: boolean;
   },
 ): DriveLookup.Lookup<string, Actions.DepsRm> => {
   if (!A.isNonEmpty(paths)) {
-    return SRTE.left(err('No paths provided'))
+    return SRTE.left(err("No paths provided"));
   }
 
   if (includesGlobstar(paths) && !recursive) {
-    return SRTE.left(err('globstar is not supported for non recursive rm'))
+    return SRTE.left(err("globstar is not supported for non recursive rm"));
   }
 
-  if (dry) {
+  if (dry && trash) {
+    return pipe(
+      Actions.rmCandidatesTrash(paths),
+      SRTE.map(A.filter(_ => _.valid === true)),
+      SRTE.map(A.map(_ => _.path)),
+      SRTE.map(_ => _.join("\n")),
+      SRTE.map(ensureSingleNewline),
+    );
+  }
+
+  if (dry && !trash) {
     return pipe(
       Actions.rmCandidates(paths, { recursive }),
       SRTE.map(A.map(_ => _.path)),
-      SRTE.map(_ => _.join('\n')),
-      SRTE.map(ensureSingleNewline)
-    )
+      SRTE.map(_ => _.join("\n")),
+      SRTE.map(ensureSingleNewline),
+    );
   }
 
   return pipe(
     Actions.rm(paths, { skipTrash, force, recursive }),
-    SRTE.map(({items}) => `Removed ${items.length} items\n`),
-  )
-}
+    SRTE.map(({ items }) => `Removed ${items.length} items\n`),
+  );
+};

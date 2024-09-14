@@ -1,6 +1,8 @@
 import * as w from "yargs-command-wrapper";
 import * as defaults from "../../defaults";
 
+const LS_MAX_VERBOSITY = 2;
+
 const init = w.command(
   "init",
   "Init new session",
@@ -48,6 +50,7 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
       throw new Error(`Invalid sort option: ${a}`);
     })
     .count("long")
+    // .coerce("long", (a) => Math.min(a, LS_MAX_VERBOSITY))
     .check((args) => {
       if (args.depth < 0) {
         throw new Error("Depth must be positive");
@@ -56,10 +59,6 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
       if (args.tree && !args.recursive) {
         throw new Error("Tree view requires recursive listing");
       }
-
-      // if (args.depth > 0 && args.depth < Infinity && !args.recursive) {
-      //   throw new Error('Depth requires recursive listing')
-      // }
 
       return true;
     }));
@@ -102,6 +101,7 @@ const rm = w.command(
         "skip-trash": { default: false, type: "boolean", description: "Skip trash" },
         force: { default: false, type: "boolean" },
         recursive: { alias: ["R"], default: false, type: "boolean" },
+        trash: { default: false, type: "boolean", description: "Remove from trash" },
       }),
 );
 

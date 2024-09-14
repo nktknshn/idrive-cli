@@ -16,7 +16,7 @@ import { runLogging, wrapError } from "../../../util/srte-utils";
 import { SRA } from "../../../util/types";
 import { DriveLookup, Types } from "../..";
 import { DepApiMethod, DriveApiMethods } from "../../drive-api";
-import { findInParentFilename, getDrivewsid } from "../../util/drive-helpers";
+import { findInParentFilename, makeDrivewsid } from "../../util/drive-helpers";
 import * as GetByPath from "../../util/get-by-path-types";
 import { AskingFunc } from "../upload";
 
@@ -82,9 +82,8 @@ export const uploadSingleFile = (
     loggerIO.debug(`uploadSingleFile from ${srcpath} to ${dstpath}`),
     SRTE.fromIO,
     SRTE.bind("src", () => DriveLookup.of(srcpath)),
-    SRTE.bind("deps", () => SRTE.ask<DriveLookup.State, Deps>()),
+    SRTE.bind("overwrite", () => SRTE.asks((d: Deps) => overwrite ? true : d.askConfirmation)),
     SRTE.bind("skipTrash", () => SRTE.of(skipTrash)),
-    SRTE.bind("overwrite", ({ deps }) => SRTE.of(overwrite ? true : deps.askConfirmation)),
     SrteUtils.chainReaderTaskEitherFirstW(({ src }) =>
       assertFileSize({
         minimumSize: 1,
@@ -117,7 +116,7 @@ const handleSingleFileUpload = (
         overwrite,
         skipTrash,
       });
-    } // if it's a file and the overwrite flag set
+    } // if it's a file
     else {
       return uploadFileToFolder({
         src,
@@ -126,10 +125,10 @@ const handleSingleFileUpload = (
         skipTrash,
         fname: Types.fileName(dstitem),
       });
-    } // otherwise we cancel uploading
+    }
   }
 
-  // if the path is valid only in its parent folder
+  // if the path is a folder with a single missing item
   if (dst.rest.length == 1) {
     // upload and rename
     const dstitem = NA.last(dst.details);
@@ -148,7 +147,7 @@ const handleSingleFileUpload = (
     }
   }
 
-  return DriveLookup.errString(`invalid destination path: ${GetByPath.showGetByPathResult(dst)}`);
+  return DriveLookup.errString(`Invalid destination path: ${GetByPath.showGetByPathResult(dst)}`);
 };
 
 const uploadFileToFolder = (
@@ -218,11 +217,14 @@ const uploadOverwrighting = (
     SRTE.bindTo("uploadResult"),
     SRTE.bindW("removeResult", () =>
       pipe(
-        DriveApiMethods.moveItemsToTrash<DriveLookup.State>({ items: [dstitem], trash: !skipTrash }),
+        DriveApiMethods.moveItemsToTrash<DriveLookup.State>({
+          items: [dstitem],
+          trash: !skipTrash,
+        }),
         runLogging(loggerIO.debug(`moving previous file to trash`)),
       )),
     SRTE.chainW(({ uploadResult }) => {
-      const drivewsid = getDrivewsid(uploadResult);
+      const drivewsid = makeDrivewsid(uploadResult);
       return pipe(
         DriveApiMethods.renameItems<DriveLookup.State>({
           items: [{
@@ -232,11 +234,10 @@ const uploadOverwrighting = (
             extension: dstitem.extension,
           }],
         }),
-        runLogging(loggerIO.debug(`renaming new file`)),
+        runLogging(loggerIO.debug(`Renaming new file`)),
         SRTE.map(constVoid),
       );
     }),
     wrapError(`upload ${src}`),
-    // SRTE.mapLeft(e => err(`upload ${src} error: ${e}`)),
   );
 };

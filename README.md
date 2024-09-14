@@ -81,9 +81,11 @@ Multiple paths
 
 `idrive ls /MyNotes/ '/Camera/*.jpg' /Pages/Стильный\ отчет.pages`
 
-More verbose output
+More verbose output (adds size, date, item type)
 
 `idrive ls -l '/MyNotes/my1/'`
+
+More verbose output (adds drivewsid, etag)
 
 `idrive ls -ll '/MyNotes/my1/'`
 

@@ -1,41 +1,41 @@
-import { pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import micromatch from 'micromatch'
+import { pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import micromatch from "micromatch";
 
-import { err } from '../../../util/errors'
-import { normalizePath } from '../../../util/normalize-path'
-import { NEA } from '../../../util/types'
-import { DriveLookup, Types } from '../..'
-import { findInParentGlob } from '../../util/drive-helpers'
-import * as GetByPath from '../../util/get-by-path-types'
-import { includesGlobstar } from '../../../util/glob-matching'
+import { err } from "../../../util/errors";
+import { includesGlobstar } from "../../../util/glob-matching";
+import { normalizePath } from "../../../util/normalize-path";
+import { NEA } from "../../../util/types";
+import { DriveLookup, Types } from "../..";
+import { findInParentGlob } from "../../util/drive-helpers";
+import * as GetByPath from "../../util/get-by-path-types";
 
-export type ListPathResult = ListPathFolder | ListPathFile | ListPathInvalid
+export type ListPathResult = ListPathsFolder | ListPathsFile | ListPathInvalid;
 
-export type ListPathFolder = {
-  isFile: false
-  valid: true
-  path: string
-  parentItem: Types.Root | Types.DetailsFolder | Types.DetailsAppLibrary
+export type ListPathsFolder = {
+  isFile: false;
+  valid: true;
+  path: string;
+  parentItem: Types.Root | Types.DetailsFolder | Types.DetailsAppLibrary;
   /** Filtered children */
-  items: (Types.DriveChildrenItem | Types.DriveChildrenTrashItem)[]
-  validation: GetByPath.PathValidFolder<Types.Root>
-}
+  items: (Types.DriveChildrenItem | Types.DriveChildrenTrashItem)[];
+  validation: GetByPath.PathValidFolder<Types.Root>;
+};
 
-export type ListPathFile = {
-  isFile: true
-  valid: true
-  path: string
-  item: Types.DriveChildrenItemFile
-  validation: GetByPath.PathValidFile<Types.Root>
-}
+export type ListPathsFile = {
+  isFile: true;
+  valid: true;
+  path: string;
+  item: Types.DriveChildrenItemFile;
+  validation: GetByPath.PathValidFile<Types.Root>;
+};
 
 export type ListPathInvalid = {
-  valid: false
-  validation: GetByPath.PathInvalid<Types.Root>
-  path: string
-}
+  valid: false;
+  validation: GetByPath.PathInvalid<Types.Root>;
+  path: string;
+};
 
 const result = (
   path: string,
@@ -43,14 +43,12 @@ const result = (
   res: GetByPath.Result<Types.Root>,
 ): ListPathResult => {
   if (GetByPath.isInvalidPath(res)) {
-    return { valid: false, path, validation: res }
-  }
-  else {
+    return { valid: false, path, validation: res };
+  } else {
     if (GetByPath.isValidFile(res)) {
-      return { valid: true, path, item: res.file, validation: res, isFile: true }
-    }
-    else {
-      const folder = GetByPath.pathTarget(res)
+      return { valid: true, path, item: res.file, validation: res, isFile: true };
+    } else {
+      const folder = GetByPath.pathTarget(res);
       return {
         valid: true,
         path,
@@ -58,19 +56,20 @@ const result = (
         items: findInParentGlob(folder, scan.glob),
         validation: res,
         isFile: false,
-      }
+      };
     }
   }
-}
+};
 
-export const listPaths = (
+/** Shallow listing of paths */
+export const listShallow = (
   { paths, trash }: { paths: NA.NonEmptyArray<string>; trash: boolean },
 ): DriveLookup.Lookup<NEA<ListPathResult>, DriveLookup.Deps> => {
-  const scanned = pipe(paths, NA.map(micromatch.scan))
-  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath))
+  const scanned = pipe(paths, NA.map(micromatch.scan));
+  const basepaths = pipe(scanned, NA.map(_ => _.base), NA.map(normalizePath));
 
-  if(includesGlobstar(paths)) {
-    return SRTE.left(err('globstar is not supported for non recursive ls'))
+  if (includesGlobstar(paths)) {
+    return SRTE.left(err("globstar is not supported for non recursive ls"));
   }
 
   return pipe(
@@ -81,5 +80,5 @@ export const listPaths = (
     SRTE.map(
       NA.map(([[res, scan], path]) => result(path, scan, res)),
     ),
-  )
-}
+  );
+};
