@@ -18,18 +18,24 @@ export interface DetailsTrashRoot extends TypeOf<typeof types.detailsTrash> {}
 
 export interface DetailsDocwsRoot extends TypeOf<typeof types.detailsRoot> {}
 
-/**  Extends DriveChildrenItemFolder with `{ items: DriveChildrenItem[] }` */
+/**  Extends DetailsFolder with `{ items: DriveChildrenItem[] }` */
 export interface DetailsFolder extends TypeOf<typeof types.detailsFolder> {}
 
-/**  Extends DriveChildrenItemAppLibrary with `{ items: DriveChildrenItem[] }` */
+/**  Extends DetailsAppLibrary with `{ items: DriveChildrenItem[] }` */
 export interface DetailsAppLibrary extends TypeOf<typeof types.detailsAppLibrary> {}
 
+/** Extends DriveChildrenItemFolder with restorePath */
 export interface TrashItemFolder extends TypeOf<typeof types.trashItemFolder> {}
+
+/** Extends `DriveChildrenItemFile` with restorePath */
 export interface TrashItemFile extends TypeOf<typeof types.trashItemFile> {}
+
+/** Extends `DriveChildrenItemAppLibrary` with restorePath */
 export interface TrashItemAppLibrary extends TypeOf<typeof types.trashItemAppLibrary> {}
 
 export type DriveChildrenTrashItem = TrashItemFolder | TrashItemFile | TrashItemAppLibrary;
 
+/** Docws or Trash root */
 export type Root =
   | DetailsDocwsRoot
   | DetailsTrashRoot;
@@ -221,6 +227,7 @@ export const fileName = (item: HasName | DetailsTrashRoot): string => {
     : `${item.name}`;
 };
 
+/** Add slash to the file name if it is a folder */
 export const fileNameAddSlash = (item: HasName | DetailsTrashRoot): string => {
   const fname = fileName(item);
 

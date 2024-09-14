@@ -1,19 +1,19 @@
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { fst } from 'fp-ts/lib/ReadonlyTuple'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import { DepFs } from '../../../deps-types'
-import { printerIO } from '../../../logging/printerIO'
-import { guardFst } from '../../../util/guards'
-import { normalizePath } from '../../../util/path'
-import { DriveLookup, DriveTree, Types } from '../..'
-import { of } from '../../drive-lookup'
-import { applySoultions, ConflictsSolver, Solution } from './conflict-solution'
-import { Conflict, lookForLocalConflicts } from './download-conflict'
-import { createEmpties, createLocalDirStruct } from './download-local'
-import { DownloadFileResult, DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from './types'
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import { fst } from "fp-ts/lib/ReadonlyTuple";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import { DepFs } from "../../../deps-types";
+import { printerIO } from "../../../logging/printerIO";
+import { guardFst } from "../../../util/guards";
+import { normalizePath } from "../../../util/path";
+import { DriveLookup, DriveTree, Types } from "../..";
+import { of } from "../../drive-lookup";
+import { applySoultions, ConflictsSolver, Solution } from "./conflict-solution";
+import { Conflict, lookForLocalConflicts } from "./download-conflict";
+import { createEmpties, createLocalDirStruct } from "./download-local";
+import { DownloadFileResult, DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from "./types";
 
 /*
 Download a file or a folder content.
@@ -40,51 +40,51 @@ Use `dry` flag to only check what is going to be downloaded
 export type Deps =
   & DriveLookup.Deps
   & DepFs<
-    | 'fstat'
-    | 'mkdir'
-    | 'writeFile'
-  >
+    | "fstat"
+    | "mkdir"
+    | "writeFile"
+  >;
 
 type Args = {
-  path: string
-  dry: boolean
+  path: string;
+  dry: boolean;
   // include: string[]
   // exclude: string[]
-  depth: number
-}
+  depth: number;
+};
 
 type DownloadFolderOpts<SolverDeps, DownloadDeps> = Args & {
-  toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped
-  conflictsSolver: ConflictsSolver<SolverDeps>
-  downloadFiles: DownloadICloudFilesFunc<DownloadDeps>
+  toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped;
+  conflictsSolver: ConflictsSolver<SolverDeps>;
+  downloadFiles: DownloadICloudFilesFunc<DownloadDeps>;
   treefilter: <T extends Types.Root>(flatTree: DriveTree.FlattenWithItems<T>) => DownloadTask & {
-    excluded: DownloadItem[]
-  }
-}
+    excluded: DownloadItem[];
+  };
+};
 
 type DownloadFolderInfo = {
   folderTree: DriveTree.FlattenWithItems<
     Types.DetailsDocwsRoot | Types.NonRootDetails
-  >
+  >;
   downloadTask: DownloadTask & {
-    excluded: DownloadItem[]
-  }
-  mappedTask: DownloadTaskMapped
-  conflicts: Conflict[]
-  solutions: Solution[]
-  result: DownloadTaskMapped
-  args: Args
-}
+    excluded: DownloadItem[];
+  };
+  mappedTask: DownloadTaskMapped;
+  conflicts: Conflict[];
+  solutions: Solution[];
+  result: DownloadTaskMapped;
+  args: Args;
+};
 
 const prepareLocalFs = (task: DownloadTaskMapped) =>
   pipe(
-    SRTE.fromReaderTaskEither<DepFs<'mkdir' | 'writeFile'>, Error, void, DriveLookup.State>(
+    SRTE.fromReaderTaskEither<DepFs<"mkdir" | "writeFile">, Error, void, DriveLookup.State>(
       pipe(
         createLocalDirStruct(task.localdirstruct),
         RTE.chainW(() => createEmpties(task)),
       ),
     ),
-  )
+  );
 
 export const executeDownloadTask = <TDownloadDeps>(
   { downloader }: { downloader: DownloadICloudFilesFunc<TDownloadDeps> },
@@ -93,7 +93,7 @@ export const executeDownloadTask = <TDownloadDeps>(
     pipe(
       prepareLocalFs(task),
       SRTE.chainW(() => downloader(task)),
-    )
+    );
 
 export const downloadFolder = <TSolverDeps, TDownloadDeps>(
   {
@@ -107,11 +107,11 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
     downloadFiles,
   }: DownloadFolderOpts<TSolverDeps, TDownloadDeps>,
 ): DriveLookup.Lookup<string, Deps & TSolverDeps & TDownloadDeps> => {
-  const verbose = dry
+  const verbose = dry;
 
   printerIO.print(
     { path, dry },
-  )()
+  )();
 
   // const filter = makeDownloadTaskFromTree({
   //   filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
@@ -119,33 +119,33 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
 
   const downloadFolderTask = pipe(
     of({ args: { path, dry, depth } }),
-    SRTE.bind('folderTree', () =>
-      DriveLookup.getFolderTreeByPathFlattenWPDocwsroot(
+    SRTE.bind("folderTree", () =>
+      DriveLookup.getFolderTreeByPathFlattenDocwsroot(
         normalizePath(path),
         depth,
       )),
-    SRTE.bindW('downloadTask', ({ folderTree }) => DriveLookup.of(treefilter(folderTree))),
-    SRTE.bindW('mappedTask', ({ downloadTask }) =>
+    SRTE.bindW("downloadTask", ({ folderTree }) => DriveLookup.of(treefilter(folderTree))),
+    SRTE.bindW("mappedTask", ({ downloadTask }) =>
       pipe(
         DriveLookup.of(toLocalFileSystemMapper(downloadTask)),
       )),
-    SRTE.bindW('conflicts', ({ mappedTask }) =>
+    SRTE.bindW("conflicts", ({ mappedTask }) =>
       SRTE.fromReaderTaskEither(pipe(
         mappedTask,
         RTE.fromReaderTaskK(lookForLocalConflicts),
       ))),
-    SRTE.bindW('solutions', ({ conflicts }) =>
+    SRTE.bindW("solutions", ({ conflicts }) =>
       SRTE.fromReaderTaskEither(pipe(
         conflicts,
         A.matchW(() => RTE.of([]), conflictsSolver),
       ))),
-    SRTE.bindW('result', ({ mappedTask, solutions }) =>
+    SRTE.bindW("result", ({ mappedTask, solutions }) =>
       pipe(
         DriveLookup.of(
           applySoultions(mappedTask)(solutions),
         ),
       )),
-  )
+  );
 
   return pipe(
     downloadFolderTask,
@@ -161,8 +161,8 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
       })),
     SRTE.map(resultsJson),
     SRTE.map(JSON.stringify),
-  )
-}
+  );
+};
 
 const showVerbose = ({ verbose = false }) =>
   ({
@@ -172,8 +172,8 @@ const showVerbose = ({ verbose = false }) =>
     return showTask({ verbose })({
       ...result,
       initialTask: mappedTask,
-    })
-  }
+    });
+  };
 
 const showTask = ({ verbose = false }) =>
   (task: DownloadTaskMapped & { initialTask: DownloadTaskMapped }) =>
@@ -182,12 +182,12 @@ const showTask = ({ verbose = false }) =>
         ? `will be downloaded: \n${
           [...task.downloadable, ...task.empties].map(({ item: info, localpath }) => `${info.path} into ${localpath}`)
             .join(
-              '\n',
+              "\n",
             )
         }\n\n`
-          + `local dirs: ${task.localdirstruct.join('\n')}`
+          + `local dirs: ${task.localdirstruct.join("\n")}`
         : `${task.downloadable.length + task.empties.length} files will be downloaded`
-      : `nothing to download. ${task.initialTask.downloadable.length} files were skipped by conflict solver`
+      : `nothing to download. ${task.initialTask.downloadable.length} files were skipped by conflict solver`;
 
 const resultsJson = (results: DownloadFileResult[]) => {
   return {
@@ -198,5 +198,5 @@ const resultsJson = (results: DownloadFileResult[]) => {
       A.filter(guardFst(E.isLeft)),
       A.map(([err, [_url, path]]) => `${path}: ${err.left}`),
     ),
-  }
-}
+  };
+};

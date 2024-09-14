@@ -25,7 +25,7 @@ export const rmCandidates = (
   { recursive = false }: { recursive: boolean },
 ) =>
   pipe(
-    listRecursive({ globs, depth: recursive ? Infinity : 1 }),
+    listRecursive({ globs, depth: recursive ? Infinity : 1, trash: false }),
     SRTE.map(A.flatten),
     SRTE.map(A.filter(guardProp("item", Types.isNotRootDetails))),
   );

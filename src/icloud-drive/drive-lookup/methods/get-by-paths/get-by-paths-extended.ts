@@ -1,19 +1,19 @@
-import * as A from 'fp-ts/lib/Array'
-import { pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
+import * as A from "fp-ts/lib/Array";
+import { pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 
-import { logger } from '../../../../logging/logging'
-import { err } from '../../../../util/errors'
-import { NormalizedPath } from '../../../../util/normalize-path'
-import { NEA } from '../../../../util/types'
-import { sequenceNArrayE } from '../../../../util/util'
-import * as T from '../../../drive-types'
-import * as V from '../../../util/get-by-path-types'
-import { filterOrElse, Lookup, map } from '../..'
-import { ItemIsNotFolderError } from '../../errors'
-import { chainCachedDocwsRoot, chainCachedTrash, getCachedDocwsRoot } from '../get-roots'
-import { getByPaths } from './get-by-paths'
+import { logger } from "../../../../logging/logging";
+import { err } from "../../../../util/errors";
+import { NormalizedPath } from "../../../../util/normalize-path";
+import { NEA } from "../../../../util/types";
+import { sequenceNArrayE } from "../../../../util/util";
+import * as T from "../../../drive-types";
+import * as V from "../../../util/get-by-path-types";
+import { filterOrElse, Lookup, map } from "../..";
+import { ItemIsNotFolderError } from "../../errors";
+import { chainCachedDocwsRoot, chainCachedTrash, getCachedDocwsRoot } from "../get-roots";
+import { getByPaths } from "./get-by-paths";
 
 /** Fails if the path is not valid */
 export const getByPathStrict = <R extends T.Root>(
@@ -23,8 +23,8 @@ export const getByPathStrict = <R extends T.Root>(
   return pipe(
     getByPathsStrict(root, [path]),
     map(NA.head),
-  )
-}
+  );
+};
 
 /** Fails if some of the paths are not valid */
 export const getByPathsStrict = <R extends T.Root>(
@@ -37,8 +37,8 @@ export const getByPathsStrict = <R extends T.Root>(
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
     SRTE.chainEitherK(sequenceNArrayE),
-  )
-}
+  );
+};
 
 export const getByPathStrictDocwsroot = (
   path: NormalizedPath,
@@ -46,8 +46,8 @@ export const getByPathStrictDocwsroot = (
   return pipe(
     getByPathsStrictDocwsroot([path]),
     map(NA.head),
-  )
-}
+  );
+};
 
 /** Fails if some of the paths are not valid */
 export const getByPathsStrictDocwsroot = (
@@ -59,8 +59,8 @@ export const getByPathsStrictDocwsroot = (
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
     SRTE.chainEitherK(sequenceNArrayE),
-  )
-}
+  );
+};
 
 export const getByPathsStrictTrash = (
   path: NEA<NormalizedPath>,
@@ -71,8 +71,8 @@ export const getByPathsStrictTrash = (
       V.asEither((res) => err(V.showGetByPathResult(res))),
     )),
     SRTE.chainEitherK(sequenceNArrayE),
-  )
-}
+  );
+};
 
 export const getByPathStrictTrash = (
   path: NormalizedPath,
@@ -80,8 +80,8 @@ export const getByPathStrictTrash = (
   return pipe(
     getByPathsStrictTrash([path]),
     map(NA.head),
-  )
-}
+  );
+};
 
 export const getByPathFolderStrict = <R extends T.Root>(
   root: R,
@@ -94,7 +94,7 @@ export const getByPathFolderStrict = <R extends T.Root>(
       T.isDetailsG,
       () => ItemIsNotFolderError.create(`${path} is not a folder.`),
     ),
-  )
+  );
 
 export const getByPathFolderStrictDocwsroot = (
   path: NormalizedPath,
@@ -102,7 +102,7 @@ export const getByPathFolderStrictDocwsroot = (
   pipe(
     getCachedDocwsRoot(),
     SRTE.chainW((root) => getByPathFolderStrict(root, path)),
-  )
+  );
 
 /** Fails if some of the paths are not valid or not folders */
 export const getByPathsFoldersStrict = <R extends T.Root>(
@@ -115,7 +115,7 @@ export const getByPathsFoldersStrict = <R extends T.Root>(
       (items): items is NEA<R | T.NonRootDetails> => A.every(T.isDetailsG)(items),
       () => ItemIsNotFolderError.create(`some of the paths are not folders`),
     ),
-  )
+  );
 
 export const getByPathsFoldersStrictDocwsroot = (
   paths: NEA<NormalizedPath>,
@@ -124,7 +124,16 @@ export const getByPathsFoldersStrictDocwsroot = (
     chainCachedDocwsRoot(
       root => getByPathsFoldersStrict(root, paths),
     ),
-  )
+  );
+
+export const getByPathsFoldersStrictTrash = (
+  paths: NEA<NormalizedPath>,
+): Lookup<NEA<T.DetailsTrashRoot | T.NonRootDetails>> =>
+  pipe(
+    chainCachedTrash(
+      root => getByPathsFoldersStrict(root, paths),
+    ),
+  );
 
 export const getByPath = <R extends T.Root>(
   root: R,
@@ -133,17 +142,17 @@ export const getByPath = <R extends T.Root>(
   return pipe(
     getByPaths(root, [path]),
     map(NA.head),
-  )
-}
+  );
+};
 
 export const getByPathsDocwsroot = (
   paths: NEA<NormalizedPath>,
 ): Lookup<NEA<V.Result<T.DetailsDocwsRoot>>> => {
-  logger.debug('getByPathsDocwsroot')
+  logger.debug("getByPathsDocwsroot");
   return pipe(
     chainCachedDocwsRoot(root => getByPaths(root, paths)),
-  )
-}
+  );
+};
 
 export const getByPathDocwsroot = (
   path: NormalizedPath,
@@ -151,5 +160,5 @@ export const getByPathDocwsroot = (
   return pipe(
     getByPathsDocwsroot([path]),
     map(NA.head),
-  )
-}
+  );
+};

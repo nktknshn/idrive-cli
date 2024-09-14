@@ -1,7 +1,7 @@
 import * as w from "yargs-command-wrapper";
 import * as defaults from "../../defaults";
 
-const LS_MAX_VERBOSITY = 2;
+// const LS_MAX_VERBOSITY = 2;
 
 const init = w.command(
   "init",
@@ -19,7 +19,6 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
   _
     .positional("paths", { type: "string", array: true, default: ["/"] })
     .options({
-      // cached: { default: false, type: 'boolean', description: 'Only list cached items' },
       "full-path": { alias: ["f"], default: false, type: "boolean", description: "Print full paths" },
       long: { alias: ["l"], default: false, description: "Use a long listing format" },
       recursive: { alias: ["R"], default: false, type: "boolean", description: "Recursive listing" },
@@ -50,6 +49,7 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
       throw new Error(`Invalid sort option: ${a}`);
     })
     .count("long")
+    // TODO. it doesn't type check currently
     // .coerce("long", (a) => Math.min(a, LS_MAX_VERBOSITY))
     .check((args) => {
       if (args.depth < 0) {

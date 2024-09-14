@@ -1,25 +1,25 @@
-import * as A from 'fp-ts/lib/Array'
-import * as E from 'fp-ts/lib/Either'
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as NA from 'fp-ts/lib/NonEmptyArray'
-import { snd } from 'fp-ts/lib/ReadonlyTuple'
-import * as SRTE from 'fp-ts/lib/StateReaderTaskEither'
-import micromatch from 'micromatch'
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import { snd } from "fp-ts/lib/ReadonlyTuple";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import micromatch from "micromatch";
 
-import { loggerIO } from '../../../logging'
-import { SrteUtils } from '../../../util'
-import { isGlobstar, isMatching } from '../../../util/glob-matching'
-import { guardSnd } from '../../../util/guards'
-import { normalizePath, Path } from '../../../util/path'
-import { NEA } from '../../../util/types'
-import { DriveLookup, DriveTree, Types } from '../..'
-import * as DTR from '../../util/drive-folder-tree'
-import { modifySubset } from '../../util/drive-modify-subset'
-import { getFoldersTrees } from './drive-get-folders-trees'
+import { loggerIO } from "../../../logging";
+import { SrteUtils } from "../../../util";
+import { isGlobstar, isMatching } from "../../../util/glob-matching";
+import { guardSnd } from "../../../util/guards";
+import { NormalizedPath, normalizePath, Path } from "../../../util/path";
+import { NEA } from "../../../util/types";
+import { DriveLookup, DriveTree, Types } from "../..";
+import * as DTR from "../../util/drive-folder-tree";
+import { modifySubset } from "../../util/drive-modify-subset";
+import { getFoldersTrees } from "./drive-get-folders-trees";
 
 export type SearchGlobFoundItem = {
   /** Matching path */
-  path: string
+  path: string;
   /** Item data */
   item:
     // a root
@@ -33,14 +33,15 @@ export type SearchGlobFoundItem = {
     | Types.DriveChildrenItemFolder
     | Types.DriveChildrenItemAppLibrary
     // a file
-    | Types.DriveChildrenItemFile
-}
+    | Types.DriveChildrenItemFile;
+};
 
 export type SearchGlobsParams = {
-  options?: micromatch.Options
+  options?: micromatch.Options;
   /** If true, automatically go deeper into folders */
-  goDeeper?: boolean
-}
+  goDeeper?: boolean;
+  trash?: boolean;
+};
 
 /** Recursively searches for files and folders matching the glob patterns.
  * Will throw an error on invalid paths. `micromatch` is used for matching. */
@@ -52,26 +53,27 @@ export const searchGlobs = (
   {
     options,
     goDeeper = false,
+    trash = false,
   }: SearchGlobsParams,
 ): DriveLookup.Lookup<
   NA.NonEmptyArray<SearchGlobFoundItem[]>
 > => {
-  const scanned = pipe(globs, NA.map(micromatch.scan))
+  const scanned = pipe(globs, NA.map(micromatch.scan));
 
   // base folder for each glob
   const globsBases = pipe(
     scanned,
     // for globs starting with ** prepend a slash
-    NA.map(_ => _.base === '' ? '/' : _.base),
+    NA.map(_ => _.base === "" ? "/" : _.base),
     NA.map(normalizePath),
-  )
+  );
 
   const handleBases = (
     fileOrTree: E.Either<
       // it's actually Types.DriveChildrenItemFile but type inference didn't work
-      Types.DetailsOrFile<Types.DetailsDocwsRoot>,
+      Types.DetailsOrFile<Types.Root>,
       // tree of globs base paths
-      DriveTree.DriveFolderTree<Types.DetailsDocwsRoot>
+      DriveTree.DriveFolderTree<Types.Root>
     >,
     // input glob
     glob: string,
@@ -92,7 +94,7 @@ export const searchGlobs = (
               [],
         // handle trees
         flow(
-          DriveTree.flattenTreeWithItemsDocwsroot(Path.dirname(basepath)),
+          DriveTree.flattenTreeWithItems(Path.dirname(basepath)),
           A.filter(
             ({ path }) =>
               scan.isGlob
@@ -100,16 +102,21 @@ export const searchGlobs = (
                 : goDeeper
                 // if this is a clean folder path and `goDeeper` is true, append ** to the glob
                 // to match all the nested items
-                ? isMatching(path, Path.join(glob, '**'), options)
+                ? isMatching(path, Path.join(glob, "**"), options)
                 : isMatching(path, glob, options),
           ),
         ),
       ),
-    )
+    );
+
+  const getPaths = (paths: NEA<NormalizedPath>): DriveLookup.Lookup<NEA<Types.DetailsOrFile<Types.Root>>> =>
+    trash
+      ? DriveLookup.getByPathsStrictTrash(paths)
+      : DriveLookup.getByPathsStrictDocwsroot(paths);
 
   return pipe(
     // look for the paths leading the glob patterns and get the details
-    DriveLookup.getByPathsStrictDocwsroot(globsBases),
+    getPaths(globsBases),
     SRTE.chain((globsBases) =>
       // separate input paths into folders and files
       modifySubset(
@@ -144,5 +151,5 @@ export const searchGlobs = (
       ),
     ),
     SrteUtils.runLogging(loggerIO.debug(`searchGlobs(${globs})`)),
-  )
-}
+  );
+};

@@ -105,6 +105,7 @@ const lsRecursive = (
     DriveActions.listRecursive({
       globs: args.paths,
       depth: args.depth,
+      trash: args.trash,
     }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([found, path]) => {
@@ -158,7 +159,11 @@ const lsRecursiveTree = (
   }
 
   return pipe(
-    DriveActions.listRecursiveTree({ globs: args.paths, depth: args.depth }),
+    DriveActions.listRecursiveTree({
+      globs: args.paths,
+      depth: args.depth,
+      trash: args.trash,
+    }),
     SRTE.map(NA.zip(args.paths)),
     SRTE.map(NA.map(([tree, path]) =>
       pipe(
