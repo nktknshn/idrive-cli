@@ -1,46 +1,43 @@
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import { AuthenticatedState } from '../../../icloud-core/icloud-request'
-import { Types } from '../..'
+// import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import { AuthenticatedState } from "../../../icloud-core/icloud-request";
+import { Types } from "../..";
 
-import { DownloadFileResult } from '../../../util/http/downloadUrlToFile'
-import { SRA } from '../../../util/types'
+import { DownloadFileResult } from "../../../util/http/downloadUrlToFile";
+import { SRA } from "../../../util/types";
 
+/** Remote file to download */
 export type DownloadItem = {
-  path: string
-  item: Types.DriveChildrenItemFile
-}
+  /** remote path */
+  path: string;
+  item: Types.DriveChildrenItemFile;
+};
 
+/** Represents a single download task */
 export type DownloadTask = {
-  dirstruct: string[]
-  downloadable: DownloadItem[]
-  empties: DownloadItem[]
-}
+  // /** structure of the remote folders containing the files*/
+  // dirstruct: string[];
+  /** items to download */
+  downloadable: DownloadItem[];
+  /** empty undownloadable files to create */
+  empties: DownloadItem[];
+};
 
+/** Remote file with local path specified */
 export type DownloadItemMapped = {
-  item: DownloadItem
-  localpath: string
-}
+  item: DownloadItem;
+  localpath: string;
+};
 
+/** Represents a download task with local paths specified */
 export type DownloadTaskMapped = {
-  localdirstruct: string[]
-  downloadable: DownloadItemMapped[]
-  empties: DownloadItemMapped[]
-}
+  localdirstruct: string[];
+  downloadable: DownloadItemMapped[];
+  empties: DownloadItemMapped[];
+};
 
-export type DownloadTaskMappedRTE<Deps> = {
-  localdirstruct: RTE.ReaderTaskEither<Deps, Error, string>[]
-  downloadable: RTE.ReaderTaskEither<Deps, Error, DownloadItemMapped>[]
-  empties: RTE.ReaderTaskEither<Deps, Error, DownloadItemMapped>[]
-}
-
-export type DownloadTaskMapper<R> = (ds: DownloadTask) => RTE.ReaderTaskEither<
-  R,
-  Error,
-  DownloadTaskMapped & { initialTask: DownloadTaskMapped }
->
-
+/** Function to download a batch of files */
 export type DownloadICloudFilesFunc<R> = <S extends AuthenticatedState>(
   task: { downloadable: DownloadItemMapped[] },
-) => SRA<S, R, DownloadFileResult[]>
+) => SRA<S, R, DownloadFileResult[]>;
 
-export { type DownloadFileResult }
+export { type DownloadFileResult };

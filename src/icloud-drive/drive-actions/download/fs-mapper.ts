@@ -1,12 +1,15 @@
-import { identity } from 'fp-ts/lib/function'
-import { Path, prependPath } from '../../../util/path'
-import { DownloadTask, DownloadTaskMapped } from './types'
+import { identity } from "fp-ts/lib/function";
+import { Path, prependPath } from "../../../util/path";
+import { itemsFolderStructure } from "./download-task";
+import { DownloadTask, DownloadTaskMapped } from "./types";
 
 export const recursiveDirMapper = (
   dstpath: string,
   mapPath: (path: string) => string = identity,
 ) =>
   (ds: DownloadTask): DownloadTaskMapped => {
+    const dirstruct = itemsFolderStructure(ds.downloadable.concat(ds.empties));
+
     return {
       downloadable: ds.downloadable
         .map((item) => ({
@@ -20,12 +23,13 @@ export const recursiveDirMapper = (
         })),
       localdirstruct: [
         dstpath,
-        ...ds.dirstruct
+        ...dirstruct
           .map(p => prependPath(dstpath)(mapPath(p))),
       ],
-    }
-  }
+    };
+  };
 
+/** Download to a folder */
 export const shallowDirMapper = (dstpath: string) =>
   (ds: DownloadTask): DownloadTaskMapped => ({
     downloadable: ds.downloadable.map(item => ({
@@ -37,4 +41,4 @@ export const shallowDirMapper = (dstpath: string) =>
       localpath: Path.join(dstpath, Path.basename(item.path)),
     })),
     localdirstruct: [dstpath],
-  })
+  });

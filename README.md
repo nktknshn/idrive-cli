@@ -77,6 +77,8 @@ List directory contents. Supports globs
 
 `idrive ls '/MyNotes/my1/*.md'`
 
+`idrive ls -l '/Camera/*.{png,PNG,jpg}'`
+
 Multiple paths
 
 `idrive ls /MyNotes/ '/Camera/*.jpg' /Pages/Стильный\ отчет.pages`
@@ -120,6 +122,9 @@ Limit the depth of recursion
 Output result as a tree
 
 `idrive ls -R -D 2 --tree '/MyNotes/my1/'`
+
+`idrive ls -R --tree '/MyNotes/my1/**/*.md'`
+
 
 Search in the cache (will fail if the cache is not enough to fulfill the request)
 
@@ -214,6 +219,34 @@ Opens the file in a different editor (defaults to `vi`)
 
 `idrive edit /Camera/IMG_0205.PNG --editor gimp`
 
+
+### download <remotepath> <localpath>
+
+Download a file or a folder content.
+
+`idrive download '/MyNotes/my1/note1.md' ./outputdir`
+
+A single file
+
+`idrive download '/MyNotes/my1/*.md' ./outputdir`
+
+Recursively download folders shallow content into `./outputdir/my1/`
+
+`idrive download -R '/MyNotes/my1/' ./outputdir`
+
+Recursively download all `md` files into `./outputdir/diary/` 
+
+`idrive download -R '/MyNotes/my1/diary/**/*.md' ./outputdir`
+
+`idrive download -RS '/MyNotes/my1/diary/**/*.md' ./outputdir`
+
+Download download all into `./outputdir/MyNotes/my1/diary/`
+
+Use `dry` flag to only check what is going to be downloaded
+
+`include` and `exclude` flags can be used to filter files (supports globs)
+
+
 ### upload 
 
 Web version of icloud drive doesn't support overwriting files. Old file has to be removed before uploading.
@@ -241,32 +274,6 @@ Upload a selection of files
 `idrive upload -R '~/Documents/**/*.md' /MyNotes/my1/notes/`
 
 Use `dry` flag to only check what is going to be uploaded.
-
-### download <remotepath> <localpath>
-
-Download a file or a folder content.
-
-`idrive download '/MyNotes/my1/note1.md' ./outputdir`
-
-A single file
-
-`idrive download '/MyNotes/my1/*.md' ./outputdir`
-
-Recursively download folders shallow content into `./outputdir/my1/`
-
-`idrive download -R '/MyNotes/my1/' ./outputdir`
-
-Recursively download all `md` files into `./outputdir/diary/` 
-
-`idrive download -R '/MyNotes/my1/diary/**/*.md' ./outputdir`
-
-`idrive download -RS '/MyNotes/my1/diary/**/*.md' ./outputdir`
-
-Download download all into `./outputdir/MyNotes/my1/diary/`
-
-Use `dry` flag to only check what is going to be downloaded
-
-`include` and `exclude` flags can be used to filter files (supports globs)
 
 
 ### autocomplete <path>

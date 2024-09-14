@@ -53,29 +53,30 @@ type Args = {
   depth: number;
 };
 
-type DownloadFolderOpts<SolverDeps, DownloadDeps> = Args & {
+type DownloadFolderOpts<TSolverDeps, TDownloadDeps> = Args & {
+  /** filters the tree picking files to download */
+  treefilter: <T extends Types.Root>(
+    flatTree: DriveTree.FlattenWithItems<T>,
+  ) => DownloadTask & { excluded: DownloadItem[] };
+  /** decides where to download the files to */
   toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped;
-  conflictsSolver: ConflictsSolver<SolverDeps>;
-  downloadFiles: DownloadICloudFilesFunc<DownloadDeps>;
-  treefilter: <T extends Types.Root>(flatTree: DriveTree.FlattenWithItems<T>) => DownloadTask & {
-    excluded: DownloadItem[];
-  };
+  /** provides strategy to resolve conflicts and errors. Like overwrite, skip, etc. */
+  conflictsSolver: ConflictsSolver<TSolverDeps>;
+  /** downloads files from the cloud */
+  downloadFiles: DownloadICloudFilesFunc<TDownloadDeps>;
 };
 
 type DownloadFolderInfo = {
-  folderTree: DriveTree.FlattenWithItems<
-    Types.DetailsDocwsRoot | Types.NonRootDetails
-  >;
-  downloadTask: DownloadTask & {
-    excluded: DownloadItem[];
-  };
+  args: Args;
+  folderTree: DriveTree.FlattenWithItems<Types.DetailsDocwsRoot | Types.NonRootDetails>;
+  downloadTask: DownloadTask & { excluded: DownloadItem[] };
   mappedTask: DownloadTaskMapped;
   conflicts: Conflict[];
   solutions: Solution[];
-  result: DownloadTaskMapped;
-  args: Args;
+  solvedTask: DownloadTaskMapped;
 };
 
+/** Prepares the local filesystem creating directories and empty files */
 const prepareLocalFs = (task: DownloadTaskMapped) =>
   pipe(
     SRTE.fromReaderTaskEither<DepFs<"mkdir" | "writeFile">, Error, void, DriveLookup.State>(
@@ -95,6 +96,7 @@ export const executeDownloadTask = <TDownloadDeps>(
       SRTE.chainW(() => downloader(task)),
     );
 
+/** Download a folder */
 export const downloadFolder = <TSolverDeps, TDownloadDeps>(
   {
     path,
@@ -109,37 +111,31 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
 ): DriveLookup.Lookup<string, Deps & TSolverDeps & TDownloadDeps> => {
   const verbose = dry;
 
-  printerIO.print(
-    { path, dry },
-  )();
-
-  // const filter = makeDownloadTaskFromTree({
-  //   filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
-  // })
-
   const downloadFolderTask = pipe(
     of({ args: { path, dry, depth } }),
-    SRTE.bind("folderTree", () =>
-      DriveLookup.getFolderTreeByPathFlattenDocwsroot(
-        normalizePath(path),
-        depth,
-      )),
+    // get the flattened tree
+    SRTE.bind("folderTree", () => DriveLookup.getFolderTreeByPathFlattenDocwsroot(normalizePath(path), depth)),
+    // filter the tree
     SRTE.bindW("downloadTask", ({ folderTree }) => DriveLookup.of(treefilter(folderTree))),
+    // assign a local path to each file
     SRTE.bindW("mappedTask", ({ downloadTask }) =>
       pipe(
         DriveLookup.of(toLocalFileSystemMapper(downloadTask)),
       )),
+    // check for conflicts
     SRTE.bindW("conflicts", ({ mappedTask }) =>
       SRTE.fromReaderTaskEither(pipe(
         mappedTask,
         RTE.fromReaderTaskK(lookForLocalConflicts),
       ))),
+    // ask for conflict resolution
     SRTE.bindW("solutions", ({ conflicts }) =>
       SRTE.fromReaderTaskEither(pipe(
         conflicts,
         A.matchW(() => RTE.of([]), conflictsSolver),
       ))),
-    SRTE.bindW("result", ({ mappedTask, solutions }) =>
+    // resolve conflicts
+    SRTE.bindW("solvedTask", ({ mappedTask, solutions }) =>
       pipe(
         DriveLookup.of(
           applySoultions(mappedTask)(solutions),
@@ -153,7 +149,7 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
       showVerbose({ verbose }),
       printerIO.print,
     )),
-    SRTE.map(({ result }) => result),
+    SRTE.map(({ solvedTask }) => solvedTask),
     dry
       ? SRTE.map(() => [])
       : SRTE.chainW(executeDownloadTask({
@@ -165,12 +161,9 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
 };
 
 const showVerbose = ({ verbose = false }) =>
-  ({
-    mappedTask,
-    result,
-  }: DownloadFolderInfo) => {
+  ({ mappedTask, solvedTask }: DownloadFolderInfo) => {
     return showTask({ verbose })({
-      ...result,
+      ...solvedTask,
       initialTask: mappedTask,
     });
   };
