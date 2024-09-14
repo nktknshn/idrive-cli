@@ -67,15 +67,23 @@ export const formatDate = (dateOrStr: Date | string) => {
 
 export const getOrds = (sort: Sort): Ord.Ord<Types.DriveChildrenItem>[] =>
   sort === "date"
-    ? [Ord.reverse(ordDriveChildrenItemByDate)]
-    : [
+    ? [
+      Ord.reverse(ordDriveChildrenItemByDate),
+    ]
+    : sort === "size"
+    ? [
       // APP_LIBRARY, FOLDER, FILE
       Ord.reverse(ordIsFolder),
       ordDriveChildrenItemByType,
-      sort === "size"
-        ? ordDriveChildrenItemBySize
-        : ordDriveChildrenItemByName,
-    ];
+      ordDriveChildrenItemBySize,
+    ]
+    : // sort === "name"
+      [
+        // APP_LIBRARY, FOLDER, FILE
+        Ord.reverse(ordIsFolder),
+        ordDriveChildrenItemByType,
+        ordDriveChildrenItemByName,
+      ];
 
 export const sortItems = (items: Types.DriveChildrenItem[], sort: Sort) => pipe(items, A.sortBy(getOrds(sort)));
 
