@@ -49,7 +49,7 @@ export const ls = (
 };
 
 // TODO show other dates for files
-// TODO sort
+// TODO sort by date
 /** List a folder with zero depth */
 const lsShallow = (
   args: Args,

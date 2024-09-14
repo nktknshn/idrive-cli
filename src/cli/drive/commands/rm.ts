@@ -26,19 +26,9 @@ export const rm = (
     return SRTE.left(err("globstar is not supported for non recursive rm"));
   }
 
-  if (dry && trash) {
+  if (dry) {
     return pipe(
-      Actions.rmCandidatesTrash(paths),
-      SRTE.map(A.filter(_ => _.valid === true)),
-      SRTE.map(A.map(_ => _.path)),
-      SRTE.map(_ => _.join("\n")),
-      SRTE.map(ensureSingleNewline),
-    );
-  }
-
-  if (dry && !trash) {
-    return pipe(
-      Actions.rmCandidates(paths, { recursive }),
+      Actions.rmCandidates(paths, { recursive, trash }),
       SRTE.map(A.map(_ => _.path)),
       SRTE.map(_ => _.join("\n")),
       SRTE.map(ensureSingleNewline),
@@ -46,7 +36,7 @@ export const rm = (
   }
 
   return pipe(
-    Actions.rm(paths, { skipTrash, force, recursive }),
+    Actions.rm(paths, { skipTrash, force, recursive, trash }),
     SRTE.map(({ items }) => `Removed ${items.length} items\n`),
   );
 };

@@ -11,7 +11,7 @@ import { NEA } from "../../util/types";
 import { DriveLookup, Types } from "..";
 import { DepApiMethod, DriveApiMethods } from "../drive-api";
 import { MoveItemToTrashResponse } from "../drive-requests";
-import { listRecursive, listShallow } from "./ls";
+import { listRecursive } from "./ls";
 
 export type DepsRm =
   & DriveLookup.Deps
@@ -22,58 +22,40 @@ type Result = MoveItemToTrashResponse;
 
 export const rmCandidates = (
   globs: NEA<string>,
-  { recursive = false }: { recursive: boolean },
+  { recursive = false, trash = false }: { recursive: boolean; trash: boolean },
 ) =>
   pipe(
-    listRecursive({ globs, depth: recursive ? Infinity : 1, trash: false }),
+    listRecursive({ globs, depth: recursive ? Infinity : 1, trash }),
     SRTE.map(A.flatten),
     SRTE.map(A.filter(guardProp("item", Types.isNotRootDetails))),
   );
 
-export const rmCandidatesTrash = (
-  globs: NEA<string>,
-) =>
-  pipe(
-    listShallow({ paths: globs, trash: true }),
-  );
-
-export const rmTrash = (
-  globs: NEA<string>,
-) =>
-  pipe(
-    rmCandidatesTrash(globs),
-    // SRTE.chainW((items) =>
-    //   A.isNonEmpty(items)
-    //     ? _rm({ items, trash: true, force: false })
-    //     : SRTE.of({ items: [] })
-    // ),
-  );
-
 export const rm = (
   globs: NEA<string>,
-  { skipTrash = false, force = false, recursive = false }: {
+  { skipTrash = false, force = false, recursive = false, trash = false }: {
     skipTrash: boolean;
     recursive: boolean;
     force: boolean;
+    trash: boolean;
   },
 ): DriveLookup.Lookup<Result, DepsRm> => {
   return pipe(
-    rmCandidates(globs, { recursive }),
+    rmCandidates(globs, { recursive, trash }),
     SRTE.chainW((items) =>
       A.isNonEmpty(items)
-        ? _rm({ items, trash: !skipTrash, force })
+        ? _rm({ items, intoTrash: !skipTrash && !trash, force })
         : SRTE.of({ items: [] })
     ),
   );
 };
 
 const _rm = (
-  { items, trash, force }: {
+  { items, intoTrash: trash, force }: {
     items: NEA<{
       path: string;
       item: Types.NonRootDetails | Types.DriveChildrenItemFile | Types.FolderLikeItem;
     }>;
-    trash: boolean;
+    intoTrash: boolean;
     force: boolean;
   },
 ): DriveLookup.Lookup<Result, DepsRm> => {
