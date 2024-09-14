@@ -217,12 +217,14 @@ export const hasName = <
 /** Concatenates the name and extension */
 export const fileName = (item: HasName | DetailsTrashRoot): string => {
   if (isTrashDetailsG(item)) {
-    return "TRASH_ROOT";
+    return "/";
   }
 
-  return (item.drivewsid === types.rootDrivewsid)
-    ? "/"
-    : item.extension
+  if (item.drivewsid === types.rootDrivewsid) {
+    return "/";
+  }
+
+  return item.extension
     ? `${item.name}${item.extension.length > 0 ? `.${item.extension}` : ""}`
     : `${item.name}`;
 };

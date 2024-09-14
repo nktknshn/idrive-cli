@@ -61,7 +61,7 @@ const result = (
   }
 };
 
-/** Shallow listing of paths */
+/** Shallow listing of paths. It doesn't fail some of the paths are not valid. */
 export const listShallow = (
   { paths, trash }: { paths: NA.NonEmptyArray<string>; trash: boolean },
 ): DriveLookup.Lookup<NEA<ListPathResult>, DriveLookup.Deps> => {
