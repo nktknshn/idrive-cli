@@ -25,7 +25,7 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
       long: { alias: ["l"], default: false, description: "Use a long listing format" },
       recursive: { alias: ["R"], default: false, type: "boolean", description: "Recursive listing" },
       depth: { alias: ["D"], default: Infinity, type: "number", description: "Depth of recursive listing" },
-      tree: { default: false, type: "boolean", description: "Print tree view" },
+      tree: { alias: ["T"], default: false, type: "boolean", description: "Print tree view" },
       info: { alias: ["i"], default: false, type: "boolean", description: "Include folder info in listing" },
       "human-readable": {
         alias: ["h"],
@@ -33,7 +33,7 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
         type: "boolean",
         description: "With -l, print sizes like 1K 234M 2G etc.",
       },
-      trash: { alias: ["trash"], default: false, type: "boolean", description: "List trash" },
+      trash: { alias: ["t"], default: false, type: "boolean", description: "List trash" },
       // TODO date
       sort: {
         alias: ["S"],
@@ -171,7 +171,7 @@ const autocomplete = w.command(
       .options({
         file: { default: false, type: "boolean" },
         dir: { default: false, type: "boolean" },
-        trash: { default: false, type: "boolean" },
+        trash: { alias: ["t"], default: false, type: "boolean" },
         cached: { default: false, type: "boolean" },
       }),
 );
