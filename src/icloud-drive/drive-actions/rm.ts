@@ -50,7 +50,7 @@ export const rm = (
 };
 
 const _rm = (
-  { items, intoTrash: trash, force }: {
+  { items, intoTrash, force }: {
     items: NEA<{
       path: string;
       item: Types.NonRootDetails | Types.DriveChildrenItemFile | Types.FolderLikeItem;
@@ -63,7 +63,7 @@ const _rm = (
     pipe(
       DriveApiMethods.moveItemsToTrash<DriveLookup.State>({
         items: items.map(a => a.item),
-        trash,
+        trash: intoTrash,
       }),
       runLogging(loggerIO.debug(`removing ${items.length} items`)),
       SRTE.chainFirstW(
@@ -71,13 +71,15 @@ const _rm = (
       ),
     );
 
+  const message = !intoTrash ? `Remove FOREVER (from trash or skipping trash)?` : `Remove to trash?`;
+
   return pipe(
     SRTE.ask<DriveLookup.State, DepsRm>(),
     SRTE.chainTaskEitherK(deps =>
       force
         ? TE.of(true)
         : deps.askConfirmation({
-          message: `Remove?\n${pipe(items, A.map(a => a.path)).join("\n")}`,
+          message: `${message}\n${pipe(items, A.map(a => a.path)).join("\n")}`,
         })
     ),
     SRTE.chain((answer) =>
