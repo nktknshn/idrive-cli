@@ -6,9 +6,9 @@ import { guardFst } from "../../../util/guards";
 import { sizeHumanReadable } from "../../../util/size-human-readable";
 import { maxLength } from "../../../util/string";
 import { partitionConflicts } from "./download-conflict";
-import { DownloadFileResult, DownloadTaskData, DownloadTaskMapped } from "./types";
+import { DownloadFileResult, DownloadTaskData } from "./types";
 
-export const showDownloadTaskData2 = ({ verbose = false }) => (data: DownloadTaskData) => {
+export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTaskData) => {
   let result = "";
 
   const column = (s: string, n = 20) => s.padEnd(n);
@@ -51,44 +51,10 @@ export const showDownloadTaskData2 = ({ verbose = false }) => (data: DownloadTas
     for (const { downloadItem: item, localpath } of data.solvedTask.downloadable) {
       result += `${column(item.path, maxPathLength + 5)} → ${localpath}\n`;
     }
-
-    // result += `${column("Downloadable:")}\n${
-    //   data.solvedTask.downloadable.map(({ item: info, localpath }) => `${info.path} into ${localpath}`).join("\n")
-    // }`;
   }
 
   return result;
 };
-
-export const showDownloadTaskData = ({ verbose = false }) => ({ mappedTask, solvedTask }: DownloadTaskData) => {
-  return showTask({ verbose })({
-    mappedTask,
-    solvedTask,
-  });
-};
-
-export const showTask =
-  ({ verbose = false }) =>
-  ({ mappedTask, solvedTask }: { mappedTask: DownloadTaskMapped; solvedTask: DownloadTaskMapped }): string => {
-    if (solvedTask.downloadable.length > 0) {
-      if (verbose) {
-        return `will be downloaded: \n${
-          [
-            ...solvedTask.downloadable,
-            ...solvedTask.empties,
-          ].map(({ downloadItem: info, localpath }) => `${info.path} into ${localpath}`)
-            .join(
-              "\n",
-            )
-        }\n\n`
-          + `local dirs: ${solvedTask.localdirstruct.join("\n")}`;
-      }
-
-      return `${solvedTask.downloadable.length + solvedTask.empties.length} files will be downloaded`;
-    }
-
-    return `Nothing to download. ${mappedTask.downloadable.length} files were skipped by conflict solver`;
-  };
 
 export const resultsJson = (results: DownloadFileResult[]) => {
   return {

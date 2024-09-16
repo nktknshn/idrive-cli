@@ -1,5 +1,6 @@
 import * as A from "fp-ts/lib/Array";
 import { pipe } from "fp-ts/lib/function";
+import { not } from "fp-ts/lib/Predicate";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as RA from "fp-ts/ReadonlyArray";
@@ -130,17 +131,8 @@ const formatDate = (date: Date): string => {
   return `${day} ${month} ${year} ${hours}:${minutes}:${seconds}`;
 };
 
-export const defaultSolver: ConflictsSolver<DepAskConfirmation> = (conflicts) => ({ askConfirmation }) => {
-  const statsConflicts = pipe(conflicts, A.filter(isConflictStatsError));
-  const existsConflicts = pipe(conflicts, A.filter(isConflictExists));
-
-  if (statsConflicts.length > 0) {
-    return TE.left(
-      err(`Error getting stats for ${statsConflicts[0].mappedItem.localpath}: ${statsConflicts[0].error}`),
-    );
-  }
-
-  const askConflict = (c: ConflictExists): TE.TaskEither<Error, Solution> => {
+const askConflictExists =
+  ({ askConfirmation }: DepAskConfirmation) => (c: ConflictExists): TE.TaskEither<Error, Solution> => {
     const localPath = c.localitem.path;
     const remotePath = c.mappedItem.downloadItem.path;
 
@@ -166,7 +158,7 @@ export const defaultSolver: ConflictsSolver<DepAskConfirmation> = (conflicts) =>
     return pipe(
       askConfirmation({
         message,
-        options: ["yes", "no", "yes for all"],
+        options: ["no", "yes", "no for all", "yes for all"],
       }),
       TE.map((decision): Solution =>
         decision === "yes"
@@ -178,9 +170,34 @@ export const defaultSolver: ConflictsSolver<DepAskConfirmation> = (conflicts) =>
     );
   };
 
+export const defaultSolver = (
+  { skipSameSizeAndDate = false }: { skipSameSizeAndDate?: boolean } = {},
+): ConflictsSolver<DepAskConfirmation> =>
+(conflicts) =>
+({ askConfirmation }) => {
+  const statsConflicts = pipe(conflicts, A.filter(isConflictStatsError));
+  let existsConflicts = pipe(conflicts, A.filter(isConflictExists));
+
+  if (statsConflicts.length > 0) {
+    return TE.left(
+      err(`Error getting stats for ${statsConflicts[0].mappedItem.localpath}: ${statsConflicts[0].error}`),
+    );
+  }
+
+  const sameFileSizeAndDate = (c: ConflictExists) =>
+    c.localitem.stats.size == c.mappedItem.downloadItem.item.size
+    && c.localitem.stats.mtime.toString() == new Date(c.mappedItem.downloadItem.item.dateModified).toString();
+
+  if (skipSameSizeAndDate) {
+    existsConflicts = pipe(
+      existsConflicts,
+      A.filter(not(sameFileSizeAndDate)),
+    );
+  }
+
   return pipe(
     existsConflicts,
-    A.map((conflict) => askConflict(conflict)),
+    A.map(askConflictExists({ askConfirmation })),
     A.sequence(TE.ApplicativeSeq),
   );
 };

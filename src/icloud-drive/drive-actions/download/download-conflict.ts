@@ -16,8 +16,8 @@ export type Conflict = ConflictExists | ConflictStatsError;
 
 export type ConflictExists = {
   tag: "exists";
-  localitem: LocalTreeElement;
   mappedItem: DownloadItemMapped;
+  localitem: LocalTreeElement;
 };
 
 export type ConflictStatsError = {
@@ -64,7 +64,7 @@ export const lookForLocalConflicts = (
 };
 
 const handleStatsItem = (
-  [stats, item]: (readonly [TE.TaskEither<Error, FsStats>, DownloadItemMapped]),
+  [stats, item]: readonly [TE.TaskEither<Error, FsStats>, DownloadItemMapped],
 ): TE.TaskEither<Conflict, DownloadItemMapped> =>
   pipe(
     stats,
@@ -74,29 +74,27 @@ const handleStatsItem = (
     ),
   );
 
-const handleError = (mappedItem: DownloadItemMapped) =>
-  (error: Error): E.Either<Conflict, DownloadItemMapped> => {
-    return isEnoentError(error)
-      ? E.right(mappedItem)
-      : E.left({ tag: "statserror", mappedItem, error });
-  };
+const handleError = (mappedItem: DownloadItemMapped) => (error: Error): E.Either<Conflict, DownloadItemMapped> => {
+  return isEnoentError(error)
+    ? E.right(mappedItem)
+    : E.left({ tag: "statserror", mappedItem, error });
+};
 
-const handleStats = (mappedItem: DownloadItemMapped) =>
-  (stats: FsStats): E.Either<Conflict, DownloadItemMapped> =>
-    E.left(
-      {
-        tag: "exists",
-        mappedItem,
-        localitem: {
-          type: stats.isDirectory()
-            ? "directory" as const
-            : "file" as const,
-          stats,
-          path: mappedItem.localpath,
-          name: Path.basename(mappedItem.localpath),
-        },
+const handleStats = (mappedItem: DownloadItemMapped) => (stats: FsStats): E.Either<Conflict, DownloadItemMapped> =>
+  E.left(
+    {
+      tag: "exists",
+      mappedItem,
+      localitem: {
+        type: stats.isDirectory()
+          ? "directory" as const
+          : "file" as const,
+        stats,
+        path: mappedItem.localpath,
+        name: Path.basename(mappedItem.localpath),
       },
-    );
+    },
+  );
 
 export const showConflict = (conflict: Conflict): string => {
   if (conflict.tag === "exists") {

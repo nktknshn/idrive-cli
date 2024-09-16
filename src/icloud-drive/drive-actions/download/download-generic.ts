@@ -9,7 +9,7 @@ import { of } from "../../drive-lookup";
 import { applySolutions } from "./conflict-solution";
 import { lookForLocalConflicts } from "./download-conflict";
 import { executeDownloadTask } from "./download-task";
-import { showDownloadTaskData2 } from "./printing";
+import { showDownloadTaskData } from "./printing";
 import { DownloadGenericArgs } from "./types";
 
 export type Deps =
@@ -55,10 +55,10 @@ export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
         A.matchW(() => RTE.of([]), conflictsSolver),
       ))),
     // resolve conflicts
-    SRTE.bindW("solvedTask", ({ mappedTask, solutions }) =>
+    SRTE.bindW("solvedTask", ({ mappedTask, conflicts, solutions }) =>
       pipe(
         DriveLookup.of(
-          applySolutions(mappedTask)(solutions),
+          applySolutions(mappedTask, conflicts, solutions, { skipMissingSolution: true }),
         ),
       )),
   );
@@ -66,7 +66,7 @@ export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
   return pipe(
     downloadFolderTask,
     SRTE.chainFirstIOK(flow(
-      showDownloadTaskData2({ verbose }),
+      showDownloadTaskData({ verbose }),
       printerIO.print,
     )),
     SRTE.map(({ solvedTask }) => solvedTask),
@@ -75,7 +75,8 @@ export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
       : SRTE.chainW(executeDownloadTask({
         downloader: downloadFiles,
       })),
+    SRTE.map(() => ""),
     // SRTE.map(resultsJson),
-    SRTE.map(JSON.stringify),
+    // SRTE.map(JSON.stringify),
   );
 };

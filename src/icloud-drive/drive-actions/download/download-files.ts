@@ -50,14 +50,19 @@ export const downloadFiles = (
     checkFolder,
     SRTE.fromReaderTaskEither<Deps, Error, boolean, DriveLookup.State>,
     SRTE.chainW(() => downloadTaskFromFilesPaths(npaths)),
-    SRTE.chainFirstIOK((files) => printerIO.print(`Downloading ${files.downloadable.map(_ => _.path).join(", ")}`)),
-    SRTE.chainW(task =>
+    SRTE.chainFirstIOK(
+      ({ folders }) =>
+        folders.length > 0
+          ? printerIO.print(`Skipping folders: ${folders.join(", ")}`)
+          : constVoid,
+    ),
+    SRTE.chainW(({ task }) =>
       pipe(
         downloadGeneric({
           task,
           dry,
           toLocalFileSystemMapper: shallowDirMapper(destpath),
-          conflictsSolver: solvers.defaultSolver,
+          conflictsSolver: solvers.defaultSolver({ skipSameSizeAndDate: true }),
           downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
         }),
       )
@@ -67,12 +72,29 @@ export const downloadFiles = (
 
 export const downloadTaskFromFilesPaths = (
   npaths: NEA<NormalizedPath>,
-): DriveLookup.Lookup<DownloadTask> => {
+): DriveLookup.Lookup<{ task: DownloadTask; folders: string[] }> => {
   return pipe(
     DriveLookup.getByPathsStrictDocwsroot(npaths),
     SRTE.map(A.zip(npaths)),
-    SRTE.map(A.filter(guardFst(Types.isFile))),
-    SRTE.map(A.map(([item, path]) => ({ path, item }))),
-    SRTE.map(partitionEmpties),
+    SRTE.map((results) => {
+      const folders = pipe(
+        results,
+        A.filter(guardFst(Types.isFolderLike)),
+        A.map(([_, path]) => path),
+      );
+
+      const files = pipe(
+        results,
+        A.filter(guardFst(Types.isFile)),
+        A.map(([item, path]) => ({ path, item })),
+      );
+
+      const task = pipe(
+        files,
+        partitionEmpties,
+      );
+
+      return { task, folders };
+    }),
   );
 };

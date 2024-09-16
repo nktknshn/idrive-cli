@@ -38,7 +38,9 @@ export const downloadShallow = (
           filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
         }),
         toLocalFileSystemMapper: shallowDirMapper(dstpath),
-        conflictsSolver: solvers.defaultSolver,
+        conflictsSolver: solvers.defaultSolver({
+          skipSameSizeAndDate: true,
+        }),
         downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
       },
     ),

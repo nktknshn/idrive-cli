@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
+import * as A from "fp-ts/Array";
 import * as Ord from "fp-ts/lib/Ord";
 
 import { boolean, date, number, string } from "fp-ts";
@@ -6,11 +7,33 @@ import * as O from "fp-ts/lib/Option";
 import * as t from "io-ts";
 import { TypeOf } from "io-ts";
 
+import { pipe } from "fp-ts/lib/function";
 import { hasOwnProperty, isObjectWithOwnProperty } from "../../util/util";
 import * as types from "./types-io";
 export * as TypesIo from "./types-io";
 
-export type DetailsOrFile<R extends Details> = (R | NonRootDetails | DriveChildrenItemFile);
+// TODO FIXME organize the types in a more logical way
+
+export type AnyItem =
+  | AnyItemFolder
+  | AnyItemFile;
+
+export type AnyItemFolder =
+  // folders
+  | DetailsDocwsRoot
+  | DetailsTrashRoot
+  | DetailsFolder
+  | DetailsAppLibrary
+  | DriveChildrenItemFolder
+  | TrashItemFolder
+  | TrashItemAppLibrary;
+
+export type AnyItemFile =
+  // files
+  | TrashItemFile
+  | DriveChildrenItemFile;
+
+export type DetailsOrFile<R extends Details> = R | NonRootDetails | DriveChildrenItemFile;
 
 export type NonRootDrivewsid = t.TypeOf<typeof types.nonRootDrivewsid>;
 
@@ -154,6 +177,22 @@ export type FolderLike =
   | DetailsTrashRoot
   | DriveChildrenItemFolder
   | DriveChildrenItemAppLibrary;
+
+export const partitionFiles = (
+  items: AnyItem[],
+): { left: AnyItemFile[]; right: AnyItemFolder[] } => {
+  const files = pipe(
+    items,
+    A.filter(isFile),
+  );
+
+  const folders = pipe(
+    items,
+    A.filter(isFolderLike),
+  );
+
+  return { left: files, right: folders };
+};
 
 export const isFolderLike = <R extends Root>(
   entity: DetailsOrRoot<R> | DriveChildrenItem,

@@ -12,6 +12,7 @@ import { loggerIO } from "../../../logging";
 import { printerIO } from "../../../logging/printerIO";
 import { guardFstRO, isDefined } from "../../../util/guards";
 import { DownloadFileResult, downloadUrlsPar } from "../../../util/http/download-url-to-file";
+import { maxLength } from "../../../util/string";
 import { SRA } from "../../../util/types";
 import { DepApiMethod, DriveApiMethods } from "../../drive-api";
 import { DownloadICloudFilesFunc, DownloadItemMapped, mappedArrayToRecord } from "./types";
@@ -22,6 +23,7 @@ export type Deps =
   & DepFs<"createWriteStream">
   & DepFs<"utimes">;
 
+/** Downloads files in parallel in chunks of `chunkSize` */
 export const downloadICloudFilesChunked = (
   { chunkSize = 5, updateTime = true }: { chunkSize: number; updateTime?: boolean },
 ): DownloadICloudFilesFunc<Deps> =>
@@ -36,30 +38,18 @@ export const downloadICloudFilesChunked = (
   );
 };
 
-const updateTimeHook =
-  (record: Record<string, DownloadItemMapped>) =>
-  (destpath: string): RTE.ReaderTaskEither<DepFs<"utimes">, Error, void> =>
-  deps =>
-    pipe(
-      loggerIO.debug(`setting ${destpath} time`),
-      TE.fromIO,
-      TE.chain(() =>
-        deps.fs.utimes(
-          destpath,
-          new Date(record[destpath].downloadItem.item.dateModified),
-          new Date(record[destpath].downloadItem.item.dateModified),
-        )
-      ),
-      TE.map(constVoid),
-    );
-
 const downloadChunkPar = <S extends AuthenticatedState>(
   chunk: NA.NonEmptyArray<DownloadItemMapped>,
   updateTime: boolean,
 ): SRA<S, Deps, DownloadFileResult[]> => {
   const record = mappedArrayToRecord(chunk);
+  const pml = maxLength(chunk.map(_ => _.downloadItem.path));
 
-  const preDownload = (destpath: string) => () => TE.fromIO(printerIO.print(`Downloading ${destpath}`));
+  const preDownload = (destpath: string) => () => {
+    const item = record[destpath];
+
+    return TE.fromIO(printerIO.print(`Downloading ${item.downloadItem.path.padEnd(pml + 2)} → ${destpath}`));
+  };
 
   const postDownload = (destpath: string) =>
     pipe(
@@ -95,6 +85,24 @@ const downloadChunkPar = <S extends AuthenticatedState>(
     }),
   );
 };
+
+/** Updates the atime and mtime of the files */
+const updateTimeHook =
+  (record: Record<string, DownloadItemMapped>) =>
+  (destpath: string): RTE.ReaderTaskEither<DepFs<"utimes">, Error, void> =>
+  deps =>
+    pipe(
+      loggerIO.debug(`setting ${destpath} time`),
+      TE.fromIO,
+      TE.chain(() =>
+        deps.fs.utimes(
+          destpath,
+          new Date(record[destpath].downloadItem.item.dateModified),
+          new Date(record[destpath].downloadItem.item.dateModified),
+        )
+      ),
+      TE.map(constVoid),
+    );
 
 const splitIntoChunks = (
   files: DownloadItemMapped[],
