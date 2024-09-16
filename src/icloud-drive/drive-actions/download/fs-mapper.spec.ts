@@ -17,12 +17,21 @@ describe("fs-mapper", () => {
 
     expect(mapped).toEqual({
       downloadable: [
-        { item: { path: "/remote/path/to/file.txt", item: expect.any(Object) }, localpath: "/some/folder/file.txt" },
-        { item: { path: "/remote/path/to/file2.txt", item: expect.any(Object) }, localpath: "/some/folder/file2.txt" },
-        { item: { path: "/Camera/file3.png", item: expect.any(Object) }, localpath: "/some/folder/file3.png" },
+        {
+          downloadItem: { path: "/remote/path/to/file.txt", item: expect.any(Object) },
+          localpath: "/some/folder/file.txt",
+        },
+        {
+          downloadItem: { path: "/remote/path/to/file2.txt", item: expect.any(Object) },
+          localpath: "/some/folder/file2.txt",
+        },
+        { downloadItem: { path: "/Camera/file3.png", item: expect.any(Object) }, localpath: "/some/folder/file3.png" },
       ],
       empties: [
-        { item: { path: "/remote/path/to/empty.txt", item: expect.any(Object) }, localpath: "/some/folder/empty.txt" },
+        {
+          downloadItem: { path: "/remote/path/to/empty.txt", item: expect.any(Object) },
+          localpath: "/some/folder/empty.txt",
+        },
       ],
       localdirstruct: ["/some/folder/"],
     });
@@ -36,21 +45,21 @@ describe("fs-mapper", () => {
     expect(mapped).toEqual({
       downloadable: [
         {
-          item: { path: "/remote/path/to/file.txt", item: expect.any(Object) },
+          downloadItem: { path: "/remote/path/to/file.txt", item: expect.any(Object) },
           localpath: "/some/folder/remote/path/to/file.txt",
         },
         {
-          item: { path: "/remote/path/to/file2.txt", item: expect.any(Object) },
+          downloadItem: { path: "/remote/path/to/file2.txt", item: expect.any(Object) },
           localpath: "/some/folder/remote/path/to/file2.txt",
         },
         {
-          item: { path: "/Camera/file3.png", item: expect.any(Object) },
+          downloadItem: { path: "/Camera/file3.png", item: expect.any(Object) },
           localpath: "/some/folder/Camera/file3.png",
         },
       ],
       empties: [
         {
-          item: { path: "/remote/path/to/empty.txt", item: expect.any(Object) },
+          downloadItem: { path: "/remote/path/to/empty.txt", item: expect.any(Object) },
           localpath: "/some/folder/remote/path/to/empty.txt",
         },
       ],

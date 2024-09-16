@@ -7,11 +7,11 @@ import { pipe } from "fp-ts/lib/function";
 import * as Actions from "../../../icloud-drive/drive-actions";
 import { err } from "../../../util/errors";
 
-export type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>);
+export type AskingFunc = ({ message }: { message: string }) => TE.TaskEither<Error, boolean>;
 
 export const upload = (
   args: {
-    uploadargs: string[];
+    paths: string[];
     recursive: boolean;
     dry: boolean;
     include: string[];
@@ -21,11 +21,11 @@ export const upload = (
     "skip-trash": boolean;
   },
 ): DriveLookup.Lookup<unknown, Actions.DepsUpload & Actions.DepsUploadFolder> => {
-  if (!A.isNonEmpty(args.uploadargs)) {
+  if (!A.isNonEmpty(args.paths)) {
     return DriveLookup.left(err("No files to upload"));
   }
 
-  if (args.uploadargs.length < 2) {
+  if (args.paths.length < 2) {
     return DriveLookup.left(err("Missing destination path"));
   }
 
@@ -33,28 +33,28 @@ export const upload = (
     return pipe(
       Actions.uploadFolder({
         ...args,
-        localpath: args.uploadargs[0],
-        remotepath: args.uploadargs[1],
+        localpath: args.paths[0],
+        remotepath: args.paths[1],
         chunkSize: 2,
       }),
       SRTE.map(() => `Folder uploaded.\n`),
     );
   }
 
-  if (args.uploadargs.length == 2) {
+  if (args.paths.length == 2) {
     return pipe(
       Actions.uploadSingleFile({
         overwrite: args.overwrite,
         skipTrash: args["skip-trash"],
-        srcpath: args.uploadargs[0],
-        dstpath: args.uploadargs[1],
+        srcpath: args.paths[0],
+        dstpath: args.paths[1],
       }),
       SRTE.map(() => `File uploaded.\n`),
     );
   } else {
     return pipe(
       Actions.uploadMany({
-        uploadargs: args.uploadargs,
+        uploadargs: args.paths,
         overwrite: args.overwrite,
         skipTrash: args["skip-trash"],
       }),

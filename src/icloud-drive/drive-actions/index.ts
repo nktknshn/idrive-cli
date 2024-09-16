@@ -2,8 +2,8 @@
 
 export { autocomplete } from "./autocomplete";
 export { cat, type Deps as DepsCat } from "./cat";
-export { type Deps as DownloadFolderDeps, downloadFolder } from "./download/download-folder";
-export { type Deps as DownloadRecursiveDeps, downloadRecursive } from "./download/download-recursive";
+export { type Deps as DepsDownloadFolder, downloadFolder as downloadFolder } from "./download/download-folder";
+export { type Deps as DepsDownloadRecursive, downloadRecursive } from "./download/download-recursive";
 export { type Deps as DownloadDeps, downloadShallow } from "./download/download-shallow";
 
 export { listRecursive } from "./ls/ls-recursive";
@@ -19,3 +19,5 @@ export { type DepsRm, rm, rmCandidates } from "./rm";
 export { type Deps as DepsUploadFolder, uploadFolder } from "./upload/upload-folder";
 export { type Deps as DepsUpload, uploadSingleFile } from "./upload/uploads";
 export { uploadMany } from "./upload/uploads";
+
+export { type Deps as DepsDownloadFiles, downloadFiles } from "./download/download-files";

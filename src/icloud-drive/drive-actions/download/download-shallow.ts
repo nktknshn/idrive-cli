@@ -5,10 +5,13 @@ import { DriveLookup } from "../..";
 import { solvers } from "./conflict-solvers";
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from "./download-chunked";
 import { Deps as DownloadFolderDeps, downloadFolder } from "./download-folder";
-import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-task";
+import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-tree";
 import { shallowDirMapper } from "./fs-mapper";
 
-export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation;
+export type Deps =
+  & DownloadFolderDeps
+  & DFuncDeps
+  & DepAskConfirmation;
 
 type ShallowArgs = {
   path: string;
@@ -29,14 +32,12 @@ export const downloadShallow = (
         path,
         dry,
         depth: 0,
+        updateTime: true,
         treefilter: makeDownloadTaskFromTree({
           filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
         }),
         toLocalFileSystemMapper: shallowDirMapper(dstpath),
-        conflictsSolver: solvers.resolveConflictsAskEvery,
-        // solvers.resolveConflictsOverwrightIfSizeDifferent(
-        //   file => file.extension === 'band' && file.zone.endsWith('mobilegarageband'),
-        // ),
+        conflictsSolver: solvers.defaultSolver,
         downloadFiles: downloadICloudFilesChunked({ chunkSize }),
       },
     ),

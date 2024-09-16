@@ -1,82 +1,58 @@
-import * as A from "fp-ts/lib/Array";
+import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/lib/function";
-import { getDirectoryStructure } from "../../../util/get-directory-structure";
-import { guardProp } from "../../../util/guards";
-import { DriveTree, Types } from "../..";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import { DepFs } from "../../../deps-types";
+import { guardFst } from "../../../util/guards";
+import { NormalizedPath } from "../../../util/normalize-path";
+import { NEA } from "../../../util/types";
+import { DriveLookup, Types } from "../..";
+import { createEmpties, createLocalDirStruct } from "./download-local";
+import { DownloadICloudFilesFunc, DownloadItem, DownloadTask, DownloadTaskMapped } from "./types";
 
-import { isMatchingAny } from "../../../util/glob-matching";
-import { DownloadItem, DownloadTask } from "./types";
-
-type IncludeExcludeFilter = (opts: {
-  include: string[];
-  exclude: string[];
-}) => (file: DriveTree.WithItemPathValue<Types.Root>) => boolean;
-
-export const filterByIncludeExcludeGlobs: IncludeExcludeFilter = ({ include, exclude }) =>
-  ({ path }) =>
-    (include.length == 0 || isMatchingAny(path, include, { dot: true }))
-    && (exclude.length == 0 || !isMatchingAny(path, exclude, { dot: true }));
-
-const filterFlatTree = ({ filterFiles }: {
-  filterFiles: (files: { path: string; item: Types.DriveChildrenItemFile }) => boolean;
-}) =>
-  <T extends Types.Root>(flatTree: DriveTree.FlattenWithItems<T>) => {
-    const files = pipe(
-      flatTree,
-      A.filter(guardProp("item", Types.isFile)),
-    );
-
-    const folders = pipe(
-      flatTree,
-      A.filter(guardProp("item", Types.isFolderLike)),
-    );
-
-    const { left: excluded, right: validFiles } = pipe(
-      files,
-      A.partition(filterFiles),
-    );
-
-    return {
-      files: validFiles,
-      folders,
-      excluded,
-    };
-  };
-
-/** Extracts the folders structure from the download items */
-export const itemsFolderStructure = (items: DownloadItem[]) =>
+/** Create directories and empty files */
+export const prepareLocalFs = (task: DownloadTaskMapped) =>
   pipe(
-    items,
-    A.map(a => a.path),
-    getDirectoryStructure,
+    SRTE.fromReaderTaskEither<DepFs<"mkdir" | "writeFile">, Error, void, DriveLookup.State>(
+      pipe(
+        createLocalDirStruct(task.localdirstruct),
+        RTE.chainW(() => createEmpties(task)),
+      ),
+    ),
   );
 
-/** Applies the filter to the tree and returns a download task */
-export const makeDownloadTaskFromTree = (opts: {
-  filterFiles: (files: { path: string; item: Types.DriveChildrenItemFile }) => boolean;
-}) =>
-  <T extends Types.Root>(flatTree: DriveTree.FlattenWithItems<T>):
-    & DownloadTask
-    & { excluded: DownloadItem[] } =>
-  {
-    const { excluded, files /* folders */ } = filterFlatTree(opts)(flatTree);
+/** Run the download task */
+export const executeDownloadTask = <TDownloadDeps>(
+  { downloader }: { downloader: DownloadICloudFilesFunc<TDownloadDeps> },
+) =>
+(task: DownloadTaskMapped) =>
+  pipe(
+    // create local directories and empty files
+    prepareLocalFs(task),
+    // download files
+    SRTE.chainW(() => downloader(task)),
+  );
 
-    const { left: downloadable, right: empties } = pipe(
-      files,
-      A.partition(({ item }) => item.size == 0),
-    );
+export const partitionEmpties = (
+  items: DownloadItem[],
+) =>
+  pipe(
+    items,
+    A.partition(({ item }) => item.size == 0),
+    _ => ({ downloadable: _.left, empties: _.right }),
+  );
 
-    // const dirstruct = pipe(
-    //   A.concat(downloadable)(empties),
-    //   A.concatW(folders),
-    //   A.map(a => a.path),
-    //   getDirectoryStructure,
-    // );
-
-    return {
-      // dirstruct,
-      downloadable,
-      empties,
-      excluded,
-    };
-  };
+export const downloadTaskFromFilesPaths = (
+  npaths: NEA<NormalizedPath>,
+): DriveLookup.Lookup<DownloadTask> => {
+  return pipe(
+    DriveLookup.getByPathsStrictDocwsroot(npaths),
+    SRTE.map(A.zip(npaths)),
+    SRTE.map(A.filter(guardFst(Types.isFile))),
+    SRTE.map(A.map(([f, p]): DownloadItem => ({
+      path: p,
+      item: f,
+    }))),
+    SRTE.map(partitionEmpties),
+  );
+};

@@ -40,7 +40,9 @@ export type TreeWithItemValue<R extends Types.Details> =
   | Types.DriveChildrenItemAppLibrary;
 
 export type WithItemPathValue<R extends Types.Details> = {
+  /** Full path to the item */
   path: string;
+  /** item details */
   item: TreeWithItemValue<R>;
 };
 
@@ -85,15 +87,15 @@ export const addPath = <T>(
   parentPath: string,
   f: (value: T) => Types.HasName | Types.DetailsTrashRoot,
 ) =>
-  (tree: TR.Tree<T>): TR.Tree<{ item: T; path: string }> => {
-    const name = Types.fileNameAddSlash(f(tree.value));
-    const path = normalizePath(Path.join(parentPath, name));
+(tree: TR.Tree<T>): TR.Tree<{ item: T; path: string }> => {
+  const name = Types.fileNameAddSlash(f(tree.value));
+  const path = normalizePath(Path.join(parentPath, name));
 
-    return TR.make(
-      { item: tree.value, path },
-      pipe(tree.forest, A.map(addPath(path, f))),
-    );
-  };
+  return TR.make(
+    { item: tree.value, path },
+    pipe(tree.forest, A.map(addPath(path, f))),
+  );
+};
 
 export const flattenTree = <A>(tree: TR.Tree<A>): A[] => {
   const res: A[] = [];
@@ -109,15 +111,15 @@ export const flattenTree = <A>(tree: TR.Tree<A>): A[] => {
 
 /** Extract files/folder items into the tree, add full path and flatten the tree */
 export const flattenTreeWithItems = <R extends Types.Details>(basepath: string) =>
-  (
-    tree: DriveFolderTree<R>,
-  ): FlattenWithItems<R> => {
-    return pipe(
-      treeWithItems(tree),
-      addPath(basepath, identity),
-      flattenTree,
-    );
-  };
+(
+  tree: DriveFolderTree<R>,
+): FlattenWithItems<R> => {
+  return pipe(
+    treeWithItems(tree),
+    addPath(basepath, identity),
+    flattenTree,
+  );
+};
 
 /** Extract files/folder items into the tree, add full path and flatten the tree */
 export const flattenTreeWithItemsDocwsroot = flattenTreeWithItems;

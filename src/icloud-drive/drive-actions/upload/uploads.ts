@@ -171,7 +171,7 @@ const uploadFileToFolder = (
   if (isSome(actualFile)) {
     if (typeof overwrite === "boolean") {
       if (overwrite) {
-        return uploadOverwrighting({
+        return uploadOverwriting({
           src,
           dstitem: actualFile.value,
           parent: dstDetails,
@@ -200,7 +200,7 @@ const uploadFileToFolder = (
   );
 };
 
-const uploadOverwrighting = (
+const uploadOverwriting = (
   { src, parent, dstitem, skipTrash }: {
     parent: Types.DetailsDocwsRoot | Types.NonRootDetails;
     dstitem: Types.DriveChildrenItemFile;

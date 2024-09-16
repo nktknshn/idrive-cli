@@ -62,7 +62,7 @@ export const { map, chain: chain_, filterOrElse } = SRTE;
 
 export const of: <S extends State, R, E = never, A = never>(a: A) => SRTE.StateReaderTaskEither<S, R, E, A> = SRTE.of;
 
-export const getState = (): SRTE.StateReaderTaskEither<State, Deps, never, State> => SRTE.get<State, Deps>();
+export const getState = <R = Deps>(): SRTE.StateReaderTaskEither<State, R, never, State> => SRTE.get<State, R>();
 
 export const ask = (): SRTE.StateReaderTaskEither<State, Deps, never, Deps> => SRTE.ask<State, Deps>();
 
@@ -72,9 +72,9 @@ export const asks = <A>(f: (d: Deps) => A): SRTE.StateReaderTaskEither<State, De
 export const left = <E, R extends Deps>(e: E): SRTE.StateReaderTaskEither<State, R, E, State> =>
   SRTE.left<State, Deps, E>(e);
 
-export const chainState = <A>(
-  f: (s: State) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,
-): SRTE.StateReaderTaskEither<State, Deps, Error, A> => SRTE.chain(f)(getState());
+export const chainState = <A, R = Deps>(
+  f: (s: State) => SRTE.StateReaderTaskEither<State, R, Error, A>,
+): SRTE.StateReaderTaskEither<State, R, Error, A> => SRTE.chain(f)(getState());
 
 export const chainStateAndDeps = <A>(
   f: (a: { state: State; deps: Deps }) => SRTE.StateReaderTaskEither<State, Deps, Error, A>,

@@ -5,7 +5,7 @@ import { DriveLookup } from "../..";
 import { solvers } from "./conflict-solvers";
 import { Deps as DFuncDeps, downloadICloudFilesChunked } from "./download-chunked";
 import { Deps as DownloadFolderDeps, downloadFolder } from "./download-folder";
-import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-task";
+import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-tree";
 import { recursiveDirMapper } from "./fs-mapper";
 
 export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation;
@@ -29,6 +29,7 @@ export const downloadRecursive = (
   return downloadFolder(
     {
       ...args,
+      updateTime: true,
       depth: Infinity,
       treefilter: makeDownloadTaskFromTree({
         filterFiles: filterByIncludeExcludeGlobs(args),
@@ -41,8 +42,8 @@ export const downloadRecursive = (
         ),
       conflictsSolver: cfs =>
         cfs.length > 10
-          ? solvers.resolveConflictsAskAll(cfs)
-          : solvers.resolveConflictsAskEvery(cfs),
+          ? solvers.askAll(cfs)
+          : solvers.askEvery(cfs),
       downloadFiles: downloadICloudFilesChunked({ chunkSize: args.chunkSize }),
     },
   );

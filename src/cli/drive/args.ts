@@ -1,8 +1,6 @@
 import * as w from "yargs-command-wrapper";
 import * as defaults from "../../defaults";
 
-// const LS_MAX_VERBOSITY = 2;
-
 const SortChoices = ["name", "size", "date"] as const;
 
 const init = w.command(
@@ -16,6 +14,8 @@ const auth = w.command(
   "Authenticate a session",
   a => a.options({}),
 );
+
+// const LS_MAX_VERBOSITY = 2;
 
 const ls = w.command("ls [paths..]", "List files in a folder", _ =>
   _
@@ -66,11 +66,11 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
     }));
 
 const download = w.command(
-  "download <path> <dstpath>",
+  "download <paths..>",
   "Download a file or a folder",
   (_) =>
-    _.positional("path", { type: "string", demandOption: true })
-      .positional("dstpath", { type: "string", demandOption: true })
+    _.positional("paths", { type: "string", demandOption: true, array: true })
+      // .positional("dstpath", { type: "string", demandOption: true })
       .options({
         dry: { default: false, type: "boolean" },
         overwrite: { default: false, type: "boolean" },
@@ -84,6 +84,46 @@ const download = w.command(
           description: "Keep the remote folder structure",
         },
         "chunk-size": { default: defaults.downloadChunkSize, type: "number", description: "Chunk size" },
+        "update-time": {
+          alias: ["t"],
+          default: false,
+          type: "boolean",
+          description: "Update the atime and mtime of the files",
+        },
+      }).check((args) => {
+        const paths = args.paths;
+
+        if (Array.isArray(paths) && paths.length < 2) {
+          throw new Error("Missing destination path");
+        }
+
+        return true;
+      }),
+);
+
+const upload = w.command(
+  "upload <paths..>",
+  "Upload files and folders",
+  (_) =>
+    _.positional("paths", { type: "string", array: true, demandOption: true })
+      .options({
+        overwrite: { default: false, type: "boolean" },
+        "skip-trash": { default: false, type: "boolean" },
+        recursive: { alias: ["R"], default: false, type: "boolean" },
+
+        include: { default: [], type: "string", array: true },
+        exclude: { default: [], type: "string", array: true },
+        dry: { default: false, type: "boolean" },
+        // chunkSize: { default: 2, type: 'number', implies: ['recursive'] },
+      })
+      .check((args) => {
+        const paths = args.paths;
+
+        if (Array.isArray(paths) && paths.length < 2) {
+          throw new Error("Missing destination path");
+        }
+
+        return true;
       }),
 );
 
@@ -112,9 +152,7 @@ const cat = w.command(
   "View the content of a text file",
   (_) =>
     _.positional("path", { type: "string", demandOption: true })
-      .options({
-        // 'skip-validation': { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
-      }),
+      .options({}),
 );
 
 const edit = w.command(
@@ -124,8 +162,6 @@ const edit = w.command(
     _.positional("path", { type: "string", demandOption: true })
       .options({
         editor: { type: "string", default: defaults.fileEditor },
-        // unapplieable since the cache is not updated after file upload, so without validation the old file id is returned from cache
-        // skipValidation: { alias: 'K', default: false, type: 'boolean', description: 'Skip path validation' },
       }),
 );
 
@@ -135,32 +171,6 @@ const mv = w.command(
   (_) =>
     _.positional("srcpath", { type: "string", demandOption: true })
       .positional("dstpath", { type: "string", demandOption: true }),
-);
-
-const upload = w.command(
-  "upload <uploadargs..>",
-  "Upload files and folders",
-  (_) =>
-    _.positional("uploadargs", { type: "string", array: true, demandOption: true })
-      .options({
-        overwrite: { default: false, type: "boolean" },
-        "skip-trash": { default: false, type: "boolean" },
-        recursive: { alias: ["R"], default: false, type: "boolean" },
-
-        include: { default: [], type: "string", array: true },
-        exclude: { default: [], type: "string", array: true },
-        dry: { default: false, type: "boolean" },
-        // chunkSize: { default: 2, type: 'number', implies: ['recursive'] },
-      })
-      .check((args) => {
-        const uploadargs = args.uploadargs;
-
-        if (Array.isArray(uploadargs) && uploadargs.length < 2) {
-          throw new Error("Missing destination path");
-        }
-
-        return true;
-      }),
 );
 
 const autocomplete = w.command(
@@ -182,7 +192,8 @@ const recover = w.command(
   (_) => _.positional("path", { type: "string", demandOption: true }),
 );
 
-const apiUsageChoices = ["onlycache", "fallback", "validate"] as const;
+const apiUsage = ["onlycache", "fallback", "validate"] as const;
+const apiUsageChoices = [...apiUsage, "o", "f", "v"];
 
 export const cmd = w.composeCommands(
   _ =>
@@ -208,9 +219,18 @@ export const cmd = w.composeCommands(
           type: "string",
           choices: apiUsageChoices,
           description: "API usage strategy",
-          coerce: (a): typeof apiUsageChoices[number] => {
-            if (apiUsageChoices.includes(a)) {
+          coerce: (a): typeof apiUsage[number] => {
+            if (apiUsage.includes(a)) {
               return a;
+            }
+
+            switch (a) {
+              case "o":
+                return "onlycache";
+              case "f":
+                return "fallback";
+              case "v":
+                return "validate";
             }
 
             throw new Error(`Invalid api usage: ${a}`);

@@ -13,7 +13,7 @@ import { err, FileInvalidError, FileNotFoundError } from "../../util/errors";
 import { assertFileSize, FsError } from "../../util/fs";
 import { calculateFileHashO } from "../../util/fs/file-hash";
 import { AssetFileSizeError, FileSizeError } from "../../util/fs/size-check";
-import { downloadUrlToFile } from "../../util/http/downloadUrlToFile";
+import { downloadUrlToFile } from "../../util/http/download-url-to-file";
 import { normalizePath } from "../../util/normalize-path";
 import { Path } from "../../util/path";
 import * as SrteUtils from "../../util/srte-utils";

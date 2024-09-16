@@ -1,44 +1,53 @@
-import { identity } from "fp-ts/lib/function";
+import * as A from "fp-ts/Array";
+import { identity, pipe } from "fp-ts/lib/function";
+import { getDirectoryStructure } from "../../../util/get-directory-structure";
 import { Path, prependPath } from "../../../util/path";
-import { itemsFolderStructure } from "./download-task";
-import { DownloadTask, DownloadTaskMapped } from "./types";
+import { DownloadItem, DownloadTask, DownloadTaskMapped } from "./types";
 
+/** Recursively create folders and files */
 export const recursiveDirMapper = (
   dstpath: string,
   mapPath: (path: string) => string = identity,
 ) =>
-  (ds: DownloadTask): DownloadTaskMapped => {
-    const dirstruct = itemsFolderStructure(ds.downloadable.concat(ds.empties));
+(ds: DownloadTask): DownloadTaskMapped => {
+  const dirstruct = itemsFolderStructure(ds.downloadable.concat(ds.empties));
 
-    return {
-      downloadable: ds.downloadable
-        .map((item) => ({
-          item,
-          localpath: prependPath(dstpath)(mapPath(item.path)),
-        })),
-      empties: ds.empties
-        .map((item) => ({
-          item,
-          localpath: prependPath(dstpath)(mapPath(item.path)),
-        })),
-      localdirstruct: [
-        dstpath,
-        ...dirstruct
-          .map(p => prependPath(dstpath)(mapPath(p))),
-      ],
-    };
+  return {
+    downloadable: ds.downloadable
+      .map((downloadItem) => ({
+        downloadItem,
+        localpath: prependPath(dstpath)(mapPath(downloadItem.path)),
+      })),
+    empties: ds.empties
+      .map((downloadItem) => ({
+        downloadItem,
+        localpath: prependPath(dstpath)(mapPath(downloadItem.path)),
+      })),
+    localdirstruct: [
+      dstpath,
+      ...dirstruct
+        .map(p => prependPath(dstpath)(mapPath(p))),
+    ],
   };
+};
 
-/** Download to a folder */
-export const shallowDirMapper = (dstpath: string) =>
-  (ds: DownloadTask): DownloadTaskMapped => ({
-    downloadable: ds.downloadable.map(item => ({
-      item,
-      localpath: Path.join(dstpath, Path.basename(item.path)),
-    })),
-    empties: ds.empties.map(item => ({
-      item,
-      localpath: Path.join(dstpath, Path.basename(item.path)),
-    })),
-    localdirstruct: [dstpath],
-  });
+/** All files to a single folder */
+export const shallowDirMapper = (dstpath: string) => (ds: DownloadTask): DownloadTaskMapped => ({
+  downloadable: ds.downloadable.map(downloadItem => ({
+    downloadItem,
+    localpath: Path.join(dstpath, Path.basename(downloadItem.path)),
+  })),
+  empties: ds.empties.map(downloadItem => ({
+    downloadItem,
+    localpath: Path.join(dstpath, Path.basename(downloadItem.path)),
+  })),
+  localdirstruct: [dstpath],
+});
+
+/** Extracts the folders structure from the download items */
+export const itemsFolderStructure = (items: DownloadItem[]) =>
+  pipe(
+    items,
+    A.map(a => a.path),
+    getDirectoryStructure,
+  );

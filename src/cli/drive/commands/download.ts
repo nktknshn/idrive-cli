@@ -1,10 +1,14 @@
+import * as A from "fp-ts/Array";
+import { pipe } from "fp-ts/lib/function";
+import * as NA from "fp-ts/lib/NonEmptyArray";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import micromatch from "micromatch";
-import { DriveLookup } from "../../../icloud-drive";
-import { DriveActions } from "../../../icloud-drive";
+import { DriveActions, DriveLookup, Types } from "../../../icloud-drive";
+import { err } from "../../../util/errors";
+import { npath } from "../../../util/normalize-path";
 
 type Args = {
-  path: string;
-  dstpath: string;
+  paths: string[];
   dry: boolean;
   recursive: boolean;
   overwrite: boolean;
@@ -12,26 +16,80 @@ type Args = {
   exclude: string[];
   "keep-structure": boolean;
   "chunk-size": number;
+  "update-time": boolean;
 };
 
-export const download = (args: Args): DriveLookup.Lookup<string, DriveActions.DownloadRecursiveDeps> => {
-  const scan = micromatch.scan(args.path);
+export const download = (
+  args: Args,
+): DriveLookup.Lookup<
+  string,
+  & DriveActions.DepsDownloadRecursive
+  & DriveActions.DepsDownloadFiles
+> => {
+  if (!A.isNonEmpty(args.paths)) {
+    return SRTE.left(err("No files to download"));
+  }
 
+  if (args.paths.length < 2) {
+    return SRTE.left(err("Missing destination path"));
+  }
+
+  const destpath = NA.last(args.paths);
+  const downloadPaths = A.dropRight(1)(args.paths);
+
+  // case
+  // idrive download file1.txt file2.txt ... localdir/
+  if (A.isNonEmpty(downloadPaths) && downloadPaths.length > 1) {
+    return DriveActions.downloadFiles({
+      paths: downloadPaths,
+      destpath: destpath,
+      chunkSize: args["chunk-size"],
+      dry: args.dry,
+    });
+  }
+
+  // cases
+  // idrive download remotedir/ localdir/
+  // idrive download remotefile.txt localdir/
+
+  let path = downloadPaths[0];
+  const scan = micromatch.scan(path);
+
+  // handle globs
   if (scan.isGlob) {
     args.include = [scan.input, ...args.include];
-    args.path = scan.base;
+    path = scan.base;
   }
 
-  if (args.recursive) {
-    return DriveActions.downloadRecursive({
-      ...args,
-      chunkSize: args["chunk-size"],
-      keepStructure: args["keep-structure"],
-    });
-  } else {
-    return DriveActions.downloadShallow({
-      ...args,
-      chunkSize: args["chunk-size"],
-    });
-  }
+  return pipe(
+    DriveLookup.getByPathStrictDocwsroot(npath(path)),
+    SRTE.chainW(res =>
+      Types.isFile(res)
+        ? DriveActions.downloadFiles({
+          paths: [npath(path)],
+          destpath: destpath,
+          chunkSize: args["chunk-size"],
+          dry: args.dry,
+        })
+        : args.recursive
+        ? DriveActions.downloadRecursive({
+          path: path,
+          dstpath: destpath,
+          dry: args.dry,
+          include: args.include,
+          exclude: args.exclude,
+          chunkSize: args["chunk-size"],
+          keepStructure: args["keep-structure"],
+        })
+        : DriveActions.downloadShallow({
+          path: path,
+          dstpath: destpath,
+          dry: args.dry,
+          include: args.include,
+          exclude: args.exclude,
+          chunkSize: args["chunk-size"],
+        })
+    ),
+    DriveLookup.usingTempCache,
+  );
 };

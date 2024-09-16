@@ -11,7 +11,7 @@ import {
   ordIsFolder,
 } from "../../../../icloud-drive/drive-types";
 import { Path } from "../../../../util/path";
-import { sizeHumanReadable } from "./util";
+import { sizeHumanReadable } from "../../../../util/size-human-readable";
 
 export type Sort = "name" | "size" | "date";
 
