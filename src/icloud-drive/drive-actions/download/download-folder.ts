@@ -22,7 +22,6 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
   {
     path,
     depth,
-    updateTime = false,
     dry = false,
 
     treefilter,
@@ -37,7 +36,6 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
     SRTE.chainW((task) =>
       downloadGeneric({
         task,
-        updateTime,
         dry,
         toLocalFileSystemMapper,
         conflictsSolver,

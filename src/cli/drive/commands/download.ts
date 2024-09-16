@@ -16,7 +16,7 @@ type Args = {
   exclude: string[];
   "keep-structure": boolean;
   "chunk-size": number;
-  "update-time": boolean;
+  "no-update-time": boolean;
 };
 
 export const download = (
@@ -26,6 +26,8 @@ export const download = (
   & DriveActions.DepsDownloadRecursive
   & DriveActions.DepsDownloadFiles
 > => {
+  const updateTime = !args["no-update-time"];
+
   if (!A.isNonEmpty(args.paths)) {
     return SRTE.left(err("No files to download"));
   }
@@ -45,6 +47,7 @@ export const download = (
       destpath: destpath,
       chunkSize: args["chunk-size"],
       dry: args.dry,
+      updateTime,
     });
   }
 
@@ -55,7 +58,7 @@ export const download = (
   let path = downloadPaths[0];
   const scan = micromatch.scan(path);
 
-  // handle globs
+  // handle glob
   if (scan.isGlob) {
     args.include = [scan.input, ...args.include];
     path = scan.base;
@@ -70,6 +73,7 @@ export const download = (
           destpath: destpath,
           chunkSize: args["chunk-size"],
           dry: args.dry,
+          updateTime,
         })
         : args.recursive
         ? DriveActions.downloadRecursive({
@@ -80,6 +84,7 @@ export const download = (
           exclude: args.exclude,
           chunkSize: args["chunk-size"],
           keepStructure: args["keep-structure"],
+          updateTime,
         })
         : DriveActions.downloadShallow({
           path: path,
@@ -88,8 +93,10 @@ export const download = (
           include: args.include,
           exclude: args.exclude,
           chunkSize: args["chunk-size"],
+          updateTime,
         })
     ),
     DriveLookup.usingTempCache,
+    SRTE.map(() => ""),
   );
 };

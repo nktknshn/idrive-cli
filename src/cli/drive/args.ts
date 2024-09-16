@@ -84,11 +84,11 @@ const download = w.command(
           description: "Keep the remote folder structure",
         },
         "chunk-size": { default: defaults.downloadChunkSize, type: "number", description: "Chunk size" },
-        "update-time": {
-          alias: ["t"],
+        "no-update-time": {
+          alias: ["T"],
           default: false,
           type: "boolean",
-          description: "Update the atime and mtime of the files",
+          description: "Do not update the atime and mtime of the files",
         },
       }).check((args) => {
         const paths = args.paths;

@@ -58,7 +58,6 @@ export type Args = {
 
 export type DownloadGenericArgs<TSolverDeps, TDownloadDeps> = {
   dry: boolean;
-  updateTime: boolean;
   /** filters the tree picking files that will be downloaded */
   task: DownloadTask;
   /** decides where to download the files to */

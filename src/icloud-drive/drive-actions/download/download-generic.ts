@@ -25,7 +25,6 @@ export type Deps =
 export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
   {
     task,
-    updateTime = false,
     dry = false,
 
     toLocalFileSystemMapper,
@@ -36,7 +35,7 @@ export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
   const verbose = dry;
 
   const downloadFolderTask = pipe(
-    of({ args: { dry, updateTime } }),
+    of({ args: { dry } }),
     SRTE.bindW("downloadTask", () => DriveLookup.of(task)),
     // assign a local path to each file
     SRTE.bindW("mappedTask", ({ downloadTask }) =>

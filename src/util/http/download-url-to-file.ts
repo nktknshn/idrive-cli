@@ -21,6 +21,7 @@ type Deps<THookDeps> =
   & DepFetchClient
   & DepFs<"createWriteStream">
   & { postDownload?: HookPostDownload<THookDeps> }
+  & { preDownload?: HookPostDownload<THookDeps> }
   & THookDeps;
 
 export const downloadUrlToFile = <THookDeps>(
@@ -30,7 +31,14 @@ export const downloadUrlToFile = <THookDeps>(
   pipe(
     loggerIO.debug(`getting ${destpath}`),
     RTE.fromIO,
-    RTE.chain(() => getUrlStream({ url })),
+    RTE.chain(() =>
+      RTE.asksReaderTaskEitherW((deps: Deps<THookDeps>) =>
+        deps.preDownload
+          ? deps.preDownload(destpath)
+          : RTE.right(undefined)
+      )
+    ),
+    RTE.chainW(() => getUrlStream({ url })),
     RTE.orElseFirst((err) => RTE.fromIO(loggerIO.error(`${err}`))),
     RTE.chainFirstIOK(() => loggerIO.debug(`writing ${destpath}`)),
     RTE.chainW(writeFileFromReadable(destpath)),

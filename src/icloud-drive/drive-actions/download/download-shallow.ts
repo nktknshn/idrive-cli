@@ -20,11 +20,12 @@ type ShallowArgs = {
   chunkSize: number;
   include: string[];
   exclude: string[];
+  updateTime: boolean;
 };
 
-/** Download file of files from a directory */
+/** Download files from a directory */
 export const downloadShallow = (
-  { path, dry, dstpath, chunkSize, include, exclude }: ShallowArgs,
+  { path, dry, dstpath, chunkSize, include, exclude, updateTime }: ShallowArgs,
 ): SRA<DriveLookup.State, Deps, string> => {
   return pipe(
     downloadFolder(
@@ -32,13 +33,13 @@ export const downloadShallow = (
         path,
         dry,
         depth: 0,
-        updateTime: true,
+        updateTime,
         treefilter: makeDownloadTaskFromTree({
           filterFiles: filterByIncludeExcludeGlobs({ include, exclude }),
         }),
         toLocalFileSystemMapper: shallowDirMapper(dstpath),
         conflictsSolver: solvers.defaultSolver,
-        downloadFiles: downloadICloudFilesChunked({ chunkSize }),
+        downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
       },
     ),
   );

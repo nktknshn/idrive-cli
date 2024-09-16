@@ -18,6 +18,7 @@ export type RecursiveArgs = {
   exclude: string[];
   keepStructure: boolean;
   chunkSize: number;
+  updateTime: boolean;
 };
 
 /** recursively download files */
@@ -29,7 +30,6 @@ export const downloadRecursive = (
   return downloadFolder(
     {
       ...args,
-      updateTime: true,
       depth: Infinity,
       treefilter: makeDownloadTaskFromTree({
         filterFiles: filterByIncludeExcludeGlobs(args),

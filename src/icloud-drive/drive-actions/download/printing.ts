@@ -8,68 +8,67 @@ import { maxLength } from "../../../util/string";
 import { partitionConflicts } from "./download-conflict";
 import { DownloadFileResult, DownloadTaskData, DownloadTaskMapped } from "./types";
 
-export const showDownloadTaskData2 = ({ verbose = false }) =>
-  (data: DownloadTaskData) => {
-    let result = "";
+export const showDownloadTaskData2 = ({ verbose = false }) => (data: DownloadTaskData) => {
+  let result = "";
 
-    const column = (s: string, n = 20) => s.padEnd(n);
+  const column = (s: string, n = 20) => s.padEnd(n);
 
-    const downloadCount = data.solvedTask.downloadable.length + data.solvedTask.empties.length;
-    const totalSize = data.solvedTask.downloadable.reduce((a, b) => a + b.downloadItem.item.size, 0);
-    const maxPathLength = maxLength(data.solvedTask.downloadable.map(a => a.downloadItem.path));
+  const downloadCount = data.solvedTask.downloadable.length + data.solvedTask.empties.length;
+  const totalSize = data.solvedTask.downloadable.reduce((a, b) => a + b.downloadItem.item.size, 0);
+  const maxPathLength = maxLength(data.solvedTask.downloadable.map(a => a.downloadItem.path));
 
-    result += `${column("Files:")}${downloadCount}\n`;
-    result += `${column("Total size:")}${sizeHumanReadable(totalSize)}\n`;
+  result += `${column("Files:")}${downloadCount}\n`;
+  result += `${column("Total size:")}${sizeHumanReadable(totalSize)}\n`;
 
-    if (verbose) {
-      result += `${column("Local dirs:")}${data.solvedTask.localdirstruct.join("\n")}\n`;
+  if (verbose) {
+    result += `${column("Local dirs:")}${data.solvedTask.localdirstruct.join("\n")}\n`;
+    result += "\n";
+
+    result += "Conflicts:\n";
+
+    const { exists, statserror } = partitionConflicts(data.conflicts);
+
+    if (exists.length > 0) {
       result += "\n";
+      result += "Existing files:\n";
 
-      result += "Conflicts:\n";
-
-      const { exists, statserror } = partitionConflicts(data.conflicts);
-
-      if (exists.length > 0) {
-        result += "\n";
-        result += "Existing files:\n";
-
-        for (const conflict of exists) {
-          result += `${conflict.mappedItem.localpath}\n`;
-        }
+      for (const conflict of exists) {
+        result += `${conflict.mappedItem.localpath}\n`;
       }
-
-      if (statserror.length > 0) {
-        result += "\n";
-        result += "Stats errors:\n";
-        for (const conflict of statserror) {
-          result += `Error getting stats for ${conflict.mappedItem.localpath}: ${conflict.error}\n`;
-        }
-      }
-
-      result += "\n";
-      result += "Result:\n";
-
-      for (const { downloadItem: item, localpath } of data.solvedTask.downloadable) {
-        result += `${column(item.path, maxPathLength + 5)} → ${localpath}\n`;
-      }
-
-      // result += `${column("Downloadable:")}\n${
-      //   data.solvedTask.downloadable.map(({ item: info, localpath }) => `${info.path} into ${localpath}`).join("\n")
-      // }`;
     }
 
-    return result;
-  };
+    if (statserror.length > 0) {
+      result += "\n";
+      result += "Stats errors:\n";
+      for (const conflict of statserror) {
+        result += `Error getting stats for ${conflict.mappedItem.localpath}: ${conflict.error}\n`;
+      }
+    }
 
-export const showDownloadTaskData = ({ verbose = false }) =>
-  ({ mappedTask, solvedTask }: DownloadTaskData) => {
-    return showTask({ verbose })({
-      mappedTask,
-      solvedTask,
-    });
-  };
+    result += "\n";
+    result += "Result:\n";
 
-export const showTask = ({ verbose = false }) =>
+    for (const { downloadItem: item, localpath } of data.solvedTask.downloadable) {
+      result += `${column(item.path, maxPathLength + 5)} → ${localpath}\n`;
+    }
+
+    // result += `${column("Downloadable:")}\n${
+    //   data.solvedTask.downloadable.map(({ item: info, localpath }) => `${info.path} into ${localpath}`).join("\n")
+    // }`;
+  }
+
+  return result;
+};
+
+export const showDownloadTaskData = ({ verbose = false }) => ({ mappedTask, solvedTask }: DownloadTaskData) => {
+  return showTask({ verbose })({
+    mappedTask,
+    solvedTask,
+  });
+};
+
+export const showTask =
+  ({ verbose = false }) =>
   ({ mappedTask, solvedTask }: { mappedTask: DownloadTaskMapped; solvedTask: DownloadTaskMapped }): string => {
     if (solvedTask.downloadable.length > 0) {
       if (verbose) {

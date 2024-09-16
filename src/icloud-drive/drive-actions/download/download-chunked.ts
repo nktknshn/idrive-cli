@@ -9,6 +9,7 @@ import * as TE from "fp-ts/TaskEither";
 import { DepFetchClient, DepFs } from "../../../deps-types";
 import { AuthenticatedState } from "../../../icloud-core/icloud-request";
 import { loggerIO } from "../../../logging";
+import { printerIO } from "../../../logging/printerIO";
 import { guardFstRO, isDefined } from "../../../util/guards";
 import { DownloadFileResult, downloadUrlsPar } from "../../../util/http/download-url-to-file";
 import { SRA } from "../../../util/types";
@@ -22,14 +23,14 @@ export type Deps =
   & DepFs<"utimes">;
 
 export const downloadICloudFilesChunked = (
-  { chunkSize = 5, updateTimes = true }: { chunkSize: number; updateTimes?: boolean },
+  { chunkSize = 5, updateTime = true }: { chunkSize: number; updateTime?: boolean },
 ): DownloadICloudFilesFunc<Deps> =>
 <S extends AuthenticatedState>(
   { downloadable }: { downloadable: DownloadItemMapped[] },
 ) => {
   return pipe(
     splitIntoChunks(downloadable, chunkSize),
-    A.map(c => downloadChunkPar<S>(c, updateTimes)),
+    A.map(c => downloadChunkPar<S>(c, updateTime)),
     SRTE.sequenceArray,
     SRTE.map(flow(RA.toArray, A.flatten)),
   );
@@ -57,8 +58,15 @@ const downloadChunkPar = <S extends AuthenticatedState>(
   updateTime: boolean,
 ): SRA<S, Deps, DownloadFileResult[]> => {
   const record = mappedArrayToRecord(chunk);
-  // FIX it sets wrong times
-  const postDownload = updateTimeHook(record);
+
+  const preDownload = (destpath: string) => () => TE.fromIO(printerIO.print(`Downloading ${destpath}`));
+
+  const postDownload = (destpath: string) =>
+    pipe(
+      destpath,
+      updateTimeHook(record),
+      RTE.chainFirstIOK(() => printerIO.print(`Downloaded  ${destpath}`)),
+    );
 
   return pipe(
     DriveApiMethods.downloadBatch<S>({
@@ -78,6 +86,7 @@ const downloadChunkPar = <S extends AuthenticatedState>(
         RTE.fromReaderTaskK(downloadUrlsPar<Deps>),
         RTE.local((deps: Deps) => ({
           ...deps,
+          preDownload: preDownload,
           postDownload: updateTime
             ? postDownload
             : undefined,

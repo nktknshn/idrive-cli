@@ -1,36 +1,39 @@
+import * as A from "fp-ts/Array";
 import { constVoid, pipe } from "fp-ts/lib/function";
-import * as NA from "fp-ts/lib/NonEmptyArray";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import { DepAskConfirmation } from "../../../deps-types";
 import { printerIO } from "../../../logging/printerIO";
 import { err } from "../../../util/errors";
 import { checkFolderExists } from "../../../util/fs/folder-check";
-import { normalizePath, normalizePaths } from "../../../util/normalize-path";
+import { guardFst } from "../../../util/guards";
+import { NormalizedPath, normalizePaths } from "../../../util/normalize-path";
 import { NEA } from "../../../util/types";
-import { DriveLookup } from "../..";
+import { DriveLookup, Types } from "../..";
 import { solvers } from "./conflict-solvers";
-import { type Deps as DFuncDeps, downloadICloudFilesChunked } from "./download-chunked";
+import { type Deps as DownloadFuncDeps, downloadICloudFilesChunked } from "./download-chunked";
 import { type Deps as DownloadDeps, downloadGeneric } from "./download-generic";
-import { downloadTaskFromFilesPaths } from "./download-task";
+import { partitionEmpties } from "./download-task";
 import { shallowDirMapper } from "./fs-mapper";
+import { DownloadTask } from "./types";
 
 type Args = {
   paths: NEA<string>;
   destpath: string;
   dry: boolean;
   chunkSize: number;
+  updateTime: boolean;
 };
 
 export type Deps =
   & DriveLookup.Deps
-  & DFuncDeps
   & DepAskConfirmation
+  & DownloadFuncDeps
   & DownloadDeps;
 
 /** Download files from multiple paths into a folder. Folders will be ignored. */
 export const downloadFiles = (
-  { paths, destpath, dry, chunkSize }: Args,
+  { paths, destpath, dry, chunkSize, updateTime }: Args,
 ): DriveLookup.Lookup<string, Deps> => {
   const npaths = normalizePaths(paths);
 
@@ -53,13 +56,23 @@ export const downloadFiles = (
         downloadGeneric({
           task,
           dry,
-          updateTime: true,
           toLocalFileSystemMapper: shallowDirMapper(destpath),
           conflictsSolver: solvers.defaultSolver,
-          downloadFiles: downloadICloudFilesChunked({ chunkSize }),
+          downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
         }),
       )
     ),
-    SRTE.map(() => "wuhuu"),
+  );
+};
+
+export const downloadTaskFromFilesPaths = (
+  npaths: NEA<NormalizedPath>,
+): DriveLookup.Lookup<DownloadTask> => {
+  return pipe(
+    DriveLookup.getByPathsStrictDocwsroot(npaths),
+    SRTE.map(A.zip(npaths)),
+    SRTE.map(A.filter(guardFst(Types.isFile))),
+    SRTE.map(A.map(([item, path]) => ({ path, item }))),
+    SRTE.map(partitionEmpties),
   );
 };

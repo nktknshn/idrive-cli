@@ -5,6 +5,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as RA from "fp-ts/ReadonlyArray";
 import { DepAskConfirmation } from "../../../deps-types";
 import { err } from "../../../util/errors";
+import { maxLength } from "../../../util/string";
 import { Types } from "../..";
 import { ConflictsSolver, Solution, SolutionAction } from "./conflict-solution";
 import { ConflictExists, isConflictExists, isConflictStatsError } from "./download-conflict";
@@ -118,6 +119,17 @@ const askEvery: ConflictsSolver<DepAskConfirmation> = (conflicts) => {
   );
 };
 
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = date.toLocaleString("default", { month: "short" });
+  const day = date.getDate();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const seconds = date.getSeconds().toString().padStart(2, "0");
+
+  return `${day} ${month} ${year} ${hours}:${minutes}:${seconds}`;
+};
+
 export const defaultSolver: ConflictsSolver<DepAskConfirmation> = (conflicts) => ({ askConfirmation }) => {
   const statsConflicts = pipe(conflicts, A.filter(isConflictStatsError));
   const existsConflicts = pipe(conflicts, A.filter(isConflictExists));
@@ -129,16 +141,27 @@ export const defaultSolver: ConflictsSolver<DepAskConfirmation> = (conflicts) =>
   }
 
   const askConflict = (c: ConflictExists): TE.TaskEither<Error, Solution> => {
-    const localSize = c.localitem.stats.size;
-    const remoteSize = c.mappedItem.downloadItem.item.size;
     const localPath = c.localitem.path;
     const remotePath = c.mappedItem.downloadItem.path;
 
-    const remoteModified = new Date(c.mappedItem.downloadItem.item.dateModified);
-    const localModified = new Date(c.localitem.stats.mtime);
+    const localSize = c.localitem.stats.size.toString();
+    const remoteSize = c.mappedItem.downloadItem.item.size.toString();
 
-    const message =
-      `overwrite ${localPath} (${localSize} bytes, ${localModified}) with ${remotePath} (${remoteSize} bytes, ${remoteModified})?`;
+    const remoteModified = formatDate(new Date(c.mappedItem.downloadItem.item.dateModified));
+    const localModified = formatDate(new Date(c.localitem.stats.mtime));
+
+    const maxPathLength = maxLength([localPath, remotePath]);
+    const maxSizeLength = maxLength([localSize, remoteSize]);
+    const maxModifiedLength = maxLength([localModified, remoteModified]);
+
+    const message = ``
+      + `overwrite? \n`
+      + `local:  ${localPath.padEnd(maxPathLength + 2)}size: ${localSize.padEnd(maxSizeLength + 2)}modified: ${
+        localModified.padEnd(maxModifiedLength + 2)
+      }\n`
+      + `remote: ${remotePath.padEnd(maxPathLength + 2)}size: ${remoteSize.padEnd(maxSizeLength + 2)}modified: ${
+        remoteModified.padEnd(maxModifiedLength + 2)
+      }`;
 
     return pipe(
       askConfirmation({
