@@ -85,9 +85,11 @@ export type DownloadFolderArgs<TSolverDeps, TDownloadDeps> =
 
 /** Accumulated download task data */
 export type DownloadTaskData = {
-  // folderTree: DriveTree.FlattenWithItems<Types.DetailsDocwsRoot | Types.NonRootDetails>;
+  // filtered items
   downloadTask: DownloadTask & { excluded?: DownloadItem[] };
+  // mapped items
   mappedTask: DownloadTaskMapped;
+  // conflicts with the local filesystem
   conflicts: Conflict[];
   solutions: Solution[];
   // resulting download task

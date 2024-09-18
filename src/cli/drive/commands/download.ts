@@ -12,6 +12,7 @@ type Args = {
   dry: boolean;
   recursive: boolean;
   overwrite: boolean;
+  depth: number;
   include: string[];
   exclude: string[];
   "keep-structure": boolean;
@@ -80,6 +81,7 @@ export const download = (
           path: path,
           dstpath: destpath,
           dry: args.dry,
+          depth: args.depth,
           include: args.include,
           exclude: args.exclude,
           chunkSize: args["chunk-size"],

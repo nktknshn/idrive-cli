@@ -90,6 +90,7 @@ const download = w.command(
           type: "boolean",
           description: "Do not update the atime and mtime of the files",
         },
+        depth: { alias: ["D"], default: Infinity, type: "number", description: "Depth of recursiion" },
       }).check((args) => {
         const paths = args.paths;
 

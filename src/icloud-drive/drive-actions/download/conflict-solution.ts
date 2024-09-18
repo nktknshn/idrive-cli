@@ -14,6 +14,14 @@ export type ConflictsSolver<Deps = EmptyObject> = (
   conflicts: NEA<Conflict>,
 ) => RTE.ReaderTaskEither<Deps, Error, Solution[]>;
 
+export const makeSolutionRecord = (
+  solutions: Solution[],
+): Record<string, Solution> => R.fromEntries(solutions.map((s) => [s[0].mappedItem.localpath, s]));
+
+export const makeConflictRecord = (
+  conflicts: Conflict[],
+): Record<string, Conflict> => R.fromEntries(conflicts.map(c => [c.mappedItem.localpath, c]));
+
 export const applySolutions = (
   task: DownloadTaskMapped,
   conflicts: Conflict[],
@@ -23,8 +31,8 @@ export const applySolutions = (
     skipMissingSolution?: boolean;
   } = {},
 ): DownloadTaskMapped => {
-  const conflictRec = R.fromEntries(conflicts.map(c => [c.mappedItem.localpath, c]));
-  const solutionRec = R.fromEntries(solutions.map((s) => [s[0].mappedItem.localpath, s]));
+  const conflictRec = makeConflictRecord(conflicts);
+  const solutionRec = makeSolutionRecord(solutions);
 
   const shouldStay = (item: DownloadItemMapped): boolean => {
     const conflict = R.lookup(item.localpath, conflictRec);
@@ -63,38 +71,3 @@ export const applySolutions = (
     localdirstruct: task.localdirstruct,
   };
 };
-
-// /** Applies solutions to the download task */
-// export const applySolutions = (
-//   { downloadable, empties, localdirstruct }: DownloadTaskMapped,
-//   conflicts: Conflict[],
-//   solutions: Solution[],
-// ): DownloadTaskMapped => {
-//   const fa = (d: {
-//     downloadItem: DownloadItem;
-//     localpath: string;
-//   }) =>
-//     pipe(
-//       solutions,
-//       RA.findFirstMap(
-//         ([conflict, action]) =>
-//           conflict.mappedItem.downloadItem.item.drivewsid === d.downloadItem.item.drivewsid
-//             ? O.some([conflict.mappedItem, action] as const)
-//             : O.none,
-//       ),
-//       O.getOrElse(() => [d, "overwrite" as SolutionAction] as const),
-//     );
-
-//   const findAction = (fs: { downloadItem: DownloadItem; localpath: string }[]) =>
-//     pipe(
-//       fs,
-//       A.map((c) => fa(c)),
-//       A.filterMap(([d, action]) => action === "overwrite" ? O.some(d) : O.none),
-//     );
-
-//   return {
-//     downloadable: findAction(downloadable),
-//     empties: findAction(empties),
-//     localdirstruct,
-//   };
-// };

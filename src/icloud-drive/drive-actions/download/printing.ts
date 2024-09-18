@@ -2,12 +2,21 @@ import * as A from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import { fst } from "fp-ts/lib/ReadonlyTuple";
+import * as R from "fp-ts/lib/Record";
+import * as O from "fp-ts/Option";
 import { guardFst } from "../../../util/guards";
 import { sizeHumanReadable } from "../../../util/size-human-readable";
-import { maxLength } from "../../../util/string";
+import { maxLength, removeTrailingNewlines } from "../../../util/string";
+import { makeSolutionRecord } from "./conflict-solution";
 import { partitionConflicts } from "./download-conflict";
 import { DownloadFileResult, DownloadTaskData } from "./types";
+/*
 
+for f in $(cat files.txt); do
+  sha256sum $f | tee -a sums.txt
+done
+
+*/
 export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTaskData) => {
   let result = "";
 
@@ -17,25 +26,53 @@ export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTask
   const totalSize = data.solvedTask.downloadable.reduce((a, b) => a + b.downloadItem.item.size, 0);
   const maxPathLength = maxLength(data.solvedTask.downloadable.map(a => a.downloadItem.path));
 
-  result += `${column("Files:")}${downloadCount}\n`;
+  result += `${column("Files to download:")}${downloadCount}\n`;
   result += `${column("Total size:")}${sizeHumanReadable(totalSize)}\n`;
 
   if (verbose) {
-    result += `${column("Local dirs:")}${data.solvedTask.localdirstruct.join("\n")}\n`;
-    result += "\n";
+    if (data.downloadTask.excluded && data.downloadTask.excluded.length > 0) {
+      result += "\n";
+      result += "Excluded files:\n";
 
-    result += "Conflicts:\n";
+      for (const item of data.downloadTask.excluded) {
+        result += `${item.path}\n`;
+      }
+    }
+
+    result += "\nLocal folders to create (if they don't exist):\n";
+    for (const dir of data.solvedTask.localdirstruct) {
+      result += `${dir}\n`;
+    }
 
     const { exists, statserror } = partitionConflicts(data.conflicts);
 
     if (exists.length > 0) {
+      const maxLocalPathLength = maxLength(exists.map(c => c.mappedItem.localpath));
+
+      const cr = makeSolutionRecord(data.solutions);
+
       result += "\n";
-      result += "Existing files:\n";
+      result += "Existing local files:\n";
 
       for (const conflict of exists) {
-        result += `${conflict.mappedItem.localpath}\n`;
+        const so = R.lookup(conflict.mappedItem.localpath, cr);
+
+        if (O.isSome(so)) {
+          result += `${conflict.mappedItem.localpath.padEnd(maxLocalPathLength + 2)} → ${so.value[1]}\n`;
+        } else {
+          result += `${conflict.mappedItem.localpath.padEnd(maxLocalPathLength + 2)} → ?\n`;
+        }
       }
     }
+
+    // if (data.solutions.length > 0) {
+    //   result += "\n";
+    //   result += "Solutions:\n";
+
+    //   for (const solution of data.solutions) {
+    //     result += `${solution[0].mappedItem.localpath} → ${solution[1]}\n`;
+    //   }
+    // }
 
     if (statserror.length > 0) {
       result += "\n";
@@ -48,12 +85,12 @@ export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTask
     result += "\n";
     result += "Result:\n";
 
-    for (const { downloadItem: item, localpath } of data.solvedTask.downloadable) {
-      result += `${column(item.path, maxPathLength + 5)} → ${localpath}\n`;
+    for (const { downloadItem, localpath } of data.solvedTask.downloadable) {
+      result += `${column(downloadItem.path, maxPathLength + 5)} → ${localpath}\n`;
     }
   }
 
-  return result;
+  return removeTrailingNewlines(result);
 };
 
 export const resultsJson = (results: DownloadFileResult[]) => {

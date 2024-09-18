@@ -29,6 +29,7 @@ export type ConflictStatsError = {
 export const isConflictExists = (c: Conflict): c is ConflictExists => c.tag === "exists";
 export const isConflictStatsError = (c: Conflict): c is ConflictStatsError => c.tag === "statserror";
 
+/** Partitions a list of conflicts*/
 export const partitionConflicts = (conflicts: Conflict[]): {
   exists: ConflictExists[];
   statserror: ConflictStatsError[];

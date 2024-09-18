@@ -171,12 +171,16 @@ const askConflictExists =
   };
 
 export const defaultSolver = (
-  { skipSameSizeAndDate = false }: { skipSameSizeAndDate?: boolean } = {},
+  { skipSameSizeAndDate = false }: {
+    /** If true, skips files that have the same size and date */
+    skipSameSizeAndDate?: boolean;
+  } = {},
 ): ConflictsSolver<DepAskConfirmation> =>
 (conflicts) =>
 ({ askConfirmation }) => {
   const statsConflicts = pipe(conflicts, A.filter(isConflictStatsError));
   let existsConflicts = pipe(conflicts, A.filter(isConflictExists));
+  const solutions: Solution[] = [];
 
   if (statsConflicts.length > 0) {
     return TE.left(
@@ -189,6 +193,14 @@ export const defaultSolver = (
     && c.localitem.stats.mtime.toString() == new Date(c.mappedItem.downloadItem.item.dateModified).toString();
 
   if (skipSameSizeAndDate) {
+    solutions.push(
+      ...pipe(
+        existsConflicts,
+        A.filter(sameFileSizeAndDate),
+        A.map((conflict) => [conflict, "skip"] as const),
+      ),
+    );
+
     existsConflicts = pipe(
       existsConflicts,
       A.filter(not(sameFileSizeAndDate)),
@@ -199,6 +211,7 @@ export const defaultSolver = (
     existsConflicts,
     A.map(askConflictExists({ askConfirmation })),
     A.sequence(TE.ApplicativeSeq),
+    TE.map(A.concat(solutions)),
   );
 };
 

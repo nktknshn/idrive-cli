@@ -16,9 +16,11 @@ export type RecursiveArgs = {
   dry: boolean;
   include: string[];
   exclude: string[];
+  // rename to full path
   keepStructure: boolean;
   chunkSize: number;
   updateTime: boolean;
+  depth: number;
 };
 
 /** recursively download files */
@@ -30,7 +32,6 @@ export const downloadRecursive = (
   return downloadFolder(
     {
       ...args,
-      depth: Infinity,
       treefilter: makeDownloadTaskFromTree({
         filterFiles: filterByIncludeExcludeGlobs(args),
       }),
@@ -41,9 +42,12 @@ export const downloadRecursive = (
           p => p.substring(dirname.length),
         ),
       conflictsSolver: cfs =>
-        cfs.length > 10
-          ? solvers.askAll(cfs)
-          : solvers.askEvery(cfs),
+        solvers.defaultSolver({
+          skipSameSizeAndDate: true,
+        })(cfs),
+      // cfs.length > 10
+      //   ? solvers.askAll(cfs)
+      //   : solvers.askEvery(cfs),
       downloadFiles: downloadICloudFilesChunked({ chunkSize: args.chunkSize }),
     },
   );
