@@ -3,6 +3,7 @@ import { pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as R from "fp-ts/lib/Record";
 import * as O from "fp-ts/Option";
+import { getDirectoryStructure } from "../../../util/get-directory-structure";
 import { EmptyObject, NEA } from "../../../util/types";
 import { Conflict } from "./download-conflict";
 import { DownloadItemMapped, DownloadTaskMapped } from "./types";
@@ -65,9 +66,17 @@ export const applySolutions = (
     A.filter(shouldStay),
   );
 
+  // the localdirstruct should be adjusted to the new structure
+  const localdirstruct = getDirectoryStructure(
+    [
+      ...downloadable.map(d => d.localpath),
+      ...empties.map(d => d.localpath),
+    ],
+  );
+
   return {
     downloadable,
     empties,
-    localdirstruct: task.localdirstruct,
+    localdirstruct,
   };
 };

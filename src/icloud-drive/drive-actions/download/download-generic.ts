@@ -1,15 +1,14 @@
 import * as A from "fp-ts/Array";
-import { flow, pipe } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import * as TE from "fp-ts/TaskEither";
 import { DepFs } from "../../../deps-types";
-import { printerIO } from "../../../logging/printerIO";
 import { DriveLookup } from "../..";
 import { of } from "../../drive-lookup";
 import { applySolutions } from "./conflict-solution";
 import { lookForLocalConflicts } from "./download-conflict";
 import { executeDownloadTask } from "./download-task";
-import { showDownloadTaskData } from "./printing";
 import { DownloadGenericArgs } from "./types";
 
 export type Deps =
@@ -30,10 +29,9 @@ export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
     toLocalFileSystemMapper,
     conflictsSolver,
     downloadFiles,
+    hookDownloadTaskData,
   }: DownloadGenericArgs<TSolverDeps, TDownloadDeps>,
 ): DriveLookup.Lookup<string, Deps & TSolverDeps & TDownloadDeps> => {
-  const verbose = dry;
-
   const downloadFolderTask = pipe(
     of({ args: { dry } }),
     SRTE.bindW("downloadTask", () => DriveLookup.of(task)),
@@ -65,10 +63,15 @@ export const downloadGeneric = <TSolverDeps, TDownloadDeps>(
 
   return pipe(
     downloadFolderTask,
-    SRTE.chainFirstIOK(flow(
-      showDownloadTaskData({ verbose }),
-      printerIO.print,
-    )),
+    SRTE.chainTaskEitherKW(a =>
+      hookDownloadTaskData
+        ? hookDownloadTaskData(a)
+        : TE.right(a)
+    ),
+    // SRTE.chainFirstIOK(flow(
+    //   showDownloadTaskData({ verbose }),
+    //   printerIO.print,
+    // )),
     SRTE.map(({ solvedTask }) => solvedTask),
     dry
       ? SRTE.map(() => [])

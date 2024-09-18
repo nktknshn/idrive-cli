@@ -4,6 +4,8 @@ import { flow, pipe } from "fp-ts/lib/function";
 import { fst } from "fp-ts/lib/ReadonlyTuple";
 import * as R from "fp-ts/lib/Record";
 import * as O from "fp-ts/Option";
+import * as TE from "fp-ts/TaskEither";
+import { printerIO } from "../../../logging/printerIO";
 import { guardFst } from "../../../util/guards";
 import { sizeHumanReadable } from "../../../util/size-human-readable";
 import { maxLength, removeTrailingNewlines } from "../../../util/string";
@@ -32,7 +34,7 @@ export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTask
   if (verbose) {
     if (data.downloadTask.excluded && data.downloadTask.excluded.length > 0) {
       result += "\n";
-      result += "Excluded files:\n";
+      result += `Excluded files (${data.downloadTask.excluded.length}):\n`;
 
       for (const item of data.downloadTask.excluded) {
         result += `${item.path}\n`;
@@ -103,4 +105,9 @@ export const resultsJson = (results: DownloadFileResult[]) => {
       A.map(([err, [_url, path]]) => `${path}: ${err.left}`),
     ),
   };
+};
+
+export const hookPrinting = ({ verbose }: { verbose: boolean }) => (data: DownloadTaskData) => {
+  printerIO.print(showDownloadTaskData({ verbose })(data))();
+  return TE.right(data);
 };

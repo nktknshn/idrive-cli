@@ -1,3 +1,4 @@
+import { flow } from "fp-ts/lib/function";
 import micromatch from "micromatch";
 import { DepAskConfirmation } from "../../../deps-types";
 import { Path } from "../../../util/path";
@@ -7,6 +8,7 @@ import { Deps as DFuncDeps, downloadICloudFilesChunked } from "./download-chunke
 import { Deps as DownloadFolderDeps, downloadFolder } from "./download-folder";
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-tree";
 import { recursiveDirMapper } from "./fs-mapper";
+import { hookPrinting } from "./printing";
 
 export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation;
 
@@ -21,6 +23,7 @@ export type RecursiveArgs = {
   chunkSize: number;
   updateTime: boolean;
   depth: number;
+  verbose: boolean;
 };
 
 /** recursively download files */
@@ -49,6 +52,9 @@ export const downloadRecursive = (
       //   ? solvers.askAll(cfs)
       //   : solvers.askEvery(cfs),
       downloadFiles: downloadICloudFilesChunked({ chunkSize: args.chunkSize }),
+      hookDownloadTaskData: flow(
+        hookPrinting({ verbose: args.verbose || args.dry }),
+      ),
     },
   );
 };

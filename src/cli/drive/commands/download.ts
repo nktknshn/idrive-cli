@@ -18,6 +18,7 @@ type Args = {
   "keep-structure": boolean;
   "chunk-size": number;
   "no-update-time": boolean;
+  verbose: boolean;
 };
 
 export const download = (
@@ -48,6 +49,7 @@ export const download = (
       destpath: destpath,
       chunkSize: args["chunk-size"],
       dry: args.dry,
+      verbose: args.verbose,
       updateTime,
     });
   }
@@ -74,6 +76,7 @@ export const download = (
           destpath: destpath,
           chunkSize: args["chunk-size"],
           dry: args.dry,
+          verbose: args.verbose,
           updateTime,
         })
         : args.recursive
@@ -86,6 +89,7 @@ export const download = (
           exclude: args.exclude,
           chunkSize: args["chunk-size"],
           keepStructure: args["keep-structure"],
+          verbose: args.verbose,
           updateTime,
         })
         : DriveActions.downloadShallow({
@@ -95,6 +99,7 @@ export const download = (
           include: args.include,
           exclude: args.exclude,
           chunkSize: args["chunk-size"],
+          verbose: args.verbose,
           updateTime,
         })
     ),

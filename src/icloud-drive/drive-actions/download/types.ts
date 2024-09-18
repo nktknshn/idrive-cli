@@ -1,9 +1,10 @@
 import * as R from "fp-ts/lib/Record";
-import { AuthenticatedState } from "../../../icloud-core/icloud-request";
-import { DriveTree, Types } from "../..";
+import * as TE from "fp-ts/TaskEither";
 
+import { AuthenticatedState } from "../../../icloud-core/icloud-request";
 import { DownloadFileResult } from "../../../util/http/download-url-to-file";
 import { SRA } from "../../../util/types";
+import { DriveTree, Types } from "../..";
 import { ConflictsSolver, Solution } from "./conflict-solution";
 import { Conflict } from "./download-conflict";
 
@@ -62,10 +63,12 @@ export type DownloadGenericArgs<TSolverDeps, TDownloadDeps> = {
   task: DownloadTask;
   /** decides where to download the files to */
   toLocalFileSystemMapper: (ds: DownloadTask) => DownloadTaskMapped;
-  /** provides strategy to resolve conflicts and errors. Like overwrite, skip, etc. */
+  /** provides strategy to resolve conflicts and errors. Two options: overwrite, skip. */
   conflictsSolver: ConflictsSolver<TSolverDeps>;
   /** downloads files from the cloud */
   downloadFiles: DownloadICloudFilesFunc<TDownloadDeps>;
+  // hook before downloading
+  hookDownloadTaskData?: (data: DownloadTaskData) => TE.TaskEither<Error, DownloadTaskData>;
 };
 
 export type DownloadFolderArgs<TSolverDeps, TDownloadDeps> =
@@ -81,6 +84,8 @@ export type DownloadFolderArgs<TSolverDeps, TDownloadDeps> =
     conflictsSolver: ConflictsSolver<TSolverDeps>;
     /** downloads files from the cloud */
     downloadFiles: DownloadICloudFilesFunc<TDownloadDeps>;
+    // hook before downloading
+    hookDownloadTaskData?: (data: DownloadTaskData) => TE.TaskEither<Error, DownloadTaskData>;
   };
 
 /** Accumulated download task data */

@@ -1,4 +1,4 @@
-import { pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import { DepAskConfirmation } from "../../../deps-types";
 import { SRA } from "../../../util/types";
 import { DriveLookup } from "../..";
@@ -7,6 +7,7 @@ import { Deps as DFuncDeps, downloadICloudFilesChunked } from "./download-chunke
 import { Deps as DownloadFolderDeps, downloadFolder } from "./download-folder";
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-tree";
 import { shallowDirMapper } from "./fs-mapper";
+import { hookPrinting } from "./printing";
 
 export type Deps =
   & DownloadFolderDeps
@@ -21,11 +22,12 @@ type ShallowArgs = {
   include: string[];
   exclude: string[];
   updateTime: boolean;
+  verbose: boolean;
 };
 
 /** Download files from a directory */
 export const downloadShallow = (
-  { path, dry, dstpath, chunkSize, include, exclude, updateTime }: ShallowArgs,
+  { path, dry, dstpath, chunkSize, include, exclude, updateTime, verbose }: ShallowArgs,
 ): SRA<DriveLookup.State, Deps, string> => {
   return pipe(
     downloadFolder(
@@ -42,6 +44,9 @@ export const downloadShallow = (
           skipSameSizeAndDate: true,
         }),
         downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
+        hookDownloadTaskData: flow(
+          hookPrinting({ verbose: verbose || dry }),
+        ),
       },
     ),
   );

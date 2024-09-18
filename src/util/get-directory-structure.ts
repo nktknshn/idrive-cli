@@ -10,7 +10,7 @@ export const getDirectoryStructure = (
   const parseDown = (path: string) => {
     const result = [];
 
-    while (path !== "/") {
+    while (path !== "/" && path !== "") {
       result.push(path);
       path = Path.parse(path).dir;
     }

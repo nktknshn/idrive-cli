@@ -1,37 +1,37 @@
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as t from 'io-ts'
-import * as AR from '../../icloud-core/icloud-request'
-import { AuthenticatedState } from '../../icloud-core/icloud-request'
-import { logAPI } from '../../icloud-core/icloud-request/log'
-import { readWebauthToken } from '../../icloud-core/session/session-cookies'
-import { debugTimeSRTE } from '../../logging/debug-time'
-import { apiLoggerIO } from '../../logging/loggerIO'
-import { HttpRequest, uploadFileRequest } from '../../util/http/fetch-client'
-import { runLogging } from '../../util/srte-utils'
+import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
+import * as AR from "../../icloud-core/icloud-request";
+import { AuthenticatedState } from "../../icloud-core/icloud-request";
+import { logAPI } from "../../icloud-core/icloud-request/log";
+import { readWebauthToken } from "../../icloud-core/session/session-cookies";
+import { debugTimeSRTE } from "../../logging/debug-time";
+import { apiLoggerIO } from "../../logging/loggerIO";
+import { HttpRequest, uploadFileRequest } from "../../util/http/fetch-client";
+import { runLogging } from "../../util/srte-utils";
 
 export type UpdateDocumentsRequest = {
-  allow_conflict: boolean
-  btime: number
-  mtime: number
-  command: 'add_file'
-  document_id: string
+  allow_conflict: boolean;
+  btime: number;
+  mtime: number;
+  command: "add_file";
+  document_id: string;
   file_flags: {
-    is_executable: boolean
-    is_hidden: boolean
-    is_writable: boolean
-  }
+    is_executable: boolean;
+    is_hidden: boolean;
+    is_writable: boolean;
+  };
   path: {
-    path: string
-    starting_document_id: string
-  }
+    path: string;
+    starting_document_id: string;
+  };
   data: {
-    receipt: string
-    reference_signature: string
-    signature: string
-    wrapping_key: string
-    size: number
-  }
-}
+    receipt: string;
+    reference_signature: string;
+    signature: string;
+    wrapping_key: string;
+    size: number;
+  };
+};
 
 // const updateDocumentsRequest = t.type({
 //   allow_conflict: t.boolean,
@@ -57,19 +57,19 @@ export type UpdateDocumentsRequest = {
 //   }),
 // })
 
-export type UpdateDocumentsResponse = t.TypeOf<typeof updateDocumentsResponse>
-export type SingleFileResponse = t.TypeOf<typeof singleFileResponse>
-export type UploadResponse = t.TypeOf<typeof uploadResponse>
-export type UploadResponseItem = t.TypeOf<typeof uploadResponseItem>
+export type UpdateDocumentsResponse = t.TypeOf<typeof updateDocumentsResponse>;
+export type SingleFileResponse = t.TypeOf<typeof singleFileResponse>;
+export type UploadResponse = t.TypeOf<typeof uploadResponse>;
+export type UploadResponseItem = t.TypeOf<typeof uploadResponseItem>;
 
 const uploadResponseItem = t.type({
   document_id: t.string,
   url: t.string,
   owner: t.string,
   owner_id: t.string,
-})
+});
 
-const uploadResponse = t.array(uploadResponseItem)
+const uploadResponse = t.array(uploadResponseItem);
 
 const singleFileResponse = t.type({
   singleFile: t.type({
@@ -79,12 +79,12 @@ const singleFileResponse = t.type({
     receipt: t.string,
     size: t.number,
   }),
-})
+});
 
 const status = t.type({
   status_code: t.number,
   error_message: t.string,
-})
+});
 
 const updateDocumentsResponse = t.type({
   status,
@@ -104,27 +104,27 @@ const updateDocumentsResponse = t.type({
       }),
     },
   )),
-})
+});
 
 export const upload = <S extends AuthenticatedState>(
   { zone, contentType, filename, size, type }: {
-    zone: string
-    contentType: string
-    filename: string
-    size: number
-    type: 'FILE'
+    zone: string;
+    contentType: string;
+    filename: string;
+    size: number;
+    type: "FILE";
   },
 ): AR.ApiRequest<UploadResponse, S> =>
-  logAPI('upload')(AR.basicJsonRequest(
+  logAPI("upload")(AR.basicJsonRequest(
     ({ state: { accountData, session } }) => ({
-      method: 'POST',
+      method: "POST",
       url: `${accountData.webservices.docws.url}/ws/${zone}/upload/web?token=${
-        encodeURIComponent(readWebauthToken(session.cookies).t ?? '')
+        encodeURIComponent(readWebauthToken(session.cookies).t ?? "")
       }`,
       options: { addClientInfo: true, data: { filename, content_type: contentType, size, type } },
     }),
     uploadResponse.decode,
-  ))
+  ));
 
 export const singleFileUpload = <S extends AuthenticatedState>(
   { buffer, url, filename }: { buffer: Buffer; url: string; filename: string },
@@ -134,19 +134,19 @@ export const singleFileUpload = <S extends AuthenticatedState>(
     AR.handleResponse<SingleFileResponse, S, AR.RequestDeps>(
       AR.basicJsonResponse(singleFileResponse.decode),
     ),
-    runLogging(apiLoggerIO.debug('singleFileUpload')),
-    debugTimeSRTE('singleFileUpload'),
-  )
-}
+    runLogging(apiLoggerIO.debug("singleFileUpload")),
+    debugTimeSRTE("singleFileUpload"),
+  );
+};
 
 export const updateDocuments = <S extends AuthenticatedState>(
   { zone, data }: { zone: string; data: UpdateDocumentsRequest },
 ): AR.ApiRequest<UpdateDocumentsResponse, S> =>
-  logAPI('updateDocuments')(AR.basicJsonRequest(
+  logAPI("updateDocuments")(AR.basicJsonRequest(
     ({ state: { accountData } }) => ({
-      method: 'POST',
+      method: "POST",
       url: `${accountData.webservices.docws.url}/ws/${zone}/update/documents?errorBreakdown=true`,
       options: { addClientInfo: true, data },
     }),
     updateDocumentsResponse.decode,
-  ))
+  ));

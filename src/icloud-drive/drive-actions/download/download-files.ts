@@ -1,5 +1,5 @@
 import * as A from "fp-ts/Array";
-import { constVoid, pipe } from "fp-ts/lib/function";
+import { constVoid, flow, pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import { DepAskConfirmation } from "../../../deps-types";
@@ -15,6 +15,7 @@ import { type Deps as DownloadFuncDeps, downloadICloudFilesChunked } from "./dow
 import { type Deps as DownloadDeps, downloadGeneric } from "./download-generic";
 import { partitionEmpties } from "./download-task";
 import { shallowDirMapper } from "./fs-mapper";
+import { hookPrinting } from "./printing";
 import { DownloadTask } from "./types";
 
 type Args = {
@@ -23,6 +24,7 @@ type Args = {
   dry: boolean;
   chunkSize: number;
   updateTime: boolean;
+  verbose: boolean;
 };
 
 export type Deps =
@@ -33,7 +35,7 @@ export type Deps =
 
 /** Download files from multiple paths into a folder. Folders will be ignored. */
 export const downloadFiles = (
-  { paths, destpath, dry, chunkSize, updateTime }: Args,
+  { paths, destpath, dry, chunkSize, updateTime, verbose }: Args,
 ): DriveLookup.Lookup<string, Deps> => {
   const npaths = normalizePaths(paths);
 
@@ -64,6 +66,9 @@ export const downloadFiles = (
           toLocalFileSystemMapper: shallowDirMapper(destpath),
           conflictsSolver: solvers.defaultSolver({ skipSameSizeAndDate: true }),
           downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
+          hookDownloadTaskData: flow(
+            hookPrinting({ verbose: verbose || dry }),
+          ),
         }),
       )
     ),

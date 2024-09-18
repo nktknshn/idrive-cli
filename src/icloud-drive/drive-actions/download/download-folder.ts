@@ -28,6 +28,7 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
     toLocalFileSystemMapper,
     conflictsSolver,
     downloadFiles,
+    hookDownloadTaskData,
   }: DownloadFolderArgs<TSolverDeps, TDownloadDeps>,
 ): DriveLookup.Lookup<string, Deps & TSolverDeps & TDownloadDeps> => {
   return pipe(
@@ -40,6 +41,7 @@ export const downloadFolder = <TSolverDeps, TDownloadDeps>(
         toLocalFileSystemMapper,
         conflictsSolver,
         downloadFiles,
+        hookDownloadTaskData,
       })
     ),
   );
