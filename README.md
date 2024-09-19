@@ -65,7 +65,7 @@ Authenticate the session file
 
 Use `ICLOUD_SESSION_FILE` environment variable to specify the session file
 
-`export ICLOUD_SESSION_FILE=~/.config/icloud-session.json`
+`export ICLOUD_SESSION_FILE=~/.config/idrive/icloud-session.json`
 
 ### ls
 
@@ -81,7 +81,7 @@ List directory contents. Supports globs
 
 Multiple paths
 
-`idrive ls /MyNotes/ '/Camera/*.jpg' /Pages/Стильный\ отчет.pages`
+`idrive ls /MyNotes/ '/Camera/*.jpg' /Pages/Report.pages`
 
 More verbose output (adds size, date, item type)
 
@@ -107,7 +107,7 @@ Sort by size recursively looking for the largest files
 
 `idrive ls -S size -R -h size /`
 
-Recursive listing (may take some time to process deep trees). The command below will save the whole tree into the cache
+Recursive listing (may take some time to process deep trees). Note: the command below will save the whole tree into the cache
 
 `idrive ls -R '/`
 
@@ -124,7 +124,6 @@ Output result as a tree
 `idrive ls -R -D 2 --tree '/MyNotes/my1/'`
 
 `idrive ls -R --tree '/MyNotes/my1/**/*.md'`
-
 
 Search in the cache (will fail if the cache is not enough to fulfill the request)
 
@@ -192,7 +191,7 @@ Remote file will be moved
 
 <!-- 
 ### cp <srcpath> <dstpath> 
-TODO not implemented
+TODO not implemented. Note: currently file cloning fails with 500 error in the official web client
 -->
 
 ### recover
@@ -209,6 +208,8 @@ Creates a folder
 
 ### edit
 
+Editing works by downloading the file to a temporary file and uploading it back. It seems there is no way to overwrite remote file, so the remote file will be removed before uploading.
+
 Opens the file in `vi`. If the file is not found, it will be created.
 
 `idrive edit /MyNotes/my1/notes/note1.md` 
@@ -219,14 +220,13 @@ Opens the file in a different editor (defaults to `vi`)
 
 `idrive edit /Camera/IMG_0205.PNG --editor gimp`
 
-
 ### download <remotepath> <localpath>
 
 Download a file or a folder content.
 
-`idrive download '/MyNotes/my1/note1.md' ./outputdir`
-
 A single file
+
+`idrive download '/MyNotes/my1/note1.md' ./outputdir`
 
 `idrive download '/MyNotes/my1/*.md' ./outputdir`
 
@@ -309,3 +309,9 @@ Will not use the API. Only retrieve from cache.
 `--api-usage fallback`
 
 Retrieves from API if the cache is not enough.
+
+
+## TODO
+
+- [ ] ls JSON output
+- [ ] cp

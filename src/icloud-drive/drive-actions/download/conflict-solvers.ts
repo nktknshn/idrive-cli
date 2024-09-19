@@ -248,7 +248,7 @@ export const defaultSolver = (
     existsConflicts = [];
   }
 
-  // ask for solutions
+  // ask for solutions for the rest
   return pipe(
     existsConflicts,
     A.map(askConflictExists({ askConfirmation })),
@@ -261,6 +261,8 @@ export const solvers = {
   defaultSolver,
   failOnConflicts,
   skipAll,
+  skipExisting,
+  overwriteExisting,
   overwriteAll,
   rename,
   overwriteIfSizeDifferent,

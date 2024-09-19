@@ -36,7 +36,11 @@ export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTask
       }
     }
 
-    result += "\nLocal folders to create (if they don't exist):\n";
+    // data.solvedTask.localdirstruct
+    result += `\nLocal folders to create (if they don't exist): ${
+      data.solvedTask.localdirstruct.length === 0 ? "none" : ""
+    }\n`;
+
     for (const dir of data.solvedTask.localdirstruct) {
       result += `${dir}\n`;
     }

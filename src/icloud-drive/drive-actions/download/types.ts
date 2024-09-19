@@ -12,6 +12,7 @@ import { Conflict } from "./download-conflict";
 export type DownloadItem = {
   /** remote path */
   path: string;
+  /** remote file */
   item: Types.DriveChildrenItemFile;
 };
 

@@ -5,6 +5,7 @@ import * as RT from "fp-ts/lib/ReaderTask";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as RA from "fp-ts/ReadonlyArray";
 import * as Task from "fp-ts/Task";
+
 import { DepFs } from "../../../deps-types";
 import { FsStats } from "../../../util/fs";
 import { isEnoentError } from "../../../util/fs/is-enoent-error";
@@ -25,6 +26,16 @@ export type ConflictStatsError = {
   mappedItem: DownloadItemMapped;
   error: Error;
 };
+
+export const conflictExists = (
+  mappedItem: DownloadItemMapped,
+  localitem: LocalTreeElement,
+): ConflictExists => ({ tag: "exists", mappedItem, localitem });
+
+export const conflictStatsError = (
+  mappedItem: DownloadItemMapped,
+  error: Error,
+): ConflictStatsError => ({ tag: "statserror", mappedItem, error });
 
 export const isConflictExists = (c: Conflict): c is ConflictExists => c.tag === "exists";
 export const isConflictStatsError = (c: Conflict): c is ConflictStatsError => c.tag === "statserror";
@@ -78,15 +89,14 @@ const handleStatsItem = (
 const handleError = (mappedItem: DownloadItemMapped) => (error: Error): E.Either<Conflict, DownloadItemMapped> => {
   return isEnoentError(error)
     ? E.right(mappedItem)
-    : E.left({ tag: "statserror", mappedItem, error });
+    : E.left(conflictStatsError(mappedItem, error));
 };
 
 const handleStats = (mappedItem: DownloadItemMapped) => (stats: FsStats): E.Either<Conflict, DownloadItemMapped> =>
   E.left(
-    {
-      tag: "exists",
+    conflictExists(
       mappedItem,
-      localitem: {
+      {
         type: stats.isDirectory()
           ? "directory" as const
           : "file" as const,
@@ -94,7 +104,7 @@ const handleStats = (mappedItem: DownloadItemMapped) => (stats: FsStats): E.Eith
         path: mappedItem.localpath,
         name: Path.basename(mappedItem.localpath),
       },
-    },
+    ),
   );
 
 export const showConflict = (conflict: Conflict): string => {
