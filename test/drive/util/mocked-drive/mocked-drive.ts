@@ -7,6 +7,7 @@ import { rootDrivewsid } from "../../../../src/icloud-drive/drive-types/types-io
 import * as V from "../../../../src/icloud-drive/util/get-by-path-types";
 import { parseFilename } from "../../../../src/util/filename";
 import { guardFstRO, isDefined } from "../../../../src/util/guards";
+import { NormalizedPath, npath, Path } from "../../../../src/util/path";
 import { randomUUIDCap, recordFromTuples } from "../../../../src/util/util";
 
 type File<N extends string> = {
@@ -73,30 +74,27 @@ export const docwsroot = <T extends (Folder<any[], any> | AppLibray<any[], any> 
   };
 };
 
+type ChildFile = File<any> & { d: Types.DriveChildrenItemFile; path: NormalizedPath };
+
+type ChildFolder = Folder<any[], any> & {
+  d: Types.DetailsFolder;
+  children: ChildrenArray<any>;
+  c: ChildrenTree<any>;
+  path: NormalizedPath;
+};
+
+type ChildAppLibrary = AppLibray<any[], any> & {
+  d: Types.DetailsAppLibrary;
+  children: ChildrenArray<any>;
+  c: ChildrenTree<any>;
+  path: NormalizedPath;
+};
+
 /** a folder's children */
 type Child =
-  | (
-    & File<any>
-    & {
-      d: Types.DriveChildrenItemFile;
-    }
-  )
-  | (
-    & Folder<any[], any>
-    & {
-      d: Types.DetailsFolder;
-      children: ChildrenArray<any>;
-      c: ChildrenTree<any>;
-    }
-  )
-  | (
-    & AppLibray<any[], any>
-    & {
-      d: Types.DetailsAppLibrary;
-      children: ChildrenArray<any>;
-      c: ChildrenTree<any>;
-    }
-  );
+  | ChildFile
+  | ChildFolder
+  | ChildAppLibrary;
 
 /** Typed children array */
 type ChildrenArray<TChildren> = TChildren extends [infer TChild, ...(infer TChildrenRest)] ? [
@@ -133,12 +131,14 @@ type ChildrenTree<TChildren> = TChildren extends [infer TChild, ...(infer TChild
       TChild extends Folder<infer TFolderChildren, infer TFolderName> ? (
           Record<
             TFolderName,
+            // Child
             & {
               /** folder details */
               d: Types.DetailsFolder;
               /** children dict */
               c: ChildrenTree<TFolderChildren>;
-              validPath: V.PathValid<Types.DetailsDocwsRoot>;
+              // validPath: V.PathValid<Types.DetailsDocwsRoot>;
+              path: string;
             }
             & Folder<TFolderChildren, TFolderName>
           >
@@ -146,17 +146,23 @@ type ChildrenTree<TChildren> = TChildren extends [infer TChild, ...(infer TChild
         : TChild extends AppLibray<infer TAppLibChildren, infer TAppLibName> ? (
             Record<
               TAppLibName,
+              // Child
               & {
                 d: Types.DetailsAppLibrary;
                 c: ChildrenTree<TAppLibChildren>;
-                validPath: V.PathValid<Types.DetailsDocwsRoot>;
+                // validPath: V.PathValid<Types.DetailsDocwsRoot>;
+                path: string;
               }
               & AppLibray<TAppLibChildren, TAppLibName>
             >
           )
         : TChild extends File<infer TFileName> ? Record<
             TFileName,
-            & { d: Types.DriveChildrenItemFile }
+            // Child
+            & {
+              d: Types.DriveChildrenItemFile;
+              path: string;
+            }
             & File<TFileName>
           >
         : never
@@ -164,68 +170,57 @@ type ChildrenTree<TChildren> = TChildren extends [infer TChild, ...(infer TChild
     & ChildrenTree<TChildrenRest>
   : Record<string, unknown>;
 
-export const makeFolder = ({ parentId, zone }: { parentId: string; zone: string }) =>
-(f: Folder<any[], any>):
-  & Folder<any[], any>
-  & {
-    d: Types.DetailsFolder;
-    children: ChildrenArray<any>;
-    c: ChildrenTree<any>;
-  } =>
-{
-  const docwsid = f.docwsid ?? (randomUUIDCap() + "::" + f.name);
-  const drivewsid = `FOLDER::${zone}::${docwsid}`;
+export const makeFolder =
+  ({ parentId, zone, parentPath }: { parentId: string; zone: string; parentPath?: string }) =>
+  (f: Folder<any[], any>): ChildFolder => {
+    const docwsid = f.docwsid ?? (randomUUIDCap() + "::" + f.name);
+    const drivewsid = `FOLDER::${zone}::${docwsid}`;
+    const path = npath(parentPath ? Path.join(parentPath, f.name) : f.name);
 
-  const childrenArray = f.children.map(
-    makeChild({ parentId: drivewsid, zone }),
-  );
+    const childrenArray = f.children.map(
+      makeChild({ parentId: drivewsid, zone, parentPath: path }),
+    );
 
-  const childrenTree = pipe(
-    childrenArray.map(_ => [_.name, _] as const),
-    recordFromTuples,
-  );
+    const childrenTree = pipe(
+      childrenArray.map(_ => [_.name, _] as const),
+      recordFromTuples,
+    );
 
-  const d: Types.DetailsFolder = {
-    "dateCreated": "2022-02-18T13:49:00Z",
-    "drivewsid": `FOLDER::${zone}::${docwsid}` as any,
-    parentId,
-    "name": f.name,
-    "docwsid": docwsid,
-    "zone": zone,
-    "etag": "1pt",
-    "type": "FOLDER",
-    "assetQuota": 14710,
-    "fileCount": 2, // ???
-    "shareCount": 0,
-    "shareAliasCount": 0,
-    "directChildrenCount": 2,
-    items: childrenArray.map(_ => _.d),
-    "numberOfItems": childrenArray.length,
-    "status": "OK",
+    const d: Types.DetailsFolder = {
+      "dateCreated": "2022-02-18T13:49:00Z",
+      "drivewsid": `FOLDER::${zone}::${docwsid}` as any,
+      parentId,
+      "name": f.name,
+      "docwsid": docwsid,
+      "zone": zone,
+      "etag": "1pt",
+      "type": "FOLDER",
+      "assetQuota": 14710,
+      "fileCount": 2, // ???
+      "shareCount": 0,
+      "shareAliasCount": 0,
+      "directChildrenCount": 2,
+      items: childrenArray.map(_ => _.d),
+      "numberOfItems": childrenArray.length,
+      "status": "OK",
+    };
+
+    return {
+      ...f,
+      d: d,
+      children: childrenArray as any,
+      c: childrenTree,
+      path,
+    };
   };
 
-  return {
-    ...f,
-    d: d,
-    children: childrenArray as any,
-    c: childrenTree,
-  };
-};
-
-const makeAppLibrary = () =>
-(f: AppLibray<any[], any>):
-  & AppLibray<any[], any>
-  & {
-    d: Types.DetailsAppLibrary;
-    children: ChildrenArray<any>;
-    c: ChildrenTree<any>;
-  } =>
-{
+const makeAppLibrary = () => (f: AppLibray<any[], any>): ChildAppLibrary => {
   const drivewsid = `FOLDER::${f.zone}::${f.docwsid}`;
 
   const children = f.children.map(makeChild({
     parentId: drivewsid,
     zone: f.zone,
+    parentPath: `/${f.name}`,
   }));
 
   const c = pipe(
@@ -254,13 +249,19 @@ const makeAppLibrary = () =>
     d: d,
     children: children as ChildrenArray<any>,
     c,
+    path: npath(`/${d.name}`),
   };
 };
 
 const makeFile = (
-  { parentId, zone, size = Math.round(randomRange(0, 128000)()) }: { parentId: string; zone: string; size?: number },
+  { parentId, zone, size = Math.round(randomRange(0, 128000)()), parentPath }: {
+    parentId: string;
+    zone: string;
+    size?: number;
+    parentPath?: string;
+  },
 ) =>
-(f: File<any>): File<any> & { d: Types.DriveChildrenItemFile } => {
+(f: File<any>): ChildFile => {
   const docwsid = f.docwsid ?? (randomUUIDCap() + "::" + f.name);
   return {
     ...f,
@@ -278,17 +279,18 @@ const makeFile = (
       "type": "FILE",
       ...parseFilename(f.name),
     },
+    path: npath(parentPath ? Path.join(parentPath, f.name) : f.name),
   };
 };
 
 const makeChild = (
-  { parentId, zone }: { parentId: string; zone: string },
+  { parentId, zone, parentPath }: { parentId: string; zone: string; parentPath?: string },
 ) =>
 (item: File<any> | Folder<any[], any> | AppLibray<any[], any>): Child => {
   return item.type === "FILE"
-    ? makeFile({ parentId, zone })(item)
+    ? makeFile({ parentId, zone, parentPath })(item)
     : item.type === "FOLDER"
-    ? makeFolder({ parentId, zone })(item)
+    ? makeFolder({ parentId, zone, parentPath })(item)
     : makeAppLibrary()(item);
 };
 
@@ -345,6 +347,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
       makeChild({
         parentId: rootDrivewsid,
         zone: "com.apple.CloudDocs",
+        parentPath: "/",
       }),
     ),
   );
