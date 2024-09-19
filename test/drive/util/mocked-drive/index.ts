@@ -1,7 +1,7 @@
-export { fakeicloud } from './mocked-api'
-export { createDeps as createEnv, createState, executeDrive, executeDriveS } from './mocked-api'
-export { type Calls, type ExecuteResult } from './mocked-api'
-export { appLibrary, file, folder, removeByDrivewsid } from './mocked-drive'
+export { fakeicloud } from "./mocked-api";
+export { createDeps as createEnv, createState, executeDrive, executeDriveS } from "./mocked-api";
+export { type Calls, type ExecuteResult } from "./mocked-api";
+export { appLibrary, file, folder, removeByDrivewsid } from "./mocked-drive";
 export {
   allTests,
   testCacheTE,
@@ -13,4 +13,6 @@ export {
   testNoError,
   testResTE,
   testStateTE,
-} from './test'
+} from "./test";
+
+export type { Child, ChildAppLibrary, ChildFile, ChildFolder } from "./mocked-drive";

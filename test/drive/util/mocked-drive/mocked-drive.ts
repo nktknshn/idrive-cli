@@ -6,7 +6,6 @@ import { Cache, Types } from "../../../../src/icloud-drive";
 import { rootDrivewsid } from "../../../../src/icloud-drive/drive-types/types-io";
 import * as V from "../../../../src/icloud-drive/util/get-by-path-types";
 import { parseFilename } from "../../../../src/util/filename";
-import { guardFstRO, isDefined } from "../../../../src/util/guards";
 import { NormalizedPath, npath, Path } from "../../../../src/util/path";
 import { randomUUIDCap, recordFromTuples } from "../../../../src/util/util";
 
@@ -15,6 +14,7 @@ type File<N extends string> = {
   name: N;
   docwsid?: string;
   tag?: string;
+  dateModified?: Date;
 };
 
 type DocwsRoot<T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]> = {
@@ -39,12 +39,13 @@ type Folder<T extends (Folder<any[], any> | File<any>)[], N extends string> = {
   tag?: string;
 };
 
-export const file = <N extends string>({ name, docwsid, tag }: {
+export const file = <N extends string>({ name, docwsid, tag, dateModified }: {
   name: N;
   docwsid?: string;
   tag?: string;
+  dateModified?: Date;
 }): File<N> => {
-  return { type: "FILE", name, docwsid, tag };
+  return { type: "FILE", name, docwsid, tag, dateModified };
 };
 
 export const appLibrary = <N extends string>(
@@ -74,16 +75,22 @@ export const docwsroot = <T extends (Folder<any[], any> | AppLibray<any[], any> 
   };
 };
 
-type ChildFile = File<any> & { d: Types.DriveChildrenItemFile; path: NormalizedPath };
+export type ChildFile =
+  & File<any>
+  & {
+    d: Types.DriveChildrenItemFile;
+    path: NormalizedPath;
+    mtime: Date;
+  };
 
-type ChildFolder = Folder<any[], any> & {
+export type ChildFolder = Folder<any[], any> & {
   d: Types.DetailsFolder;
   children: ChildrenArray<any>;
   c: ChildrenTree<any>;
   path: NormalizedPath;
 };
 
-type ChildAppLibrary = AppLibray<any[], any> & {
+export type ChildAppLibrary = AppLibray<any[], any> & {
   d: Types.DetailsAppLibrary;
   children: ChildrenArray<any>;
   c: ChildrenTree<any>;
@@ -91,7 +98,7 @@ type ChildAppLibrary = AppLibray<any[], any> & {
 };
 
 /** a folder's children */
-type Child =
+export type Child =
   | ChildFile
   | ChildFolder
   | ChildAppLibrary;
@@ -138,7 +145,7 @@ type ChildrenTree<TChildren> = TChildren extends [infer TChild, ...(infer TChild
               /** children dict */
               c: ChildrenTree<TFolderChildren>;
               // validPath: V.PathValid<Types.DetailsDocwsRoot>;
-              path: string;
+              path: NormalizedPath;
             }
             & Folder<TFolderChildren, TFolderName>
           >
@@ -151,7 +158,7 @@ type ChildrenTree<TChildren> = TChildren extends [infer TChild, ...(infer TChild
                 d: Types.DetailsAppLibrary;
                 c: ChildrenTree<TAppLibChildren>;
                 // validPath: V.PathValid<Types.DetailsDocwsRoot>;
-                path: string;
+                path: NormalizedPath;
               }
               & AppLibray<TAppLibChildren, TAppLibName>
             >
@@ -161,7 +168,8 @@ type ChildrenTree<TChildren> = TChildren extends [infer TChild, ...(infer TChild
             // Child
             & {
               d: Types.DriveChildrenItemFile;
-              path: string;
+              path: NormalizedPath;
+              mtime: Date;
             }
             & File<TFileName>
           >
@@ -254,11 +262,22 @@ const makeAppLibrary = () => (f: AppLibray<any[], any>): ChildAppLibrary => {
 };
 
 const makeFile = (
-  { parentId, zone, size = Math.round(randomRange(0, 128000)()), parentPath }: {
+  {
+    parentId,
+    zone,
+    size = Math.round(randomRange(0, 128000)()),
+    dateModified = new Date("2021-09-30T11:36:46Z"),
+    dateCreated = dateModified,
+    dateChanged = dateModified,
+    parentPath,
+  }: {
     parentId: string;
     zone: string;
     size?: number;
     parentPath?: string;
+    dateCreated?: Date;
+    dateModified?: Date;
+    dateChanged?: Date;
   },
 ) =>
 (f: File<any>): ChildFile => {
@@ -271,15 +290,16 @@ const makeFile = (
       "zone": zone,
       "parentId": parentId,
       // TODO: dates
-      "dateCreated": "2021-08-31T10:40:16Z",
-      "dateModified": "2021-09-30T11:36:46Z",
-      "dateChanged": "2021-11-17T15:55:41Z",
+      "dateCreated": dateCreated.toISOString(),
+      "dateModified": dateModified.toISOString(),
+      "dateChanged": dateChanged.toISOString(),
       "size": size,
       "etag": "12g::12f",
       "type": "FILE",
       ...parseFilename(f.name),
     },
     path: npath(parentPath ? Path.join(parentPath, f.name) : f.name),
+    mtime: dateModified,
   };
 };
 
@@ -293,10 +313,6 @@ const makeChild = (
     ? makeFolder({ parentId, zone, parentPath })(item)
     : makeAppLibrary()(item);
 };
-
-// const getItems = (item: Item): Item[] => {
-//   return [item, ...A.flatten((item.children ?? []).map(getItems))];
-// };
 
 /** recursively get all details from children */
 const getDetails = (item: Child): Types.DetailsOrFile<Types.DetailsDocwsRoot>[] => {
