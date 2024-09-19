@@ -23,11 +23,15 @@ type ShallowArgs = {
   exclude: string[];
   updateTime: boolean;
   verbose: boolean;
+  skipSameSizeAndDate: boolean;
+  skip: boolean;
+  overwrite: boolean;
 };
 
 /** Download files from a directory */
 export const downloadShallow = (
-  { path, dry, dstpath, chunkSize, include, exclude, updateTime, verbose }: ShallowArgs,
+  { path, dry, dstpath, chunkSize, include, exclude, updateTime, skipSameSizeAndDate, verbose, skip, overwrite }:
+    ShallowArgs,
 ): SRA<DriveLookup.State, Deps, string> => {
   return pipe(
     downloadFolder(
@@ -41,7 +45,9 @@ export const downloadShallow = (
         }),
         toLocalFileSystemMapper: shallowDirMapper(dstpath),
         conflictsSolver: solvers.defaultSolver({
-          skipSameSizeAndDate: true,
+          skipSameSizeAndDate,
+          skip,
+          overwrite,
         }),
         downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
         hookDownloadTaskData: flow(

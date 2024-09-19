@@ -3,6 +3,7 @@ import { pipe } from "fp-ts/lib/function";
 import * as NA from "fp-ts/lib/NonEmptyArray";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import micromatch from "micromatch";
+
 import { DriveActions, DriveLookup, Types } from "../../../icloud-drive";
 import { err } from "../../../util/errors";
 import { npath } from "../../../util/normalize-path";
@@ -12,12 +13,14 @@ type Args = {
   dry: boolean;
   recursive: boolean;
   overwrite: boolean;
+  skip: boolean;
   depth: number;
   include: string[];
   exclude: string[];
-  "keep-structure": boolean;
+  "full-path": boolean;
   "chunk-size": number;
   "no-update-time": boolean;
+  "skip-size-date": boolean;
   verbose: boolean;
 };
 
@@ -29,6 +32,7 @@ export const download = (
   & DriveActions.DepsDownloadFiles
 > => {
   const updateTime = !args["no-update-time"];
+  const skipSameSizeAndDate = args["skip-size-date"];
 
   if (!A.isNonEmpty(args.paths)) {
     return SRTE.left(err("No files to download"));
@@ -50,6 +54,9 @@ export const download = (
       chunkSize: args["chunk-size"],
       dry: args.dry,
       verbose: args.verbose,
+      overwrite: args.overwrite,
+      skip: args.skip,
+      skipSameSizeAndDate,
       updateTime,
     });
   }
@@ -77,6 +84,9 @@ export const download = (
           chunkSize: args["chunk-size"],
           dry: args.dry,
           verbose: args.verbose,
+          skipSameSizeAndDate,
+          overwrite: args.overwrite,
+          skip: args.skip,
           updateTime,
         })
         : args.recursive
@@ -88,8 +98,11 @@ export const download = (
           include: args.include,
           exclude: args.exclude,
           chunkSize: args["chunk-size"],
-          keepStructure: args["keep-structure"],
+          fullPath: args["full-path"],
+          skipSameSizeAndDate,
           verbose: args.verbose,
+          overwrite: args.overwrite,
+          skip: args.skip,
           updateTime,
         })
         : DriveActions.downloadShallow({
@@ -99,7 +112,10 @@ export const download = (
           include: args.include,
           exclude: args.exclude,
           chunkSize: args["chunk-size"],
+          skipSameSizeAndDate,
           verbose: args.verbose,
+          overwrite: args.overwrite,
+          skip: args.skip,
           updateTime,
         })
     ),

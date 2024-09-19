@@ -5,6 +5,7 @@ import { fst } from "fp-ts/lib/ReadonlyTuple";
 import * as R from "fp-ts/lib/Record";
 import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
+
 import { printerIO } from "../../../logging/printerIO";
 import { guardFst } from "../../../util/guards";
 import { sizeHumanReadable } from "../../../util/size-human-readable";
@@ -12,13 +13,7 @@ import { maxLength, removeTrailingNewlines } from "../../../util/string";
 import { makeSolutionRecord } from "./conflict-solution";
 import { partitionConflicts } from "./download-conflict";
 import { DownloadFileResult, DownloadTaskData } from "./types";
-/*
 
-for f in $(cat files.txt); do
-  sha256sum $f | tee -a sums.txt
-done
-
-*/
 export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTaskData) => {
   let result = "";
 

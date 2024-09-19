@@ -23,6 +23,22 @@ const skipAll: ConflictsSolver = (conflicts) => () =>
     TE.of,
   );
 
+const skipExisting: ConflictsSolver = (conflicts) => () =>
+  pipe(
+    conflicts,
+    A.filter(isConflictExists),
+    A.map(c => [c, "skip"] as const),
+    TE.of,
+  );
+
+const overwriteExisting: ConflictsSolver = (conflicts) => () =>
+  pipe(
+    conflicts,
+    A.filter(isConflictExists),
+    A.map(c => [c, "overwrite"] as const),
+    TE.of,
+  );
+
 const overwriteAll: ConflictsSolver = (conflicts) => () =>
   pipe(
     conflicts,
@@ -170,11 +186,20 @@ const askConflictExists =
     );
   };
 
+const sameFileSizeAndDate = (c: ConflictExists) =>
+  c.localitem.stats.size == c.mappedItem.downloadItem.item.size
+  && c.localitem.stats.mtime.toString() == new Date(c.mappedItem.downloadItem.item.dateModified).toString();
+
+/** Fails on ConflictStatsError. */
 export const defaultSolver = (
-  { skipSameSizeAndDate = false }: {
+  { skipSameSizeAndDate = false, skip, overwrite }: {
     /** If true, skips files that have the same size and date */
     skipSameSizeAndDate?: boolean;
-  } = {},
+    /** Skip without asking */
+    skip: boolean;
+    /** Overwrite without asking. Ignored if `skip` is true */
+    overwrite: boolean;
+  },
 ): ConflictsSolver<DepAskConfirmation> =>
 (conflicts) =>
 ({ askConfirmation }) => {
@@ -188,11 +213,8 @@ export const defaultSolver = (
     );
   }
 
-  const sameFileSizeAndDate = (c: ConflictExists) =>
-    c.localitem.stats.size == c.mappedItem.downloadItem.item.size
-    && c.localitem.stats.mtime.toString() == new Date(c.mappedItem.downloadItem.item.dateModified).toString();
-
   if (skipSameSizeAndDate) {
+    // add solutions
     solutions.push(
       ...pipe(
         existsConflicts,
@@ -201,12 +223,32 @@ export const defaultSolver = (
       ),
     );
 
+    // exclude conflicts
     existsConflicts = pipe(
       existsConflicts,
       A.filter(not(sameFileSizeAndDate)),
     );
   }
 
+  if (skip) {
+    solutions.push(
+      ...pipe(
+        existsConflicts,
+        A.map((conflict) => [conflict, "skip"] as const),
+      ),
+    );
+    existsConflicts = [];
+  } else if (overwrite) {
+    solutions.push(
+      ...pipe(
+        existsConflicts,
+        A.map((conflict) => [conflict, "overwrite"] as const),
+      ),
+    );
+    existsConflicts = [];
+  }
+
+  // ask for solutions
   return pipe(
     existsConflicts,
     A.map(askConflictExists({ askConfirmation })),

@@ -25,6 +25,9 @@ type Args = {
   chunkSize: number;
   updateTime: boolean;
   verbose: boolean;
+  skipSameSizeAndDate: boolean;
+  overwrite: boolean;
+  skip: boolean;
 };
 
 export type Deps =
@@ -35,7 +38,7 @@ export type Deps =
 
 /** Download files from multiple paths into a folder. Folders will be ignored. */
 export const downloadFiles = (
-  { paths, destpath, dry, chunkSize, updateTime, verbose }: Args,
+  { paths, destpath, dry, chunkSize, updateTime, verbose, skipSameSizeAndDate, skip, overwrite }: Args,
 ): DriveLookup.Lookup<string, Deps> => {
   const npaths = normalizePaths(paths);
 
@@ -64,7 +67,7 @@ export const downloadFiles = (
           task,
           dry,
           toLocalFileSystemMapper: shallowDirMapper(destpath),
-          conflictsSolver: solvers.defaultSolver({ skipSameSizeAndDate: true }),
+          conflictsSolver: solvers.defaultSolver({ skipSameSizeAndDate, skip, overwrite }),
           downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
           hookDownloadTaskData: flow(
             hookPrinting({ verbose: verbose || dry }),

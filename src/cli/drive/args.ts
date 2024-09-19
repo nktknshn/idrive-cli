@@ -72,18 +72,22 @@ const download = w.command(
     _.positional("paths", { type: "string", demandOption: true, array: true })
       // .positional("dstpath", { type: "string", demandOption: true })
       .options({
+        /** Dry run. Just prints the download task */
         dry: { default: false, type: "boolean" },
-        overwrite: { default: false, type: "boolean" },
         include: { default: [], type: "string", array: true },
         exclude: { default: [], type: "string", array: true },
         recursive: { alias: ["R"], default: false, type: "boolean" },
-        "keep-structure": {
-          alias: ["S"],
+        "full-path": {
+          alias: ["f"],
           default: false,
           type: "boolean",
-          description: "Keep the remote folder structure",
+          description: "Create full paths locally",
         },
-        "chunk-size": { default: defaults.downloadChunkSize, type: "number", description: "Chunk size" },
+        "chunk-size": {
+          default: defaults.downloadChunkSize,
+          type: "number",
+          description: "Chunk size",
+        },
         "no-update-time": {
           alias: ["T"],
           default: false,
@@ -92,11 +96,25 @@ const download = w.command(
         },
         depth: { alias: ["D"], default: Infinity, type: "number", description: "Depth of recursiion" },
         verbose: { alias: ["v"], default: false, type: "boolean", description: "Verbose output" },
+        // overwrite local files without asking
+        overwrite: { alias: ["o", "f", "force"], default: false, type: "boolean" },
+        // skip local files without asking
+        skip: { alias: ["s"], default: false, type: "boolean" },
+        "skip-size-date": {
+          alias: ["S"],
+          default: false,
+          type: "boolean",
+          description: "Skip files with the same size and date",
+        },
       }).check((args) => {
         const paths = args.paths;
 
         if (Array.isArray(paths) && paths.length < 2) {
           throw new Error("Missing destination path");
+        }
+
+        if (args.skip && args.overwrite) {
+          throw new Error("Cannot use --skip and --overwrite at the same time");
         }
 
         return true;
