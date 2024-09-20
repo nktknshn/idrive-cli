@@ -97,9 +97,19 @@ const download = w.command(
         depth: { alias: ["D"], default: Infinity, type: "number", description: "Depth of recursiion" },
         verbose: { alias: ["v"], default: false, type: "boolean", description: "Verbose output" },
         // overwrite local files without asking
-        overwrite: { alias: ["o", "f", "force"], default: false, type: "boolean" },
+        overwrite: {
+          alias: ["o", "f", "force"],
+          default: false,
+          type: "boolean",
+          description: "Overwrite existing local files without asking",
+        },
         // skip local files without asking
-        skip: { alias: ["s"], default: false, type: "boolean" },
+        skip: {
+          alias: ["s"],
+          default: false,
+          type: "boolean",
+          description: "Skip existing local files without asking",
+        },
         "skip-size-date": {
           alias: ["S"],
           default: false,

@@ -28,9 +28,7 @@ export const addLeadingSlash = (s: string): string => s.startsWith("/") ? s : `/
 /** Adds a trailing slash if the path does not already have one */
 export const addTrailingSlash = (s: string): string => s.endsWith("/") ? s : `${s}/`;
 
-/**
- * NormalizedPath has Path.normalize applied and no trailing slash
- */
+/** NormalizedPath has Path.normalize applied and no trailing slash */
 export const normalizePath = (path: string): NormalizedPath => {
   return pipe(
     Path.normalize(path),

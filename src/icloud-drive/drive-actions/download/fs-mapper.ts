@@ -44,6 +44,20 @@ export const shallowDirMapper = (dstpath: string) => (ds: DownloadTask): Downloa
   localdirstruct: [dstpath],
 });
 
+/** Download a single file */
+export const singleFileMapper =
+  (dstpath: string, appendFilename: boolean) => (ds: DownloadTask): DownloadTaskMapped => ({
+    downloadable: ds.downloadable.map(downloadItem => ({
+      downloadItem,
+      localpath: !appendFilename ? dstpath : Path.join(dstpath, Path.basename(downloadItem.path)),
+    })),
+    empties: ds.empties.map(downloadItem => ({
+      downloadItem,
+      localpath: !appendFilename ? dstpath : Path.join(dstpath, Path.basename(downloadItem.path)),
+    })),
+    localdirstruct: [],
+  });
+
 /** Extracts the folders structure from the download items */
 export const itemsFolderStructure = (items: DownloadItem[]) =>
   pipe(
