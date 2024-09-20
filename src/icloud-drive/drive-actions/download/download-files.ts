@@ -3,6 +3,7 @@ import { constVoid, flow, pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import * as TE from "fp-ts/TaskEither";
+
 import { DepAskConfirmation } from "../../../deps-types";
 import { printerIO } from "../../../logging/printerIO";
 import { err } from "../../../util/errors";
@@ -48,6 +49,8 @@ export const downloadFiles = (
   const isMutipleFiles = paths.length > 1;
   const isSingleFile = paths.length == 1;
 
+  // TODO handle case when destpath has a trailing slash (it is supposed to be a folder)
+  // const destPathMustBeFolder = destpath.endsWith("/");
   const validateCheck = (check: CheckPathResult) =>
     // multiple files requires the folder to exist
     isMutipleFiles && check.exists && check.isFolder

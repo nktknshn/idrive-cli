@@ -78,7 +78,7 @@ const download = w.command(
         exclude: { default: [], type: "string", array: true },
         recursive: { alias: ["R"], default: false, type: "boolean" },
         "full-path": {
-          alias: ["f"],
+          alias: ["F"],
           default: false,
           type: "boolean",
           description: "Create full paths locally",

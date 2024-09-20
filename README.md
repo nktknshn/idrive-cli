@@ -226,26 +226,71 @@ Download a file or a folder content.
 
 A single file
 
-`idrive download '/MyNotes/my1/note1.md' ./outputdir`
+`idrive download /MyNotes/my1/note1.md outputdir/`
 
-`idrive download '/MyNotes/my1/*.md' ./outputdir`
+`idrive download /MyNotes/my1/note1.md outputdir/different_name.md`
 
-Recursively download folders shallow content into `./outputdir/my1/`
+Multiple files
 
-`idrive download -R '/MyNotes/my1/' ./outputdir`
+`idrive download /MyNotes/my1/note1.md /MyNotes/my1/note2.md /Camera/IMG_0198.jpg outputdir/`
 
-Recursively download all `md` files into `./outputdir/diary/` 
+Files from a folder
 
-`idrive download -R '/MyNotes/my1/diary/**/*.md' ./outputdir`
+`idrive download /MyNotes/my1/ outputdir/`
 
-`idrive download -RS '/MyNotes/my1/diary/**/*.md' ./outputdir`
+`idrive download /MyNotes/my1/\*.md outputdir/`
 
-Download download all into `./outputdir/MyNotes/my1/diary/`
+`idrive download '/Camera/*.{png,PNG,jpg}' outputdir/`
+
+Do not update atime and mtime of the files (by default they are updated to what remote files have)
+
+`idrive download -T /MyNotes/my1/note1.md outputdir/`
+
+Skip downloading files with the same size and date
+
+`idrive download -S /MyNotes/my1/note1.md outputdir/`
+
+Overwrite existing local files without asking
+
+`idrive download -o /MyNotes/my1/note1.md outputdir/`
+
+Skip downloading existing local files without asking
+
+`idrive download -s /MyNotes/my1/note1.md outputdir/`
+
+Do not ask for the last confirmation
+
+`idrive download -N /MyNotes/my1/note1.md outputdir/`
+
+Verbose output
+
+`idrive download -v /MyNotes/my1/note1.md outputdir/`
+
+Dry run
+
+`idrive download --dry /MyNotes/my1/note1.md outputdir/`
+
+Recursively download folders.
+
+`idrive download -R '/MyNotes/my1/' outputdir/`
+
+This will download into `outputdir/MyNotes/my1/`
+
+`idrive download -RF '/MyNotes/my1/' outputdir/`
+
+Limit the depth of recursion
+
+`idrive download -R -D 2 '/MyNotes/my1/' outputdir/`
+
+Globstar pattern is supported
+
+`idrive download -R '/MyNotes/my1/diary/**/*.md' outputdir/`
 
 Use `dry` flag to only check what is going to be downloaded
 
 `include` and `exclude` flags can be used to filter files (supports globs)
 
+`idrive download -R '/MyNotes/my1/diary/**/*.md' --exclude '**/*.old.md' --include '**/*.old.md' outputdir/`
 
 ### upload 
 

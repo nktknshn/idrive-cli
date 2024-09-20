@@ -6,14 +6,17 @@ import { DepAskConfirmation } from "../../../deps-types";
 import { Path } from "../../../util/path";
 import { DriveLookup } from "../..";
 import { solvers } from "./conflict-solvers";
-import { Deps as DFuncDeps, downloadICloudFilesChunked } from "./download-chunked";
-import { Deps as DownloadFolderDeps, downloadFolder } from "./download-folder";
+import { Deps as DepsDownloadFunc, downloadICloudFilesChunked } from "./download-chunked";
+import { Deps as DepsDownloadFolder, downloadFolder } from "./download-folder";
 import { isEmptyTask } from "./download-task";
 import { filterByIncludeExcludeGlobs, makeDownloadTaskFromTree } from "./download-tree";
 import { recursiveDirMapper } from "./fs-mapper";
 import { hookAskLastConfirmation, hookPrintTaskData } from "./printing";
 
-export type Deps = DownloadFolderDeps & DFuncDeps & DepAskConfirmation;
+export type Deps =
+  & DepsDownloadFolder
+  & DepsDownloadFunc
+  & DepAskConfirmation;
 
 export type RecursiveArgs = {
   path: string;

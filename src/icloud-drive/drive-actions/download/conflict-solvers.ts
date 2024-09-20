@@ -211,6 +211,7 @@ const sameFileSizeAndDate = (c: ConflictExists) =>
   c.localitem.stats.size == c.mappedItem.downloadItem.item.size
   && c.localitem.stats.mtime.toString() == new Date(c.mappedItem.downloadItem.item.dateModified).toString();
 
+// TODO confirmation function should accept a conflict instead of text message
 /** Fails on ConflictStatsError. */
 export const defaultSolver = (
   { skipSameSizeAndDate = false, skip, overwrite }: {
