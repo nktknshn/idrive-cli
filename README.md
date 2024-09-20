@@ -105,7 +105,7 @@ Human readable sizes
 
 Sort by size recursively looking for the largest files
 
-`idrive ls -S size -R -h size /`
+`idrive ls -S size -R -h /`
 
 Recursive listing (may take some time to process deep trees). Note: the command below will save the whole tree into the cache
 
