@@ -6,12 +6,14 @@ import * as R from "fp-ts/lib/Record";
 import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
 
+import { AskConfirmationFunc } from "../../../deps-types/dep-ask-confirmation";
 import { printerIO } from "../../../logging/printerIO";
 import { guardFst } from "../../../util/guards";
 import { sizeHumanReadable } from "../../../util/size-human-readable";
 import { maxLength, removeTrailingNewlines } from "../../../util/string";
 import { makeSolutionRecord } from "./conflict-solution";
 import { partitionConflicts } from "./download-conflict";
+import { emptyTask } from "./download-task";
 import { DownloadFileResult, DownloadTaskData } from "./types";
 
 export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTaskData) => {
@@ -106,7 +108,21 @@ export const resultsJson = (results: DownloadFileResult[]) => {
   };
 };
 
-export const hookPrinting = ({ verbose }: { verbose: boolean }) => (data: DownloadTaskData) => {
+export const hookPrintTaskData = ({ verbose }: { verbose: boolean }) => (data: DownloadTaskData) => {
   printerIO.print(showDownloadTaskData({ verbose })(data))();
   return TE.right(data);
+};
+
+export const hookAskLastConfirmation = ({ askConfirmation }: { askConfirmation: AskConfirmationFunc }) =>
+(
+  data: DownloadTaskData,
+): TE.TaskEither<Error, DownloadTaskData> => {
+  return pipe(
+    askConfirmation({ message: "Proceed?" }),
+    TE.chain(proceed =>
+      proceed
+        ? TE.right(data)
+        : TE.right({ ...data, solvedTask: emptyTask })
+    ),
+  );
 };

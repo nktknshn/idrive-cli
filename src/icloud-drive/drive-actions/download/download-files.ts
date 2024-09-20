@@ -2,6 +2,7 @@ import * as A from "fp-ts/Array";
 import { constVoid, flow, pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import * as TE from "fp-ts/TaskEither";
 import { DepAskConfirmation } from "../../../deps-types";
 import { printerIO } from "../../../logging/printerIO";
 import { err } from "../../../util/errors";
@@ -13,9 +14,9 @@ import { DriveLookup, Types } from "../..";
 import { solvers } from "./conflict-solvers";
 import { type Deps as DownloadFuncDeps, downloadICloudFilesChunked } from "./download-chunked";
 import { type Deps as DownloadDeps, downloadGeneric } from "./download-generic";
-import { partitionEmpties } from "./download-task";
+import { isEmptyTask, partitionEmpties } from "./download-task";
 import { shallowDirMapper } from "./fs-mapper";
-import { hookPrinting } from "./printing";
+import { hookAskLastConfirmation, hookPrintTaskData } from "./printing";
 import { DownloadTask } from "./types";
 
 type Args = {
@@ -28,6 +29,7 @@ type Args = {
   skipSameSizeAndDate: boolean;
   overwrite: boolean;
   skip: boolean;
+  lastConfirmation: boolean;
 };
 
 export type Deps =
@@ -38,7 +40,8 @@ export type Deps =
 
 /** Download files from multiple paths into a folder. Folders will be ignored. */
 export const downloadFiles = (
-  { paths, destpath, dry, chunkSize, updateTime, verbose, skipSameSizeAndDate, skip, overwrite }: Args,
+  { paths, destpath, dry, chunkSize, updateTime, verbose, skipSameSizeAndDate, skip, overwrite, lastConfirmation }:
+    Args,
 ): DriveLookup.Lookup<string, Deps> => {
   const npaths = normalizePaths(paths);
 
@@ -61,7 +64,8 @@ export const downloadFiles = (
           ? printerIO.print(`Skipping folders: ${folders.join(", ")}`)
           : constVoid,
     ),
-    SRTE.chainW(({ task }) =>
+    SRTE.bindW("deps", () => SRTE.ask<DriveLookup.State, Deps>()),
+    SRTE.chainW(({ task, deps }) =>
       pipe(
         downloadGeneric({
           task,
@@ -70,7 +74,12 @@ export const downloadFiles = (
           conflictsSolver: solvers.defaultSolver({ skipSameSizeAndDate, skip, overwrite }),
           downloadFiles: downloadICloudFilesChunked({ chunkSize, updateTime }),
           hookDownloadTaskData: flow(
-            hookPrinting({ verbose: verbose || dry }),
+            hookPrintTaskData({ verbose: verbose || dry }),
+            TE.chain(td =>
+              lastConfirmation && !dry && !isEmptyTask(td.solvedTask)
+                ? hookAskLastConfirmation(deps)(td)
+                : TE.right(td)
+            ),
           ),
         }),
       )

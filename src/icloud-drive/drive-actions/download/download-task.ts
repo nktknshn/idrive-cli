@@ -38,3 +38,11 @@ export const partitionEmpties = (
     A.partition(({ item }) => item.size == 0),
     _ => ({ downloadable: _.left, empties: _.right }),
   );
+
+export const isEmptyTask = (task: DownloadTaskMapped) => task.downloadable.length == 0 && task.empties.length == 0;
+
+export const emptyTask: DownloadTaskMapped = {
+  downloadable: [],
+  empties: [],
+  localdirstruct: [],
+};

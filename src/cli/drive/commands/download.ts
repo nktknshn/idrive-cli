@@ -21,6 +21,7 @@ type Args = {
   "chunk-size": number;
   "no-update-time": boolean;
   "skip-size-date": boolean;
+  "no-confirmation": boolean;
   verbose: boolean;
 };
 
@@ -33,6 +34,7 @@ export const download = (
 > => {
   const updateTime = !args["no-update-time"];
   const skipSameSizeAndDate = args["skip-size-date"];
+  const lastConfirmation = !args["no-confirmation"];
 
   if (!A.isNonEmpty(args.paths)) {
     return SRTE.left(err("No files to download"));
@@ -58,6 +60,7 @@ export const download = (
       skip: args.skip,
       skipSameSizeAndDate,
       updateTime,
+      lastConfirmation,
     });
   }
 
@@ -88,6 +91,7 @@ export const download = (
           overwrite: args.overwrite,
           skip: args.skip,
           updateTime,
+          lastConfirmation,
         })
         : args.recursive
         ? DriveActions.downloadRecursive({
@@ -104,6 +108,7 @@ export const download = (
           overwrite: args.overwrite,
           skip: args.skip,
           updateTime,
+          lastConfirmation,
         })
         : DriveActions.downloadShallow({
           path: path,
@@ -117,6 +122,7 @@ export const download = (
           overwrite: args.overwrite,
           skip: args.skip,
           updateTime,
+          lastConfirmation,
         })
     ),
     DriveLookup.usingTempCache,

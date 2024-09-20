@@ -92,7 +92,7 @@ const download = w.command(
           alias: ["T"],
           default: false,
           type: "boolean",
-          description: "Do not update the atime and mtime of the files",
+          description: "Do not update atime and mtime of the files",
         },
         depth: { alias: ["D"], default: Infinity, type: "number", description: "Depth of recursiion" },
         verbose: { alias: ["v"], default: false, type: "boolean", description: "Verbose output" },
@@ -105,6 +105,12 @@ const download = w.command(
           default: false,
           type: "boolean",
           description: "Skip files with the same size and date",
+        },
+        "no-confirmation": {
+          alias: ["N"],
+          default: false,
+          type: "boolean",
+          description: "Do not ask for the last confirmation",
         },
       }).check((args) => {
         const paths = args.paths;

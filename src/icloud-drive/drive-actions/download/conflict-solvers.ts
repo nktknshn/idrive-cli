@@ -7,6 +7,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as O from "fp-ts/Option";
 import * as RA from "fp-ts/ReadonlyArray";
 import { DepAskConfirmation } from "../../../deps-types";
+import { printerIO } from "../../../logging/printerIO";
 import { err } from "../../../util/errors";
 import { maxLength } from "../../../util/string";
 import { Types } from "../..";
@@ -158,7 +159,7 @@ export const askConfirmationReplies = {
 
 export type AskConfirmationReplies = typeof askConfirmationReplies[keyof typeof askConfirmationReplies];
 
-// left is applied for all the rest
+// left is applied to all the rest
 type AskConfirmationReply = E.Either<Solution, Solution>;
 
 const askConflictExists =
@@ -271,11 +272,14 @@ async (): Promise<E.Either<Error, Solution[]>> => {
 
   let forall: O.Option<SolutionAction> = O.none;
 
+  printerIO.print(`Local files conflict with remote files: ${existsConflicts.length} files.`)();
+
   for (const conflict of existsConflicts) {
     if (O.isSome(forall)) {
       solutions.push([conflict, forall.value]);
       continue;
     }
+
     const replyE = await pipe(
       askConflictExists({ askConfirmation })(conflict),
     )();
