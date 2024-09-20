@@ -237,18 +237,18 @@ export const cmd = w.composeCommands(
       .scriptName("idrive")
       .options({
         "session-file": {
-          alias: ["s"],
+          // alias: ["s"],
           default: undefined,
           optional: true,
           description: "Session file",
         },
         "cache-file": {
-          alias: ["c"],
+          // alias: ["c"],
           default: undefined,
           optional: true,
           description: "Cache file",
         },
-        "no-cache": { alias: "n", default: false, type: "boolean", description: "Disable cache" },
+        "no-cache": { default: false, type: "boolean", description: "Disable cache" },
         "api-usage": {
           alias: ["a"],
           default: defaults.apiUsage,

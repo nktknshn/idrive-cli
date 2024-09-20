@@ -20,29 +20,29 @@ This is an unofficial client. Use it at your own risk. The author is not respons
 - Fish shell completions for `idrive` are available in `/opt/node-icloud-drive-client/completions/idrive.fish`
 
 ```Commands:
-  idrive init                       Init new session
-  idrive auth                       Authenticate a session
-  idrive ls [paths..]               List files in a folder
-  idrive mkdir <path>               Create a folder
-  idrive cat <path>                 View the content of a text file
-  idrive edit <path>                Edit a text file
-  idrive mv <srcpath> <dstpath>     Move or rename a file or a folder
-  idrive rm [paths..]               Remove files and folders
-  idrive download <path> <dstpath>  Download a file or a folder
-  idrive upload <uploadargs..>      Upload files and folders
-  idrive recover <path>             Recover a file from the trash
-  idrive autocomplete <path>        Autocomplete path
+  idrive init                    Init new session
+  idrive auth                    Authenticate a session
+  idrive ls [paths..]            List files in a folder
+  idrive mkdir <path>            Create a folder
+  idrive cat <path>              View the content of a text file
+  idrive edit <path>             Edit a text file
+  idrive mv <srcpath> <dstpath>  Move or rename a file or a folder
+  idrive rm [paths..]            Remove files and folders
+  idrive download <paths..>      Download a file or a folder
+  idrive upload <paths..>        Upload files and folders
+  idrive recover <path>          Recover a file from the trash
+  idrive autocomplete <path>     Autocomplete path
 
 Options:
       --help          Show help                                        [boolean]
       --version       Show version number                              [boolean]
-  -s, --session-file  Session file
-  -c, --cache-file    Cache file
-  -n, --no-cache      Disable cache                   [boolean] [default: false]
+      --session-file  Session file
+      --cache-file    Cache file
+      --no-cache      Disable cache                   [boolean] [default: false]
   -a, --api-usage     API usage strategy
-       [string] [choices: "onlycache", "fallback", "validate"] [default: "validate"]
+          [string] [choices: "onlycache", "fallback", "validate", "o", "f", "v"]
+                                                           [default: "validate"]
   -d, --debug                                         [boolean] [default: false]
-
 ```
 
 ### init
@@ -51,7 +51,7 @@ Initializes new session.
 
 `idrive init`
 
-`idrive init -s myicloud.json`
+`idrive init --session-file myicloud.json`
 
 Do not login, just create the session file.
 
@@ -61,7 +61,7 @@ Authenticate the session file
 
 `idrive auth`
 
-`idrive auth -s myicloud.json`
+`idrive auth --session-file myicloud.json`
 
 Use `ICLOUD_SESSION_FILE` environment variable to specify the session file
 
