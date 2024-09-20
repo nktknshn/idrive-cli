@@ -17,11 +17,13 @@ const str0 = M.fakeicloud(
   M.folder({ name: "folder1" })(
     M.file({ name: "file1.txt", dateModified: file1mtime }),
     M.file({ name: "file2.txt", dateModified: file2mtime }),
+    M.file({ name: "file3.txt", dateModified: file2mtime }),
   ),
 );
 
 const file1 = M.getByPathFile("/folder1/file1.txt", str0.r);
 const file2 = M.getByPathFile("/folder1/file2.txt", str0.r);
+const file3 = M.getByPathFile("/folder1/file3.txt", str0.r);
 
 // same size and date
 const conflictExists0 = makeConflictExistsFile(
@@ -32,6 +34,12 @@ const conflictExists0 = makeConflictExistsFile(
 // different size and date
 const conflictExists1 = makeConflictExistsFile(
   file2,
+  { localpath: "data/file.txt", size: 666, mtime: file2mtime },
+);
+
+// different size and date
+const conflictExists3 = makeConflictExistsFile(
+  file3,
   { localpath: "data/file.txt", size: 666, mtime: file2mtime },
 );
 
@@ -116,31 +124,42 @@ const tests: Test[] = [
     a: array(["yes"]),
     e: [[conflictExists0, "skip"], [conflictExists1, "overwrite"]],
   },
+  // yes for all
+  {
+    s: solvers.defaultSolver({ skip: false, overwrite: false, skipSameSizeAndDate: false }),
+    cs: [conflictExists0, conflictExists1],
+    a: array(["yes for all"]),
+    e: [[conflictExists0, "overwrite"], [conflictExists1, "overwrite"]],
+  },
+  // no for all
+  {
+    s: solvers.defaultSolver({ skip: false, overwrite: false, skipSameSizeAndDate: false }),
+    cs: [conflictExists0, conflictExists1],
+    a: array(["no for all"]),
+    e: [[conflictExists0, "skip"], [conflictExists1, "skip"]],
+  },
+  {
+    s: solvers.defaultSolver({ skip: false, overwrite: false, skipSameSizeAndDate: false }),
+    cs: [conflictExists0, conflictExists1, conflictExists3],
+    a: array(["no", "yes for all"]),
+    e: [[conflictExists0, "skip"], [conflictExists1, "overwrite"], [conflictExists3, "overwrite"]],
+  },
 ];
 
-import * as TE from "fp-ts/TaskEither";
-
-type Asker = () => TE.TaskEither<Error, boolean>;
-
-describe("default solver", () => {
-  it("chain askers", async () => {
-  });
-
-  // it("works", async () => {
-  //   for (
-  //     const {
-  //       s: solver,
-  //       cs: conflicts,
-  //       a: askConfirmation,
-  //       e: expected,
-  //     } of tests
-  //   ) {
-  //     await pipe(
-  //       solver(conflicts)({ askConfirmation }),
-  //       testExpectRes(res => {
-  //         expect(res).toEqual(expected);
-  //       }),
-  //     )();
-  //   }
-  // });
+it("works", async () => {
+  for (
+    const {
+      s: solver,
+      cs: conflicts,
+      a: askConfirmation,
+      e: expected,
+    } of tests
+  ) {
+    await pipe(
+      solver(conflicts)({ askConfirmation }),
+      testExpectRes(res => {
+        expect(res).toEqual(expected);
+      }),
+    )();
+  }
 });
