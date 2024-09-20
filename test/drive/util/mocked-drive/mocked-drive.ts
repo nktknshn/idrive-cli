@@ -1,6 +1,7 @@
 import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/lib/function";
 import { randomRange } from "fp-ts/lib/Random";
+import * as O from "fp-ts/Option";
 import * as R from "fp-ts/Record";
 import { Cache, Types } from "../../../../src/icloud-drive";
 import { rootDrivewsid } from "../../../../src/icloud-drive/drive-types/types-io";
@@ -15,6 +16,7 @@ type File<N extends string> = {
   docwsid?: string;
   tag?: string;
   dateModified?: Date;
+  size?: number;
 };
 
 type DocwsRoot<T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]> = {
@@ -291,9 +293,9 @@ const makeFile = (
       "parentId": parentId,
       // TODO: dates
       "dateCreated": dateCreated.toISOString(),
-      "dateModified": dateModified.toISOString(),
+      "dateModified": f.dateModified?.toISOString() ?? dateModified.toISOString(),
       "dateChanged": dateChanged.toISOString(),
-      "size": size,
+      "size": f.size ?? size,
       "etag": "12g::12f",
       "type": "FILE",
       ...parseFilename(f.name),
@@ -326,6 +328,17 @@ const getDetails = (item: Child): Types.DetailsOrFile<Types.DetailsDocwsRoot>[] 
   return [item.d];
 };
 
+const getChildren = (item: Child): Child[] => {
+  if ("children" in item) {
+    return [
+      item,
+      ...pipe(item.children, A.map(getChildren), A.flatten),
+    ];
+  }
+
+  return [item];
+};
+
 const addValidPath = <C extends Child>(
   item: C,
   parentPath: V.PathValid<Types.DetailsDocwsRoot>,
@@ -338,19 +351,22 @@ const addValidPath = <C extends Child>(
   };
 };
 
+export type RootDetails<T> = {
+  /** root folder details */
+  d: Types.DetailsDocwsRoot;
+  /** root children array */
+  children: ChildrenArray<T>;
+  childrenWithPath: ChildrenArray<T>;
+  /** children tree */
+  c: ChildrenTree<T>;
+  byPath: Record<string, Child>;
+};
+
 export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[], any> | File<any>)[]>(
   tree: DocwsRoot<T>,
 ): {
   /** root details */
-  r: {
-    /** root folder details */
-    d: Types.DetailsDocwsRoot;
-    /** root children array */
-    children: ChildrenArray<T>;
-    childrenWithPath: ChildrenArray<T>;
-    /** children tree */
-    c: ChildrenTree<T>;
-  };
+  r: RootDetails<T>;
   itemByDrivewsid: Record<string, Types.DetailsOrFile<Types.DetailsDocwsRoot>>;
   /** cache containing all details */
   cache: Cache.LookupCache;
@@ -411,6 +427,14 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     Cache.putDetailss([d, ...allFolders]),
   );
 
+  const byPath = pipe(
+    children,
+    A.map(getChildren),
+    A.flatten,
+    A.map(_ => [_.path, _] as const),
+    recordFromTuples,
+  );
+
   return {
     // root
     r: {
@@ -422,6 +446,7 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
         c => addValidPath(c, V.validPath([d])),
       ) as ChildrenArray<T>,
       c: childrenRecord as ChildrenTree<T>,
+      byPath,
     },
     itemByDrivewsid,
     allFolders,
@@ -429,6 +454,43 @@ export const createRootDetails = <T extends (Folder<any[], any> | AppLibray<any[
     // byTag,
     tree,
   };
+};
+
+export const getByPath = (path: string, root: RootDetails<any>): Child => {
+  const o = R.lookup(path, root.byPath);
+
+  if (O.isSome(o)) {
+    return o.value;
+  }
+
+  throw new Error(`Invalid path: ${path}`);
+};
+
+export const getByPathFile = (path: string, root: RootDetails<any>): ChildFile => {
+  const res = getByPath(path, root);
+
+  if (res.type === "FILE") {
+    return res;
+  }
+  throw new Error(`Invalid file: ${path}`);
+};
+
+export const getByPathFolder = (path: string, root: RootDetails<any>): ChildFolder => {
+  const res = getByPath(path, root);
+
+  if (res.type === "FOLDER") {
+    return res;
+  }
+  throw new Error(`Invalid folder: ${path}`);
+};
+
+export const getByPathAppLibrary = (path: string, root: RootDetails<any>): ChildAppLibrary => {
+  const res = getByPath(path, root);
+
+  if (res.type === "APP_LIBRARY") {
+    return res;
+  }
+  throw new Error(`Invalid app library: ${path}`);
 };
 
 export const removeByDrivewsid = (drivewsid: string) =>

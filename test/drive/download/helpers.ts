@@ -1,4 +1,6 @@
-import { constant } from "fp-ts/lib/function";
+import { constant, pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/TaskEither";
+import { AskConfirmationFunc } from "../../../src/deps-types/dep-ask-confirmation";
 import { ConflictExists, DownloadItem } from "../../../src/icloud-drive/drive-actions/download";
 import { Path } from "../../../src/util/path";
 import * as M from "./../util/mocked-drive";
@@ -40,3 +42,47 @@ export const makeConflictExistsFolder = (
     stats: { size: 0, mtime, isDirectory: constant(true), isFile: constant(false) },
   },
 });
+
+export const testExpectRes = <T>(exp: (r: T) => void) => (te: TE.TaskEither<Error, T>) =>
+  pipe(
+    te,
+    TE.mapLeft(e => {
+      throw e;
+    }),
+    TE.map(res => {
+      exp(res);
+      return res;
+    }),
+  );
+
+export const never = (): AskConfirmationFunc => {
+  function f(_: { message: string }): TE.TaskEither<Error, boolean>;
+  function f(_: { message: string; options: string[] }): TE.TaskEither<Error, string>;
+  function f(_: { message: string; options?: string[] }): TE.TaskEither<Error, string | boolean> {
+    console.log(_.message);
+    throw new Error("Must not be called");
+  }
+  return f;
+};
+
+export const always = (value: string): AskConfirmationFunc => {
+  function f(_: { message: string }): TE.TaskEither<Error, boolean>;
+  function f(_: { message: string; options: string[] }): TE.TaskEither<Error, string>;
+  function f(_: { message: string; options?: string[] }): TE.TaskEither<Error, string | boolean> {
+    return TE.right(value);
+  }
+
+  return f;
+};
+
+export const array = (values: string[]): AskConfirmationFunc => {
+  let index = 0;
+
+  function f(_: { message: string }): TE.TaskEither<Error, boolean>;
+  function f(_: { message: string; options: string[] }): TE.TaskEither<Error, string>;
+  function f(_: { message: string; options?: string[] }): TE.TaskEither<Error, string | boolean> {
+    return TE.right(values[index++]);
+  }
+
+  return f;
+};

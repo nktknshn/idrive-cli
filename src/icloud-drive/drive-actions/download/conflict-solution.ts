@@ -66,7 +66,7 @@ export const applySolutions = (
     A.filter(shouldStay),
   );
 
-  // the localdirstruct should be adjusted to the new structure
+  // the localdirstruct must be adjusted to the new structure
   const localdirstruct = getDirectoryStructure(
     [
       ...downloadable.map(d => d.localpath),

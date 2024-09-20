@@ -147,6 +147,15 @@ const formatDate = (date: Date): string => {
   return `${day} ${month} ${year} ${hours}:${minutes}:${seconds}`;
 };
 
+export const askConfirmationReplies = {
+  yes: "yes",
+  no: "no",
+  noForAll: "no for all",
+  yesForAll: "yes for all",
+} as const;
+
+export type AskConfirmationReplies = typeof askConfirmationReplies[keyof typeof askConfirmationReplies];
+
 const askConflictExists =
   ({ askConfirmation }: DepAskConfirmation) => (c: ConflictExists): TE.TaskEither<Error, Solution> => {
     const localPath = c.localitem.path;
@@ -174,12 +183,12 @@ const askConflictExists =
     return pipe(
       askConfirmation({
         message,
-        options: ["no", "yes", "no for all", "yes for all"],
+        options: Object.values(askConfirmationReplies),
       }),
       TE.map((decision): Solution =>
-        decision === "yes"
+        decision === askConfirmationReplies.yes
           ? [c, "overwrite"]
-          : decision === "yes for all"
+          : decision === askConfirmationReplies.yesForAll
           ? [c, "overwrite"]
           : [c, "skip"]
       ),

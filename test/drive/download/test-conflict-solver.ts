@@ -1,78 +1,139 @@
 import { pipe } from "fp-ts/lib/function";
-import * as TE from "fp-ts/TaskEither";
 import { DepAskConfirmation } from "../../../src/deps-types";
-import { ConflictExists, conflictExists, solvers } from "../../../src/icloud-drive/drive-actions/download";
-import { DownloadItemMapped } from "../../../src/icloud-drive/drive-actions/download";
+import { AskConfirmationFunc } from "../../../src/deps-types/dep-ask-confirmation";
+import { Conflict, ConflictsSolver, Solution, solvers } from "../../../src/icloud-drive/drive-actions/download";
 import { NEA } from "../../../src/util/types";
 import { enableDebug } from "../debug";
 import * as M from "./../util/mocked-drive";
-import { makeConflictExistsFile } from "./helpers";
+import { always, array, makeConflictExistsFile, never, testExpectRes } from "./helpers";
 
 enableDebug(false);
 
-const solver0 = solvers.defaultSolver({
+const file1mtime = new Date("2022-02-18T13:49:00Z");
+const file2mtime = new Date("2021-01-10T13:49:00Z");
+
+const str0 = M.fakeicloud(
+  M.file({ name: "fileinroot.txt" }),
+  M.folder({ name: "folder1" })(
+    M.file({ name: "file1.txt", dateModified: file1mtime }),
+    M.file({ name: "file2.txt", dateModified: file2mtime }),
+  ),
+);
+
+const file1 = M.getByPathFile("/folder1/file1.txt", str0.r);
+const file2 = M.getByPathFile("/folder1/file2.txt", str0.r);
+
+// same size and date
+const conflictExists0 = makeConflictExistsFile(
+  file1,
+  { localpath: "data/file.txt", size: file1.d.size, mtime: file1mtime },
+);
+
+// different size and date
+const conflictExists1 = makeConflictExistsFile(
+  file2,
+  { localpath: "data/file.txt", size: 666, mtime: file2mtime },
+);
+
+type Test = {
+  s: ConflictsSolver<DepAskConfirmation>;
+  cs: NEA<Conflict>;
+  a: AskConfirmationFunc;
+  e: Solution[];
+};
+
+const solverAlwaysAsk = solvers.defaultSolver({
   skip: false,
   overwrite: false,
   skipSameSizeAndDate: false,
 });
 
-const d1 = new Date("2022-02-18T13:49:00Z");
+const solverSkip = solvers.defaultSolver({
+  skip: true,
+  overwrite: false,
+  skipSameSizeAndDate: false,
+});
 
-const str0 = M.fakeicloud(
-  M.file({ name: "fileinroot.txt" }),
-  M.folder({ name: "folder1" })(
-    M.file({ name: "file1.txt", dateModified: d1 }),
-  ),
-);
+const solverOverwrite = solvers.defaultSolver({
+  skip: false,
+  overwrite: true,
+  skipSameSizeAndDate: false,
+});
 
-const file1 = str0.r.c.folder1.c["file1.txt"];
-
-const conflictExists0: NEA<ConflictExists> = [
-  makeConflictExistsFile(
-    str0.r.c.folder1.c["file1.txt"],
-    {
-      localpath: "data/file.txt",
-      size: file1.d.size,
-      mtime: d1,
-    },
-  ),
+const tests: Test[] = [
+  // ask for confirmation
+  {
+    s: solverAlwaysAsk,
+    cs: [conflictExists0, conflictExists1],
+    a: always("yes"),
+    e: [[conflictExists0, "overwrite"], [conflictExists1, "overwrite"]],
+  },
+  {
+    s: solverAlwaysAsk,
+    cs: [conflictExists0, conflictExists1],
+    a: always("no"),
+    e: [[conflictExists0, "skip"], [conflictExists1, "skip"]],
+  },
+  {
+    s: solverAlwaysAsk,
+    cs: [conflictExists0, conflictExists1],
+    a: array(["yes", "no"]),
+    e: [[conflictExists0, "overwrite"], [conflictExists1, "skip"]],
+  },
+  {
+    s: solvers.defaultSolver({ skip: false, overwrite: false, skipSameSizeAndDate: true }),
+    cs: [conflictExists0],
+    a: never(),
+    e: [[conflictExists0, "skip"]],
+  },
+  {
+    s: solverSkip,
+    cs: [conflictExists0, conflictExists1],
+    a: never(),
+    e: [[conflictExists0, "skip"], [conflictExists1, "skip"]],
+  },
+  {
+    s: solverOverwrite,
+    cs: [conflictExists0, conflictExists1],
+    a: never(),
+    e: [[conflictExists0, "overwrite"], [conflictExists1, "overwrite"]],
+  },
+  {
+    s: solvers.defaultSolver({ skip: true, overwrite: true, skipSameSizeAndDate: true }),
+    cs: [conflictExists0, conflictExists1],
+    a: never(),
+    e: [[conflictExists0, "skip"], [conflictExists1, "skip"]],
+  },
+  {
+    s: solvers.defaultSolver({ skip: true, overwrite: true, skipSameSizeAndDate: false }),
+    cs: [conflictExists0, conflictExists1],
+    a: never(),
+    e: [[conflictExists0, "skip"], [conflictExists1, "skip"]],
+  },
+  {
+    s: solvers.defaultSolver({ skip: false, overwrite: true, skipSameSizeAndDate: true }),
+    cs: [conflictExists0, conflictExists1],
+    a: array(["yes"]),
+    e: [[conflictExists0, "skip"], [conflictExists1, "overwrite"]],
+  },
 ];
 
-const always = (value: boolean) => {
-  function f(_: { message: string }): TE.TaskEither<Error, boolean>;
-  function f(_: { message: string; options: string[] }): TE.TaskEither<Error, string>;
-  function f(_: { message: string; options?: string[] }): TE.TaskEither<Error, string | boolean> {
-    return TE.right(value);
-  }
-
-  return f;
-};
-
-const testExpectRes = <T>(exp: (r: T) => void) => (te: TE.TaskEither<Error, T>) =>
-  pipe(
-    te,
-    TE.mapLeft(e => {
-      throw e;
-    }),
-    TE.map(res => {
-      exp(res);
-      return res;
-    }),
-  );
-
 describe("default solver", () => {
-  it("works", () => {
-    const te = solver0(conflictExists0)({
-      askConfirmation: always(true),
-    });
-
-    return pipe(
-      te,
-      testExpectRes(res => {
-        expect(res).toEqual(
-          [[conflictExists0[0], "skip"]],
-        );
-      }),
-    )();
+  it("works", async () => {
+    for (
+      const {
+        s: solver,
+        cs: conflicts,
+        a: askConfirmation,
+        e: expected,
+      } of tests
+    ) {
+      await pipe(
+        solver(conflicts)({ askConfirmation }),
+        testExpectRes(res => {
+          expect(res).toEqual(expected);
+        }),
+      )();
+    }
   });
 });
