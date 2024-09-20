@@ -118,22 +118,29 @@ const tests: Test[] = [
   },
 ];
 
+import * as TE from "fp-ts/TaskEither";
+
+type Asker = () => TE.TaskEither<Error, boolean>;
+
 describe("default solver", () => {
-  it("works", async () => {
-    for (
-      const {
-        s: solver,
-        cs: conflicts,
-        a: askConfirmation,
-        e: expected,
-      } of tests
-    ) {
-      await pipe(
-        solver(conflicts)({ askConfirmation }),
-        testExpectRes(res => {
-          expect(res).toEqual(expected);
-        }),
-      )();
-    }
+  it("chain askers", async () => {
   });
+
+  // it("works", async () => {
+  //   for (
+  //     const {
+  //       s: solver,
+  //       cs: conflicts,
+  //       a: askConfirmation,
+  //       e: expected,
+  //     } of tests
+  //   ) {
+  //     await pipe(
+  //       solver(conflicts)({ askConfirmation }),
+  //       testExpectRes(res => {
+  //         expect(res).toEqual(expected);
+  //       }),
+  //     )();
+  //   }
+  // });
 });

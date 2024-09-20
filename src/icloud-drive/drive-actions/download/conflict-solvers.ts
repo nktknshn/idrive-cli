@@ -1,8 +1,10 @@
+import * as E from "fp-ts/Either";
 import * as A from "fp-ts/lib/Array";
 import { pipe } from "fp-ts/lib/function";
 import { not } from "fp-ts/lib/Predicate";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
+import * as O from "fp-ts/Option";
 import * as RA from "fp-ts/ReadonlyArray";
 import { DepAskConfirmation } from "../../../deps-types";
 import { err } from "../../../util/errors";
@@ -156,8 +158,11 @@ export const askConfirmationReplies = {
 
 export type AskConfirmationReplies = typeof askConfirmationReplies[keyof typeof askConfirmationReplies];
 
+// left is applied for all the rest
+type AskConfirmationReply = E.Either<Solution, Solution>;
+
 const askConflictExists =
-  ({ askConfirmation }: DepAskConfirmation) => (c: ConflictExists): TE.TaskEither<Error, Solution> => {
+  ({ askConfirmation }: DepAskConfirmation) => (c: ConflictExists): TE.TaskEither<Error, AskConfirmationReply> => {
     const localPath = c.localitem.path;
     const remotePath = c.mappedItem.downloadItem.path;
 
@@ -185,13 +190,19 @@ const askConflictExists =
         message,
         options: Object.values(askConfirmationReplies),
       }),
-      TE.map((decision): Solution =>
-        decision === askConfirmationReplies.yes
-          ? [c, "overwrite"]
-          : decision === askConfirmationReplies.yesForAll
-          ? [c, "overwrite"]
-          : [c, "skip"]
-      ),
+      TE.map((decision): AskConfirmationReply => {
+        if (decision === askConfirmationReplies.yes) {
+          return E.right([c, "overwrite"]);
+        }
+        if (decision === askConfirmationReplies.no) {
+          return E.right([c, "skip"]);
+        }
+        if (decision === askConfirmationReplies.yesForAll) {
+          return E.left([c, "overwrite"]);
+        }
+
+        return E.left([c, "skip"]);
+      }),
     );
   };
 
@@ -211,13 +222,14 @@ export const defaultSolver = (
   },
 ): ConflictsSolver<DepAskConfirmation> =>
 (conflicts) =>
-({ askConfirmation }) => {
+({ askConfirmation }): TE.TaskEither<Error, Solution[]> =>
+async (): Promise<E.Either<Error, Solution[]>> => {
   const statsConflicts = pipe(conflicts, A.filter(isConflictStatsError));
   let existsConflicts = pipe(conflicts, A.filter(isConflictExists));
   const solutions: Solution[] = [];
 
   if (statsConflicts.length > 0) {
-    return TE.left(
+    return E.left(
       err(`Error getting stats for ${statsConflicts[0].mappedItem.localpath}: ${statsConflicts[0].error}`),
     );
   }
@@ -257,13 +269,33 @@ export const defaultSolver = (
     existsConflicts = [];
   }
 
-  // ask for solutions for the rest
-  return pipe(
-    existsConflicts,
-    A.map(askConflictExists({ askConfirmation })),
-    A.sequence(TE.ApplicativeSeq),
-    TE.map(A.concat(solutions)),
-  );
+  let forall: O.Option<SolutionAction> = O.none;
+
+  for (const conflict of existsConflicts) {
+    if (O.isSome(forall)) {
+      solutions.push([conflict, forall.value]);
+      continue;
+    }
+    const replyE = await pipe(
+      askConflictExists({ askConfirmation })(conflict),
+    )();
+
+    if (E.isLeft(replyE)) {
+      return replyE;
+    }
+
+    const reply = replyE.right;
+
+    // yes/no for all
+    if (E.isLeft(reply)) {
+      forall = O.some(reply.left[1]);
+      solutions.push(reply.left);
+    } else {
+      solutions.push(reply.right);
+    }
+  }
+
+  return E.right(solutions);
 };
 
 export const solvers = {
