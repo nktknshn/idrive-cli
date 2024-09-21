@@ -2,7 +2,18 @@
 
 function __fish_autocomplete_path
   argparse 't/trash' 'f/file' 'd/dir' -- $argv
+
   set -l ac_args
+
+  set -l _cmd (commandline)
+
+  #  idk why but only this way it works
+  set -l _cmd1 "argparse -i 'a/api-usage=' -- $_cmd"
+  eval $_cmd1
+
+  if not test -z "$_flag_api_usage"
+      set ac_args $ac_args --api-usage $_flag_api_usage
+  end
 
   if not test -z "$_flag_trash"
     set ac_args $ac_args --trash
@@ -38,6 +49,7 @@ function __fish_second_arg
   test (count $stipped_args) -eq 3
 end
 
+
 # remove old completions
 complete -c idrive -e
 
@@ -54,26 +66,26 @@ complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_comman
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a download -d 'download'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a recover -d 'recover'
 
+# ls
 complete --no-files -c idrive -n "__fish_seen_subcommand_from ls; and not __fish_seen_argument -s t -l trash" -a "(__fish_autocomplete_path)"
-
 complete --no-files -c idrive -n "__fish_seen_subcommand_from ls; and __fish_seen_argument -s t -l trash" -a "(__fish_autocomplete_path --trash)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from cat" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from edit" -a "(__fish_autocomplete_path)"
 
-complete --no-files -c idrive -n "__fish_seen_subcommand_from mkdir" -a "(__fish_autocomplete_path -d)"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from mkdir" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from rm" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from download" -a "(__fish_autocomplete_path)"
 
-complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path -t)"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path --trash)"
 
+# upload
 complete -c idrive -n "__fish_seen_subcommand_from upload; and __fish_first_arg"
-
 complete --no-files -c idrive -n "__fish_seen_subcommand_from upload; and __fish_second_arg" -a "(__fish_autocomplete_path)"
 
+# mv
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_first_arg" -a "(__fish_autocomplete_path)"
-
-complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_second_arg" -a "(__fish_autocomplete_path -d)"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_second_arg" -a "(__fish_autocomplete_path)"

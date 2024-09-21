@@ -372,4 +372,4 @@ Retrieves from API if the cache is not enough.
 
 - [ ] ls JSON output
 - [ ] cp
-- [ ] zsh completion
+- [ ] better/more shell autocompletions
