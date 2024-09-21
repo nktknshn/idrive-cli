@@ -348,7 +348,7 @@ From trash
 
 Use cache (faster but not always up to date)
 
-`idrive autocomplete --cached /`
+`idrive autocomplete -a onlycache /`
 
 ### API/cache usage strategy
 
