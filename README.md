@@ -125,7 +125,7 @@ Limit the depth of recursion
 
 Sort by size recursively looking for the largest files
 
-`idrive ls -S size -R -h size /`
+`idrive ls -S size -R -h /`
 
 Output result as a tree
 
