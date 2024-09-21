@@ -370,6 +370,6 @@ Retrieves from API if the cache is not enough.
 
 ## TODO
 
-- [ ] ls JSON output
+- [ ] better ls JSON output
 - [ ] cp
 - [ ] better/more shell autocompletions

@@ -42,6 +42,7 @@ const ls = w.command("ls [paths..]", "List files in a folder", _ =>
         type: "string",
         description: "Sort by",
       },
+      json: { alias: ["j"], default: false, type: "boolean", description: "Print as JSON" },
     })
     .coerce("sort", (a): typeof SortChoices[number] => {
       if (SortChoices.includes(a)) {
@@ -237,13 +238,11 @@ export const cmd = w.composeCommands(
       .scriptName("idrive")
       .options({
         "session-file": {
-          // alias: ["s"],
           default: undefined,
           optional: true,
           description: "Session file",
         },
         "cache-file": {
-          // alias: ["c"],
           default: undefined,
           optional: true,
           description: "Cache file",
