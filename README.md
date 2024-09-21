@@ -73,7 +73,7 @@ List directory contents. Supports globs
 
 `idrive ls`
 
-`idrive ls '/MyNotes/my1/'`
+`idrive ls /MyNotes/my1/`
 
 `idrive ls '/MyNotes/my1/*.md'`
 
@@ -85,31 +85,35 @@ Multiple paths
 
 More verbose output (adds size, date, item type)
 
-`idrive ls -l '/MyNotes/my1/'`
+`idrive ls -l /MyNotes/my1/`
 
 More verbose output (adds drivewsid, etag)
 
-`idrive ls -ll '/MyNotes/my1/'`
+`idrive ls -ll /MyNotes/my1/`
 
 Print folder or file info
 
-`idrive ls -i '/MyNotes/my1/' '/Camera/IMG_0198.jpg'`
+`idrive ls -i /MyNotes/my1/ '/Camera/IMG_0198.jpg'`
 
 Print full paths
 
-`idrive ls -f '/MyNotes/my1/'`
+`idrive ls -f /MyNotes/my1/`
 
 Human readable sizes
 
-`idrive ls -lh '/MyNotes/my1/'`
+`idrive ls -lh /MyNotes/my1/`
 
-Sort by size recursively looking for the largest files
+Sorting
 
-`idrive ls -S size -R -h size /`
+`idrive ls -S size /`
+
+`idrive ls -S date /`
 
 Recursive listing (may take some time to process deep trees). Note: the command below will save the whole tree into the cache
 
-`idrive ls -R '/`
+`idrive ls -R /`
+
+`idrive ls -R / /Obsidian`
 
 Use recursive flag for the globstar pattern
 
@@ -119,9 +123,13 @@ Limit the depth of recursion
 
 `idrive ls -R -D 2 '/MyNotes/my1/**/*.md'`
 
+Sort by size recursively looking for the largest files
+
+`idrive ls -S size -R -h size /`
+
 Output result as a tree
 
-`idrive ls -R -D 2 --tree '/MyNotes/my1/'`
+`idrive ls -R -D 2 --tree /MyNotes/my1/`
 
 `idrive ls -R --tree '/MyNotes/my1/**/*.md'`
 
@@ -272,15 +280,15 @@ Dry run
 
 Recursively download folders.
 
-`idrive download -R '/MyNotes/my1/' outputdir/`
+`idrive download -R /MyNotes/my1/ outputdir/`
 
 This will download into `outputdir/MyNotes/my1/`
 
-`idrive download -RF '/MyNotes/my1/' outputdir/`
+`idrive download -RF /MyNotes/my1/ outputdir/`
 
 Limit the depth of recursion
 
-`idrive download -R -D 2 '/MyNotes/my1/' outputdir/`
+`idrive download -R -D 2 /MyNotes/my1/ outputdir/`
 
 Globstar pattern is supported
 
@@ -358,5 +366,7 @@ Retrieves from API if the cache is not enough.
 
 ## TODO
 
+- [ ] zsh completion
 - [ ] ls JSON output
 - [ ] cp
+- [ ] autocomplete api-usage support

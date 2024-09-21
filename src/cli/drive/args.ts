@@ -6,7 +6,7 @@ const SortChoices = ["name", "size", "date"] as const;
 const init = w.command(
   "init",
   "Init new session",
-  a => a.options({ skipLogin: { default: false, type: "boolean" } }),
+  a => a.options({ "skip-login": { default: false, type: "boolean" } }),
 );
 
 const auth = w.command(
@@ -210,10 +210,10 @@ const mv = w.command(
 );
 
 const autocomplete = w.command(
-  "autocomplete <path>",
+  "autocomplete [path]",
   "Autocomplete path",
   (_) =>
-    _.positional("path", { type: "string", demandOption: true })
+    _.positional("path", { type: "string", demandOption: false })
       .options({
         file: { default: false, type: "boolean" },
         dir: { default: false, type: "boolean" },

@@ -1,26 +1,26 @@
-import { constVoid, flow, identity, pipe } from 'fp-ts/lib/function'
-import * as RTE from 'fp-ts/lib/ReaderTaskEither'
-import * as TE from 'fp-ts/TaskEither'
+import { constVoid, flow, identity, pipe } from "fp-ts/lib/function";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as TE from "fp-ts/TaskEither";
 
-import { DepFs } from '../../../deps-types'
-import { DepAuthenticateSession } from '../../../deps-types/dep-authenticate-session'
-import { authenticateState } from '../../../icloud-authentication/methods'
-import { ICloudSession, session } from '../../../icloud-core/session/session-type'
-import { saveSessionToFile } from '../../../icloud-drive/drive-persistence'
-import { saveAccountDataToFile } from '../../../icloud-drive/drive-persistence'
-import { printerIO } from '../../../logging/printerIO'
-import { err } from '../../../util/errors'
-import { prompts } from '../../../util/prompts'
+import { DepFs } from "../../../deps-types";
+import { DepAuthenticateSession } from "../../../deps-types/dep-authenticate-session";
+import { authenticateState } from "../../../icloud-authentication/methods";
+import { ICloudSession, session } from "../../../icloud-core/session/session-type";
+import { saveSessionToFile } from "../../../icloud-drive/drive-persistence";
+import { saveAccountDataToFile } from "../../../icloud-drive/drive-persistence";
+import { printerIO } from "../../../logging/printerIO";
+import { err } from "../../../util/errors";
+import { prompts } from "../../../util/prompts";
 
-type Args = { skipLogin: boolean }
+type Args = { "skip-login": boolean };
 
 export type InitSessionDeps =
   & { sessionFile: string }
   & DepAuthenticateSession
-  & DepFs<'fstat'>
-  & DepFs<'writeFile'>
+  & DepFs<"fstat">
+  & DepFs<"writeFile">;
 
-export const initSession = ({ skipLogin }: Args): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
+export const initSession = (args: Args): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
   return pipe(
     RTE.ask<InitSessionDeps>(),
     RTE.chainFirstW(({ sessionFile, fs }) =>
@@ -36,7 +36,7 @@ export const initSession = ({ skipLogin }: Args): RTE.ReaderTaskEither<InitSessi
     ),
     RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Initializing session in ${sessionFile}`))),
     RTE.chainTaskEitherK(() => sessionQuest),
-    !skipLogin
+    !args["skip-login"]
       ? flow(
         RTE.chainW(authenticateState),
         RTE.chainFirstW(saveAccountDataToFile),
@@ -46,34 +46,34 @@ export const initSession = ({ skipLogin }: Args): RTE.ReaderTaskEither<InitSessi
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
     RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Session initialized in ${sessionFile}`))),
     RTE.map(constVoid),
-  )
-}
+  );
+};
 
 const askUsername = () =>
   prompts({
-    type: 'text',
-    name: 'value',
-    message: 'ICloud username',
+    type: "text",
+    name: "value",
+    message: "ICloud username",
   }, {
     onCancel: () => process.exit(1),
-  })
+  });
 
 const askPassword = () =>
   prompts({
-    type: 'password',
-    name: 'value',
-    message: 'ICloud password',
+    type: "password",
+    name: "value",
+    message: "ICloud password",
   }, {
     onCancel: () => process.exit(1),
-  })
+  });
 
 const sessionQuest: TE.TaskEither<Error, {
-  session: ICloudSession
+  session: ICloudSession;
 }> = pipe(
   TE.Do,
-  TE.bind('username', askUsername),
-  TE.bind('password', askPassword),
+  TE.bind("username", askUsername),
+  TE.bind("password", askPassword),
   TE.map(
     ({ username, password }) => ({ session: session(username.value, password.value) }),
   ),
-)
+);
