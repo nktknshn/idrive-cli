@@ -7,6 +7,9 @@ function __fish_autocomplete_path
 
   set -l _cmd (commandline)
 
+  # argparse -i 'a/api-usage=' -- $_cmd
+  # no result appears in flags
+
   #  idk why but only this way it works
   set -l _cmd1 "argparse -i 'a/api-usage=' -- $_cmd"
   eval $_cmd1
