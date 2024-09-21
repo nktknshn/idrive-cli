@@ -1,8 +1,7 @@
-# alias idrive="node dist/idrive.js"
-# .
+# basic fish completion for idrive
 
 function __fish_autocomplete_path
-  argparse 't/trash' 'f/file' 'd/dir' 'c/cached' -- $argv
+  argparse 't/trash' 'f/file' 'd/dir' -- $argv
   set -l ac_args
 
   if not test -z "$_flag_trash"
@@ -15,10 +14,6 @@ function __fish_autocomplete_path
 
   if not test -z "$_flag_dir"
     set ac_args $ac_args --dir
-  end
-
-  if not test -z "$_flag_cached"
-    set ac_args $ac_args --cached
   end
 
   set -l pattern (commandline -ct)
@@ -43,7 +38,7 @@ function __fish_second_arg
   test (count $stipped_args) -eq 3
 end
 
-
+# remove old completions
 complete -c idrive -e
 
 set -l idrive_commands ls cat mkdir upload rm mv recover download edit init auth
@@ -76,9 +71,9 @@ complete --no-files -c idrive -n "__fish_seen_subcommand_from download" -a "(__f
 complete --no-files -c idrive -n "__fish_seen_subcommand_from recover" -a "(__fish_autocomplete_path -t)"
 
 complete -c idrive -n "__fish_seen_subcommand_from upload; and __fish_first_arg"
-complete -c idrive -n "__fish_seen_subcommand_from uploads"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from upload; and __fish_second_arg" -a "(__fish_autocomplete_path)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_first_arg" -a "(__fish_autocomplete_path)"
+
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mv; and __fish_second_arg" -a "(__fish_autocomplete_path -d)"

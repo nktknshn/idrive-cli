@@ -55,7 +55,7 @@ Initializes new session.
 
 Do not login, just create the session file.
 
-`idrive init --skipLogin`
+`idrive init --skip-login`
 
 Authenticate the session file
 
@@ -294,11 +294,13 @@ Globstar pattern is supported
 
 `idrive download -R '/MyNotes/my1/diary/**/*.md' outputdir/`
 
-Use `dry` flag to only check what is going to be downloaded
-
 `include` and `exclude` flags can be used to filter files (supports globs)
 
-`idrive download -R '/MyNotes/my1/diary/**/*.md' --exclude '**/*.old.md' --include '**/*.old.md' outputdir/`
+`idrive download -R '/MyNotes/my1/diary/**/*.md' --exclude '**/2023*.md' --include '**/2023-12*.md' outputdir/`
+
+Use `dry` flag to only check what is going to be downloaded.
+
+`idrive download -R '/MyNotes/ --dry`
 
 ### upload 
 
@@ -327,7 +329,6 @@ Upload a selection of files
 `idrive upload -R '~/Documents/**/*.md' /MyNotes/my1/notes/`
 
 Use `dry` flag to only check what is going to be uploaded.
-
 
 ### autocomplete <path>
 
@@ -363,10 +364,12 @@ Will not use the API. Only retrieve from cache.
 
 Retrieves from API if the cache is not enough.
 
+## Known issues
+
+- state/session is not saved if an error is thrown in SRTE chain
 
 ## TODO
 
-- [ ] zsh completion
 - [ ] ls JSON output
 - [ ] cp
-- [ ] autocomplete api-usage support
+- [ ] zsh completion

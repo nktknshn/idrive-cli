@@ -1,15 +1,14 @@
 import { pipe } from "fp-ts/lib/function";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import { normalizePath, Path } from "../../util/path";
-import { DriveLookup } from "..";
+import { DriveLookup, Types } from "..";
 import { fileName, fileNameAddSlash } from "../drive-types";
 
-export const autocomplete = ({ path, trash, file, dir, cached }: {
+export const autocomplete = ({ path, trash, file, dir }: {
   path?: string;
   trash: boolean;
   file: boolean;
   dir: boolean;
-  cached: boolean;
 }): DriveLookup.Lookup<string> => {
   if (path === undefined) {
     path = "/";
@@ -22,30 +21,29 @@ export const autocomplete = ({ path, trash, file, dir, cached }: {
 
   const targetDir = lookupDir ? npath : nparentPath;
 
+  const getPath: DriveLookup.Lookup<Types.Details> = trash
+    ? DriveLookup.getByPathFolderStrictTrash(targetDir)
+    : DriveLookup.getByPathFolderStrictDocwsroot(targetDir);
+
   return pipe(
-    DriveLookup.getCachedRootOrTrash(trash),
-    SRTE.chain(root =>
-      pipe(
-        cached
-          ? DriveLookup.getByPathFolderFromCache(targetDir)(root)
-          : DriveLookup.getByPathFolderStrict(root, targetDir),
-        SRTE.map(parent =>
-          lookupDir
-            ? parent.items
-            : parent.items.filter(
-              f => fileName(f).startsWith(childName),
-            )
-        ),
-        SRTE.map((result) =>
-          result
-            .filter(item => file ? item.type === "FILE" : true)
-            .filter(item => dir ? item.type === "FOLDER" || item.type === "APP_LIBRARY" : true)
-            .map(fileNameAddSlash)
-            .map(fn => lookupDir ? `/${npath}/${fn}` : `/${nparentPath}/${fn}`)
-            .map(Path.normalize)
-            .join("\n")
-        ),
-      )
+    pipe(
+      getPath,
+      SRTE.map(parent =>
+        lookupDir
+          ? parent.items
+          : parent.items.filter(
+            f => fileName(f).startsWith(childName),
+          )
+      ),
+      SRTE.map((result) =>
+        result
+          .filter(item => file ? item.type === "FILE" : true)
+          .filter(item => dir ? item.type === "FOLDER" || item.type === "APP_LIBRARY" : true)
+          .map(fileNameAddSlash)
+          .map(fn => lookupDir ? `/${npath}/${fn}` : `/${nparentPath}/${fn}`)
+          .map(Path.normalize)
+          .join("\n")
+      ),
     ),
   );
 };

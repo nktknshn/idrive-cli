@@ -1,9 +1,8 @@
-# EBNF grammar for idrive
+# tried to implement complgen grammar for idrive
+# current cli cannot be represented by this grammar
 
-idrive <GLOBAL-OPTION>... <COMMAND>...;
+idrive <GLOBAL-OPTION>... <COMMAND>;
 
-
-<COMMAND> ::= init | auth | ls | mkdir | cat | edit | mv | rm | download | upload | recover | autocomplete;
 <GLOBAL-OPTION> ::= (--session-file "Session file")
                   | (--cache-file "Cache file")
                   | (--no-cache "Disable cache")
@@ -11,23 +10,26 @@ idrive <GLOBAL-OPTION>... <COMMAND>...;
                   | ((--debug | -d) "Debug mode")
                   ;
 
-
-idrive init "Init new session" <GLOBAL-OPTION>... <INIT-OPTION>...;
-<INIT-OPTION> ::= (--skip-login "Skip login");
-
-
-idrive [<GLOBAL-OPTION>]... ls [-<LS-OPTION>...] <REMOTE-PATH>...;
-
-<LS-OPTION> ::= ((-full-path | l) "Print full paths")
-              | ((-tree | T) "Print tree view")
-              | (-info "Include folder info in listing")
-              | (-human-readable "With -l, print sizes like 1K 234M 2G etc.")
-              | (-sort "Sort by")
-              ;
-      
-<REMOTE-PATH> ::= {{{ idrive autocomplete  --cached $1 }}};
-
 <API-USAGE> ::= onlycache "Only cache"
               | fallback "Fallback to API if cache is not enough"
               | validate "Validate cache"
               ;
+
+<COMMAND> ::= init | auth | ls | mkdir | cat | edit | mv | rm | download | upload | recover | autocomplete;
+
+idrive init "Init new session" <GLOBAL-OPTION>... <INIT-OPTION>...;
+<INIT-OPTION> ::= (--skip-login "Skip login");
+
+idrive [<GLOBAL-OPTION>]... ls [<LS-OPTION>...] <REMOTE-PATH>...;
+
+<LS-OPTION> ::= (--full-path "Print full paths")
+              | (--tree "Print tree view")
+              | (--info "Include folder info in listing")
+              | (--human-readable "With -l, print sizes like 1K 234M 2G etc.")
+              | (--sort "Sort by")
+              ;
+      
+<REMOTE-PATH> ::= {{{ idrive autocomplete --cached $1 }}};
+
+# unsupported case
+idrive download <REMOTE-PATH> <PATH>;

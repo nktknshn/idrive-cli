@@ -96,6 +96,18 @@ export const getByPathFolderStrict = <R extends T.Root>(
     ),
   );
 
+export const getByPathFolderStrictTrash = (
+  path: NormalizedPath,
+): Lookup<T.DetailsTrashRoot | T.NonRootDetails> =>
+  pipe(
+    getByPathsStrictTrash([path]),
+    map(NA.head),
+    filterOrElse(
+      T.isDetailsG,
+      () => ItemIsNotFolderError.create(`${path} is not a folder.`),
+    ),
+  );
+
 export const getByPathFolderStrictDocwsroot = (
   path: NormalizedPath,
 ): Lookup<T.DetailsDocwsRoot | T.NonRootDetails> =>

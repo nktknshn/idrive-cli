@@ -218,7 +218,7 @@ const autocomplete = w.command(
         file: { default: false, type: "boolean" },
         dir: { default: false, type: "boolean" },
         trash: { alias: ["t"], default: false, type: "boolean" },
-        cached: { default: false, type: "boolean" },
+        // cached: { default: false, type: "boolean" },
       }),
 );
 
