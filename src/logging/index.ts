@@ -5,7 +5,7 @@ export {
   authLogger,
   cacheLogger,
   httpfilelogger,
-  initLoggers as initLogging,
+  initLogging,
   logger,
   stderrLogger,
   timeLogger,

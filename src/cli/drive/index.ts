@@ -1,6 +1,8 @@
+import { pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as w from "yargs-command-wrapper";
 import { persistentDriveState } from "../../icloud-drive/drive-persistence";
+import * as Log from "./../../logging";
 import { CliCommands, cmd } from "./args";
 import * as Commands from "./commands";
 
@@ -23,8 +25,11 @@ const handler = w.createHandlerFor(cmd, {
   auth: Commands.authSession,
 });
 
-export const runCliCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, unknown> => {
-  return handler.handle(command);
+export const runCliCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, string> => {
+  return pipe(
+    handler.handle(command),
+    Log.debugTimeRTE("runCliCommand")<CommandsDeps, Error, string>,
+  );
 };
 
 /** Aggregate all dependencies of all commands into a single record */

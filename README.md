@@ -113,7 +113,7 @@ Recursive listing (may take some time to process deep trees). Note: the command 
 
 `idrive ls -R /`
 
-`idrive ls -R / /Obsidian`
+`idrive ls -R / /MyNotes`
 
 Use recursive flag for the globstar pattern
 
@@ -131,7 +131,7 @@ Output result as a tree
 
 `idrive ls -R -D 2 --tree /MyNotes/my1/`
 
-`idrive ls -R --tree '/MyNotes/my1/**/*.md'`
+`idrive ls -R -T '/MyNotes/my1/**/*.md'`
 
 Search in the cache (will fail if the cache is not enough to fulfill the request)
 
@@ -183,7 +183,7 @@ Remove from trash (forever)
 
 View the content of a text file
 
-`idrive cat '/MyNotes/my1/note.md'`
+`idrive cat /MyNotes/my1/note.md`
 
 ### mv <srcpath> <dstpath>
 

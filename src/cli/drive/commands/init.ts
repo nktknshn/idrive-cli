@@ -20,7 +20,7 @@ export type InitSessionDeps =
   & DepFs<"fstat">
   & DepFs<"writeFile">;
 
-export const initSession = (args: Args): RTE.ReaderTaskEither<InitSessionDeps, Error, void> => {
+export const initSession = (args: Args): RTE.ReaderTaskEither<InitSessionDeps, Error, string> => {
   return pipe(
     RTE.ask<InitSessionDeps>(),
     RTE.chainFirstW(({ sessionFile, fs }) =>
@@ -44,8 +44,8 @@ export const initSession = (args: Args): RTE.ReaderTaskEither<InitSessionDeps, E
       : RTE.map(identity),
     RTE.chainFirstW(saveSessionToFile),
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
-    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Session initialized in ${sessionFile}`))),
-    RTE.map(constVoid),
+    RTE.chainFirstIOK(({ sessionFile }) => printerIO.print(`Session initialized in ${sessionFile}`)),
+    RTE.map(() => ""),
   );
 };
 

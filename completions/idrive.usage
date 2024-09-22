@@ -1,5 +1,5 @@
 # tried to implement complgen grammar for idrive
-# current cli cannot be represented by this grammar
+# it seems that current cli cannot be represented by this grammar
 
 idrive <GLOBAL-OPTION>... <COMMAND>;
 
@@ -20,6 +20,7 @@ idrive <GLOBAL-OPTION>... <COMMAND>;
 idrive init "Init new session" <GLOBAL-OPTION>... <INIT-OPTION>...;
 <INIT-OPTION> ::= (--skip-login "Skip login");
 
+# somehow it doesn't suggest more than one path
 idrive [<GLOBAL-OPTION>]... ls [<LS-OPTION>...] <REMOTE-PATH>...;
 
 <LS-OPTION> ::= (--full-path "Print full paths")

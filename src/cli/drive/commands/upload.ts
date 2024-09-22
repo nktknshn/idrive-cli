@@ -9,6 +9,8 @@ import { err } from "../../../util/errors";
 
 export type AskingFunc = ({ message }: { message: string }) => TE.TaskEither<Error, boolean>;
 
+type Deps = Actions.DepsUpload & Actions.DepsUploadFolder;
+
 export const upload = (
   args: {
     paths: string[];
@@ -20,13 +22,13 @@ export const upload = (
     overwrite: boolean;
     "skip-trash": boolean;
   },
-): DriveLookup.Lookup<unknown, Actions.DepsUpload & Actions.DepsUploadFolder> => {
+): DriveLookup.Lookup<string, Deps> => {
   if (!A.isNonEmpty(args.paths)) {
-    return DriveLookup.left(err("No files to upload"));
+    return SRTE.left(err("No files to upload"));
   }
 
   if (args.paths.length < 2) {
-    return DriveLookup.left(err("Missing destination path"));
+    return SRTE.left(err("Missing destination path"));
   }
 
   if (args.recursive) {

@@ -23,19 +23,12 @@ async function main() {
   await pipe(
     CliDrive.createCliCommandsDeps(command.argv),
     CliDrive.runCliCommand(command),
-    Log.debugTimeTE("runCliCommand"),
-    TE.fold(printer.errorTask, (output) =>
-      async () => {
-        if (output === undefined) {
-          return;
-        }
-
-        if (output == "\n") {
-          return;
-        }
-
-        printer.print(output, { newline: false });
-      }),
+    TE.fold(printer.errorTask, (output) => async () => {
+      if (/^\s*$/.test(output)) {
+        return;
+      }
+      printer.print(output, { newline: false });
+    }),
   )();
 }
 
