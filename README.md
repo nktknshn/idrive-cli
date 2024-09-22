@@ -141,6 +141,10 @@ Search in the cache and fall back to the API if the cache is not enough
 
 `idrive ls -R '/**/*.md' -a fallback`
 
+Print cached tree
+
+`idrive ls -RT -a o /`
+
 Same for trash
 
 `idrive ls --trash ...`
@@ -363,6 +367,8 @@ Will not use the API. Only retrieve from cache.
 `--api-usage fallback`
 
 Retrieves from API if the cache is not enough.
+
+Short variants: `-a o`, `-a f`, `-a v`
 
 ## Known issues
 
