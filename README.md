@@ -1,4 +1,4 @@
-# Unofficial iCloud Drive client built on the icloud.com/drive API
+# Unofficial iCloud Drive client for Linux built on the icloud.com/drive API
 
 ## Overview
 
@@ -300,7 +300,17 @@ Globstar pattern is supported
 
 `include` and `exclude` flags can be used to filter files (supports globs)
 
-`idrive download -R '/MyNotes/my1/diary/**/*.md' --exclude '**/2023*.md' --include '**/2023-12*.md' outputdir/`
+`idrive download -R '/MyNotes/my1/diary/**/*.md' outputdir/`
+
+Same as:
+
+`idrive download -R '/MyNotes/my1/diary' outputdir/ --include '**/*.md'` 
+
+Using exclude flag:
+
+`idrive download -R '/MyNotes/my1/diary/**/*.md' outputdir/ --include '**/*.png' --exclude '**/Archive/**/*'`
+
+The filter is: path is matching the include glob (if not empty) and not matching exclude glob (if not empty)
 
 Use `dry` flag to only check what is going to be downloaded.
 
@@ -324,7 +334,7 @@ Upload multiple files
 
 `idrive upload ~/Documents/note1.md ~/Documents/note2.md ~/Documents/note3.md /MyNotes/my1/notes/`
 
-Upload a folder
+Upload a folder. Uploading a folder will always create a new folder in the destination folder. Uploading over an existing folder is not allowed currently. 
 
 `idrive upload -R ~/Documents/ /MyNotes/my1/notes/`
 
@@ -376,6 +386,11 @@ Short variants: `-a o`, `-a f`, `-a v`
 
 ## TODO
 
+Need a feature or have an idea? Open an issue!
+
+<!-- 
 - [ ] better ls JSON output
 - [ ] cp
 - [ ] better/more shell autocompletions
+- [ ] less dependencies
+- [ ] split project into cli and lib -->
