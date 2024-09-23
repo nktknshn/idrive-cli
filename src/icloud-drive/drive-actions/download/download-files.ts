@@ -69,7 +69,7 @@ export const downloadFiles = (
     SRTE.fromReaderTaskEither<Deps, Error, CheckPathResult, DriveLookup.State>,
     SRTE.chainFirstW(a => SRTE.fromReaderTaskEitherK(validateCheck)(a)),
     SRTE.bindTo("check"),
-    SRTE.bindW("task", () => downloadTaskFromFilesPaths(npaths)),
+    SRTE.bindW("task", () => makeDownloadTaskFromFilesPaths(npaths)),
     SRTE.chainFirstIOK(
       ({ task }) =>
         task.folders.length > 0
@@ -105,7 +105,7 @@ export const downloadFiles = (
   );
 };
 
-export const downloadTaskFromFilesPaths = (
+export const makeDownloadTaskFromFilesPaths = (
   npaths: NEA<NormalizedPath>,
 ): DriveLookup.Lookup<{ task: DownloadTask; folders: string[] }> => {
   return pipe(

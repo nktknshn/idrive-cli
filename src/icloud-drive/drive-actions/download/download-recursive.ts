@@ -52,7 +52,10 @@ export const downloadRecursive = (
           depth: args.depth,
           updateTime: args.updateTime,
           treefilter: makeDownloadTaskFromTree({
-            filterFiles: filterByIncludeExcludeGlobs(args),
+            filterFiles: filterByIncludeExcludeGlobs({
+              include: args.include,
+              exclude: args.exclude,
+            }),
           }),
           toLocalFileSystemMapper: args.fullPath
             ? recursiveDirMapper(args.dstpath)

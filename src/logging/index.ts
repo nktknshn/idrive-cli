@@ -20,4 +20,5 @@ export const defaultLoggers = [
 ];
 
 export * from "./debug-time";
+export * from "./log-time";
 export { loggerIO } from "./loggerIO";

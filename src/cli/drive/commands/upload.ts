@@ -1,13 +1,10 @@
 import * as A from "fp-ts/Array";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
-import * as TE from "fp-ts/lib/TaskEither";
 import { DriveLookup } from "../../../icloud-drive";
 
 import { pipe } from "fp-ts/lib/function";
 import * as Actions from "../../../icloud-drive/drive-actions";
 import { err } from "../../../util/errors";
-
-export type AskingFunc = ({ message }: { message: string }) => TE.TaskEither<Error, boolean>;
 
 type Deps = Actions.DepsUpload & Actions.DepsUploadFolder;
 
@@ -39,7 +36,7 @@ export const upload = (
         remotepath: args.paths[1],
         chunkSize: 2,
       }),
-      SRTE.map(() => `Folder uploaded.\n`),
+      SRTE.map(() => args.dry ? `Folder uploaded.\n` : ``),
     );
   }
 
@@ -59,6 +56,7 @@ export const upload = (
         uploadargs: args.paths,
         overwrite: args.overwrite,
         skipTrash: args["skip-trash"],
+        dry: args.dry,
       }),
       SRTE.map(() => `Files uploaded.\n`),
     );

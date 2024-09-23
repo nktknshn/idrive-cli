@@ -86,7 +86,7 @@ export const showDownloadTaskData = ({ verbose = false }) => (data: DownloadTask
     }
 
     result += "\n";
-    result += "Result:\n";
+    result += "Will be downloaded:\n";
 
     for (const { downloadItem, localpath } of data.solvedTask.downloadable) {
       result += `${column(downloadItem.path, maxPathLength + 5)} → ${localpath}\n`;

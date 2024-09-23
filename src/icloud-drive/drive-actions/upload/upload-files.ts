@@ -1,4 +1,3 @@
-import assert from "assert";
 import * as A from "fp-ts/Array";
 import { constVoid, pipe } from "fp-ts/lib/function";
 import * as NA from "fp-ts/lib/NonEmptyArray";
@@ -9,6 +8,7 @@ import * as O from "fp-ts/Option";
 import { DepAskConfirmation, DepFs } from "../../../deps-types";
 import { loggerIO } from "../../../logging/loggerIO";
 import { SrteUtils } from "../../../util";
+import { err } from "../../../util/errors";
 import { assertFileSize } from "../../../util/fs";
 import { normalizePath } from "../../../util/normalize-path";
 import { Path } from "../../../util/path";
@@ -31,41 +31,50 @@ export type Deps =
 
 /** Upload multiple files to the same folder */
 export const uploadMany = (
-  { uploadargs, overwrite, skipTrash }: {
+  { uploadargs, overwrite, skipTrash, dry }: {
     uploadargs: string[];
     overwrite:
       | boolean
       | AskingFunc;
     skipTrash: boolean;
+    dry: boolean;
   },
 ): SRA<DriveLookup.State, Deps, void> => {
-  assert(A.isNonEmpty(uploadargs));
-  assert(uploadargs.length > 1);
+  if (!A.isNonEmpty(uploadargs)) {
+    return SRTE.left(err("Missing paths"));
+  }
 
-  const dstpath = NA.last(uploadargs);
+  if (uploadargs.length < 2) {
+    return SRTE.left(err("Missing destination path"));
+  }
+
   const srcpaths = NA.init(uploadargs);
+  const dstpath = NA.last(uploadargs);
+
+  const uploadFiles = (
+    { dstDetails, deps }: { dstDetails: Types.DetailsDocwsRoot | Types.NonRootDetails; deps: Deps },
+  ) =>
+    pipe(
+      srcpaths,
+      A.map(src =>
+        uploadFileToFolder({
+          src,
+          dstDetails,
+          overwrite: overwrite === true
+            ? true
+            : deps.askConfirmation,
+          skipTrash,
+        })
+      ),
+      SRTE.sequenceArray,
+    );
 
   return pipe(
     DriveLookup.getCachedDocwsRoot(),
     SRTE.bindTo("root"),
     SRTE.bind("dstDetails", ({ root }) => DriveLookup.getByPathFolderStrict(root, normalizePath(dstpath))),
     SRTE.bindW("deps", () => SRTE.ask<DriveLookup.State, Deps>()),
-    SRTE.chain(({ dstDetails, deps }) =>
-      pipe(
-        srcpaths,
-        A.map(src =>
-          uploadFileToFolder({
-            src,
-            dstDetails,
-            overwrite: overwrite === true
-              ? true
-              : deps.askConfirmation,
-            skipTrash,
-          })
-        ),
-        SRTE.sequenceArray,
-      )
-    ),
+    SRTE.chain(({ dstDetails, deps }) => uploadFiles({ dstDetails, deps })),
     SRTE.map(constVoid),
   );
 };

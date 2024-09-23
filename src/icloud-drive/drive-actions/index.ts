@@ -16,8 +16,8 @@ export { type Deps as DepsMkdir, mkdir } from "./mkdir";
 export { type DepsMove, move } from "./move";
 export { type Deps as DepsRecover, recover } from "./recover";
 export { type DepsRm, rm, rmCandidates } from "./rm";
+export { type Deps as DepsUpload, uploadSingleFile } from "./upload/upload-files";
+export { uploadMany } from "./upload/upload-files";
 export { type Deps as DepsUploadFolder, uploadFolder } from "./upload/upload-folder";
-export { type Deps as DepsUpload, uploadSingleFile } from "./upload/uploads";
-export { uploadMany } from "./upload/uploads";
 
 export { type Deps as DepsDownloadFiles, downloadFiles } from "./download/download-files";

@@ -3,10 +3,10 @@ import * as A from "fp-ts/Array";
 import * as TE from "fp-ts/lib/TaskEither";
 
 import { DriveLookup } from "..";
+import { Deps as UploadDeps, uploadMany, uploadSingleFile } from "./upload/upload-files";
 import { Deps as UploadFolderDeps, uploadFolder } from "./upload/upload-folder";
-import { Deps as UploadDeps, uploadMany, uploadSingleFile } from "./upload/uploads";
 
-export type AskingFunc = (({ message }: { message: string }) => TE.TaskEither<Error, boolean>);
+export type AskingFunc = ({ message }: { message: string }) => TE.TaskEither<Error, boolean>;
 
 export const upload = (
   args: {
@@ -44,6 +44,7 @@ export const upload = (
       uploadargs: args.uploadargs,
       overwrite: args.overwrite,
       skipTrash: args.skipTrash,
+      dry: args.dry,
     });
   }
 };

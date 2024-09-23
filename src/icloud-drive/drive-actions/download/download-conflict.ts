@@ -9,7 +9,7 @@ import * as Task from "fp-ts/Task";
 import { DepFs } from "../../../deps-types";
 import { FsStats } from "../../../util/fs";
 import { isEnoentError } from "../../../util/fs/is-enoent-error";
-import { LocalTreeElement } from "../../../util/localtreeelement";
+import { LocalTreeItem } from "../../../util/localtree";
 import { Path } from "../../../util/path";
 import { DownloadItemMapped, DownloadTaskMapped } from "./types";
 
@@ -18,7 +18,7 @@ export type Conflict = ConflictExists | ConflictStatsError;
 export type ConflictExists = {
   tag: "exists";
   mappedItem: DownloadItemMapped;
-  localitem: LocalTreeElement;
+  localitem: LocalTreeItem;
 };
 
 export type ConflictStatsError = {
@@ -29,7 +29,7 @@ export type ConflictStatsError = {
 
 export const conflictExists = (
   mappedItem: DownloadItemMapped,
-  localitem: LocalTreeElement,
+  localitem: LocalTreeItem,
 ): ConflictExists => ({ tag: "exists", mappedItem, localitem });
 
 export const conflictStatsError = (
