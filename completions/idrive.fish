@@ -62,7 +62,9 @@ complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_comman
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a cat -d 'cat'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a edit -d 'edit'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a mkdir -d 'mkdir'
+
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a rm -d 'rm'
+ 
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a mv -d 'mv'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a upload -d 'upload'
 complete --no-files -c idrive -n "not __fish_seen_subcommand_from $idrive_commands" -a edit -d 'edit'
@@ -79,7 +81,8 @@ complete --no-files -c idrive -n "__fish_seen_subcommand_from edit" -a "(__fish_
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from mkdir" -a "(__fish_autocomplete_path)"
 
-complete --no-files -c idrive -n "__fish_seen_subcommand_from rm" -a "(__fish_autocomplete_path)"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from rm; and not __fish_seen_argument -s t -l trash" -a "(__fish_autocomplete_path)"
+complete --no-files -c idrive -n "__fish_seen_subcommand_from rm; and __fish_seen_argument -s t -l trash" -a "(__fish_autocomplete_path --trash)"
 
 complete --no-files -c idrive -n "__fish_seen_subcommand_from download" -a "(__fish_autocomplete_path)"
 

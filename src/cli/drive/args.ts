@@ -180,7 +180,7 @@ const rm = w.command(
         "skip-trash": { default: false, type: "boolean", description: "Skip trash" },
         force: { default: false, type: "boolean" },
         recursive: { alias: ["R"], default: false, type: "boolean" },
-        trash: { default: false, type: "boolean", description: "Remove from trash" },
+        trash: { alias: ["t"], default: false, type: "boolean", description: "Remove from trash" },
       }),
 );
 
