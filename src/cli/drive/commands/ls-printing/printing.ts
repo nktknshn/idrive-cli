@@ -2,16 +2,10 @@ import * as A from "fp-ts/lib/Array";
 import { pipe } from "fp-ts/lib/function";
 
 import * as Ord from "fp-ts/lib/Ord";
-import { DriveActions, GetByPath, Types } from "../../../../icloud-drive";
-import {
-  ordDriveChildrenItemByDate,
-  ordDriveChildrenItemByName,
-  ordDriveChildrenItemBySize,
-  ordDriveChildrenItemByType,
-  ordIsFolder,
-} from "../../../../icloud-drive/drive-types";
-import { Path } from "../../../../util/path";
-import { sizeHumanReadable } from "../../../../util/size-human-readable";
+import { DriveActions, GetByPath, Types } from "idrive-lib";
+
+import { Path } from "idrive-lib/util/path";
+import { sizeHumanReadable } from "idrive-lib/util/size-human-readable";
 
 export type Sort = "name" | "size" | "date";
 
@@ -68,22 +62,22 @@ export const formatDate = (dateOrStr: Date | string) => {
 export const getOrds = (sort: Sort): Ord.Ord<Types.DriveChildrenItem>[] =>
   sort === "date"
     ? [
-      Ord.reverse(ordDriveChildrenItemByDate),
+      Ord.reverse(Types.ordDriveChildrenItemByDate),
     ]
     : sort === "size"
     ? [
       // APP_LIBRARY, FOLDER, FILE
-      Ord.reverse(ordIsFolder),
-      ordDriveChildrenItemByType,
-      ordDriveChildrenItemBySize,
+      Ord.reverse(Types.ordIsFolder),
+      Types.ordDriveChildrenItemByType,
+      Types.ordDriveChildrenItemBySize,
     ]
-    : // sort === "name"
-      [
-        // APP_LIBRARY, FOLDER, FILE
-        Ord.reverse(ordIsFolder),
-        ordDriveChildrenItemByType,
-        ordDriveChildrenItemByName,
-      ];
+    // sort === "name"
+    : [
+      // APP_LIBRARY, FOLDER, FILE
+      Ord.reverse(Types.ordIsFolder),
+      Types.ordDriveChildrenItemByType,
+      Types.ordDriveChildrenItemByName,
+    ];
 
 export const sortItems = (items: Types.DriveChildrenItem[], sort: Sort) => pipe(items, A.sortBy(getOrds(sort)));
 
@@ -189,97 +183,95 @@ export const typeWidth = (items: Types.DriveChildrenItem[]) =>
 export const filenameWidth = (items: Types.DriveChildrenItem[]) =>
   pipe(items, A.map(Types.fileName), A.map(_ => _.length), A.reduce(0, Math.max));
 
-export const showDetailsInfo = (details: Types.Details, path: string) =>
-  (params: ShowDetailsInfoParams) => {
-    let result = "";
-    const column = (s: string) => s.padEnd(20);
+export const showDetailsInfo = (details: Types.Details, path: string) => (params: ShowDetailsInfoParams) => {
+  let result = "";
+  const column = (s: string) => s.padEnd(20);
 
-    // process trash root separately
-    if (Types.isTrashDetailsG(details)) {
-      if (params.info) {
-        result += `${column("Drivewsid")}${details.drivewsid}\n`;
-        result += `${column("Number of items")}${details.numberOfItems}\n`;
-        result += "\n";
-      }
-    } else {
-      if (params.info) {
-        result += `${column("Type")}${details.type}\n`;
-        result += `${column("Name")}${Types.fileName(details)}\n`;
-        if (details.extension !== undefined) {
-          result += `${column("Extension")}${details.extension}\n`;
-        }
-        result += `${column("Zone")}${details.zone}\n`;
-        result += `${column("Drivewsid")}${details.drivewsid}\n`;
-        result += `${column("Docwsid")}${details.docwsid}\n`;
-        result += `${column("Etag")}${details.etag}\n`;
-        if (!Types.isCloudDocsRootDetails(details)) {
-          result += `${column("Parent ID")}${details.parentId}\n`;
-        }
-        result += `${column("Number of items")}${details.numberOfItems}\n`;
-        result += `${column("Date created")}${details.dateCreated}\n`;
-
-        if (details.restorePath !== undefined) {
-          result += `${column("Restore path")}${details.restorePath}\n`;
-        }
-        result += "\n";
-      }
-    }
-
-    const items = sortItems(details.items, params.sort);
-
-    let fw = filenameWidth(items);
-    const sw = sizeWidth(items, params.humanReadable);
-    const tw = typeWidth(items);
-
-    if (params.fullPath) {
-      fw += path.length + 1;
-    }
-
-    for (const item of items) {
-      result += showItem(item, path, {
-        filenameWidth: fw,
-        typeWidth: tw,
-        sizeWidth: sw,
-      }, params) + "\n";
-    }
-
-    return result;
-  };
-
-export const showFileInfo = (item: Types.DriveChildrenItemFile, path: string) =>
-  (params: ShowDetailsInfoParams) => {
-    let result = "";
-    const col = (s: string) => s.padEnd(20);
-
+  // process trash root separately
+  if (Types.isTrashDetailsG(details)) {
     if (params.info) {
-      result += `${col("Type")}${item.type}\n`;
-      result += `${col("Full name")}${Types.fileName(item)}\n`;
-      if (item.extension !== undefined) {
-        result += `${col("Extension")}${item.extension}\n`;
+      result += `${column("Drivewsid")}${details.drivewsid}\n`;
+      result += `${column("Number of items")}${details.numberOfItems}\n`;
+      result += "\n";
+    }
+  } else {
+    if (params.info) {
+      result += `${column("Type")}${details.type}\n`;
+      result += `${column("Name")}${Types.fileName(details)}\n`;
+      if (details.extension !== undefined) {
+        result += `${column("Extension")}${details.extension}\n`;
       }
-      result += `${col("Size")}${params.humanReadable ? sizeHumanReadable(item.size) : item.size}\n`;
-      result += `${col("Date created")}${item.dateCreated}\n`;
-      result += `${col("Date modified")}${item.dateModified}\n`;
-      result += `${col("Date changed")}${item.dateChanged}\n`;
-      result += `${col("Drivewsid")}${item.drivewsid}\n`;
-      result += `${col("Docwsid")}${item.docwsid}\n`;
-      result += `${col("Etag")}${item.etag}\n`;
-      result += `${col("Zone")}${item.zone}\n`;
-      result += `${col("Parent ID")}${item.parentId}\n`;
-      if (item.restorePath !== undefined) {
-        result += `${col("Restore path")}${item.restorePath}\n`;
+      result += `${column("Zone")}${details.zone}\n`;
+      result += `${column("Drivewsid")}${details.drivewsid}\n`;
+      result += `${column("Docwsid")}${details.docwsid}\n`;
+      result += `${column("Etag")}${details.etag}\n`;
+      if (!Types.isCloudDocsRootDetails(details)) {
+        result += `${column("Parent ID")}${details.parentId}\n`;
+      }
+      result += `${column("Number of items")}${details.numberOfItems}\n`;
+      result += `${column("Date created")}${details.dateCreated}\n`;
+
+      if (details.restorePath !== undefined) {
+        result += `${column("Restore path")}${details.restorePath}\n`;
       }
       result += "\n";
     }
+  }
 
+  const items = sortItems(details.items, params.sort);
+
+  let fw = filenameWidth(items);
+  const sw = sizeWidth(items, params.humanReadable);
+  const tw = typeWidth(items);
+
+  if (params.fullPath) {
+    fw += path.length + 1;
+  }
+
+  for (const item of items) {
     result += showItem(item, path, {
-      filenameWidth: item.name.length,
-      sizeWidth: sizeWidth([item], params.humanReadable),
-      typeWidth: 4,
-    }, params);
+      filenameWidth: fw,
+      typeWidth: tw,
+      sizeWidth: sw,
+    }, params) + "\n";
+  }
 
-    return result;
-  };
+  return result;
+};
+
+export const showFileInfo = (item: Types.DriveChildrenItemFile, path: string) => (params: ShowDetailsInfoParams) => {
+  let result = "";
+  const col = (s: string) => s.padEnd(20);
+
+  if (params.info) {
+    result += `${col("Type")}${item.type}\n`;
+    result += `${col("Full name")}${Types.fileName(item)}\n`;
+    if (item.extension !== undefined) {
+      result += `${col("Extension")}${item.extension}\n`;
+    }
+    result += `${col("Size")}${params.humanReadable ? sizeHumanReadable(item.size) : item.size}\n`;
+    result += `${col("Date created")}${item.dateCreated}\n`;
+    result += `${col("Date modified")}${item.dateModified}\n`;
+    result += `${col("Date changed")}${item.dateChanged}\n`;
+    result += `${col("Drivewsid")}${item.drivewsid}\n`;
+    result += `${col("Docwsid")}${item.docwsid}\n`;
+    result += `${col("Etag")}${item.etag}\n`;
+    result += `${col("Zone")}${item.zone}\n`;
+    result += `${col("Parent ID")}${item.parentId}\n`;
+    if (item.restorePath !== undefined) {
+      result += `${col("Restore path")}${item.restorePath}\n`;
+    }
+    result += "\n";
+  }
+
+  result += showItem(item, path, {
+    filenameWidth: item.name.length,
+    sizeWidth: sizeWidth([item], params.humanReadable),
+    typeWidth: 4,
+  }, params);
+
+  return result;
+};
 
 export const showValidPath = (res: DriveActions.ListPathsFolder | DriveActions.ListPathsFile) => {
   const path = GetByPath.pathString(res.validation);

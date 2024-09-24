@@ -1,12 +1,13 @@
 import * as A from "fp-ts/Array";
-import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
-import { DriveLookup } from "../../../icloud-drive";
-
 import { pipe } from "fp-ts/lib/function";
-import * as Actions from "../../../icloud-drive/drive-actions";
-import { err } from "../../../util/errors";
+import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
+import { DriveActions, DriveLookup } from "idrive-lib";
 
-type Deps = Actions.DepsUpload & Actions.DepsUploadFolder;
+import { err } from "idrive-lib/util/errors";
+
+type Deps =
+  & DriveActions.DepsUpload
+  & DriveActions.DepsUploadFolder;
 
 export const upload = (
   args: {
@@ -30,7 +31,7 @@ export const upload = (
 
   if (args.recursive) {
     return pipe(
-      Actions.uploadFolder({
+      DriveActions.uploadFolder({
         ...args,
         localpath: args.paths[0],
         remotepath: args.paths[1],
@@ -42,7 +43,7 @@ export const upload = (
 
   if (args.paths.length == 2) {
     return pipe(
-      Actions.uploadSingleFile({
+      DriveActions.uploadSingleFile({
         overwrite: args.overwrite,
         skipTrash: args["skip-trash"],
         srcpath: args.paths[0],
@@ -52,7 +53,7 @@ export const upload = (
     );
   } else {
     return pipe(
-      Actions.uploadMany({
+      DriveActions.uploadMany({
         uploadargs: args.paths,
         overwrite: args.overwrite,
         skipTrash: args["skip-trash"],

@@ -2,23 +2,18 @@ import { constVoid, flow, identity, pipe } from "fp-ts/lib/function";
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/TaskEither";
 
-import { DepFs } from "../../../deps-types";
-import { DepAuthenticateSession } from "../../../deps-types/dep-authenticate-session";
-import { authenticateState } from "../../../icloud-authentication/methods";
-import { ICloudSession, session } from "../../../icloud-core/session/session-type";
-import { saveSessionToFile } from "../../../icloud-drive/drive-persistence";
-import { saveAccountDataToFile } from "../../../icloud-drive/drive-persistence";
-import { printerIO } from "../../../logging/printerIO";
-import { err } from "../../../util/errors";
-import { prompts } from "../../../util/prompts";
+import { Auth, Core, DepsTypes, DrivePersistence, Logging } from "idrive-lib";
+
+import { err } from "idrive-lib/util/errors";
+import { prompts } from "idrive-lib/util/prompts";
 
 type Args = { "skip-login": boolean };
 
 export type InitSessionDeps =
   & { sessionFile: string }
-  & DepAuthenticateSession
-  & DepFs<"fstat">
-  & DepFs<"writeFile">;
+  & DepsTypes.DepAuthenticateSession
+  & DepsTypes.DepFs<"fstat">
+  & DepsTypes.DepFs<"writeFile">;
 
 export const initSession = (args: Args): RTE.ReaderTaskEither<InitSessionDeps, Error, string> => {
   return pipe(
@@ -34,17 +29,17 @@ export const initSession = (args: Args): RTE.ReaderTaskEither<InitSessionDeps, E
           )),
       )
     ),
-    RTE.chainFirstIOK(({ sessionFile }) => (printerIO.print(`Initializing session in ${sessionFile}`))),
+    RTE.chainFirstIOK(({ sessionFile }) => (Logging.printerIO.print(`Initializing session in ${sessionFile}`))),
     RTE.chainTaskEitherK(() => sessionQuest),
     !args["skip-login"]
       ? flow(
-        RTE.chainW(authenticateState),
-        RTE.chainFirstW(saveAccountDataToFile),
+        RTE.chainW(Auth.authenticateState),
+        RTE.chainFirstW(DrivePersistence.saveAccountDataToFile),
       )
       : RTE.map(identity),
-    RTE.chainFirstW(saveSessionToFile),
+    RTE.chainFirstW(DrivePersistence.saveSessionToFile),
     RTE.chainW(() => RTE.ask<InitSessionDeps>()),
-    RTE.chainFirstIOK(({ sessionFile }) => printerIO.print(`Session initialized in ${sessionFile}`)),
+    RTE.chainFirstIOK(({ sessionFile }) => Logging.printerIO.print(`Session initialized in ${sessionFile}`)),
     RTE.map(() => ""),
   );
 };
@@ -68,12 +63,12 @@ const askPassword = () =>
   });
 
 const sessionQuest: TE.TaskEither<Error, {
-  session: ICloudSession;
+  session: Core.ICloudSession;
 }> = pipe(
   TE.Do,
   TE.bind("username", askUsername),
   TE.bind("password", askPassword),
   TE.map(
-    ({ username, password }) => ({ session: session(username.value, password.value) }),
+    ({ username, password }) => ({ session: Core.session(username.value, password.value) }),
   ),
 );

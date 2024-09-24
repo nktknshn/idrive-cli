@@ -1,11 +1,9 @@
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import * as TE from "fp-ts/lib/TaskEither";
+import { Logging } from "idrive-lib";
 import * as w from "yargs-command-wrapper";
 
 import * as CliDrive from "./cli/drive";
-import * as Log from "./logging";
-import { printer } from "./logging/printerIO";
 
 async function main() {
   const { result, yargs } = w.buildAndParse(CliDrive.cmd);
@@ -18,17 +16,12 @@ async function main() {
 
   const command = result.right;
 
-  Log.initLogging(command.argv, Log.defaultLoggers);
+  Logging.initLogging({ debug: command.argv.debug });
 
   await pipe(
     CliDrive.createCliCommandsDeps(command.argv),
     CliDrive.runCliCommand(command),
-    TE.fold(printer.errorTask, (output) => async () => {
-      if (/^\s*$/.test(output)) {
-        return;
-      }
-      printer.print(output, { newline: false });
-    }),
+    CliDrive.printResult,
   )();
 }
 

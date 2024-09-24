@@ -1,3 +1,3 @@
-import * as Actions from '../../../icloud-drive/drive-actions'
+import { DriveActions } from "idrive-lib";
 
-export const autocomplete = Actions.autocomplete
+export const autocomplete = DriveActions.autocomplete;

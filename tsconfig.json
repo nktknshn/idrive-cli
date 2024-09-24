@@ -3,26 +3,17 @@
     "typeRoots": [
       "./node_modules/@types"
     ],
-    /* Visit https://aka.ms/tsconfig.json to read more about this file */
-    /* Basic Options */
-    // "incremental": true,                         /* Enable incremental compilation */
-    "target": "es6", /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019', 'ES2020', 'ES2021', or 'ESNEXT'. */
-    // "noLib": true, 
-    "lib": [
-      "es6"
-    ],
-    "module": "commonjs", 
-    "sourceMap": true, 
+    "target": "es6",
+    "lib": ["es6"],
+    "module": "commonjs",
+    "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src", 
-    "esModuleInterop": true, 
-    "skipLibCheck": true, 
-    "forceConsistentCasingInFileNames": true ,
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "strict": true
   },
-  "exclude": [
-    "node_modules",
-    "**/node_modules/*",
-  ],
+  "exclude": ["**/node_modules/*"],
   "include": ["src/**/*.ts"]
 }

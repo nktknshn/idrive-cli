@@ -5,16 +5,15 @@ import * as Ord from "fp-ts/lib/Ord";
 import { not } from "fp-ts/lib/Refinement";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import * as O from "fp-ts/Option";
-import { DriveActions, DriveLookup, DriveTree, Types } from "../../../icloud-drive";
-import { ListPathResult } from "../../../icloud-drive/drive-actions/ls/ls-shallow";
-import { ListRecursiveTreeResult } from "../../../icloud-drive/drive-actions/ls/ls-tree";
-import { ordDriveChildrenItemBySize } from "../../../icloud-drive/drive-types";
-import { guardProp } from "../../../util/guards";
-import { addLeadingSlash } from "../../../util/normalize-path";
-import { Path } from "../../../util/path";
-import { ensureSingleNewline } from "../../../util/string";
-import { NEA } from "../../../util/types";
-import * as LsPrinting from "./ls-printing/printing";
+
+import { DriveActions, DriveLookup, DriveTree, Types } from "idrive-lib";
+
+import { guardProp } from "idrive-lib/util/guards";
+import { addLeadingSlash, Path } from "idrive-lib/util/path";
+import { ensureSingleNewline } from "idrive-lib/util/string";
+import { NEA } from "idrive-lib/util/types";
+
+import * as LP from "./ls-printing/printing";
 
 type Args = {
   paths: string[];
@@ -26,7 +25,7 @@ type Args = {
   tree: boolean;
   recursive: boolean;
   depth: number;
-  sort: LsPrinting.Sort | undefined;
+  sort: LP.Sort | undefined;
   json: boolean;
 };
 
@@ -71,13 +70,13 @@ const lsShallow = (
     sort: args.sort ?? defaultSort,
   };
 
-  const showText = (a: NEA<ListPathResult>): string =>
+  const showText = (a: NEA<DriveActions.ListShallowResult>): string =>
     pipe(
       a,
       NA.map(a =>
         a.valid
-          ? LsPrinting.showValidPath(a)({ ...args, ...opts })
-          : LsPrinting.showInvalidPath(a.validation) + "\n"
+          ? LP.showValidPath(a)({ ...args, ...opts })
+          : LP.showInvalidPath(a.validation) + "\n"
       ),
       NA.zip(paths),
       res =>
@@ -90,7 +89,7 @@ const lsShallow = (
       ensureSingleNewline,
     );
 
-  const showJson = (a: NEA<ListPathResult>): string =>
+  const showJson = (a: NEA<DriveActions.ListShallowResult>): string =>
     pipe(
       a,
       a => JSON.stringify(a),
@@ -134,22 +133,22 @@ const lsRecursive = (
 
         const driveItems = items.map(_ => _.item);
 
-        const sw = LsPrinting.sizeWidth(driveItems, opts.humanReadable);
-        const tw = LsPrinting.typeWidth(driveItems);
+        const sw = LP.sizeWidth(driveItems, opts.humanReadable);
+        const tw = LP.typeWidth(driveItems);
         const fw = items.map(_ => _.path.length).reduce((a, b) => Math.max(a, b), 0);
 
         const sortedItems = pipe(
           items,
           opts.sort === "size"
             ? A.sortBy([
-              Ord.contramap((a: { item: Types.DriveChildrenItem }) => a.item)(ordDriveChildrenItemBySize),
+              Ord.contramap((a: { item: Types.DriveChildrenItem }) => a.item)(Types.ordDriveChildrenItemBySize),
             ])
             : identity,
         );
 
         for (const { item, path } of sortedItems) {
           result.push(
-            LsPrinting.showItem(
+            LP.showItem(
               item,
               Path.dirname(path),
               { filenameWidth: fw, typeWidth: tw, sizeWidth: sw },
@@ -190,7 +189,7 @@ const lsRecursiveTree = (
 
   const paths = args.paths;
 
-  const showText = (a: NEA<ListRecursiveTreeResult>): string =>
+  const showText = (a: NEA<DriveActions.ListRecursiveTreeResult>): string =>
     pipe(
       a,
       NA.zip(paths),
@@ -205,7 +204,7 @@ const lsRecursiveTree = (
       ensureSingleNewline,
     );
 
-  const showJson = (a: NEA<ListRecursiveTreeResult>): string =>
+  const showJson = (a: NEA<DriveActions.ListRecursiveTreeResult>): string =>
     pipe(
       a,
       a => JSON.stringify(a),

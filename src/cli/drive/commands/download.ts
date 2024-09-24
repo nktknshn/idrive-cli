@@ -4,9 +4,9 @@ import * as NA from "fp-ts/lib/NonEmptyArray";
 import * as SRTE from "fp-ts/lib/StateReaderTaskEither";
 import micromatch from "micromatch";
 
-import { DriveActions, DriveLookup, Types } from "../../../icloud-drive";
-import { err } from "../../../util/errors";
-import { npath } from "../../../util/normalize-path";
+import { DriveActions, DriveLookup, Types } from "idrive-lib";
+import { err } from "idrive-lib/util/errors";
+import { npath } from "idrive-lib/util/path";
 
 type Args = {
   paths: string[];

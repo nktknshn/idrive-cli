@@ -1,16 +1,14 @@
 import { constVoid, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/Option";
 import * as SRTE from "fp-ts/StateReaderTaskEither";
+import * as deps from "idrive-lib/deps-providers";
 import * as defaults from "../../defaults";
-import * as deps from "../../deps-providers";
 
-import { DepAskConfirmation } from "../../deps-types/dep-ask-confirmation";
-import { Cache, DriveLookup } from "../../icloud-drive";
-import { saveDriveStateToFiles } from "../../icloud-drive/drive-persistence";
-import { loggerIO } from "../../logging";
+import { Cache, DepsTypes, DriveLookup, DrivePersistence, Logging } from "idrive-lib";
+import { CommandsDeps } from "./handler";
+
+import { appendFilename } from "idrive-lib/util/filename";
 import { getEnv } from "../../util/env";
-import { appendFilename } from "../../util/filename";
-import { CommandsDeps } from ".";
 
 /** Create dependencies for the commands */
 export const createCliCommandsDeps = (args: {
@@ -19,7 +17,7 @@ export const createCliCommandsDeps = (args: {
   "no-cache"?: boolean;
   tempdir?: string;
   fileEditor?: string;
-  askConfirmation?: DepAskConfirmation["askConfirmation"];
+  askConfirmation?: DepsTypes.DepAskConfirmation["askConfirmation"];
   "api-usage"?: DriveLookup.ApiUsage;
 }): CommandsDeps => {
   const sessionFile = pipe(
@@ -32,11 +30,17 @@ export const createCliCommandsDeps = (args: {
   const noCache = args["no-cache"] ?? false;
 
   return ({
+    /** iCloud Drive API methods */
     api: deps.api,
-    fs: deps.fs,
+    /** iCloud authentication */
     authenticateSession: deps.authenticateSession,
+    /** File system methods */
+    fs: deps.fs,
+    /** Fetch client */
     fetchClient: deps.fetchClient,
+    /** Asking user for confirmation */
     askConfirmation: args.askConfirmation ?? deps.askConfirmation,
+    // parameters
     sessionFile,
     cacheFile,
     noCache,
@@ -48,10 +52,10 @@ export const createCliCommandsDeps = (args: {
     hookPesistState: pipe(
       DriveLookup.getState(),
       SRTE.chainFirstIOK(
-        ({ cache }) => loggerIO.debug(`Saving state. Cache has ${Cache.keysCount(cache)} keys`),
+        ({ cache }) => Logging.loggerIO.debug(`Saving state. Cache has ${Cache.keysCount(cache)} keys`),
       ),
       SRTE.chainTaskEitherK(cache =>
-        saveDriveStateToFiles(cache)({
+        DrivePersistence.saveDriveStateToFiles(cache)({
           sessionFile,
           cacheFile,
           noCache,
