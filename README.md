@@ -9,15 +9,13 @@ This is a client for iCloud Drive built on top of a non-public API. It aims to m
 
 This is an unofficial client. Use it at your own risk. The author is not responsible for any data loss or any other issues that may arise from using this software. Always have a backup of your data.
 
+## Installation
+
+`npm install -g idrive`
+
 ## Usage
 
-- Install [bun](https://bun.sh/). 
-
-- Clone the repo `git clone https://github.com/nktknshn/node-icloud-drive-client /opt/node-icloud-drive-client/`
-
-- Add alias for convenience `alias idrive='bun /opt/node-icloud-drive-client/src/cli-drive.ts'`
-
-- Fish shell completions for `idrive` are available in `/opt/node-icloud-drive-client/completions/idrive.fish`
+- Fish shell completions for `idrive` are [available](https://github.com/nktknshn/idrive-cli/blob/master/completions/idrive.fish)
 
 ```Commands:
   idrive init                    Init new session
