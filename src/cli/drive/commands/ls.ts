@@ -13,7 +13,7 @@ import { addLeadingSlash, Path } from "idrive-lib/util/path";
 import { ensureSingleNewline } from "idrive-lib/util/string";
 import { NEA } from "idrive-lib/util/types";
 
-import * as LP from "./ls-printing/printing";
+import * as LP from "./ls-printing";
 
 type Args = {
   paths: string[];
