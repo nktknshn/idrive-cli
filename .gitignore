@@ -4,4 +4,4 @@ node_modules/
 dist/
 coverage/
 build
-completions/a.fish
+bin
