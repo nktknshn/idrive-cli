@@ -1,6 +1,6 @@
 {
   "name": "idrive",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Unofficial iCloud Drive client for Linux",
   "scripts": {
     "test": "./node_modules/.bin/vitest",
@@ -14,11 +14,12 @@
   "keywords": [
     "icloud",
     "icloud drive",
+    "icloud-drive",
+    "icloud api",
     "cli",
     "fp-ts"
   ],
   "dependencies": {
-    "bun": "^1.1.29",
     "fp-ts": "^2.16.9",
     "idrive-lib": "^1.0.0",
     "micromatch": "^4.0.8",
