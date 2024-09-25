@@ -11,7 +11,7 @@ import { appendFilename } from "idrive-lib/util/filename";
 import { getEnv } from "../../util/env";
 
 /** Create dependencies for the commands */
-export const createCliCommandsDeps = (args: {
+export const createDeps = (args: {
   "session-file"?: string;
   "cache-file"?: string;
   "no-cache"?: boolean;

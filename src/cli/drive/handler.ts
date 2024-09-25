@@ -8,7 +8,6 @@ import { CliCommands, cmd } from "./args";
 import * as Commands from "./commands";
 
 export { cmd };
-export { createCliCommandsDeps } from "./deps";
 
 const handler = w.createHandlerFor(cmd, {
   ls: DrivePersistence.persistentDriveState(Commands.listUnixPath),
@@ -26,7 +25,7 @@ const handler = w.createHandlerFor(cmd, {
   auth: Commands.authSession,
 });
 
-export const runCliCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, string> => {
+export const runCommand = (command: CliCommands): RTE.ReaderTaskEither<CommandsDeps, Error, string> => {
   return pipe(
     handler.handle(command),
     Log.debugTimeRTE("runCliCommand")<CommandsDeps, Error, string>,

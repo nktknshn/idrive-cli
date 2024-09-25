@@ -21,8 +21,8 @@ async function main() {
   Logging.initLogging({ debug: command.argv.debug });
 
   await pipe(
-    CliDrive.createCliCommandsDeps(command.argv),
-    CliDrive.runCliCommand(command),
+    CliDrive.createDeps(command.argv),
+    CliDrive.runCommand(command),
     CliDrive.printResult,
   )();
 }
