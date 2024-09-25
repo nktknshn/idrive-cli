@@ -18,7 +18,6 @@
     "fp-ts"
   ],
   "dependencies": {
-    "bun": "^1.1.29",
     "fp-ts": "^2.16.9",
     "idrive-lib": "^1.0.0",
     "micromatch": "^4.0.8",
