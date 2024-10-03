@@ -79,10 +79,34 @@ export const getOrds = (sort: Sort): Ord.Ord<Types.DriveChildrenItem>[] =>
       Types.ordDriveChildrenItemByName,
     ];
 
+type ItemToShow = Types.DriveChildrenItem | Types.RecentDoc;
+
 export const sortItems = (items: Types.DriveChildrenItem[], sort: Sort) => pipe(items, A.sortBy(getOrds(sort)));
 
+export const showItems = (items: ItemToShow[], path: string): string => {
+  let result = "";
+
+  const sw = sizeWidth(items, true);
+  const tw = typeWidth(items);
+  const fw = items.map(_ => _.name.length).reduce((a, b) => Math.max(a, b), 0);
+
+  for (const item of items) {
+    result += showItem(item, path, {
+      filenameWidth: fw,
+      typeWidth: tw,
+      sizeWidth: sw,
+    }, {
+      long: 2,
+      fullPath: false,
+      humanReadable: true,
+    }) + "\n";
+  }
+
+  return result;
+};
+
 export const showItem = (
-  item: Types.DriveChildrenItem,
+  item: Types.DriveChildrenItem | Types.RecentDoc,
   path: string,
   widths: {
     filenameWidth: number;
@@ -149,23 +173,23 @@ export const showItem = (
   return Types.fileName(item);
 };
 
-export const maxSize = (items: Types.DriveChildrenItem[]) =>
+export const maxSize = (items: ItemToShow[]) =>
   pipe(
     items,
-    A.filter(Types.isFile),
+    A.filter(_ => _.type === "FILE"),
     A.map(_ => _.size),
     A.reduce(0, Math.max),
   );
 
-export const longestSizeHumanReadable = (items: Types.DriveChildrenItem[]) =>
+export const longestSizeHumanReadable = (items: ItemToShow[]) =>
   pipe(
     items,
-    A.filter(Types.isFile),
+    A.filter(_ => _.type === "FILE"),
     A.map(_ => sizeHumanReadable(_.size)),
     A.reduce(0, (a, b) => Math.max(a, b.length)),
   );
 
-export const sizeWidth = (items: Types.DriveChildrenItem[], hr = false) => {
+export const sizeWidth = (items: ItemToShow[], hr = false) => {
   if (hr) {
     return longestSizeHumanReadable(items);
   }
@@ -173,7 +197,7 @@ export const sizeWidth = (items: Types.DriveChildrenItem[], hr = false) => {
   return maxSize(items).toString().length;
 };
 
-export const typeWidth = (items: Types.DriveChildrenItem[]) =>
+export const typeWidth = (items: ItemToShow[]) =>
   pipe(
     items,
     A.map(_ => _.type.length),

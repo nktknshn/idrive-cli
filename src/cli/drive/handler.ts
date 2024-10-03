@@ -21,6 +21,7 @@ const handler = w.createHandlerFor(cmd, {
   recover: DrivePersistence.persistentDriveState(Commands.recover),
   download: DrivePersistence.persistentDriveState(Commands.download),
   edit: DrivePersistence.persistentDriveState(Commands.edit),
+  recent: DrivePersistence.persistentDriveState(Commands.recent),
   init: Commands.initSession,
   auth: Commands.authSession,
 });

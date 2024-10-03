@@ -228,6 +228,11 @@ const recover = w.command(
   "Recover a file from the trash",
   (_) => _.positional("path", { type: "string", demandOption: true }),
 );
+const recent = w.command(
+  "recent",
+  "List recently modified files",
+  (_) => _.options({}),
+);
 
 const apiUsage = ["onlycache", "fallback", "validate"] as const;
 const apiUsageChoices = [...apiUsage, "o", "f", "v"];
