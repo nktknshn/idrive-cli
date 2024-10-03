@@ -228,6 +228,7 @@ const recover = w.command(
   "Recover a file from the trash",
   (_) => _.positional("path", { type: "string", demandOption: true }),
 );
+
 const recent = w.command(
   "recent",
   "List recently modified files",
@@ -277,6 +278,11 @@ export const cmd = w.composeCommands(
           },
         },
         debug: { alias: "d", default: false, type: "boolean" },
+        "log-http": {
+          default: false,
+          type: "boolean",
+          description: "Log HTTP requests and responses to /tmp/idrive-http.log",
+        },
       }),
   init,
   auth,
@@ -290,6 +296,7 @@ export const cmd = w.composeCommands(
   upload,
   recover,
   autocomplete,
+  recent,
 );
 
 export type CliCommands = w.GetCommandArgs<typeof cmd>;

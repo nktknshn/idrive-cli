@@ -18,7 +18,10 @@ async function main() {
 
   const command = result.right;
 
-  Logging.initLogging({ debug: command.argv.debug });
+  Logging.initLogging({
+    debug: command.argv.debug,
+    logHttp: command.argv["log-http"],
+  });
 
   await pipe(
     CliDrive.createDeps(command.argv),
