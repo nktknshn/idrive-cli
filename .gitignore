@@ -5,3 +5,4 @@ dist/
 coverage/
 build
 bin
+bun.lockb

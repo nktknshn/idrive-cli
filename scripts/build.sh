@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -e
 set -x
 
 rm -rf dist
@@ -11,6 +10,8 @@ if [ "$HAS_LINK" != "" ]; then
   echo "Cannot build with link dependencies"
   exit 1
 fi
+
+set -e
 
 VER_PACKAGE=$(cat package.json | jq -r '.version' )
 VER_CLIENT=$(cat src/defaults.ts | grep cliVersion | grep -oP '(?<=")[0-9.]+(?=")')

@@ -1,6 +1,6 @@
 {
   "name": "idrive",
-  "version": "1.0.3",
+  "version": "0.0.1",
   "description": "Unofficial iCloud Drive client for Linux",
   "scripts": {
     "test": "./node_modules/.bin/vitest",
@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "fp-ts": "^2.16.9",
-    "idrive-lib": "^1.0.0",
+    "idrive-lib": "^0.1.0",
     "micromatch": "^4.0.8",
     "yargs": "16.2.0",
     "yargs-command-wrapper": "^1.0.7-1"

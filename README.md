@@ -387,8 +387,14 @@ Short variants: `-a o`, `-a f`, `-a v`
 Need a feature or have an idea? Open an issue!
 
 <!-- 
+- [ ] check recent docs and trash
+- [ ] reference files/folders by id instead of path
 - [ ] better ls JSON output
 - [ ] cp
 - [ ] better/more shell autocompletions
 - [ ] less dependencies
-- [ ] split project into cli and lib -->
+- [x] split project into cli and lib 
+- idrive ls -li /Obsidian/V1/\* ignores filename starting with dot
+- [ ] cat empty file responses with 400 and freezes
+
+-->
