@@ -6,3 +6,4 @@ coverage/
 build
 bin
 bun.lockb
+*.0x

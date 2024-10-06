@@ -4,9 +4,17 @@ set -x
 
 rm -rf dist
 
+CHECK_LINK=yes
+
+# try read opt --ignore-link
+
+if [[ "$1" == "--ignore-link" ]]; then
+  CHECK_LINK=no
+fi
+
 HAS_LINK=$(cat package.json | jq '.dependencies' | grep -P '(file:|link:)')
 
-if [ "$HAS_LINK" != "" ]; then
+if [[ "$CHECK_LINK" == "yes" && "$HAS_LINK" != "" ]]; then
   echo "Cannot build with link dependencies"
   exit 1
 fi

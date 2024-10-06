@@ -7,6 +7,6 @@ export const sessionFile = "icloud-session.json";
 
 export const downloadChunkSize = 5;
 
-export const cliVersion = "0.0.1";
+export const cliVersion = "0.0.2";
 
 export const apiUsage = "validate";

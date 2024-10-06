@@ -386,7 +386,12 @@ Short variants: `-a o`, `-a f`, `-a v`
 
 Need a feature or have an idea? Open an issue!
 
-<!-- 
+<!--
+- [ ] profile cli start time 
+- [ ] check prompts alternatives
+- [ ] docker image
+- [ ] proxy support 
+- [ ] colorful output
 - [ ] check recent docs and trash
 - [ ] reference files/folders by id instead of path
 - [ ] better ls JSON output
